@@ -28,6 +28,13 @@ type Lead = {
 };
 
 const SCORES = ["all", "hot", "warm", "cold"];
+const SORTS = [
+  { key: "score", label: "Hottest first" },
+  { key: "newest", label: "Latest leads" },
+  { key: "price_asc", label: "Price: low to high" },
+  { key: "price_desc", label: "Price: high to low" },
+] as const;
+type SortKey = (typeof SORTS)[number]["key"];
 
 function Leadboard() {
   const { user } = useAuth();
@@ -39,7 +46,9 @@ function Leadboard() {
   const [productTypeId, setProductTypeId] = useState<"all" | string>("all");
   const [score, setScore] = useState("all");
   const [maxBudget, setMaxBudget] = useState<string>("");
+  const [sort, setSort] = useState<SortKey>("score");
   const [buying, setBuying] = useState<string | null>(null);
+  const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
 
   useEffect(() => {
     (async () => {
