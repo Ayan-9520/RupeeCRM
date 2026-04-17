@@ -275,3 +275,33 @@ function Row({ icon: Icon, text }: { icon: React.ComponentType<{ className?: str
     </div>
   );
 }
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  tone: "default" | "hot" | "accent";
+}) {
+  const toneClass =
+    tone === "hot"
+      ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30"
+      : tone === "accent"
+        ? "bg-accent/10 text-accent border-accent/30"
+        : "bg-secondary text-foreground border-border";
+  return (
+    <div className="rounded-2xl bg-card border border-border p-4 shadow-card flex items-center gap-3">
+      <div className={`size-10 rounded-xl border grid place-items-center ${toneClass}`}>
+        <Icon className="size-5" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground truncate">{label}</div>
+        <div className="font-display text-lg font-bold leading-tight truncate">{value}</div>
+      </div>
+    </div>
+  );
+}
