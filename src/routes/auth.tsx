@@ -51,6 +51,32 @@ function AuthPage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState<AppRole>("dsa");
   const [showPassword, setShowPassword] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSubmitting, setForgotSubmitting] = useState(false);
+
+  const onForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const target = forgotEmail.trim() || email.trim();
+    if (!target || !/^\S+@\S+\.\S+$/.test(target)) {
+      toast.error("Enter a valid email");
+      return;
+    }
+    setForgotSubmitting(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(target, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success("Reset link sent. Check your email.");
+        setForgotOpen(false);
+      }
+    } finally {
+      setForgotSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
