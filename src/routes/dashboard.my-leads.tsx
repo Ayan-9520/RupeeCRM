@@ -682,6 +682,21 @@ function LeadDetailDrawer({
           </button>
         </div>
 
+        {/* Process / Apply CTA */}
+        <div className="px-5 pb-2">
+          <Link
+            to="/dashboard/my-leads/$id/apply"
+            params={{ id: purchase.id }}
+            className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-accent to-accent/80 text-accent-foreground font-bold text-sm shadow-card hover:shadow-elevated transition-smooth"
+          >
+            <FileText className="size-4" />
+            {purchase.notes.some((n) => (n as { kind?: string }).kind === "application_draft")
+              ? "Resume application"
+              : "Start processing application"}
+            <ChevronRight className="size-4" />
+          </Link>
+        </div>
+
         {/* Customer info */}
         <Section title="Customer">
           <Field label="Phone" value={lead.full_phone} />
