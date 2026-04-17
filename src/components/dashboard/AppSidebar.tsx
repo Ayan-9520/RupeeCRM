@@ -7,7 +7,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
-  UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote,
+  UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -33,6 +33,7 @@ const NAV: NavItem[] = [
   { title: "Community", url: "/dashboard/community", icon: Megaphone, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Training", url: "/dashboard/training", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Users", url: "/dashboard/admin/users", icon: Users, roles: ["admin"] },
+  { title: "Add Leads", url: "/dashboard/admin/leads", icon: ListPlus, roles: ["admin"] },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", icon: UserCog, roles: ["admin"] },
   { title: "Payouts", url: "/dashboard/admin/payouts", icon: Banknote, roles: ["admin"] },
 ];
