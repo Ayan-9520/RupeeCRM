@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
-import { Image as ImageIcon, MessageCircle, IdCard, Film, Link2, Sparkles } from "lucide-react";
+import { Image as ImageIcon, MessageCircle, IdCard, Film, Link2, Sparkles, Zap } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard/marketing/")({
   component: MarketingHome,
 });
 
 const TILES = [
+  { to: "/dashboard/marketing/oneclick", icon: Zap, title: "One Click Post ⚡", desc: "Instant branded post — trending, daily, or festival. Generate, share, done.", color: "from-primary/15 to-accent/10" },
   { to: "/dashboard/marketing/posts", icon: ImageIcon, title: "Social Media Posts", desc: "Pre-designed templates for PL, BL, HL, Credit Cards, Insurance — auto-personalized.", color: "from-emerald-500/10 to-emerald-500/5" },
   { to: "/dashboard/marketing/whatsapp", icon: MessageCircle, title: "WhatsApp Campaign", desc: "Click-to-chat links, message templates, and bulk-ready scripts.", color: "from-green-500/10 to-green-500/5" },
   { to: "/dashboard/marketing/card", icon: IdCard, title: "Visiting Card Generator", desc: "Digital business card with QR code, photo, and shareable image.", color: "from-blue-500/10 to-blue-500/5" },

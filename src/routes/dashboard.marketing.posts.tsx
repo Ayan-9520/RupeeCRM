@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PostCanvas } from "@/components/marketing/PostCanvas";
 import { ShareBar } from "@/components/marketing/ShareBar";
 import {
@@ -26,6 +27,7 @@ function PostsBuilder() {
   const [templates, setTemplates] = useState<MarketingTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [tab, setTab] = useState<"all" | "trending" | "festival" | "daily">("all");
   const [selected, setSelected] = useState<MarketingTemplate | null>(null);
   const [headline, setHeadline] = useState("");
   const [body, setBody] = useState("");
@@ -62,10 +64,14 @@ function PostsBuilder() {
     })();
   }, [user]);
 
-  const filtered = useMemo(
-    () => filter === "all" ? templates : templates.filter((t) => t.product === filter),
-    [templates, filter],
-  );
+  const filtered = useMemo(() => {
+    let list = templates;
+    if (tab === "trending") list = list.filter((t) => (t as any).is_trending);
+    else if (tab === "festival") list = list.filter((t) => (t as any).category === "festival");
+    else if (tab === "daily") list = list.filter((t) => (t as any).is_daily);
+    if (filter !== "all") list = list.filter((t) => t.product === filter);
+    return list;
+  }, [templates, filter, tab]);
 
   const pickTemplate = (t: MarketingTemplate) => {
     setSelected(t);
@@ -93,6 +99,14 @@ function PostsBuilder() {
     <div className="grid lg:grid-cols-[320px_1fr_360px] gap-6">
       {/* Template list */}
       <div className="space-y-3">
+        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="all">All</TabsTrigger>
+            <TabsTrigger value="trending">🔥 Trending</TabsTrigger>
+            <TabsTrigger value="festival">🎉 Festival</TabsTrigger>
+            <TabsTrigger value="daily">📅 Daily</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Label>Filter by product</Label>
         <Select value={filter} onValueChange={setFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
