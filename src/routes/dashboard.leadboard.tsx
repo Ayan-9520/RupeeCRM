@@ -3,8 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles } from "lucide-react";
+import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown } from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
   head: () => ({ meta: [{ title: "Leadboard Marketplace — LeadMines" }] }),
@@ -27,6 +28,13 @@ type Lead = {
 };
 
 const SCORES = ["all", "hot", "warm", "cold"];
+const SORTS = [
+  { key: "score", label: "Hottest first" },
+  { key: "newest", label: "Latest leads" },
+  { key: "price_asc", label: "Price: low to high" },
+  { key: "price_desc", label: "Price: high to low" },
+] as const;
+type SortKey = (typeof SORTS)[number]["key"];
 
 function Leadboard() {
   const { user } = useAuth();
@@ -38,7 +46,9 @@ function Leadboard() {
   const [productTypeId, setProductTypeId] = useState<"all" | string>("all");
   const [score, setScore] = useState("all");
   const [maxBudget, setMaxBudget] = useState<string>("");
+  const [sort, setSort] = useState<SortKey>("score");
   const [buying, setBuying] = useState<string | null>(null);
+  const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
 
   useEffect(() => {
     (async () => {
@@ -57,9 +67,11 @@ function Leadboard() {
     let q = supabase
       .from("leads")
       .select("id,applicant_name,masked_phone,city,loan_amount,monthly_income,score,price,status,product_category,product_subtype,product_type_id")
-      .eq("status", "available")
-      .order("score", { ascending: false })
-      .order("created_at", { ascending: false });
+      .eq("status", "available");
+    if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
+    else if (sort === "newest") q = q.order("created_at", { ascending: false });
+    else if (sort === "price_asc") q = q.order("price", { ascending: true });
+    else if (sort === "price_desc") q = q.order("price", { ascending: false });
     if (city.trim()) q = q.ilike("city", `%${city.trim()}%`);
     if (category !== "all") q = q.eq("product_category", category);
     if (productTypeId !== "all") q = q.eq("product_type_id", productTypeId);
@@ -71,7 +83,26 @@ function Leadboard() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget, sort]);
+
+  // Load top stats
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const [totalRes, hotRes, purchRes, walletRes] = await Promise.all([
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "available"),
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "available").eq("score", "hot"),
+        supabase.from("lead_purchases").select("id", { count: "exact", head: true }).eq("dsa_id", user.id),
+        supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle(),
+      ]);
+      setStats({
+        total: totalRes.count ?? 0,
+        hot: hotRes.count ?? 0,
+        purchases: purchRes.count ?? 0,
+        balance: Number(walletRes.data?.balance ?? 0),
+      });
+    })();
+  }, [user, leads.length]);
 
   // reset sub-type when category changes
   useEffect(() => { setProductTypeId("all"); }, [category]);
@@ -94,14 +125,38 @@ function Leadboard() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <div>
-        <h1 className="font-display text-2xl lg:text-3xl font-bold">Leadboard Marketplace</h1>
-        <p className="text-muted-foreground mt-1">Loans · Insurance · Credit Cards · Investments — all in one feed.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold">Leadboard Marketplace</h1>
+          <p className="text-muted-foreground mt-1">Loans · Insurance · Credit Cards · Investments — all in one feed.</p>
+        </div>
+        <Link
+          to="/dashboard/wallet"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth"
+        >
+          <Wallet className="size-4" /> Add money
+        </Link>
       </div>
 
-      <div className="rounded-2xl bg-card border border-border p-4 shadow-card">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-          <Filter className="size-4 text-accent" /> Filters
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={Layers} label="Total leads" value={stats.total.toLocaleString("en-IN")} tone="default" />
+        <StatCard icon={Flame} label="Hot leads" value={stats.hot.toLocaleString("en-IN")} tone="hot" />
+        <StatCard icon={ShoppingBag} label="My purchases" value={stats.purchases.toLocaleString("en-IN")} tone="default" />
+        <StatCard icon={Wallet} label="Wallet balance" value={`₹${stats.balance.toLocaleString("en-IN")}`} tone="accent" />
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-4 shadow-card sticky top-2 z-10">
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Filter className="size-4 text-accent" /> Filters
+          </div>
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="size-4 text-muted-foreground" />
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="input-base !h-8 !py-0 text-xs">
+              {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </div>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <select value={category} onChange={(e) => setCategory(e.target.value as typeof category)} className="input-base">
@@ -150,7 +205,16 @@ function LeadCard({ lead, type, onBuy, buying }: { lead: Lead; type?: ProductTyp
   const meta = CATEGORY_META[lead.product_category];
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-5 shadow-card hover:border-accent/50 transition-smooth flex flex-col">
+    <div className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
+      lead.score === "hot"
+        ? "border-orange-500/60 ring-1 ring-orange-500/30 hover:ring-orange-500/60"
+        : "border-border hover:border-accent/50"
+    }`}>
+      {lead.score === "hot" && (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
+          <Flame className="size-3" /> Hot lead
+        </div>
+      )}
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${meta.chipBg} ${meta.chipText}`}>
           {meta.label}
@@ -208,6 +272,36 @@ function Row({ icon: Icon, text }: { icon: React.ComponentType<{ className?: str
     <div className="flex items-center gap-2 text-foreground/80">
       <Icon className="size-3.5 text-muted-foreground shrink-0" />
       <span className="truncate">{text}</span>
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  tone: "default" | "hot" | "accent";
+}) {
+  const toneClass =
+    tone === "hot"
+      ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30"
+      : tone === "accent"
+        ? "bg-accent/10 text-accent border-accent/30"
+        : "bg-secondary text-foreground border-border";
+  return (
+    <div className="rounded-2xl bg-card border border-border p-4 shadow-card flex items-center gap-3">
+      <div className={`size-10 rounded-xl border grid place-items-center ${toneClass}`}>
+        <Icon className="size-5" />
+      </div>
+      <div className="min-w-0">
+        <div className="text-xs text-muted-foreground truncate">{label}</div>
+        <div className="font-display text-lg font-bold leading-tight truncate">{value}</div>
+      </div>
     </div>
   );
 }
