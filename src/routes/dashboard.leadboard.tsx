@@ -25,12 +25,14 @@ type Lead = {
   product_category: ProductCategory;
   product_subtype: string | null;
   product_type_id: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 const SCORES = ["all", "hot", "warm", "cold"];
 const SORTS = [
-  { key: "score", label: "Hottest first" },
   { key: "newest", label: "Latest leads" },
+  { key: "score", label: "Hottest first" },
   { key: "price_asc", label: "Price: low to high" },
   { key: "price_desc", label: "Price: high to low" },
 ] as const;
