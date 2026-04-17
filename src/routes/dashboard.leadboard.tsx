@@ -40,8 +40,8 @@ export default function Leadboard() {
     setLoading(true);
     let q = supabase.from("leads").select("*").eq("status", "available").order("score", { ascending: false }).order("created_at", { ascending: false });
     if (city.trim()) q = q.ilike("city", `%${city.trim()}%`);
-    if (type !== "all") q = q.eq("loan_type", type as Lead["loan_type"]);
-    if (score !== "all") q = q.eq("score", score as Lead["score"]);
+    if (type !== "all") q = q.eq("loan_type", type as "personal" | "home" | "business" | "credit_card" | "insurance" | "mutual_fund");
+    if (score !== "all") q = q.eq("score", score as "cold" | "warm" | "hot");
     const { data, error } = await q;
     if (error) toast.error(error.message);
     else setLeads((data ?? []) as Lead[]);
