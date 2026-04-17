@@ -612,10 +612,13 @@ export type Database = {
           id: string
           image_url: string
           is_active: boolean
+          media_type: string
           product: Database["public"]["Enums"]["marketing_product"]
           prompt: string | null
           source: string
           tags: string[]
+          thumbnail_url: string | null
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -625,10 +628,13 @@ export type Database = {
           id?: string
           image_url: string
           is_active?: boolean
+          media_type?: string
           product?: Database["public"]["Enums"]["marketing_product"]
           prompt?: string | null
           source?: string
           tags?: string[]
+          thumbnail_url?: string | null
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -638,10 +644,13 @@ export type Database = {
           id?: string
           image_url?: string
           is_active?: boolean
+          media_type?: string
           product?: Database["public"]["Enums"]["marketing_product"]
           prompt?: string | null
           source?: string
           tags?: string[]
+          thumbnail_url?: string | null
+          title?: string | null
           updated_at?: string
         }
         Relationships: []
