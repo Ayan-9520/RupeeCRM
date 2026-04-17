@@ -290,6 +290,69 @@ export type Database = {
           },
         ]
       }
+      payout_requests: {
+        Row: {
+          account_holder: string | null
+          admin_notes: string | null
+          amount: number
+          bank_account: string | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          ifsc: string | null
+          method: Database["public"]["Enums"]["payout_method"]
+          paid_at: string | null
+          reject_reason: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["payout_status"]
+          transaction_ref: string | null
+          updated_at: string
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          account_holder?: string | null
+          admin_notes?: string | null
+          amount: number
+          bank_account?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          ifsc?: string | null
+          method: Database["public"]["Enums"]["payout_method"]
+          paid_at?: string | null
+          reject_reason?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["payout_status"]
+          transaction_ref?: string | null
+          updated_at?: string
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          account_holder?: string | null
+          admin_notes?: string | null
+          amount?: number
+          bank_account?: string | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          ifsc?: string | null
+          method?: Database["public"]["Enums"]["payout_method"]
+          paid_at?: string | null
+          reject_reason?: string | null
+          requested_at?: string
+          status?: Database["public"]["Enums"]["payout_status"]
+          transaction_ref?: string | null
+          updated_at?: string
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       payslips: {
         Row: {
           deductions: Json
@@ -756,12 +819,36 @@ export type Database = {
         Args: { _plan: Database["public"]["Enums"]["workspace_plan"] }
         Returns: number
       }
+      process_payout: {
+        Args: {
+          _action: string
+          _admin_notes?: string
+          _payout_id: string
+          _reject_reason?: string
+          _transaction_ref?: string
+        }
+        Returns: Json
+      }
       process_payroll: {
         Args: { _month: number; _workspace_id: string; _year: number }
         Returns: Json
       }
       purchase_lead: { Args: { _lead_id: string }; Returns: Json }
       recharge_wallet: { Args: { _amount: number }; Returns: Json }
+      request_payout: {
+        Args: {
+          _account_holder?: string
+          _amount: number
+          _bank_account?: string
+          _ifsc?: string
+          _method: Database["public"]["Enums"]["payout_method"]
+          _upi_id?: string
+        }
+        Returns: Json
+      }
+      user_locked_payouts: { Args: { _user_id: string }; Returns: number }
+      user_paid_commission: { Args: { _user_id: string }; Returns: number }
+      user_withdrawable: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       app_role:
@@ -789,6 +876,8 @@ export type Database = {
         | "credit_card"
         | "insurance"
         | "mutual_fund"
+      payout_method: "bank" | "upi"
+      payout_status: "pending" | "approved" | "rejected" | "paid"
       payslip_status: "draft" | "processed" | "paid"
       product_category: "loan" | "insurance" | "credit_card" | "investment"
       txn_type: "credit" | "debit"
@@ -949,6 +1038,8 @@ export const Constants = {
         "insurance",
         "mutual_fund",
       ],
+      payout_method: ["bank", "upi"],
+      payout_status: ["pending", "approved", "rejected", "paid"],
       payslip_status: ["draft", "processed", "paid"],
       product_category: ["loan", "insurance", "credit_card", "investment"],
       txn_type: ["credit", "debit"],

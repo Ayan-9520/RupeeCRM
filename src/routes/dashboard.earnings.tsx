@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
   Loader2, TrendingUp, IndianRupee, Wallet, Clock, CheckCircle2, BadgeCheck,
-  Filter, X, Download, ArrowUpRight,
+  Filter, X, Download, ArrowUpRight, Banknote,
 } from "lucide-react";
+import { WithdrawDialog } from "@/components/dashboard/WithdrawDialog";
 import { CATEGORY_META, calcCommission, type ProductCategory, type ProductType } from "@/lib/products";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, CartesianGrid,
@@ -60,31 +61,35 @@ function Earnings() {
   const [rows, setRows] = useState<Row[]>([]);
   const [types, setTypes] = useState<ProductType[]>([]);
   const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [withdrawable, setWithdrawable] = useState<number>(0);
   const [loading, setLoading] = useState(true);
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
 
   const [dateRange, setDateRange] = useState<DateRange>("all");
   const [catFilter, setCatFilter] = useState<"all" | ProductCategory>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | CommissionStatus>("all");
 
-  useEffect(() => {
+  const loadAll = async () => {
     if (!user) return;
-    (async () => {
-      setLoading(true);
-      const [purchasesRes, typesRes, walletRes] = await Promise.all([
-        supabase
-          .from("lead_purchases")
-          .select("id,pipeline_stage,price_paid,deal_value,converted,created_at,updated_at,leads!inner(id,applicant_name,product_category,product_type_id,product_subtype,loan_amount)")
-          .eq("dsa_id", user.id)
-          .order("created_at", { ascending: false }),
-        supabase.from("product_types").select("*"),
-        supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle(),
-      ]);
-      setRows((purchasesRes.data ?? []) as unknown as Row[]);
-      setTypes((typesRes.data ?? []) as ProductType[]);
-      setWalletBalance(Number(walletRes.data?.balance ?? 0));
-      setLoading(false);
-    })();
-  }, [user]);
+    setLoading(true);
+    const [purchasesRes, typesRes, walletRes, withdrawRes] = await Promise.all([
+      supabase
+        .from("lead_purchases")
+        .select("id,pipeline_stage,price_paid,deal_value,converted,created_at,updated_at,leads!inner(id,applicant_name,product_category,product_type_id,product_subtype,loan_amount)")
+        .eq("dsa_id", user.id)
+        .order("created_at", { ascending: false }),
+      supabase.from("product_types").select("*"),
+      supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle(),
+      supabase.rpc("user_withdrawable", { _user_id: user.id }),
+    ]);
+    setRows((purchasesRes.data ?? []) as unknown as Row[]);
+    setTypes((typesRes.data ?? []) as ProductType[]);
+    setWalletBalance(Number(walletRes.data?.balance ?? 0));
+    setWithdrawable(Number(withdrawRes.data ?? 0));
+    setLoading(false);
+  };
+
+  useEffect(() => { loadAll(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [user]);
 
   const typeMap = useMemo(
     () => Object.fromEntries(types.map((t) => [t.id, t])) as Record<string, ProductType>,
@@ -215,7 +220,18 @@ function Earnings() {
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Earnings & Commissions</h1>
           <p className="text-muted-foreground mt-1">Track every commission across loans, insurance, cards & investments.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-sm">
+            <span className="text-[11px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300 font-semibold">Withdrawable</span>
+            <span className="font-display font-bold text-emerald-700 dark:text-emerald-300">₹{withdrawable.toLocaleString("en-IN")}</span>
+          </div>
+          <button
+            onClick={() => setWithdrawOpen(true)}
+            disabled={withdrawable < 500}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-sm"
+          >
+            <Banknote className="size-4" /> Withdraw
+          </button>
           <Link
             to="/dashboard/wallet"
             className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-border bg-card hover:border-accent/50 text-sm font-semibold"
@@ -232,6 +248,8 @@ function Earnings() {
           </button>
         </div>
       </div>
+
+      <WithdrawDialog open={withdrawOpen} onOpenChange={setWithdrawOpen} onSuccess={loadAll} />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
