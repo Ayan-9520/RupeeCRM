@@ -33,6 +33,7 @@ const NAV: NavItem[] = [
   { title: "Earnings", url: "/dashboard/earnings", icon: BarChart3, roles: ["dsa", "affiliate", "admin"] },
   { title: "Marketing", url: "/dashboard/marketing", icon: Megaphone, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Community", url: "/dashboard/community", icon: Megaphone, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
+  { title: "Learn & Earn", url: "/dashboard/learn", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Training", url: "/dashboard/training", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Users", url: "/dashboard/admin/users", icon: Users, roles: ["admin"] },
   { title: "Add Leads", url: "/dashboard/admin/leads", icon: ListPlus, roles: ["admin"] },

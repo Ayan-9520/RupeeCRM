@@ -31,6 +31,10 @@ export function Nav() {
               {l.label}
             </a>
           ))}
+          <Link to="/learn-earn" className="text-sm text-muted-foreground hover:text-foreground transition-smooth inline-flex items-center gap-1">
+            Learn & Earn
+            <span className="px-1.5 py-0.5 rounded-full bg-accent/20 text-accent-foreground text-[9px] font-bold">NEW</span>
+          </Link>
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
@@ -63,6 +67,10 @@ export function Nav() {
                 {l.label}
               </a>
             ))}
+            <Link to="/learn-earn" onClick={() => setOpen(false)} className="py-2.5 text-sm text-foreground/80 inline-flex items-center gap-2">
+              Learn & Earn
+              <span className="px-1.5 py-0.5 rounded-full bg-accent/20 text-accent-foreground text-[9px] font-bold">NEW</span>
+            </Link>
             <Link to="/auth" className="mt-3 py-2.5 text-center rounded-full bg-foreground text-background text-sm font-medium">
               Get started
             </Link>
