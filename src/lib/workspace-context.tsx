@@ -13,6 +13,8 @@ export interface Workspace {
   plan: WorkspacePlan;
   seat_limit: number;
   logo_url: string | null;
+  hrms_enabled: boolean;
+  hrms_price_per_employee: number;
   role: WorkspaceRole;
 }
 
@@ -44,7 +46,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const { data: members } = await supabase
       .from("workspace_members")
-      .select("role, workspace:workspaces(id, name, slug, owner_id, plan, seat_limit, logo_url)")
+      .select("role, workspace:workspaces(id, name, slug, owner_id, plan, seat_limit, logo_url, hrms_enabled, hrms_price_per_employee)")
       .eq("user_id", user.id);
 
     const list: Workspace[] = (members ?? [])
