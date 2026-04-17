@@ -7,8 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, Users, Trash2, Loader2, ShieldCheck } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Building2, Users, Trash2, Loader2, ShieldCheck, Sparkles, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
+import { UpgradeDialog } from "@/components/dashboard/UpgradeDialog";
+import { PLAN_LABEL, PLAN_SEATS, isUnlimited, formatSeats } from "@/lib/plans";
+import type { WorkspacePlan } from "@/lib/workspace-context";
 
 export const Route = createFileRoute("/dashboard/workspace")({
   head: () => ({ meta: [{ title: "Workspace Settings — LeadMines" }] }),
@@ -32,10 +36,9 @@ function WorkspaceSettings() {
   const [inviteRole, setInviteRole] = useState("employee");
   const [busy, setBusy] = useState(false);
   const [loadingMembers, setLoadingMembers] = useState(true);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
-  useEffect(() => {
-    if (current) setName(current.name);
-  }, [current]);
+  useEffect(() => { if (current) setName(current.name); }, [current]);
 
   const loadMembers = async () => {
     if (!current) return;
@@ -54,6 +57,11 @@ function WorkspaceSettings() {
 
   useEffect(() => { loadMembers(); }, [current?.id]);
 
+  const limit = current ? PLAN_SEATS[current.plan] : 0;
+  const used = members.length;
+  const atLimit = current ? !isUnlimited(current.plan) && used >= limit : false;
+  const usagePct = current && !isUnlimited(current.plan) ? Math.min(100, (used / limit) * 100) : 0;
+
   const saveName = async () => {
     if (!current || !canManage) return;
     setBusy(true);
@@ -66,15 +74,11 @@ function WorkspaceSettings() {
 
   const invite = async () => {
     if (!current || !canManage || !inviteEmail.trim()) return;
+    if (atLimit) { setUpgradeOpen(true); return; }
     setBusy(true);
     const { data: profs } = await supabase.from("profiles").select("id, full_name").ilike("full_name", `%${inviteEmail.trim()}%`).limit(1);
     if (!profs || profs.length === 0) {
       toast.error("User not found. They must sign up first.");
-      setBusy(false);
-      return;
-    }
-    if (members.length >= current.seat_limit) {
-      toast.error(`Seat limit reached (${current.seat_limit}). Upgrade your plan.`);
       setBusy(false);
       return;
     }
@@ -85,7 +89,14 @@ function WorkspaceSettings() {
       invited_by: user?.id,
     });
     setBusy(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      if (error.message.includes("SEAT_LIMIT_REACHED")) {
+        setUpgradeOpen(true);
+      } else {
+        toast.error(error.message);
+      }
+      return;
+    }
     toast.success("Member added");
     setInviteEmail("");
     loadMembers();
@@ -105,9 +116,16 @@ function WorkspaceSettings() {
     loadMembers();
   };
 
-  if (!current) {
-    return <div className="text-muted-foreground">No workspace selected.</div>;
-  }
+  const upgradePlan = async (plan: WorkspacePlan) => {
+    if (!current) return;
+    const { error } = await supabase.from("workspaces").update({ plan }).eq("id", current.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Upgraded to ${PLAN_LABEL[plan]}`);
+    setUpgradeOpen(false);
+    refresh();
+  };
+
+  if (!current) return <div className="text-muted-foreground">No workspace selected.</div>;
 
   return (
     <div className="max-w-4xl space-y-6">
@@ -116,8 +134,43 @@ function WorkspaceSettings() {
           <div className="size-10 rounded-xl bg-accent/15 grid place-items-center"><Building2 className="size-5 text-accent" /></div>
           <h1 className="font-display text-2xl font-bold">Workspace Settings</h1>
         </div>
-        <p className="text-muted-foreground text-sm">Manage <span className="font-medium text-foreground">{current.name}</span> · Plan: <span className="uppercase text-xs font-semibold">{current.plan}</span> · {members.length}/{current.seat_limit} seats</p>
+        <p className="text-muted-foreground text-sm">Manage <span className="font-medium text-foreground">{current.name}</span></p>
       </div>
+
+      {/* Plan & seat usage card */}
+      <section className="rounded-2xl bg-gradient-to-br from-accent/10 to-card border border-border p-6">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="size-10 rounded-xl bg-accent/20 grid place-items-center"><Sparkles className="size-5 text-accent" /></div>
+            <div>
+              <div className="text-xs uppercase tracking-wide text-muted-foreground">Current plan</div>
+              <div className="font-display font-bold text-xl">{PLAN_LABEL[current.plan]}</div>
+            </div>
+          </div>
+          {canManage && (
+            <Button variant="outline" onClick={() => setUpgradeOpen(true)} className="gap-2">
+              <Sparkles className="size-4" /> Upgrade plan
+            </Button>
+          )}
+        </div>
+        <div className="mt-5 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="font-medium">Seat usage</span>
+            <span className={atLimit ? "text-destructive font-semibold" : "text-muted-foreground"}>
+              {formatSeats(used, current.plan)} users
+            </span>
+          </div>
+          {!isUnlimited(current.plan) && (
+            <Progress value={usagePct} className={atLimit ? "[&>div]:bg-destructive" : ""} />
+          )}
+          {atLimit && (
+            <div className="flex items-center gap-2 text-xs text-destructive mt-2">
+              <AlertTriangle className="size-3.5" />
+              Seat limit reached. Upgrade to add more team members.
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="rounded-2xl bg-card border border-border p-6 space-y-4">
         <h2 className="font-semibold">General</h2>
@@ -137,27 +190,36 @@ function WorkspaceSettings() {
       <section className="rounded-2xl bg-card border border-border p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold flex items-center gap-2"><Users className="size-4" /> Members</h2>
-          <span className="text-xs text-muted-foreground">{members.length} of {current.seat_limit} seats used</span>
+          <span className="text-xs text-muted-foreground">{formatSeats(used, current.plan)} seats used</span>
         </div>
 
         {canManage && (
-          <div className="flex gap-2 p-3 rounded-lg bg-secondary/50 border border-border">
-            <Input
-              placeholder="Search by name (user must already have an account)"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className="flex-1"
-            />
-            <Select value={inviteRole} onValueChange={setInviteRole}>
-              <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="employee">Employee</SelectItem>
-                <SelectItem value="viewer">Viewer</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button onClick={invite} disabled={busy || !inviteEmail.trim()}>Add</Button>
+          <div className="space-y-2">
+            <div className="flex gap-2 p-3 rounded-lg bg-secondary/50 border border-border">
+              <Input
+                placeholder="Search by name (user must already have an account)"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                className="flex-1"
+                disabled={atLimit}
+              />
+              <Select value={inviteRole} onValueChange={setInviteRole} disabled={atLimit}>
+                <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="manager">Manager</SelectItem>
+                  <SelectItem value="employee">Employee</SelectItem>
+                  <SelectItem value="viewer">Viewer</SelectItem>
+                </SelectContent>
+              </Select>
+              {atLimit ? (
+                <Button onClick={() => setUpgradeOpen(true)} className="gap-2">
+                  <Sparkles className="size-4" /> Upgrade
+                </Button>
+              ) : (
+                <Button onClick={invite} disabled={busy || !inviteEmail.trim()}>Add</Button>
+              )}
+            </div>
           </div>
         )}
 
@@ -200,6 +262,14 @@ function WorkspaceSettings() {
           ))}
         </div>
       </section>
+
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        currentPlan={current.plan}
+        currentSeats={used}
+        onUpgrade={upgradePlan}
+      />
     </div>
   );
 }

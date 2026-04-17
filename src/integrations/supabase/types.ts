@@ -350,6 +350,10 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      plan_seat_limit: {
+        Args: { _plan: Database["public"]["Enums"]["workspace_plan"] }
+        Returns: number
+      }
       purchase_lead: { Args: { _lead_id: string }; Returns: Json }
       recharge_wallet: { Args: { _amount: number }; Returns: Json }
     }

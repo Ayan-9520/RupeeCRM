@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PLAN_LABEL, formatSeats } from "@/lib/plans";
 
 export function WorkspaceSwitcher() {
   const { workspaces, current, switchWorkspace, refresh, loading } = useWorkspace();
@@ -67,7 +68,7 @@ export function WorkspaceSwitcher() {
                 <Building2 className="size-4 text-accent shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="truncate font-medium">{w.name}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{w.role} · {w.plan}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{w.role} · {PLAN_LABEL[w.plan]}</div>
                 </div>
                 {current?.id === w.id && <Check className="size-4 text-accent" />}
               </button>
