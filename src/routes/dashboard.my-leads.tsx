@@ -10,6 +10,10 @@ import {
 } from "lucide-react";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
+import {
+  DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable,
+  DragOverlay, type DragEndEvent, type DragStartEvent,
+} from "@dnd-kit/core";
 
 export const Route = createFileRoute("/dashboard/my-leads")({
   head: () => ({ meta: [{ title: "My Leads — LeadMines" }] }),
