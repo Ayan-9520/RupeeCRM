@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as LearnEarnRouteImport } from './routes/learn-earn'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as LearnEarnSlugRouteImport } from './routes/learn-earn.$slug'
 import { Route as DashboardWorkspaceRouteImport } from './routes/dashboard.workspace'
 import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
 import { Route as DashboardTrainingRouteImport } from './routes/dashboard.training'
@@ -55,6 +57,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LearnEarnRoute = LearnEarnRouteImport.update({
+  id: '/learn-earn',
+  path: '/learn-earn',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -74,6 +81,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
+} as any)
+const LearnEarnSlugRoute = LearnEarnSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => LearnEarnRoute,
 } as any)
 const DashboardWorkspaceRoute = DashboardWorkspaceRouteImport.update({
   id: '/workspace',
@@ -261,6 +273,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/learn-earn': typeof LearnEarnRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
@@ -276,6 +289,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
+  '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -302,6 +316,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/learn-earn': typeof LearnEarnRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
@@ -315,6 +330,7 @@ export interface FileRoutesByTo {
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
+  '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -343,6 +359,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/learn-earn': typeof LearnEarnRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
@@ -358,6 +375,7 @@ export interface FileRoutesById {
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
+  '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -387,6 +405,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/learn-earn'
     | '/reset-password'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -402,6 +421,7 @@ export interface FileRouteTypes {
     | '/dashboard/training'
     | '/dashboard/wallet'
     | '/dashboard/workspace'
+    | '/learn-earn/$slug'
     | '/dashboard/'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -428,6 +448,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/learn-earn'
     | '/reset-password'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -441,6 +462,7 @@ export interface FileRouteTypes {
     | '/dashboard/training'
     | '/dashboard/wallet'
     | '/dashboard/workspace'
+    | '/learn-earn/$slug'
     | '/dashboard'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -468,6 +490,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/learn-earn'
     | '/reset-password'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -483,6 +506,7 @@ export interface FileRouteTypes {
     | '/dashboard/training'
     | '/dashboard/wallet'
     | '/dashboard/workspace'
+    | '/learn-earn/$slug'
     | '/dashboard/'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -511,6 +535,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  LearnEarnRoute: typeof LearnEarnRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
@@ -521,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn-earn': {
+      id: '/learn-earn'
+      path: '/learn-earn'
+      fullPath: '/learn-earn'
+      preLoaderRoute: typeof LearnEarnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -550,6 +582,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/learn-earn/$slug': {
+      id: '/learn-earn/$slug'
+      path: '/$slug'
+      fullPath: '/learn-earn/$slug'
+      preLoaderRoute: typeof LearnEarnSlugRouteImport
+      parentRoute: typeof LearnEarnRoute
     }
     '/dashboard/workspace': {
       id: '/dashboard/workspace'
@@ -909,10 +948,23 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
 )
 
+interface LearnEarnRouteChildren {
+  LearnEarnSlugRoute: typeof LearnEarnSlugRoute
+}
+
+const LearnEarnRouteChildren: LearnEarnRouteChildren = {
+  LearnEarnSlugRoute: LearnEarnSlugRoute,
+}
+
+const LearnEarnRouteWithChildren = LearnEarnRoute._addFileChildren(
+  LearnEarnRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  LearnEarnRoute: LearnEarnRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport

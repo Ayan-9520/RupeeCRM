@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import { Nav } from "@/components/landing/Nav";
 import { Footer } from "@/components/landing/Footer";
-import { getCourse, COURSES, CATEGORY_LABEL, LEVEL_LABEL } from "@/lib/courses";
+import { getCourse, COURSES, CATEGORY_LABEL, LEVEL_LABEL, type Course } from "@/lib/courses";
 
 export const Route = createFileRoute("/learn-earn/$slug")({
   loader: ({ params }) => {
@@ -48,7 +48,7 @@ const TYPE_ICON = {
 } as const;
 
 function CourseDetail() {
-  const { course } = Route.useLoaderData();
+  const { course } = Route.useLoaderData() as { course: Course };
   const related = COURSES.filter((c) => c.category === course.category && c.slug !== course.slug).slice(0, 3);
 
   return (
