@@ -13,6 +13,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as DashboardWorkspaceRouteImport } from './routes/dashboard.workspace'
 import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
 import { Route as DashboardTrainingRouteImport } from './routes/dashboard.training'
 import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.submissions'
@@ -44,6 +45,11 @@ const IndexRoute = IndexRouteImport.update({
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardWorkspaceRoute = DashboardWorkspaceRouteImport.update({
+  id: '/workspace',
+  path: '/workspace',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardWalletRoute = DashboardWalletRouteImport.update({
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
@@ -138,6 +145,7 @@ export interface FileRoutesByTo {
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
@@ -157,6 +165,7 @@ export interface FileRoutesById {
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/dashboard/submissions'
     | '/dashboard/training'
     | '/dashboard/wallet'
+    | '/dashboard/workspace'
     | '/dashboard/'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/dashboard/submissions'
     | '/dashboard/training'
     | '/dashboard/wallet'
+    | '/dashboard/workspace'
     | '/dashboard'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/dashboard/submissions'
     | '/dashboard/training'
     | '/dashboard/wallet'
+    | '/dashboard/workspace'
     | '/dashboard/'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
@@ -251,6 +263,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/workspace': {
+      id: '/dashboard/workspace'
+      path: '/workspace'
+      fullPath: '/dashboard/workspace'
+      preLoaderRoute: typeof DashboardWorkspaceRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/wallet': {
@@ -351,6 +370,7 @@ interface DashboardRouteChildren {
   DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
   DashboardTrainingRoute: typeof DashboardTrainingRoute
   DashboardWalletRoute: typeof DashboardWalletRoute
+  DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
@@ -367,6 +387,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSubmissionsRoute: DashboardSubmissionsRoute,
   DashboardTrainingRoute: DashboardTrainingRoute,
   DashboardWalletRoute: DashboardWalletRoute,
+  DashboardWorkspaceRoute: DashboardWorkspaceRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
@@ -384,3 +405,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
