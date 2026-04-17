@@ -9,7 +9,7 @@ import {
   CalendarClock, ArrowRight, LayoutGrid, List, Trophy, IndianRupee,
 } from "lucide-react";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
-import type { Json } from "@/integrations/supabase/types";
+import type { Database, Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/dashboard/my-leads")({
   head: () => ({ meta: [{ title: "My Leads — LeadMines" }] }),
@@ -155,7 +155,7 @@ function MyLeads() {
 
   // Actions on a purchase
   const updatePurchase = async (id: string, patch: Partial<Pick<Purchase, "pipeline_stage" | "next_followup_at" | "converted" | "deal_value">> & { notes?: Note[] }) => {
-    const safePatch: Record<string, unknown> = { ...patch };
+    const safePatch: Database["public"]["Tables"]["lead_purchases"]["Update"] = { ...patch };
     if (patch.notes) safePatch.notes = patch.notes as unknown as Json;
     const { error } = await supabase.from("lead_purchases").update(safePatch).eq("id", id);
     if (error) { toast.error(error.message); return false; }
