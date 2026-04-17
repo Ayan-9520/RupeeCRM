@@ -7,7 +7,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
-  UserCog, KanbanSquare, Building,
+  UserCog, KanbanSquare, Building, BriefcaseBusiness,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -21,6 +21,7 @@ type NavItem = {
 const NAV: NavItem[] = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate", "customer"] },
   { title: "Workspace", url: "/dashboard/workspace", icon: Building, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate", "customer"] },
+  { title: "HRMS & Payroll", url: "/dashboard/hrms", icon: BriefcaseBusiness, roles: ["admin", "dsa", "lender", "coordinator"] },
   { title: "Leadboard", url: "/dashboard/leadboard", icon: Store, roles: ["admin", "dsa"] },
   { title: "My Leads", url: "/dashboard/my-leads", icon: KanbanSquare, roles: ["dsa", "admin"] },
   { title: "Wallet", url: "/dashboard/wallet", icon: Wallet, roles: ["admin", "dsa", "affiliate"] },
