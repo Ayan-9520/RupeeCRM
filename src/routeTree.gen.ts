@@ -19,6 +19,7 @@ import { Route as DashboardTrainingRouteImport } from './routes/dashboard.traini
 import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.submissions'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardMyLeadsRouteImport } from './routes/dashboard.my-leads'
+import { Route as DashboardMarketingRouteImport } from './routes/dashboard.marketing'
 import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadboard'
 import { Route as DashboardHrmsRouteImport } from './routes/dashboard.hrms'
 import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
@@ -26,13 +27,20 @@ import { Route as DashboardCommunityRouteImport } from './routes/dashboard.commu
 import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
 import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
+import { Route as DashboardMarketingIndexRouteImport } from './routes/dashboard.marketing.index'
 import { Route as DashboardHrmsIndexRouteImport } from './routes/dashboard.hrms.index'
+import { Route as DashboardMarketingWhatsappRouteImport } from './routes/dashboard.marketing.whatsapp'
+import { Route as DashboardMarketingReferralRouteImport } from './routes/dashboard.marketing.referral'
+import { Route as DashboardMarketingReelsRouteImport } from './routes/dashboard.marketing.reels'
+import { Route as DashboardMarketingPostsRouteImport } from './routes/dashboard.marketing.posts'
+import { Route as DashboardMarketingCardRouteImport } from './routes/dashboard.marketing.card'
 import { Route as DashboardHrmsPayrollRouteImport } from './routes/dashboard.hrms.payroll'
 import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
 import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.hrms.attendance'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
 import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
 import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
+import { Route as DashboardAdminMarketingRouteImport } from './routes/dashboard.admin.marketing'
 import { Route as DashboardAdminLeadsRouteImport } from './routes/dashboard.admin.leads'
 import { Route as DashboardHrmsPayslipsIndexRouteImport } from './routes/dashboard.hrms.payslips.index'
 import { Route as DashboardMyLeadsIdApplyRouteImport } from './routes/dashboard.my-leads.$id.apply'
@@ -89,6 +97,11 @@ const DashboardMyLeadsRoute = DashboardMyLeadsRouteImport.update({
   path: '/my-leads',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardMarketingRoute = DashboardMarketingRouteImport.update({
+  id: '/marketing',
+  path: '/marketing',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardLeadboardRoute = DashboardLeadboardRouteImport.update({
   id: '/leadboard',
   path: '/leadboard',
@@ -124,10 +137,42 @@ const DashboardBillingRoute = DashboardBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardMarketingIndexRoute = DashboardMarketingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardMarketingRoute,
+} as any)
 const DashboardHrmsIndexRoute = DashboardHrmsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardHrmsRoute,
+} as any)
+const DashboardMarketingWhatsappRoute =
+  DashboardMarketingWhatsappRouteImport.update({
+    id: '/whatsapp',
+    path: '/whatsapp',
+    getParentRoute: () => DashboardMarketingRoute,
+  } as any)
+const DashboardMarketingReferralRoute =
+  DashboardMarketingReferralRouteImport.update({
+    id: '/referral',
+    path: '/referral',
+    getParentRoute: () => DashboardMarketingRoute,
+  } as any)
+const DashboardMarketingReelsRoute = DashboardMarketingReelsRouteImport.update({
+  id: '/reels',
+  path: '/reels',
+  getParentRoute: () => DashboardMarketingRoute,
+} as any)
+const DashboardMarketingPostsRoute = DashboardMarketingPostsRouteImport.update({
+  id: '/posts',
+  path: '/posts',
+  getParentRoute: () => DashboardMarketingRoute,
+} as any)
+const DashboardMarketingCardRoute = DashboardMarketingCardRouteImport.update({
+  id: '/card',
+  path: '/card',
+  getParentRoute: () => DashboardMarketingRoute,
 } as any)
 const DashboardHrmsPayrollRoute = DashboardHrmsPayrollRouteImport.update({
   id: '/payroll',
@@ -157,6 +202,11 @@ const DashboardAdminPricingRoute = DashboardAdminPricingRouteImport.update({
 const DashboardAdminPayoutsRoute = DashboardAdminPayoutsRouteImport.update({
   id: '/admin/payouts',
   path: '/admin/payouts',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAdminMarketingRoute = DashboardAdminMarketingRouteImport.update({
+  id: '/admin/marketing',
+  path: '/admin/marketing',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAdminLeadsRoute = DashboardAdminLeadsRouteImport.update({
@@ -198,6 +248,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
@@ -206,13 +257,20 @@ export interface FileRoutesByFullPath {
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
+  '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
+  '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
+  '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
+  '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
+  '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
+  '/dashboard/marketing/': typeof DashboardMarketingIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
   '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
   '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
@@ -235,13 +293,20 @@ export interface FileRoutesByTo {
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
+  '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
+  '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
+  '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
+  '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
+  '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
   '/dashboard/hrms': typeof DashboardHrmsIndexRoute
+  '/dashboard/marketing': typeof DashboardMarketingIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
   '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
   '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
@@ -259,6 +324,7 @@ export interface FileRoutesById {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
@@ -267,13 +333,20 @@ export interface FileRoutesById {
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
+  '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
+  '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
+  '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
+  '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
+  '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
+  '/dashboard/marketing/': typeof DashboardMarketingIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
   '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
   '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
@@ -292,6 +365,7 @@ export interface FileRouteTypes {
     | '/dashboard/earnings'
     | '/dashboard/hrms'
     | '/dashboard/leadboard'
+    | '/dashboard/marketing'
     | '/dashboard/my-leads'
     | '/dashboard/settings'
     | '/dashboard/submissions'
@@ -300,13 +374,20 @@ export interface FileRouteTypes {
     | '/dashboard/workspace'
     | '/dashboard/'
     | '/dashboard/admin/leads'
+    | '/dashboard/admin/marketing'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
+    | '/dashboard/marketing/card'
+    | '/dashboard/marketing/posts'
+    | '/dashboard/marketing/reels'
+    | '/dashboard/marketing/referral'
+    | '/dashboard/marketing/whatsapp'
     | '/dashboard/hrms/'
+    | '/dashboard/marketing/'
     | '/dashboard/hrms/employees/$id'
     | '/dashboard/hrms/payslips/$id'
     | '/dashboard/my-leads/$id/apply'
@@ -329,13 +410,20 @@ export interface FileRouteTypes {
     | '/dashboard/workspace'
     | '/dashboard'
     | '/dashboard/admin/leads'
+    | '/dashboard/admin/marketing'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
+    | '/dashboard/marketing/card'
+    | '/dashboard/marketing/posts'
+    | '/dashboard/marketing/reels'
+    | '/dashboard/marketing/referral'
+    | '/dashboard/marketing/whatsapp'
     | '/dashboard/hrms'
+    | '/dashboard/marketing'
     | '/dashboard/hrms/employees/$id'
     | '/dashboard/hrms/payslips/$id'
     | '/dashboard/my-leads/$id/apply'
@@ -352,6 +440,7 @@ export interface FileRouteTypes {
     | '/dashboard/earnings'
     | '/dashboard/hrms'
     | '/dashboard/leadboard'
+    | '/dashboard/marketing'
     | '/dashboard/my-leads'
     | '/dashboard/settings'
     | '/dashboard/submissions'
@@ -360,13 +449,20 @@ export interface FileRouteTypes {
     | '/dashboard/workspace'
     | '/dashboard/'
     | '/dashboard/admin/leads'
+    | '/dashboard/admin/marketing'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
+    | '/dashboard/marketing/card'
+    | '/dashboard/marketing/posts'
+    | '/dashboard/marketing/reels'
+    | '/dashboard/marketing/referral'
+    | '/dashboard/marketing/whatsapp'
     | '/dashboard/hrms/'
+    | '/dashboard/marketing/'
     | '/dashboard/hrms/employees/$id'
     | '/dashboard/hrms/payslips/$id'
     | '/dashboard/my-leads/$id/apply'
@@ -451,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMyLeadsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/marketing': {
+      id: '/dashboard/marketing'
+      path: '/marketing'
+      fullPath: '/dashboard/marketing'
+      preLoaderRoute: typeof DashboardMarketingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/leadboard': {
       id: '/dashboard/leadboard'
       path: '/leadboard'
@@ -500,12 +603,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/marketing/': {
+      id: '/dashboard/marketing/'
+      path: '/'
+      fullPath: '/dashboard/marketing/'
+      preLoaderRoute: typeof DashboardMarketingIndexRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
     '/dashboard/hrms/': {
       id: '/dashboard/hrms/'
       path: '/'
       fullPath: '/dashboard/hrms/'
       preLoaderRoute: typeof DashboardHrmsIndexRouteImport
       parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/marketing/whatsapp': {
+      id: '/dashboard/marketing/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/dashboard/marketing/whatsapp'
+      preLoaderRoute: typeof DashboardMarketingWhatsappRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/referral': {
+      id: '/dashboard/marketing/referral'
+      path: '/referral'
+      fullPath: '/dashboard/marketing/referral'
+      preLoaderRoute: typeof DashboardMarketingReferralRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/reels': {
+      id: '/dashboard/marketing/reels'
+      path: '/reels'
+      fullPath: '/dashboard/marketing/reels'
+      preLoaderRoute: typeof DashboardMarketingReelsRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/posts': {
+      id: '/dashboard/marketing/posts'
+      path: '/posts'
+      fullPath: '/dashboard/marketing/posts'
+      preLoaderRoute: typeof DashboardMarketingPostsRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/card': {
+      id: '/dashboard/marketing/card'
+      path: '/card'
+      fullPath: '/dashboard/marketing/card'
+      preLoaderRoute: typeof DashboardMarketingCardRouteImport
+      parentRoute: typeof DashboardMarketingRoute
     }
     '/dashboard/hrms/payroll': {
       id: '/dashboard/hrms/payroll'
@@ -547,6 +692,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/payouts'
       fullPath: '/dashboard/admin/payouts'
       preLoaderRoute: typeof DashboardAdminPayoutsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/marketing': {
+      id: '/dashboard/admin/marketing'
+      path: '/admin/marketing'
+      fullPath: '/dashboard/admin/marketing'
+      preLoaderRoute: typeof DashboardAdminMarketingRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/admin/leads': {
@@ -611,6 +763,27 @@ const DashboardHrmsRouteWithChildren = DashboardHrmsRoute._addFileChildren(
   DashboardHrmsRouteChildren,
 )
 
+interface DashboardMarketingRouteChildren {
+  DashboardMarketingCardRoute: typeof DashboardMarketingCardRoute
+  DashboardMarketingPostsRoute: typeof DashboardMarketingPostsRoute
+  DashboardMarketingReelsRoute: typeof DashboardMarketingReelsRoute
+  DashboardMarketingReferralRoute: typeof DashboardMarketingReferralRoute
+  DashboardMarketingWhatsappRoute: typeof DashboardMarketingWhatsappRoute
+  DashboardMarketingIndexRoute: typeof DashboardMarketingIndexRoute
+}
+
+const DashboardMarketingRouteChildren: DashboardMarketingRouteChildren = {
+  DashboardMarketingCardRoute: DashboardMarketingCardRoute,
+  DashboardMarketingPostsRoute: DashboardMarketingPostsRoute,
+  DashboardMarketingReelsRoute: DashboardMarketingReelsRoute,
+  DashboardMarketingReferralRoute: DashboardMarketingReferralRoute,
+  DashboardMarketingWhatsappRoute: DashboardMarketingWhatsappRoute,
+  DashboardMarketingIndexRoute: DashboardMarketingIndexRoute,
+}
+
+const DashboardMarketingRouteWithChildren =
+  DashboardMarketingRoute._addFileChildren(DashboardMarketingRouteChildren)
+
 interface DashboardMyLeadsRouteChildren {
   DashboardMyLeadsIdApplyRoute: typeof DashboardMyLeadsIdApplyRoute
 }
@@ -630,6 +803,7 @@ interface DashboardRouteChildren {
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren
   DashboardLeadboardRoute: typeof DashboardLeadboardRoute
+  DashboardMarketingRoute: typeof DashboardMarketingRouteWithChildren
   DashboardMyLeadsRoute: typeof DashboardMyLeadsRouteWithChildren
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
@@ -638,6 +812,7 @@ interface DashboardRouteChildren {
   DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardAdminLeadsRoute: typeof DashboardAdminLeadsRoute
+  DashboardAdminMarketingRoute: typeof DashboardAdminMarketingRoute
   DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute
   DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
@@ -651,6 +826,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardHrmsRoute: DashboardHrmsRouteWithChildren,
   DashboardLeadboardRoute: DashboardLeadboardRoute,
+  DashboardMarketingRoute: DashboardMarketingRouteWithChildren,
   DashboardMyLeadsRoute: DashboardMyLeadsRouteWithChildren,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSubmissionsRoute: DashboardSubmissionsRoute,
@@ -659,6 +835,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardWorkspaceRoute: DashboardWorkspaceRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardAdminLeadsRoute: DashboardAdminLeadsRoute,
+  DashboardAdminMarketingRoute: DashboardAdminMarketingRoute,
   DashboardAdminPayoutsRoute: DashboardAdminPayoutsRoute,
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
@@ -676,3 +853,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}

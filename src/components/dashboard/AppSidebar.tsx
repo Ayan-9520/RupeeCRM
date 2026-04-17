@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
+  Palette,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -30,12 +31,14 @@ const NAV: NavItem[] = [
   { title: "Submissions", url: "/dashboard/submissions", icon: FileText, roles: ["coordinator", "admin"] },
   { title: "Cases", url: "/dashboard/cases", icon: Building2, roles: ["lender", "admin"] },
   { title: "Earnings", url: "/dashboard/earnings", icon: BarChart3, roles: ["dsa", "affiliate", "admin"] },
+  { title: "Marketing", url: "/dashboard/marketing", icon: Megaphone, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Community", url: "/dashboard/community", icon: Megaphone, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Training", url: "/dashboard/training", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Users", url: "/dashboard/admin/users", icon: Users, roles: ["admin"] },
   { title: "Add Leads", url: "/dashboard/admin/leads", icon: ListPlus, roles: ["admin"] },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", icon: UserCog, roles: ["admin"] },
   { title: "Payouts", url: "/dashboard/admin/payouts", icon: Banknote, roles: ["admin"] },
+  { title: "MKT Templates", url: "/dashboard/admin/marketing", icon: Palette, roles: ["admin"] },
 ];
 
 export function AppSidebar() {
