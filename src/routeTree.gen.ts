@@ -14,9 +14,18 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
+import { Route as DashboardTrainingRouteImport } from './routes/dashboard.training'
+import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.submissions'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardPlaceholderRouteImport } from './routes/dashboard.placeholder'
 import { Route as DashboardMyLeadsRouteImport } from './routes/dashboard.my-leads'
 import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadboard'
+import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
+import { Route as DashboardCommunityRouteImport } from './routes/dashboard.community'
+import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
+import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
+import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
+import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
 
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
@@ -43,6 +52,21 @@ const DashboardWalletRoute = DashboardWalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardTrainingRoute = DashboardTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSubmissionsRoute = DashboardSubmissionsRouteImport.update({
+  id: '/submissions',
+  path: '/submissions',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardPlaceholderRoute = DashboardPlaceholderRouteImport.update({
   id: '/placeholder',
   path: '/placeholder',
@@ -58,36 +82,93 @@ const DashboardLeadboardRoute = DashboardLeadboardRouteImport.update({
   path: '/leadboard',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardEarningsRoute = DashboardEarningsRouteImport.update({
+  id: '/earnings',
+  path: '/earnings',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCommunityRoute = DashboardCommunityRouteImport.update({
+  id: '/community',
+  path: '/community',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCasesRoute = DashboardCasesRouteImport.update({
+  id: '/cases',
+  path: '/cases',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCallsRoute = DashboardCallsRouteImport.update({
+  id: '/calls',
+  path: '/calls',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAdminPricingRoute = DashboardAdminPricingRouteImport.update({
+  id: '/admin/pricing',
+  path: '/admin/pricing',
+  getParentRoute: () => DashboardRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/calls': typeof DashboardCallsRoute
+  '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/community': typeof DashboardCommunityRoute
+  '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRoute
   '/dashboard/placeholder': typeof DashboardPlaceholderRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/submissions': typeof DashboardSubmissionsRoute
+  '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/dashboard/calls': typeof DashboardCallsRoute
+  '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/community': typeof DashboardCommunityRoute
+  '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRoute
   '/dashboard/placeholder': typeof DashboardPlaceholderRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/submissions': typeof DashboardSubmissionsRoute
+  '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/calls': typeof DashboardCallsRoute
+  '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/community': typeof DashboardCommunityRoute
+  '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRoute
   '/dashboard/placeholder': typeof DashboardPlaceholderRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/submissions': typeof DashboardSubmissionsRoute
+  '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -95,30 +176,57 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/dashboard/calls'
+    | '/dashboard/cases'
+    | '/dashboard/community'
+    | '/dashboard/earnings'
     | '/dashboard/leadboard'
     | '/dashboard/my-leads'
     | '/dashboard/placeholder'
+    | '/dashboard/settings'
+    | '/dashboard/submissions'
+    | '/dashboard/training'
     | '/dashboard/wallet'
     | '/dashboard/'
+    | '/dashboard/admin/pricing'
+    | '/dashboard/admin/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
+    | '/dashboard/calls'
+    | '/dashboard/cases'
+    | '/dashboard/community'
+    | '/dashboard/earnings'
     | '/dashboard/leadboard'
     | '/dashboard/my-leads'
     | '/dashboard/placeholder'
+    | '/dashboard/settings'
+    | '/dashboard/submissions'
+    | '/dashboard/training'
     | '/dashboard/wallet'
     | '/dashboard'
+    | '/dashboard/admin/pricing'
+    | '/dashboard/admin/users'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/dashboard/calls'
+    | '/dashboard/cases'
+    | '/dashboard/community'
+    | '/dashboard/earnings'
     | '/dashboard/leadboard'
     | '/dashboard/my-leads'
     | '/dashboard/placeholder'
+    | '/dashboard/settings'
+    | '/dashboard/submissions'
+    | '/dashboard/training'
     | '/dashboard/wallet'
     | '/dashboard/'
+    | '/dashboard/admin/pricing'
+    | '/dashboard/admin/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -164,6 +272,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWalletRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/training': {
+      id: '/dashboard/training'
+      path: '/training'
+      fullPath: '/dashboard/training'
+      preLoaderRoute: typeof DashboardTrainingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/submissions': {
+      id: '/dashboard/submissions'
+      path: '/submissions'
+      fullPath: '/dashboard/submissions'
+      preLoaderRoute: typeof DashboardSubmissionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/placeholder': {
       id: '/dashboard/placeholder'
       path: '/placeholder'
@@ -185,23 +314,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLeadboardRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/earnings': {
+      id: '/dashboard/earnings'
+      path: '/earnings'
+      fullPath: '/dashboard/earnings'
+      preLoaderRoute: typeof DashboardEarningsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/community': {
+      id: '/dashboard/community'
+      path: '/community'
+      fullPath: '/dashboard/community'
+      preLoaderRoute: typeof DashboardCommunityRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/cases': {
+      id: '/dashboard/cases'
+      path: '/cases'
+      fullPath: '/dashboard/cases'
+      preLoaderRoute: typeof DashboardCasesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/calls': {
+      id: '/dashboard/calls'
+      path: '/calls'
+      fullPath: '/dashboard/calls'
+      preLoaderRoute: typeof DashboardCallsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/users': {
+      id: '/dashboard/admin/users'
+      path: '/admin/users'
+      fullPath: '/dashboard/admin/users'
+      preLoaderRoute: typeof DashboardAdminUsersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/pricing': {
+      id: '/dashboard/admin/pricing'
+      path: '/admin/pricing'
+      fullPath: '/dashboard/admin/pricing'
+      preLoaderRoute: typeof DashboardAdminPricingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
   }
 }
 
 interface DashboardRouteChildren {
+  DashboardCallsRoute: typeof DashboardCallsRoute
+  DashboardCasesRoute: typeof DashboardCasesRoute
+  DashboardCommunityRoute: typeof DashboardCommunityRoute
+  DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardLeadboardRoute: typeof DashboardLeadboardRoute
   DashboardMyLeadsRoute: typeof DashboardMyLeadsRoute
   DashboardPlaceholderRoute: typeof DashboardPlaceholderRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
+  DashboardTrainingRoute: typeof DashboardTrainingRoute
   DashboardWalletRoute: typeof DashboardWalletRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
+  DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardCallsRoute: DashboardCallsRoute,
+  DashboardCasesRoute: DashboardCasesRoute,
+  DashboardCommunityRoute: DashboardCommunityRoute,
+  DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardLeadboardRoute: DashboardLeadboardRoute,
   DashboardMyLeadsRoute: DashboardMyLeadsRoute,
   DashboardPlaceholderRoute: DashboardPlaceholderRoute,
+  DashboardSettingsRoute: DashboardSettingsRoute,
+  DashboardSubmissionsRoute: DashboardSubmissionsRoute,
+  DashboardTrainingRoute: DashboardTrainingRoute,
   DashboardWalletRoute: DashboardWalletRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardAdminPricingRoute: DashboardAdminPricingRoute,
+  DashboardAdminUsersRoute: DashboardAdminUsersRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
