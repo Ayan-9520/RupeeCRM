@@ -290,6 +290,7 @@ function Leadboard() {
               onBuy={buy}
               buying={buying === lead.id}
               purchased={purchased[lead.id]}
+              now={now}
             />
           ))}
         </div>
