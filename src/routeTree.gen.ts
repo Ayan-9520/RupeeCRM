@@ -33,6 +33,7 @@ import { Route as DashboardMarketingWhatsappRouteImport } from './routes/dashboa
 import { Route as DashboardMarketingReferralRouteImport } from './routes/dashboard.marketing.referral'
 import { Route as DashboardMarketingReelsRouteImport } from './routes/dashboard.marketing.reels'
 import { Route as DashboardMarketingPostsRouteImport } from './routes/dashboard.marketing.posts'
+import { Route as DashboardMarketingOneclickRouteImport } from './routes/dashboard.marketing.oneclick'
 import { Route as DashboardMarketingCardRouteImport } from './routes/dashboard.marketing.card'
 import { Route as DashboardHrmsPayrollRouteImport } from './routes/dashboard.hrms.payroll'
 import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
@@ -169,6 +170,12 @@ const DashboardMarketingPostsRoute = DashboardMarketingPostsRouteImport.update({
   path: '/posts',
   getParentRoute: () => DashboardMarketingRoute,
 } as any)
+const DashboardMarketingOneclickRoute =
+  DashboardMarketingOneclickRouteImport.update({
+    id: '/oneclick',
+    path: '/oneclick',
+    getParentRoute: () => DashboardMarketingRoute,
+  } as any)
 const DashboardMarketingCardRoute = DashboardMarketingCardRouteImport.update({
   id: '/card',
   path: '/card',
@@ -265,6 +272,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
   '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
   '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
   '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
@@ -301,6 +309,7 @@ export interface FileRoutesByTo {
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
   '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
   '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
   '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
@@ -341,6 +350,7 @@ export interface FileRoutesById {
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
   '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
   '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
   '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
@@ -382,6 +392,7 @@ export interface FileRouteTypes {
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
     | '/dashboard/marketing/card'
+    | '/dashboard/marketing/oneclick'
     | '/dashboard/marketing/posts'
     | '/dashboard/marketing/reels'
     | '/dashboard/marketing/referral'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
     | '/dashboard/marketing/card'
+    | '/dashboard/marketing/oneclick'
     | '/dashboard/marketing/posts'
     | '/dashboard/marketing/reels'
     | '/dashboard/marketing/referral'
@@ -457,6 +469,7 @@ export interface FileRouteTypes {
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
     | '/dashboard/marketing/card'
+    | '/dashboard/marketing/oneclick'
     | '/dashboard/marketing/posts'
     | '/dashboard/marketing/reels'
     | '/dashboard/marketing/referral'
@@ -645,6 +658,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMarketingPostsRouteImport
       parentRoute: typeof DashboardMarketingRoute
     }
+    '/dashboard/marketing/oneclick': {
+      id: '/dashboard/marketing/oneclick'
+      path: '/oneclick'
+      fullPath: '/dashboard/marketing/oneclick'
+      preLoaderRoute: typeof DashboardMarketingOneclickRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
     '/dashboard/marketing/card': {
       id: '/dashboard/marketing/card'
       path: '/card'
@@ -765,6 +785,7 @@ const DashboardHrmsRouteWithChildren = DashboardHrmsRoute._addFileChildren(
 
 interface DashboardMarketingRouteChildren {
   DashboardMarketingCardRoute: typeof DashboardMarketingCardRoute
+  DashboardMarketingOneclickRoute: typeof DashboardMarketingOneclickRoute
   DashboardMarketingPostsRoute: typeof DashboardMarketingPostsRoute
   DashboardMarketingReelsRoute: typeof DashboardMarketingReelsRoute
   DashboardMarketingReferralRoute: typeof DashboardMarketingReferralRoute
@@ -774,6 +795,7 @@ interface DashboardMarketingRouteChildren {
 
 const DashboardMarketingRouteChildren: DashboardMarketingRouteChildren = {
   DashboardMarketingCardRoute: DashboardMarketingCardRoute,
+  DashboardMarketingOneclickRoute: DashboardMarketingOneclickRoute,
   DashboardMarketingPostsRoute: DashboardMarketingPostsRoute,
   DashboardMarketingReelsRoute: DashboardMarketingReelsRoute,
   DashboardMarketingReferralRoute: DashboardMarketingReferralRoute,
@@ -853,12 +875,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}
