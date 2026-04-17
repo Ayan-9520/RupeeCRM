@@ -6,10 +6,11 @@ interface Props {
   branding: PartnerBranding;
   customHeadline?: string;
   customBody?: string;
+  imageUrl?: string | null;
 }
 
 export const PostCanvas = forwardRef<HTMLDivElement, Props>(
-  ({ template, branding, customHeadline, customBody }, ref) => {
+  ({ template, branding, customHeadline, customBody, imageUrl }, ref) => {
     const t = template.theme;
     const headline = personalize(customHeadline ?? template.headline, branding);
     const body = personalize(customBody ?? template.body ?? "", branding);
@@ -21,6 +22,25 @@ export const PostCanvas = forwardRef<HTMLDivElement, Props>(
         style={{ ...patternStyle(t), width: 1080, height: 1080 }}
         className="relative flex flex-col p-16 font-display overflow-hidden"
       >
+        {/* product image background */}
+        {imageUrl && (
+          <>
+            <img
+              src={imageUrl}
+              alt=""
+              crossOrigin="anonymous"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* dark gradient overlay for legible text */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(180deg, ${t.bg}E6 0%, ${t.bg}99 35%, ${t.bg}F2 100%)`,
+              }}
+            />
+          </>
+        )}
+
         {/* corner accent */}
         <div
           className="absolute -top-32 -right-32 size-80 rounded-full opacity-30"
@@ -32,7 +52,7 @@ export const PostCanvas = forwardRef<HTMLDivElement, Props>(
         />
 
         {/* brand chip */}
-        <div className="flex items-center gap-3 mb-12">
+        <div className="relative flex items-center gap-3 mb-12">
           <div
             className="size-12 rounded-xl grid place-items-center font-bold text-2xl"
             style={{ background: t.accent, color: t.bg }}
@@ -46,8 +66,8 @@ export const PostCanvas = forwardRef<HTMLDivElement, Props>(
         </div>
 
         {/* headline */}
-        <div className="flex-1 flex flex-col justify-center max-w-[820px]">
-          <h1 className="text-7xl font-black leading-[0.95] tracking-tight mb-6">
+        <div className="relative flex-1 flex flex-col justify-center max-w-[820px]">
+          <h1 className="text-7xl font-black leading-[0.95] tracking-tight mb-6 drop-shadow-lg">
             {headline}
           </h1>
           {sub && (
@@ -59,19 +79,19 @@ export const PostCanvas = forwardRef<HTMLDivElement, Props>(
             </div>
           )}
           {body && (
-            <p className="text-2xl opacity-90 leading-snug max-w-[700px]">{body}</p>
+            <p className="text-2xl opacity-95 leading-snug max-w-[700px] drop-shadow">{body}</p>
           )}
         </div>
 
         {/* footer: CTA + contact */}
-        <div className="flex items-end justify-between gap-6 mt-10">
+        <div className="relative flex items-end justify-between gap-6 mt-10">
           <div className="space-y-1.5">
             <div className="text-xl font-bold">{branding.name}</div>
-            <div className="text-lg opacity-80">📞 {branding.phone}</div>
-            {branding.email && <div className="text-base opacity-70">{branding.email}</div>}
+            <div className="text-lg opacity-90">📞 {branding.phone}</div>
+            {branding.email && <div className="text-base opacity-80">{branding.email}</div>}
           </div>
           <div
-            className="text-3xl font-black px-8 py-5 rounded-2xl"
+            className="text-3xl font-black px-8 py-5 rounded-2xl shadow-xl"
             style={{ background: t.accent, color: t.bg }}
           >
             {template.cta} →

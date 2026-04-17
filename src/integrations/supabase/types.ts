@@ -604,6 +604,48 @@ export type Database = {
           },
         ]
       }
+      product_images: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          display_order: number
+          id: string
+          image_url: string
+          is_active: boolean
+          product: Database["public"]["Enums"]["marketing_product"]
+          prompt: string | null
+          source: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          image_url: string
+          is_active?: boolean
+          product?: Database["public"]["Enums"]["marketing_product"]
+          prompt?: string | null
+          source?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          display_order?: number
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          product?: Database["public"]["Enums"]["marketing_product"]
+          prompt?: string | null
+          source?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_pipelines: {
         Row: {
           category: Database["public"]["Enums"]["product_category"]

@@ -16,11 +16,18 @@ import {
   type MarketingTemplate, type PartnerBranding, PRODUCT_LABEL,
   buildReferralLink, generateReferralCode, personalize,
 } from "@/lib/marketing";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Wand2, ImageOff } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/marketing/posts")({
   component: PostsBuilder,
 });
+
+interface ProductImage {
+  id: string;
+  product: string;
+  image_url: string;
+}
 
 function PostsBuilder() {
   const { user } = useAuth();
@@ -34,19 +41,24 @@ function PostsBuilder() {
   const [branding, setBranding] = useState<PartnerBranding>({
     name: "", phone: "", company: "LeadMines", referralLink: "", email: "",
   });
+  const [images, setImages] = useState<ProductImage[]>([]);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [generatingImg, setGeneratingImg] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // Load profile + templates
+  // Load profile + templates + product images
   useEffect(() => {
     if (!user) return;
     (async () => {
       setLoading(true);
-      const [{ data: tpls }, { data: profile }] = await Promise.all([
+      const [{ data: tpls }, { data: profile }, { data: imgs }] = await Promise.all([
         supabase.from("marketing_templates").select("*").eq("kind", "post").eq("enabled", true).order("display_order"),
         supabase.from("profiles").select("full_name, phone, company_name").eq("id", user.id).maybeSingle(),
+        supabase.from("product_images" as any).select("id, product, image_url").eq("is_active", true).order("display_order"),
       ]);
       const list = (tpls ?? []) as unknown as MarketingTemplate[];
       setTemplates(list);
+      setImages(((imgs ?? []) as unknown) as ProductImage[]);
       const code = generateReferralCode(profile?.full_name ?? user.email ?? "user", user.id);
       setBranding({
         name: profile?.full_name ?? user.email?.split("@")[0] ?? "Partner",
@@ -73,10 +85,47 @@ function PostsBuilder() {
     return list;
   }, [templates, filter, tab]);
 
+  // Images for the currently-selected product (with generic fallback)
+  const productImages = useMemo(() => {
+    if (!selected) return [];
+    const own = images.filter((i) => i.product === selected.product);
+    if (own.length >= 1) return own.slice(0, 6);
+    return images.filter((i) => i.product === "generic").slice(0, 6);
+  }, [images, selected]);
+
+  // Auto-pick the first image when template changes
+  useEffect(() => {
+    if (!selected) return;
+    setActiveImage(productImages[0]?.image_url ?? null);
+  }, [selected?.id, productImages.length]);
+
   const pickTemplate = (t: MarketingTemplate) => {
     setSelected(t);
     setHeadline(t.headline);
     setBody(t.body ?? "");
+  };
+
+  const generateAIImage = async () => {
+    if (!selected) return;
+    setGeneratingImg(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-marketing-image", {
+        body: { product: selected.product },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      const url = (data as any)?.image_url;
+      if (!url) throw new Error("No image returned");
+      // Optimistic add
+      const newImg: ProductImage = { id: crypto.randomUUID(), product: selected.product, image_url: url };
+      setImages((prev) => [newImg, ...prev]);
+      setActiveImage(url);
+      toast.success("AI image generated!");
+    } catch (e: any) {
+      toast.error(e.message ?? "Failed to generate image");
+    } finally {
+      setGeneratingImg(false);
+    }
   };
 
   const shareText = useMemo(() => {
@@ -96,15 +145,15 @@ function PostsBuilder() {
   }
 
   return (
-    <div className="grid lg:grid-cols-[320px_1fr_360px] gap-6">
+    <div className="grid lg:grid-cols-[300px_1fr_340px] gap-6">
       {/* Template list */}
       <div className="space-y-3">
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="all">All</TabsTrigger>
-            <TabsTrigger value="trending">🔥 Trending</TabsTrigger>
-            <TabsTrigger value="festival">🎉 Festival</TabsTrigger>
-            <TabsTrigger value="daily">📅 Daily</TabsTrigger>
+            <TabsTrigger value="trending">🔥</TabsTrigger>
+            <TabsTrigger value="festival">🎉</TabsTrigger>
+            <TabsTrigger value="daily">📅</TabsTrigger>
           </TabsList>
         </Tabs>
         <Label>Filter by product</Label>
@@ -147,7 +196,7 @@ function PostsBuilder() {
         </div>
       </div>
 
-      {/* Preview */}
+      {/* Preview + image picker */}
       <div className="space-y-4">
         <Card>
           <CardContent className="p-4 bg-muted/30 flex items-center justify-center min-h-[480px] overflow-auto">
@@ -159,6 +208,7 @@ function PostsBuilder() {
                   branding={branding}
                   customHeadline={headline}
                   customBody={body}
+                  imageUrl={activeImage}
                 />
               </div>
             ) : (
@@ -166,6 +216,51 @@ function PostsBuilder() {
             )}
           </CardContent>
         </Card>
+
+        {/* Product image picker */}
+        {selected && (
+          <div className="rounded-lg border p-3 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-semibold flex items-center gap-2">
+                <Sparkles className="size-4 text-primary" />
+                Product visuals — {PRODUCT_LABEL[selected.product]}
+              </div>
+              <Button size="sm" variant="outline" onClick={generateAIImage} disabled={generatingImg} className="gap-2">
+                {generatingImg ? <Loader2 className="size-4 animate-spin" /> : <Wand2 className="size-4" />}
+                Generate AI Image
+              </Button>
+            </div>
+            {productImages.length === 0 ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-3">
+                <ImageOff className="size-4" />
+                No images yet — click "Generate AI Image" to create one.
+              </div>
+            ) : (
+              <div className="grid grid-cols-5 gap-2">
+                <button
+                  onClick={() => setActiveImage(null)}
+                  className={`aspect-square rounded-md border-2 grid place-items-center text-xs font-medium transition-all ${!activeImage ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary/50"}`}
+                  title="No image"
+                >
+                  <ImageOff className="size-4 text-muted-foreground" />
+                </button>
+                {productImages.map((img) => {
+                  const active = activeImage === img.image_url;
+                  return (
+                    <button
+                      key={img.id}
+                      onClick={() => setActiveImage(img.image_url)}
+                      className={`aspect-square rounded-md border-2 overflow-hidden transition-all ${active ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary/50"}`}
+                    >
+                      <img src={img.image_url} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {selected && (
           <ShareBar
             targetRef={canvasRef}
