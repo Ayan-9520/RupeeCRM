@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, Link, useLocation } from "@tanstack/react-router";
-import { Users, CalendarCheck, Wallet2, FileText } from "lucide-react";
+import { Users, CalendarCheck, Wallet2, FileText, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/hrms")({
@@ -12,6 +12,7 @@ const TABS = [
   { to: "/dashboard/hrms/attendance", label: "Attendance", icon: CalendarCheck },
   { to: "/dashboard/hrms/payroll", label: "Payroll", icon: Wallet2 },
   { to: "/dashboard/hrms/payslips", label: "Payslips", icon: FileText },
+  { to: "/dashboard/hrms/billing", label: "Billing", icon: Receipt },
 ];
 
 function HrmsLayout() {
