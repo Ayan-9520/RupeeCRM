@@ -98,6 +98,7 @@ function Leadboard() {
       .eq("status", "available");
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
+    else if (sort === "oldest") q = q.order("created_at", { ascending: true });
     else if (sort === "price_asc") q = q.order("price", { ascending: true });
     else if (sort === "price_desc") q = q.order("price", { ascending: false });
     if (city.trim()) q = q.ilike("city", `%${city.trim()}%`);
@@ -105,13 +106,18 @@ function Leadboard() {
     if (productTypeId !== "all") q = q.eq("product_type_id", productTypeId);
     if (score !== "all") q = q.eq("score", score as "cold" | "warm" | "hot");
     if (maxBudget && Number(maxBudget) > 0) q = q.lte("price", Number(maxBudget));
+    const tr = TIME_RANGES.find((r) => r.key === timeRange);
+    if (tr && tr.hours > 0) {
+      const since = new Date(Date.now() - tr.hours * 3600_000).toISOString();
+      q = q.gte("created_at", since);
+    }
     const { data, error } = await q;
     if (error) toast.error(error.message);
     else setLeads((data ?? []) as Lead[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget, sort]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
 
   const refreshStats = async () => {
     if (!user) return;
