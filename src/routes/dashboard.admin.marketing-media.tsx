@@ -12,7 +12,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { PRODUCT_LABEL, type MarketingProduct } from "@/lib/marketing";
+import { PRODUCT_LABEL } from "@/lib/marketing";
+import type { MarketingProduct } from "@/lib/marketing";
 import { Loader2, Upload, Trash2, ArrowUp, ArrowDown, Image as ImageIcon, Video, Save } from "lucide-react";
 import { toast } from "sonner";
 
