@@ -10,10 +10,10 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LearnEarnRouteImport } from './routes/learn-earn'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LearnEarnIndexRouteImport } from './routes/learn-earn.index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
 import { Route as LearnQuizSlugRouteImport } from './routes/learn-quiz.$slug'
 import { Route as LearnEarnSlugRouteImport } from './routes/learn-earn.$slug'
@@ -60,11 +60,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LearnEarnRoute = LearnEarnRouteImport.update({
-  id: '/learn-earn',
-  path: '/learn-earn',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -80,6 +75,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LearnEarnIndexRoute = LearnEarnIndexRouteImport.update({
+  id: '/learn-earn/',
+  path: '/learn-earn/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -91,9 +91,9 @@ const LearnQuizSlugRoute = LearnQuizSlugRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const LearnEarnSlugRoute = LearnEarnSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => LearnEarnRoute,
+  id: '/learn-earn/$slug',
+  path: '/learn-earn/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardWorkspaceRoute = DashboardWorkspaceRouteImport.update({
   id: '/workspace',
@@ -291,7 +291,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/learn-earn': typeof LearnEarnRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
@@ -312,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/learn-earn/': typeof LearnEarnIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -337,7 +337,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/learn-earn': typeof LearnEarnRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
@@ -356,6 +355,7 @@ export interface FileRoutesByTo {
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/learn-earn': typeof LearnEarnIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -383,7 +383,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/learn-earn': typeof LearnEarnRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
@@ -404,6 +403,7 @@ export interface FileRoutesById {
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/learn-earn/': typeof LearnEarnIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -432,7 +432,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
-    | '/learn-earn'
     | '/reset-password'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -453,6 +452,7 @@ export interface FileRouteTypes {
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
     | '/dashboard/'
+    | '/learn-earn/'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -478,7 +478,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/learn-earn'
     | '/reset-password'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -497,6 +496,7 @@ export interface FileRouteTypes {
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
     | '/dashboard'
+    | '/learn-earn'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -523,7 +523,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
-    | '/learn-earn'
     | '/reset-password'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -544,6 +543,7 @@ export interface FileRouteTypes {
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
     | '/dashboard/'
+    | '/learn-earn/'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -571,9 +571,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
   DashboardRoute: typeof DashboardRouteWithChildren
-  LearnEarnRoute: typeof LearnEarnRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
+  LearnEarnSlugRoute: typeof LearnEarnSlugRoute
   LearnQuizSlugRoute: typeof LearnQuizSlugRoute
+  LearnEarnIndexRoute: typeof LearnEarnIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -583,13 +584,6 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/learn-earn': {
-      id: '/learn-earn'
-      path: '/learn-earn'
-      fullPath: '/learn-earn'
-      preLoaderRoute: typeof LearnEarnRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -613,6 +607,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/learn-earn/': {
+      id: '/learn-earn/'
+      path: '/learn-earn'
+      fullPath: '/learn-earn/'
+      preLoaderRoute: typeof LearnEarnIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/': {
       id: '/dashboard/'
       path: '/'
@@ -629,10 +630,10 @@ declare module '@tanstack/react-router' {
     }
     '/learn-earn/$slug': {
       id: '/learn-earn/$slug'
-      path: '/$slug'
+      path: '/learn-earn/$slug'
       fullPath: '/learn-earn/$slug'
       preLoaderRoute: typeof LearnEarnSlugRouteImport
-      parentRoute: typeof LearnEarnRoute
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/workspace': {
       id: '/dashboard/workspace'
@@ -1010,25 +1011,14 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
 )
 
-interface LearnEarnRouteChildren {
-  LearnEarnSlugRoute: typeof LearnEarnSlugRoute
-}
-
-const LearnEarnRouteChildren: LearnEarnRouteChildren = {
-  LearnEarnSlugRoute: LearnEarnSlugRoute,
-}
-
-const LearnEarnRouteWithChildren = LearnEarnRoute._addFileChildren(
-  LearnEarnRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
   DashboardRoute: DashboardRouteWithChildren,
-  LearnEarnRoute: LearnEarnRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
+  LearnEarnSlugRoute: LearnEarnSlugRoute,
   LearnQuizSlugRoute: LearnQuizSlugRoute,
+  LearnEarnIndexRoute: LearnEarnIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
