@@ -23,6 +23,7 @@ import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.sub
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardMyLeadsRouteImport } from './routes/dashboard.my-leads'
 import { Route as DashboardMarketingRouteImport } from './routes/dashboard.marketing'
+import { Route as DashboardLearnRouteImport } from './routes/dashboard.learn'
 import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadboard'
 import { Route as DashboardHrmsRouteImport } from './routes/dashboard.hrms'
 import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
@@ -120,6 +121,11 @@ const DashboardMyLeadsRoute = DashboardMyLeadsRouteImport.update({
 const DashboardMarketingRoute = DashboardMarketingRouteImport.update({
   id: '/marketing',
   path: '/marketing',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardLearnRoute = DashboardLearnRouteImport.update({
+  id: '/learn',
+  path: '/learn',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardLeadboardRoute = DashboardLeadboardRouteImport.update({
@@ -282,6 +288,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/learn': typeof DashboardLearnRoute
   '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -324,6 +331,7 @@ export interface FileRoutesByTo {
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/learn': typeof DashboardLearnRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
@@ -368,6 +376,7 @@ export interface FileRoutesById {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/learn': typeof DashboardLearnRoute
   '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -414,6 +423,7 @@ export interface FileRouteTypes {
     | '/dashboard/earnings'
     | '/dashboard/hrms'
     | '/dashboard/leadboard'
+    | '/dashboard/learn'
     | '/dashboard/marketing'
     | '/dashboard/my-leads'
     | '/dashboard/settings'
@@ -456,6 +466,7 @@ export interface FileRouteTypes {
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/leadboard'
+    | '/dashboard/learn'
     | '/dashboard/my-leads'
     | '/dashboard/settings'
     | '/dashboard/submissions'
@@ -499,6 +510,7 @@ export interface FileRouteTypes {
     | '/dashboard/earnings'
     | '/dashboard/hrms'
     | '/dashboard/leadboard'
+    | '/dashboard/learn'
     | '/dashboard/marketing'
     | '/dashboard/my-leads'
     | '/dashboard/settings'
@@ -637,6 +649,13 @@ declare module '@tanstack/react-router' {
       path: '/marketing'
       fullPath: '/dashboard/marketing'
       preLoaderRoute: typeof DashboardMarketingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/learn': {
+      id: '/dashboard/learn'
+      path: '/learn'
+      fullPath: '/dashboard/learn'
+      preLoaderRoute: typeof DashboardLearnRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/leadboard': {
@@ -904,6 +923,7 @@ interface DashboardRouteChildren {
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren
   DashboardLeadboardRoute: typeof DashboardLeadboardRoute
+  DashboardLearnRoute: typeof DashboardLearnRoute
   DashboardMarketingRoute: typeof DashboardMarketingRouteWithChildren
   DashboardMyLeadsRoute: typeof DashboardMyLeadsRouteWithChildren
   DashboardSettingsRoute: typeof DashboardSettingsRoute
@@ -928,6 +948,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardHrmsRoute: DashboardHrmsRouteWithChildren,
   DashboardLeadboardRoute: DashboardLeadboardRoute,
+  DashboardLearnRoute: DashboardLearnRoute,
   DashboardMarketingRoute: DashboardMarketingRouteWithChildren,
   DashboardMyLeadsRoute: DashboardMyLeadsRouteWithChildren,
   DashboardSettingsRoute: DashboardSettingsRoute,
