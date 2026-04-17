@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart } from "lucide-react";
+import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles } from "lucide-react";
+import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
   head: () => ({ meta: [{ title: "Leadboard Marketplace — LeadMines" }] }),
@@ -15,40 +16,65 @@ type Lead = {
   applicant_name: string;
   masked_phone: string;
   city: string;
-  loan_type: string;
   loan_amount: number;
   monthly_income: number | null;
   score: "cold" | "warm" | "hot";
   price: number;
-  source: string | null;
   status: string;
+  product_category: ProductCategory;
+  product_subtype: string | null;
+  product_type_id: string | null;
 };
 
-const LOAN_TYPES = ["all", "personal", "home", "business", "credit_card", "insurance", "mutual_fund"];
 const SCORES = ["all", "hot", "warm", "cold"];
 
-export default function Leadboard() {
+function Leadboard() {
   const { user } = useAuth();
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("");
-  const [type, setType] = useState("all");
+  const [category, setCategory] = useState<"all" | ProductCategory>("all");
+  const [productTypeId, setProductTypeId] = useState<"all" | string>("all");
   const [score, setScore] = useState("all");
+  const [maxBudget, setMaxBudget] = useState<string>("");
   const [buying, setBuying] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from("product_types").select("*").eq("enabled", true).order("display_order");
+      setProductTypes((data ?? []) as ProductType[]);
+    })();
+  }, []);
+
+  const filteredTypes = useMemo(
+    () => (category === "all" ? productTypes : productTypes.filter((p) => p.category === category)),
+    [productTypes, category],
+  );
 
   const load = async () => {
     setLoading(true);
-    let q = supabase.from("leads").select("*").eq("status", "available").order("score", { ascending: false }).order("created_at", { ascending: false });
+    let q = supabase
+      .from("leads")
+      .select("id,applicant_name,masked_phone,city,loan_amount,monthly_income,score,price,status,product_category,product_subtype,product_type_id")
+      .eq("status", "available")
+      .order("score", { ascending: false })
+      .order("created_at", { ascending: false });
     if (city.trim()) q = q.ilike("city", `%${city.trim()}%`);
-    if (type !== "all") q = q.eq("loan_type", type as "personal" | "home" | "business" | "credit_card" | "insurance" | "mutual_fund");
+    if (category !== "all") q = q.eq("product_category", category);
+    if (productTypeId !== "all") q = q.eq("product_type_id", productTypeId);
     if (score !== "all") q = q.eq("score", score as "cold" | "warm" | "hot");
+    if (maxBudget && Number(maxBudget) > 0) q = q.lte("price", Number(maxBudget));
     const { data, error } = await q;
     if (error) toast.error(error.message);
     else setLeads((data ?? []) as Lead[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, type, score]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget]);
+
+  // reset sub-type when category changes
+  useEffect(() => { setProductTypeId("all"); }, [category]);
 
   const buy = async (lead: Lead) => {
     if (!user) return;
@@ -64,22 +90,33 @@ export default function Leadboard() {
     load();
   };
 
+  const typeMap = useMemo(() => Object.fromEntries(productTypes.map((p) => [p.id, p])) as Record<string, ProductType>, [productTypes]);
+
   return (
     <div className="space-y-6 max-w-7xl">
       <div>
         <h1 className="font-display text-2xl lg:text-3xl font-bold">Leadboard Marketplace</h1>
-        <p className="text-muted-foreground mt-1">AI-verified financial leads. Filter, preview, and purchase with your wallet.</p>
+        <p className="text-muted-foreground mt-1">Loans · Insurance · Credit Cards · Investments — all in one feed.</p>
       </div>
 
       <div className="rounded-2xl bg-card border border-border p-4 shadow-card">
         <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
           <Filter className="size-4 text-accent" /> Filters
         </div>
-        <div className="grid sm:grid-cols-3 gap-3">
-          <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Filter by city…" className="input-base" />
-          <select value={type} onChange={(e) => setType(e.target.value)} className="input-base">
-            {LOAN_TYPES.map((t) => <option key={t} value={t}>{t === "all" ? "All loan types" : labelize(t)}</option>)}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <select value={category} onChange={(e) => setCategory(e.target.value as typeof category)} className="input-base">
+            <option value="all">All categories</option>
+            <option value="loan">Loans</option>
+            <option value="insurance">Insurance</option>
+            <option value="credit_card">Credit Cards</option>
+            <option value="investment">Investments</option>
           </select>
+          <select value={productTypeId} onChange={(e) => setProductTypeId(e.target.value)} className="input-base">
+            <option value="all">All sub-types</option>
+            {filteredTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+          <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City…" className="input-base" />
+          <input value={maxBudget} onChange={(e) => setMaxBudget(e.target.value)} type="number" placeholder="Max ₹ price" className="input-base" />
           <select value={score} onChange={(e) => setScore(e.target.value)} className="input-base">
             {SCORES.map((s) => <option key={s} value={s}>{s === "all" ? "All scores" : s.toUpperCase()}</option>)}
           </select>
@@ -95,7 +132,7 @@ export default function Leadboard() {
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {leads.map((lead) => (
-            <LeadCard key={lead.id} lead={lead} onBuy={buy} buying={buying === lead.id} />
+            <LeadCard key={lead.id} lead={lead} type={lead.product_type_id ? typeMap[lead.product_type_id] : undefined} onBuy={buy} buying={buying === lead.id} />
           ))}
         </div>
       )}
@@ -103,15 +140,33 @@ export default function Leadboard() {
   );
 }
 
-function LeadCard({ lead, onBuy, buying }: { lead: Lead; onBuy: (l: Lead) => void; buying: boolean }) {
+function LeadCard({ lead, type, onBuy, buying }: { lead: Lead; type?: ProductType; onBuy: (l: Lead) => void; buying: boolean }) {
   const ScoreIcon = lead.score === "hot" ? Flame : lead.score === "warm" ? Sun : Snowflake;
   const scoreColor =
     lead.score === "hot" ? "bg-orange-500/15 text-orange-600 dark:text-orange-400" :
     lead.score === "warm" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" :
     "bg-blue-500/15 text-blue-600 dark:text-blue-400";
 
+  const meta = CATEGORY_META[lead.product_category];
+
   return (
     <div className="rounded-2xl bg-card border border-border p-5 shadow-card hover:border-accent/50 transition-smooth flex flex-col">
+      <div className="flex items-center gap-1.5 flex-wrap mb-3">
+        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${meta.chipBg} ${meta.chipText}`}>
+          {meta.label}
+        </span>
+        {type && (
+          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">
+            {type.name}
+          </span>
+        )}
+        {type?.high_demand && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400">
+            <Sparkles className="size-2.5" /> Hot
+          </span>
+        )}
+      </div>
+
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="font-semibold truncate">{lead.applicant_name}</h3>
@@ -126,7 +181,7 @@ function LeadCard({ lead, onBuy, buying }: { lead: Lead; onBuy: (l: Lead) => voi
 
       <div className="mt-4 space-y-1.5 text-sm">
         <Row icon={MapPin} text={lead.city} />
-        <Row icon={Banknote} text={`${labelize(lead.loan_type)} • ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
+        <Row icon={Banknote} text={`Ticket: ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
         {lead.monthly_income && <Row icon={Banknote} text={`Income: ₹${lead.monthly_income.toLocaleString("en-IN")}/mo`} />}
       </div>
 
@@ -155,8 +210,4 @@ function Row({ icon: Icon, text }: { icon: React.ComponentType<{ className?: str
       <span className="truncate">{text}</span>
     </div>
   );
-}
-
-function labelize(s: string) {
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
