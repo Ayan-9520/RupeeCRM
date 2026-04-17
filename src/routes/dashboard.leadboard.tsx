@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight, Clock, Zap } from "lucide-react";
+import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight, Clock, Zap, RefreshCw } from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
 
@@ -32,11 +32,21 @@ type Lead = {
 const SCORES = ["all", "hot", "warm", "cold"];
 const SORTS = [
   { key: "newest", label: "Latest leads" },
+  { key: "oldest", label: "Oldest leads" },
   { key: "score", label: "Hottest first" },
   { key: "price_asc", label: "Price: low to high" },
   { key: "price_desc", label: "Price: high to low" },
 ] as const;
 type SortKey = (typeof SORTS)[number]["key"];
+
+const TIME_RANGES = [
+  { key: "all", label: "Any time", hours: 0 },
+  { key: "1h", label: "Last 1 hour", hours: 1 },
+  { key: "24h", label: "Last 24 hours", hours: 24 },
+  { key: "3d", label: "Last 3 days", hours: 72 },
+  { key: "7d", label: "Last 7 days", hours: 168 },
+] as const;
+type TimeRangeKey = (typeof TIME_RANGES)[number]["key"];
 
 const QUICK_RECHARGE = [500, 1000, 2500, 5000];
 const LOW_BALANCE_THRESHOLD = 300;
@@ -52,8 +62,15 @@ function Leadboard() {
   const [score, setScore] = useState("all");
   const [maxBudget, setMaxBudget] = useState<string>("");
   const [sort, setSort] = useState<SortKey>("newest");
+  const [timeRange, setTimeRange] = useState<TimeRangeKey>("all");
   const [buying, setBuying] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
+  // re-render every 30s so relative timestamps stay live
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   // purchased leads in this session: id -> { full_phone }
   const [purchased, setPurchased] = useState<Record<string, { full_phone: string }>>({});
@@ -81,6 +98,7 @@ function Leadboard() {
       .eq("status", "available");
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
+    else if (sort === "oldest") q = q.order("created_at", { ascending: true });
     else if (sort === "price_asc") q = q.order("price", { ascending: true });
     else if (sort === "price_desc") q = q.order("price", { ascending: false });
     if (city.trim()) q = q.ilike("city", `%${city.trim()}%`);
@@ -88,13 +106,18 @@ function Leadboard() {
     if (productTypeId !== "all") q = q.eq("product_type_id", productTypeId);
     if (score !== "all") q = q.eq("score", score as "cold" | "warm" | "hot");
     if (maxBudget && Number(maxBudget) > 0) q = q.lte("price", Number(maxBudget));
+    const tr = TIME_RANGES.find((r) => r.key === timeRange);
+    if (tr && tr.hours > 0) {
+      const since = new Date(Date.now() - tr.hours * 3600_000).toISOString();
+      q = q.gte("created_at", since);
+    }
     const { data, error } = await q;
     if (error) toast.error(error.message);
     else setLeads((data ?? []) as Lead[]);
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget, sort]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
 
   const refreshStats = async () => {
     if (!user) return;
@@ -214,13 +237,21 @@ function Leadboard() {
             <Filter className="size-4 text-accent" /> Filters
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => { load(); refreshStats(); }}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-card hover:bg-secondary text-xs font-semibold transition-smooth disabled:opacity-50"
+              title="Refresh leads"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </button>
             <ArrowUpDown className="size-4 text-muted-foreground" />
             <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="input-base !h-8 !py-0 text-xs">
               {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </div>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <select value={category} onChange={(e) => setCategory(e.target.value as typeof category)} className="input-base">
             <option value="all">All categories</option>
             <option value="loan">Loans</option>
@@ -236,6 +267,9 @@ function Leadboard() {
           <input value={maxBudget} onChange={(e) => setMaxBudget(e.target.value)} type="number" placeholder="Max ₹ price" className="input-base" />
           <select value={score} onChange={(e) => setScore(e.target.value)} className="input-base">
             {SCORES.map((s) => <option key={s} value={s}>{s === "all" ? "All scores" : s.toUpperCase()}</option>)}
+          </select>
+          <select value={timeRange} onChange={(e) => setTimeRange(e.target.value as TimeRangeKey)} className="input-base">
+            {TIME_RANGES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
           </select>
         </div>
       </div>
@@ -256,6 +290,7 @@ function Leadboard() {
               onBuy={buy}
               buying={buying === lead.id}
               purchased={purchased[lead.id]}
+              now={now}
             />
           ))}
         </div>
@@ -278,26 +313,28 @@ function Leadboard() {
   );
 }
 
-function formatRelative(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
+function formatRelative(iso: string, nowMs: number = Date.now()): string {
+  const then = new Date(iso).getTime();
+  const diffMs = Math.max(0, nowMs - then);
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata",
+  });
 }
 
 function LeadCard({
-  lead, type, onBuy, buying, purchased,
+  lead, type, onBuy, buying, purchased, now,
 }: {
   lead: Lead;
   type?: ProductType;
   onBuy: (l: Lead) => void;
   buying: boolean;
   purchased?: { full_phone: string };
+  now: number;
 }) {
   const ScoreIcon = lead.score === "hot" ? Flame : lead.score === "warm" ? Sun : Snowflake;
   const scoreColor =
@@ -308,9 +345,10 @@ function LeadCard({
   const meta = CATEGORY_META[lead.product_category];
   const isPurchased = !!purchased;
 
-  const ageHours = (Date.now() - new Date(lead.created_at).getTime()) / 36e5;
-  const isFresh = ageHours < 12;
-  const isNew = ageHours < 24;
+  const ageHours = (now - new Date(lead.created_at).getTime()) / 36e5;
+  const isVeryNew = ageHours < 1;       // <1 hour → "New" badge
+  const isFresh = ageHours < 12;        // <12 hours → "Fresh" badge
+  const showCornerBadge = ageHours < 24;
 
   return (
     <div className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
@@ -330,8 +368,12 @@ function LeadCard({
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
           <Flame className="size-3" /> Hot lead
         </div>
-      ) : isNew && (
-        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
+      ) : isVeryNew ? (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md animate-pulse">
+          <Sparkles className="size-3" /> New
+        </div>
+      ) : showCornerBadge && (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/90 text-white shadow-md">
           <Sparkles className="size-3" /> New
         </div>
       )}
@@ -375,11 +417,11 @@ function LeadCard({
 
       <div className="mt-4 space-y-1.5 text-sm">
         <Row icon={MapPin} text={lead.city} />
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground" title={new Date(lead.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}>
           <Clock className="size-3 shrink-0" />
-          <span>Added {formatRelative(lead.created_at)}</span>
+          <span>Added {formatRelative(lead.created_at, now)}</span>
           {lead.updated_at && new Date(lead.updated_at).getTime() - new Date(lead.created_at).getTime() > 60000 && (
-            <span className="opacity-70">· Updated {formatRelative(lead.updated_at)}</span>
+            <span className="opacity-70">· Updated {formatRelative(lead.updated_at, now)}</span>
           )}
         </div>
         <Row icon={Banknote} text={`Ticket: ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
