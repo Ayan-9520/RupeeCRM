@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import {
   Loader2, TrendingUp, IndianRupee, Wallet, Clock, CheckCircle2, BadgeCheck,
-  Filter, X, Download, ArrowUpRight,
+  Filter, X, Download, ArrowUpRight, Banknote,
 } from "lucide-react";
+import { WithdrawDialog } from "@/components/dashboard/WithdrawDialog";
 import { CATEGORY_META, calcCommission, type ProductCategory, type ProductType } from "@/lib/products";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RTooltip, CartesianGrid,
