@@ -226,7 +226,43 @@ function AuthPage() {
               {mode === "signup" && (
                 <p className="mt-1 text-xs text-muted-foreground">Use 8+ characters with a mix of letters, numbers & symbols.</p>
               )}
+              {mode === "signin" && (
+                <div className="mt-1.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => { setForgotEmail(email); setForgotOpen((v) => !v); }}
+                    className="text-xs text-accent font-medium hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </Field>
+
+            {mode === "signin" && forgotOpen && (
+              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
+                <div className="text-sm font-medium">Reset your password</div>
+                <p className="text-xs text-muted-foreground">We'll email you a secure link to set a new password.</p>
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="input-base flex-1"
+                    placeholder="you@company.com"
+                  />
+                  <button
+                    type="button"
+                    onClick={onForgot}
+                    disabled={forgotSubmitting}
+                    className="h-10 px-4 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-smooth disabled:opacity-60 inline-flex items-center gap-2"
+                  >
+                    {forgotSubmitting && <Loader2 className="size-3.5 animate-spin" />}
+                    Send link
+                  </button>
+                </div>
+              </div>
+            )}
 
             {mode === "signup" && (
               <Field label="I am a">
