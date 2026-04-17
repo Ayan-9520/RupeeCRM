@@ -384,7 +384,7 @@ function PurchaseCard({ p, pipeline, onOpen }: { p: Purchase; pipeline?: Pipelin
         })()}
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><StickyNote className="size-3" /> {p.notes.length} notes</span>
+        <span className="inline-flex items-center gap-1"><StickyNote className="size-3" /> {p.notes.filter((n) => !(n as { kind?: string }).kind).length} notes</span>
         <span className="inline-flex items-center gap-1">Open <ChevronRight className="size-3" /></span>
       </div>
     </button>
