@@ -35,6 +35,7 @@ import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.ad
 import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
 import { Route as DashboardAdminLeadsRouteImport } from './routes/dashboard.admin.leads'
 import { Route as DashboardHrmsPayslipsIndexRouteImport } from './routes/dashboard.hrms.payslips.index'
+import { Route as DashboardMyLeadsIdApplyRouteImport } from './routes/dashboard.my-leads.$id.apply'
 import { Route as DashboardHrmsPayslipsIdRouteImport } from './routes/dashboard.hrms.payslips.$id'
 import { Route as DashboardHrmsEmployeesIdRouteImport } from './routes/dashboard.hrms.employees.$id'
 
@@ -169,6 +170,11 @@ const DashboardHrmsPayslipsIndexRoute =
     path: '/payslips/',
     getParentRoute: () => DashboardHrmsRoute,
   } as any)
+const DashboardMyLeadsIdApplyRoute = DashboardMyLeadsIdApplyRouteImport.update({
+  id: '/$id/apply',
+  path: '/$id/apply',
+  getParentRoute: () => DashboardMyLeadsRoute,
+} as any)
 const DashboardHrmsPayslipsIdRoute = DashboardHrmsPayslipsIdRouteImport.update({
   id: '/payslips/$id',
   path: '/payslips/$id',
@@ -192,7 +198,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
-  '/dashboard/my-leads': typeof DashboardMyLeadsRoute
+  '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
@@ -209,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
   '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
+  '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
   '/dashboard/hrms/payslips/': typeof DashboardHrmsPayslipsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -220,7 +227,7 @@ export interface FileRoutesByTo {
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
-  '/dashboard/my-leads': typeof DashboardMyLeadsRoute
+  '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/dashboard/hrms': typeof DashboardHrmsIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
   '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
+  '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
   '/dashboard/hrms/payslips': typeof DashboardHrmsPayslipsIndexRoute
 }
 export interface FileRoutesById {
@@ -251,7 +259,7 @@ export interface FileRoutesById {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
-  '/dashboard/my-leads': typeof DashboardMyLeadsRoute
+  '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
@@ -268,6 +276,7 @@ export interface FileRoutesById {
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
   '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
+  '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
   '/dashboard/hrms/payslips/': typeof DashboardHrmsPayslipsIndexRoute
 }
 export interface FileRouteTypes {
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/dashboard/hrms/'
     | '/dashboard/hrms/employees/$id'
     | '/dashboard/hrms/payslips/$id'
+    | '/dashboard/my-leads/$id/apply'
     | '/dashboard/hrms/payslips/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -328,6 +338,7 @@ export interface FileRouteTypes {
     | '/dashboard/hrms'
     | '/dashboard/hrms/employees/$id'
     | '/dashboard/hrms/payslips/$id'
+    | '/dashboard/my-leads/$id/apply'
     | '/dashboard/hrms/payslips'
   id:
     | '__root__'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/dashboard/hrms/'
     | '/dashboard/hrms/employees/$id'
     | '/dashboard/hrms/payslips/$id'
+    | '/dashboard/my-leads/$id/apply'
     | '/dashboard/hrms/payslips/'
   fileRoutesById: FileRoutesById
 }
@@ -551,6 +563,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardHrmsPayslipsIndexRouteImport
       parentRoute: typeof DashboardHrmsRoute
     }
+    '/dashboard/my-leads/$id/apply': {
+      id: '/dashboard/my-leads/$id/apply'
+      path: '/$id/apply'
+      fullPath: '/dashboard/my-leads/$id/apply'
+      preLoaderRoute: typeof DashboardMyLeadsIdApplyRouteImport
+      parentRoute: typeof DashboardMyLeadsRoute
+    }
     '/dashboard/hrms/payslips/$id': {
       id: '/dashboard/hrms/payslips/$id'
       path: '/payslips/$id'
@@ -592,6 +611,17 @@ const DashboardHrmsRouteWithChildren = DashboardHrmsRoute._addFileChildren(
   DashboardHrmsRouteChildren,
 )
 
+interface DashboardMyLeadsRouteChildren {
+  DashboardMyLeadsIdApplyRoute: typeof DashboardMyLeadsIdApplyRoute
+}
+
+const DashboardMyLeadsRouteChildren: DashboardMyLeadsRouteChildren = {
+  DashboardMyLeadsIdApplyRoute: DashboardMyLeadsIdApplyRoute,
+}
+
+const DashboardMyLeadsRouteWithChildren =
+  DashboardMyLeadsRoute._addFileChildren(DashboardMyLeadsRouteChildren)
+
 interface DashboardRouteChildren {
   DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardCallsRoute: typeof DashboardCallsRoute
@@ -600,7 +630,7 @@ interface DashboardRouteChildren {
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren
   DashboardLeadboardRoute: typeof DashboardLeadboardRoute
-  DashboardMyLeadsRoute: typeof DashboardMyLeadsRoute
+  DashboardMyLeadsRoute: typeof DashboardMyLeadsRouteWithChildren
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
   DashboardTrainingRoute: typeof DashboardTrainingRoute
@@ -621,7 +651,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardHrmsRoute: DashboardHrmsRouteWithChildren,
   DashboardLeadboardRoute: DashboardLeadboardRoute,
-  DashboardMyLeadsRoute: DashboardMyLeadsRoute,
+  DashboardMyLeadsRoute: DashboardMyLeadsRouteWithChildren,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSubmissionsRoute: DashboardSubmissionsRoute,
   DashboardTrainingRoute: DashboardTrainingRoute,
