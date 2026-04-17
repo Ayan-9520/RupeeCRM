@@ -62,8 +62,15 @@ function Leadboard() {
   const [score, setScore] = useState("all");
   const [maxBudget, setMaxBudget] = useState<string>("");
   const [sort, setSort] = useState<SortKey>("newest");
+  const [timeRange, setTimeRange] = useState<TimeRangeKey>("all");
   const [buying, setBuying] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
+  // re-render every 30s so relative timestamps stay live
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   // purchased leads in this session: id -> { full_phone }
   const [purchased, setPurchased] = useState<Record<string, { full_phone: string }>>({});
