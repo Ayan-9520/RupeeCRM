@@ -313,26 +313,28 @@ function Leadboard() {
   );
 }
 
-function formatRelative(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime();
+function formatRelative(iso: string, nowMs: number = Date.now()): string {
+  const then = new Date(iso).getTime();
+  const diffMs = Math.max(0, nowMs - then);
   const mins = Math.floor(diffMs / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `${days}d ago`;
-  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-IN", {
+    day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata",
+  });
 }
 
 function LeadCard({
-  lead, type, onBuy, buying, purchased,
+  lead, type, onBuy, buying, purchased, now,
 }: {
   lead: Lead;
   type?: ProductType;
   onBuy: (l: Lead) => void;
   buying: boolean;
   purchased?: { full_phone: string };
+  now: number;
 }) {
   const ScoreIcon = lead.score === "hot" ? Flame : lead.score === "warm" ? Sun : Snowflake;
   const scoreColor =
@@ -343,9 +345,10 @@ function LeadCard({
   const meta = CATEGORY_META[lead.product_category];
   const isPurchased = !!purchased;
 
-  const ageHours = (Date.now() - new Date(lead.created_at).getTime()) / 36e5;
-  const isFresh = ageHours < 12;
-  const isNew = ageHours < 24;
+  const ageHours = (now - new Date(lead.created_at).getTime()) / 36e5;
+  const isVeryNew = ageHours < 1;       // <1 hour → "New" badge
+  const isFresh = ageHours < 12;        // <12 hours → "Fresh" badge
+  const showCornerBadge = ageHours < 24;
 
   return (
     <div className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
