@@ -6,10 +6,14 @@ import { toast } from "sonner";
 import {
   Loader2, Phone, MapPin, Banknote, Search, Filter, X, MessageSquare, Copy,
   CheckCircle2, TrendingUp, ShoppingBag, Wallet, Clock, ChevronRight, StickyNote,
-  CalendarClock, ArrowRight, LayoutGrid, List, Trophy, IndianRupee,
+  CalendarClock, LayoutGrid, List, Trophy, IndianRupee,
 } from "lucide-react";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
+import {
+  DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable,
+  DragOverlay, type DragEndEvent, type DragStartEvent,
+} from "@dnd-kit/core";
 
 export const Route = createFileRoute("/dashboard/my-leads")({
   head: () => ({ meta: [{ title: "My Leads — LeadMines" }] }),
@@ -390,49 +394,176 @@ function KanbanView({
   onMove: (id: string, key: string) => Promise<boolean>;
   onOpen: (id: string) => void;
 }) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+
+  const totalInPipeline = purchases.length;
+  const lastStageKey = pipeline.stages[pipeline.stages.length - 1]?.key;
+  const wonCount = purchases.filter((p) => p.converted || p.pipeline_stage === lastStageKey || /disbursed|policy_issued/i.test(p.pipeline_stage)).length;
+  const rejectedCount = purchases.filter((p) => /reject|lost|cancel/i.test(p.pipeline_stage)).length;
+  const pendingCount = totalInPipeline - wonCount - rejectedCount;
+
+  const handleDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+  const handleDragEnd = async (e: DragEndEvent) => {
+    setActiveId(null);
+    if (!e.over) return;
+    const id = String(e.active.id);
+    const targetStage = String(e.over.id);
+    const purchase = purchases.find((p) => p.id === id);
+    if (!purchase || purchase.pipeline_stage === targetStage) return;
+    const ok = await onMove(id, targetStage);
+    if (ok) toast.success(`Moved to ${pipeline.stages.find((s) => s.key === targetStage)?.label ?? targetStage}`);
+  };
+
+  const activePurchase = activeId ? purchases.find((p) => p.id === activeId) : null;
+
   return (
-    <div className="overflow-x-auto pb-4">
-      <div className="flex gap-3 min-w-max">
-        {pipeline.stages.map((stage, i) => {
-          const items = purchases.filter((p) => p.pipeline_stage === stage.key);
-          const next = pipeline.stages[i + 1];
-          return (
-            <div key={stage.key} className="w-72 shrink-0 rounded-xl bg-secondary/40 border border-border p-3">
-              <div className="flex items-center justify-between mb-3">
-                <div className="font-semibold text-sm">{stage.label}</div>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border">{items.length}</span>
-              </div>
-              <div className="space-y-2">
-                {items.length === 0 ? (
-                  <div className="text-xs text-muted-foreground/70 text-center py-6 border border-dashed border-border rounded-lg">Empty</div>
-                ) : items.map((p) => (
-                  <div key={p.id} className="rounded-lg bg-card border border-border p-3 shadow-card text-sm">
-                    <button onClick={() => onOpen(p.id)} className="w-full text-left">
-                      <div className="font-semibold truncate">{p.leads?.applicant_name}</div>
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                        <Phone className="size-2.5" /> {p.leads?.full_phone}
-                      </div>
-                      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
-                        <MapPin className="size-2.5" /> {p.leads?.city}
-                      </div>
-                    </button>
-                    {next && (
-                      <button
-                        onClick={() => onMove(p.id, next.key)}
-                        className="mt-2 w-full inline-flex items-center justify-center gap-1 text-[10px] font-bold uppercase py-1 rounded-md bg-accent/10 text-accent hover:bg-accent/20"
-                      >
-                        Move to {next.label} <ArrowRight className="size-3" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+    <div className="space-y-3">
+      {/* Pipeline-scoped performance strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <PipelineStat label="In pipeline" value={totalInPipeline} tone="default" />
+        <PipelineStat label="Won" value={wonCount} tone="success" />
+        <PipelineStat label="Pending" value={pendingCount} tone="amber" />
+        <PipelineStat label="Rejected" value={rejectedCount} tone="danger" />
+      </div>
+
+      <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div className="overflow-x-auto pb-4">
+          <div className="flex gap-3 min-w-max">
+            {pipeline.stages.map((stage) => {
+              const items = purchases.filter((p) => p.pipeline_stage === stage.key);
+              return (
+                <KanbanColumn key={stage.key} stageKey={stage.key} label={stage.label} count={items.length}>
+                  {items.length === 0 ? (
+                    <div className="text-xs text-muted-foreground/70 text-center py-6 border border-dashed border-border rounded-lg">
+                      Drop here
+                    </div>
+                  ) : items.map((p) => (
+                    <KanbanCard key={p.id} purchase={p} pipeline={pipeline} onOpen={onOpen} />
+                  ))}
+                </KanbanColumn>
+              );
+            })}
+          </div>
+        </div>
+        <DragOverlay dropAnimation={null}>
+          {activePurchase ? <KanbanCardInner purchase={activePurchase} pipeline={pipeline} dragging /> : null}
+        </DragOverlay>
+      </DndContext>
+    </div>
+  );
+}
+
+function PipelineStat({ label, value, tone }: { label: string; value: number; tone: "default" | "success" | "amber" | "danger" }) {
+  const cls =
+    tone === "success" ? "text-emerald-600 dark:text-emerald-400"
+    : tone === "amber" ? "text-amber-600 dark:text-amber-400"
+    : tone === "danger" ? "text-red-600 dark:text-red-400"
+    : "text-foreground";
+  return (
+    <div className="rounded-xl bg-card border border-border px-3 py-2 shadow-card">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`font-display text-lg font-bold leading-tight ${cls}`}>{value}</div>
+    </div>
+  );
+}
+
+function KanbanColumn({
+  stageKey, label, count, children,
+}: {
+  stageKey: string; label: string; count: number; children: React.ReactNode;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id: stageKey });
+  const headerTone =
+    /reject|lost|cancel/i.test(stageKey) ? "text-red-600 dark:text-red-400"
+    : /disbursed|policy_issued|approved/i.test(stageKey) ? "text-emerald-700 dark:text-emerald-300"
+    : "text-foreground";
+  return (
+    <div
+      ref={setNodeRef}
+      className={`w-72 shrink-0 rounded-xl border p-3 transition ${
+        isOver ? "bg-accent/10 border-accent" : "bg-secondary/40 border-border"
+      }`}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className={`font-semibold text-sm ${headerTone}`}>{label}</div>
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border">{count}</span>
+      </div>
+      <div className="space-y-2 min-h-[60px]">{children}</div>
+    </div>
+  );
+}
+
+function KanbanCard({ purchase, pipeline, onOpen }: { purchase: Purchase; pipeline: Pipeline; onOpen: (id: string) => void }) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: purchase.id });
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      onClick={(e) => {
+        if (!isDragging) {
+          e.stopPropagation();
+          onOpen(purchase.id);
+        }
+      }}
+      className={`cursor-grab active:cursor-grabbing ${isDragging ? "opacity-30" : ""}`}
+    >
+      <KanbanCardInner purchase={purchase} pipeline={pipeline} />
+    </div>
+  );
+}
+
+function KanbanCardInner({ purchase, pipeline, dragging }: { purchase: Purchase; pipeline?: Pipeline; dragging?: boolean }) {
+  const lead = purchase.leads;
+  if (!lead) return null;
+  const meta = CATEGORY_META[lead.product_category];
+  const scoreCls =
+    lead.score === "hot" ? "bg-red-500/15 text-red-600 dark:text-red-400"
+    : lead.score === "warm" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+    : "bg-blue-500/15 text-blue-700 dark:text-blue-300";
+  const lastActivity = purchase.updated_at ?? purchase.created_at;
+  return (
+    <div className={`rounded-lg bg-card border border-border p-3 shadow-card text-sm ${dragging ? "ring-2 ring-accent shadow-elevated rotate-1" : ""}`}>
+      <div className="flex items-center gap-1 flex-wrap mb-1.5">
+        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>{meta.label}</span>
+        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${scoreCls}`}>{lead.score}</span>
+        {purchase.converted && (
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">Won</span>
+        )}
+      </div>
+      <div className="font-semibold truncate">{lead.applicant_name}</div>
+      {lead.product_subtype && (
+        <div className="text-[11px] text-muted-foreground truncate">{lead.product_subtype}</div>
+      )}
+      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
+        <Banknote className="size-2.5" /> ₹{lead.loan_amount.toLocaleString("en-IN")}
+      </div>
+      <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+        <MapPin className="size-2.5" /> {lead.city}
+      </div>
+      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border text-[10px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1"><Clock className="size-2.5" /> {timeAgo(lastActivity)}</span>
+        {pipeline && purchase.next_followup_at && (
+          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
+            <CalendarClock className="size-2.5" /> {new Date(purchase.next_followup_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+          </span>
+        )}
       </div>
     </div>
   );
+}
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
 }
 
 /* ------------------------------ Drawer ------------------------------ */
