@@ -1,10 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  GraduationCap, Trophy, Award, ArrowRight, Star, Clock, BookOpen,
-  Flame, Target, Crown, TrendingUp,
+  Trophy, Award, ArrowRight, Star, Clock, BookOpen,
+  Flame, Target, Crown, TrendingUp, Sparkles,
 } from "lucide-react";
 import { COURSES, CATEGORY_LABEL, LEVEL_LABEL } from "@/lib/courses";
 import { useAuth } from "@/lib/auth-context";
+import { AITrainerChat } from "@/components/learn/AITrainerChat";
 
 export const Route = createFileRoute("/dashboard/learn")({
   head: () => ({ meta: [{ title: "Learn & Earn — LeadMines Academy" }] }),
@@ -64,6 +65,21 @@ function LearnDashboard() {
           </div>
         </div>
       </div>
+
+      {/* AI TRAINER — full width, hero placement */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-5 text-accent" />
+            <h2 className="font-display text-lg font-bold">Trainer AI</h2>
+            <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent-foreground text-[10px] font-bold uppercase tracking-wider">Live</span>
+          </div>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            Powered by Lovable AI · cites course modules
+          </span>
+        </div>
+        <AITrainerChat />
+      </section>
 
       <div className="grid lg:grid-cols-3 gap-6">
         {/* LEFT — content */}
@@ -198,11 +214,6 @@ function LearnDashboard() {
         </aside>
       </div>
 
-      {/* Footer hint */}
-      <div className="rounded-2xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
-        <GraduationCap className="size-5 mx-auto text-accent mb-2" />
-        Course progress, AI Trainer chat and quiz attempts are wired in <span className="font-semibold text-foreground">Phase 3</span>. This skeleton is what your partners will see today.
-      </div>
     </div>
   );
 }
