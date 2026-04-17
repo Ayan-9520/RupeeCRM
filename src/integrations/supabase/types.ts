@@ -402,50 +402,71 @@ export type Database = {
       }
       marketing_templates: {
         Row: {
+          active_from: string | null
+          active_until: string | null
           body: string | null
+          category: string
           created_at: string
           created_by: string | null
           cta: string
           display_order: number
           enabled: boolean
+          festival: string | null
           headline: string
           id: string
+          is_daily: boolean
+          is_trending: boolean
           kind: Database["public"]["Enums"]["marketing_template_kind"]
           name: string
           product: Database["public"]["Enums"]["marketing_product"]
           subheadline: string | null
+          tags: string[]
           theme: Json
           updated_at: string
         }
         Insert: {
+          active_from?: string | null
+          active_until?: string | null
           body?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
           cta?: string
           display_order?: number
           enabled?: boolean
+          festival?: string | null
           headline: string
           id?: string
+          is_daily?: boolean
+          is_trending?: boolean
           kind?: Database["public"]["Enums"]["marketing_template_kind"]
           name: string
           product?: Database["public"]["Enums"]["marketing_product"]
           subheadline?: string | null
+          tags?: string[]
           theme?: Json
           updated_at?: string
         }
         Update: {
+          active_from?: string | null
+          active_until?: string | null
           body?: string | null
+          category?: string
           created_at?: string
           created_by?: string | null
           cta?: string
           display_order?: number
           enabled?: boolean
+          festival?: string | null
           headline?: string
           id?: string
+          is_daily?: boolean
+          is_trending?: boolean
           kind?: Database["public"]["Enums"]["marketing_template_kind"]
           name?: string
           product?: Database["public"]["Enums"]["marketing_product"]
           subheadline?: string | null
+          tags?: string[]
           theme?: Json
           updated_at?: string
         }
