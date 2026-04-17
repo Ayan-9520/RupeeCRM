@@ -34,15 +34,15 @@ export function Nav() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          <a href="#login" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
+          <Link to="/auth" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
             Sign in
-          </a>
-          <a
-            href="#pricing"
+          </Link>
+          <Link
+            to="/auth"
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-foreground text-background text-sm font-medium hover:bg-foreground/90 transition-smooth shadow-card"
           >
             Get started
-          </a>
+          </Link>
         </div>
 
         <button onClick={() => setOpen(!open)} className="lg:hidden p-2 -mr-2 text-foreground" aria-label="Menu">
@@ -63,9 +63,9 @@ export function Nav() {
                 {l.label}
               </a>
             ))}
-            <a href="#pricing" className="mt-3 py-2.5 text-center rounded-full bg-foreground text-background text-sm font-medium">
+            <Link to="/auth" className="mt-3 py-2.5 text-center rounded-full bg-foreground text-background text-sm font-medium">
               Get started
-            </a>
+            </Link>
           </div>
         </div>
       )}
