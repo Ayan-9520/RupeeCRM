@@ -65,6 +65,78 @@ export type Database = {
           },
         ]
       }
+      certificates: {
+        Row: {
+          badge: string | null
+          certificate_no: string
+          course_slug: string
+          course_title: string
+          id: string
+          issued_at: string
+          pdf_url: string | null
+          score_percent: number
+          user_id: string
+        }
+        Insert: {
+          badge?: string | null
+          certificate_no: string
+          course_slug: string
+          course_title: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+          score_percent: number
+          user_id: string
+        }
+        Update: {
+          badge?: string | null
+          certificate_no?: string
+          course_slug?: string
+          course_title?: string
+          id?: string
+          issued_at?: string
+          pdf_url?: string | null
+          score_percent?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      course_quizzes: {
+        Row: {
+          badge: string | null
+          course_slug: string
+          course_title: string
+          created_at: string
+          enabled: boolean
+          id: string
+          pass_percent: number
+          total_points: number
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          course_slug: string
+          course_title: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          pass_percent?: number
+          total_points?: number
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          course_slug?: string
+          course_title?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          pass_percent?: number
+          total_points?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       disbursals: {
         Row: {
           commission_amount: number
@@ -994,6 +1066,100 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_attempts: {
+        Row: {
+          answers: Json
+          certificate_id: string | null
+          correct_count: number
+          course_slug: string
+          created_at: string
+          id: string
+          passed: boolean
+          points_awarded: number
+          quiz_id: string
+          score_percent: number
+          total_count: number
+          user_id: string
+        }
+        Insert: {
+          answers?: Json
+          certificate_id?: string | null
+          correct_count?: number
+          course_slug: string
+          created_at?: string
+          id?: string
+          passed?: boolean
+          points_awarded?: number
+          quiz_id: string
+          score_percent?: number
+          total_count?: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          certificate_id?: string | null
+          correct_count?: number
+          course_slug?: string
+          created_at?: string
+          id?: string
+          passed?: boolean
+          points_awarded?: number
+          quiz_id?: string
+          score_percent?: number
+          total_count?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "course_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          display_order: number
+          explanation: string | null
+          id: string
+          options: Json
+          question: string
+          quiz_id: string
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string
+          display_order?: number
+          explanation?: string | null
+          id?: string
+          options: Json
+          question: string
+          quiz_id: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          display_order?: number
+          explanation?: string | null
+          id?: string
+          options?: Json
+          question?: string
+          quiz_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_questions_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "course_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salary_structures: {
         Row: {
           basic: number
@@ -1062,6 +1228,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_points: {
+        Row: {
+          badges: string[]
+          level: string
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          badges?: string[]
+          level?: string
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          badges?: string[]
+          level?: string
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
@@ -1570,6 +1760,10 @@ export type Database = {
           _method: Database["public"]["Enums"]["payout_method"]
           _upi_id?: string
         }
+        Returns: Json
+      }
+      submit_quiz: {
+        Args: { _answers: Json; _course_slug: string }
         Returns: Json
       }
       submit_refund: {
