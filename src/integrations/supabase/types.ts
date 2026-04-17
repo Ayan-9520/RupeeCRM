@@ -145,30 +145,45 @@ export type Database = {
       }
       lead_purchases: {
         Row: {
+          converted: boolean
           created_at: string
+          deal_value: number
           dsa_id: string
           id: string
           lead_id: string
+          next_followup_at: string | null
+          notes: Json
           pipeline_stage: string
           price_paid: number
+          updated_at: string
           workspace_id: string | null
         }
         Insert: {
+          converted?: boolean
           created_at?: string
+          deal_value?: number
           dsa_id: string
           id?: string
           lead_id: string
+          next_followup_at?: string | null
+          notes?: Json
           pipeline_stage?: string
           price_paid: number
+          updated_at?: string
           workspace_id?: string | null
         }
         Update: {
+          converted?: boolean
           created_at?: string
+          deal_value?: number
           dsa_id?: string
           id?: string
           lead_id?: string
+          next_followup_at?: string | null
+          notes?: Json
           pipeline_stage?: string
           price_paid?: number
+          updated_at?: string
           workspace_id?: string | null
         }
         Relationships: [
