@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as LearnQuizSlugRouteImport } from './routes/learn-quiz.$slug'
 import { Route as LearnEarnSlugRouteImport } from './routes/learn-earn.$slug'
 import { Route as DashboardWorkspaceRouteImport } from './routes/dashboard.workspace'
 import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
@@ -28,6 +29,7 @@ import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadb
 import { Route as DashboardHrmsRouteImport } from './routes/dashboard.hrms'
 import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
 import { Route as DashboardCommunityRouteImport } from './routes/dashboard.community'
+import { Route as DashboardCertificatesRouteImport } from './routes/dashboard.certificates'
 import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
 import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
@@ -82,6 +84,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
+} as any)
+const LearnQuizSlugRoute = LearnQuizSlugRouteImport.update({
+  id: '/learn-quiz/$slug',
+  path: '/learn-quiz/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LearnEarnSlugRoute = LearnEarnSlugRouteImport.update({
   id: '/$slug',
@@ -146,6 +153,11 @@ const DashboardEarningsRoute = DashboardEarningsRouteImport.update({
 const DashboardCommunityRoute = DashboardCommunityRouteImport.update({
   id: '/community',
   path: '/community',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardCertificatesRoute = DashboardCertificatesRouteImport.update({
+  id: '/certificates',
+  path: '/certificates',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardCasesRoute = DashboardCasesRouteImport.update({
@@ -284,6 +296,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/certificates': typeof DashboardCertificatesRoute
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
@@ -297,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
+  '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -328,6 +342,7 @@ export interface FileRoutesByTo {
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/certificates': typeof DashboardCertificatesRoute
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
@@ -339,6 +354,7 @@ export interface FileRoutesByTo {
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
+  '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -372,6 +388,7 @@ export interface FileRoutesById {
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/certificates': typeof DashboardCertificatesRoute
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
@@ -385,6 +402,7 @@ export interface FileRoutesById {
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
+  '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -419,6 +437,7 @@ export interface FileRouteTypes {
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
+    | '/dashboard/certificates'
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/hrms'
@@ -432,6 +451,7 @@ export interface FileRouteTypes {
     | '/dashboard/wallet'
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
+    | '/learn-quiz/$slug'
     | '/dashboard/'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -463,6 +483,7 @@ export interface FileRouteTypes {
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
+    | '/dashboard/certificates'
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/leadboard'
@@ -474,6 +495,7 @@ export interface FileRouteTypes {
     | '/dashboard/wallet'
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
+    | '/learn-quiz/$slug'
     | '/dashboard'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -506,6 +528,7 @@ export interface FileRouteTypes {
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
+    | '/dashboard/certificates'
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/hrms'
@@ -519,6 +542,7 @@ export interface FileRouteTypes {
     | '/dashboard/wallet'
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
+    | '/learn-quiz/$slug'
     | '/dashboard/'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -549,6 +573,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   LearnEarnRoute: typeof LearnEarnRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
+  LearnQuizSlugRoute: typeof LearnQuizSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -594,6 +619,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/learn-quiz/$slug': {
+      id: '/learn-quiz/$slug'
+      path: '/learn-quiz/$slug'
+      fullPath: '/learn-quiz/$slug'
+      preLoaderRoute: typeof LearnQuizSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/learn-earn/$slug': {
       id: '/learn-earn/$slug'
@@ -684,6 +716,13 @@ declare module '@tanstack/react-router' {
       path: '/community'
       fullPath: '/dashboard/community'
       preLoaderRoute: typeof DashboardCommunityRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/certificates': {
+      id: '/dashboard/certificates'
+      path: '/certificates'
+      fullPath: '/dashboard/certificates'
+      preLoaderRoute: typeof DashboardCertificatesRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/cases': {
@@ -919,6 +958,7 @@ interface DashboardRouteChildren {
   DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardCallsRoute: typeof DashboardCallsRoute
   DashboardCasesRoute: typeof DashboardCasesRoute
+  DashboardCertificatesRoute: typeof DashboardCertificatesRoute
   DashboardCommunityRoute: typeof DashboardCommunityRoute
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren
@@ -944,6 +984,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardBillingRoute: DashboardBillingRoute,
   DashboardCallsRoute: DashboardCallsRoute,
   DashboardCasesRoute: DashboardCasesRoute,
+  DashboardCertificatesRoute: DashboardCertificatesRoute,
   DashboardCommunityRoute: DashboardCommunityRoute,
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardHrmsRoute: DashboardHrmsRouteWithChildren,
@@ -987,6 +1028,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   LearnEarnRoute: LearnEarnRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
+  LearnQuizSlugRoute: LearnQuizSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
