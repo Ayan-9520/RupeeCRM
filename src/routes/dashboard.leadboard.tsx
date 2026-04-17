@@ -51,7 +51,7 @@ function Leadboard() {
   const [productTypeId, setProductTypeId] = useState<"all" | string>("all");
   const [score, setScore] = useState("all");
   const [maxBudget, setMaxBudget] = useState<string>("");
-  const [sort, setSort] = useState<SortKey>("score");
+  const [sort, setSort] = useState<SortKey>("newest");
   const [buying, setBuying] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
 
