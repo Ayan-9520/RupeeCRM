@@ -344,6 +344,113 @@ export type Database = {
           },
         ]
       }
+      marketing_campaigns: {
+        Row: {
+          created_at: string
+          custom_text: Json
+          downloads: number
+          id: string
+          kind: Database["public"]["Enums"]["marketing_template_kind"]
+          product: Database["public"]["Enums"]["marketing_product"]
+          referral_code: string | null
+          share_url: string | null
+          shares: number
+          template_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_text?: Json
+          downloads?: number
+          id?: string
+          kind?: Database["public"]["Enums"]["marketing_template_kind"]
+          product?: Database["public"]["Enums"]["marketing_product"]
+          referral_code?: string | null
+          share_url?: string | null
+          shares?: number
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_text?: Json
+          downloads?: number
+          id?: string
+          kind?: Database["public"]["Enums"]["marketing_template_kind"]
+          product?: Database["public"]["Enums"]["marketing_product"]
+          referral_code?: string | null
+          share_url?: string | null
+          shares?: number
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketing_campaigns_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      marketing_templates: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          cta: string
+          display_order: number
+          enabled: boolean
+          headline: string
+          id: string
+          kind: Database["public"]["Enums"]["marketing_template_kind"]
+          name: string
+          product: Database["public"]["Enums"]["marketing_product"]
+          subheadline: string | null
+          theme: Json
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string
+          display_order?: number
+          enabled?: boolean
+          headline: string
+          id?: string
+          kind?: Database["public"]["Enums"]["marketing_template_kind"]
+          name: string
+          product?: Database["public"]["Enums"]["marketing_product"]
+          subheadline?: string | null
+          theme?: Json
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          cta?: string
+          display_order?: number
+          enabled?: boolean
+          headline?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["marketing_template_kind"]
+          name?: string
+          product?: Database["public"]["Enums"]["marketing_product"]
+          subheadline?: string | null
+          theme?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payout_requests: {
         Row: {
           account_holder: string | null
@@ -686,6 +793,66 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      visiting_cards: {
+        Row: {
+          city: string | null
+          company_name: string | null
+          created_at: string
+          designation: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_default: boolean
+          logo_url: string | null
+          phone: string
+          photo_url: string | null
+          products: string[]
+          theme: Json
+          updated_at: string
+          user_id: string
+          website: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          designation?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          phone: string
+          photo_url?: string | null
+          products?: string[]
+          theme?: Json
+          updated_at?: string
+          user_id: string
+          website?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          designation?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_default?: boolean
+          logo_url?: string | null
+          phone?: string
+          photo_url?: string | null
+          products?: string[]
+          theme?: Json
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+          whatsapp?: string | null
         }
         Relationships: []
       }
@@ -1122,6 +1289,17 @@ export type Database = {
         | "credit_card"
         | "insurance"
         | "mutual_fund"
+      marketing_product:
+        | "personal_loan"
+        | "business_loan"
+        | "home_loan"
+        | "lap"
+        | "msme"
+        | "credit_card"
+        | "insurance"
+        | "investment"
+        | "generic"
+      marketing_template_kind: "post" | "reel" | "whatsapp" | "visiting_card"
       payout_method: "bank" | "upi"
       payout_status: "pending" | "approved" | "rejected" | "paid"
       payslip_status: "draft" | "processed" | "paid"
@@ -1304,6 +1482,18 @@ export const Constants = {
         "insurance",
         "mutual_fund",
       ],
+      marketing_product: [
+        "personal_loan",
+        "business_loan",
+        "home_loan",
+        "lap",
+        "msme",
+        "credit_card",
+        "insurance",
+        "investment",
+        "generic",
+      ],
+      marketing_template_kind: ["post", "reel", "whatsapp", "visiting_card"],
       payout_method: ["bank", "upi"],
       payout_status: ["pending", "approved", "rejected", "paid"],
       payslip_status: ["draft", "processed", "paid"],
