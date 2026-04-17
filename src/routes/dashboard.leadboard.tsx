@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight } from "lucide-react";
+import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight, Clock, Zap } from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
 
