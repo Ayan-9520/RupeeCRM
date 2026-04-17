@@ -205,71 +205,125 @@ export type Database = {
       }
       leads: {
         Row: {
+          age: number | null
+          alternate_phone: string | null
           applicant_name: string
+          assigned_to: string | null
+          campaign_name: string | null
+          card_type: string | null
+          cibil_score: number | null
           city: string
+          company_name: string | null
           created_at: string
+          created_by: string | null
           email: string | null
+          employment_type: string | null
+          family_members: number | null
+          follow_up_date: string | null
           full_phone: string
+          gender: string | null
           id: string
+          internal_notes: string | null
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type"]
           masked_phone: string
           monthly_income: number | null
+          next_call_date: string | null
           notes: string | null
           price: number
           product_category: Database["public"]["Enums"]["product_category"]
           product_details: Json
           product_subtype: string | null
           product_type_id: string | null
+          remarks: string | null
+          sale_available: boolean
           score: Database["public"]["Enums"]["lead_score"]
           source: string | null
+          state: string | null
           status: Database["public"]["Enums"]["lead_status"]
+          sum_insured: number | null
           updated_at: string
           workspace_id: string | null
         }
         Insert: {
+          age?: number | null
+          alternate_phone?: string | null
           applicant_name: string
+          assigned_to?: string | null
+          campaign_name?: string | null
+          card_type?: string | null
+          cibil_score?: number | null
           city: string
+          company_name?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string | null
+          employment_type?: string | null
+          family_members?: number | null
+          follow_up_date?: string | null
           full_phone: string
+          gender?: string | null
           id?: string
+          internal_notes?: string | null
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type"]
           masked_phone: string
           monthly_income?: number | null
+          next_call_date?: string | null
           notes?: string | null
           price?: number
           product_category?: Database["public"]["Enums"]["product_category"]
           product_details?: Json
           product_subtype?: string | null
           product_type_id?: string | null
+          remarks?: string | null
+          sale_available?: boolean
           score?: Database["public"]["Enums"]["lead_score"]
           source?: string | null
+          state?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
+          sum_insured?: number | null
           updated_at?: string
           workspace_id?: string | null
         }
         Update: {
+          age?: number | null
+          alternate_phone?: string | null
           applicant_name?: string
+          assigned_to?: string | null
+          campaign_name?: string | null
+          card_type?: string | null
+          cibil_score?: number | null
           city?: string
+          company_name?: string | null
           created_at?: string
+          created_by?: string | null
           email?: string | null
+          employment_type?: string | null
+          family_members?: number | null
+          follow_up_date?: string | null
           full_phone?: string
+          gender?: string | null
           id?: string
+          internal_notes?: string | null
           loan_amount?: number
           loan_type?: Database["public"]["Enums"]["loan_type"]
           masked_phone?: string
           monthly_income?: number | null
+          next_call_date?: string | null
           notes?: string | null
           price?: number
           product_category?: Database["public"]["Enums"]["product_category"]
           product_details?: Json
           product_subtype?: string | null
           product_type_id?: string | null
+          remarks?: string | null
+          sale_available?: boolean
           score?: Database["public"]["Enums"]["lead_score"]
           source?: string | null
+          state?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
+          sum_insured?: number | null
           updated_at?: string
           workspace_id?: string | null
         }
