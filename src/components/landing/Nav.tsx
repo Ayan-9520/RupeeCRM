@@ -5,9 +5,9 @@ import { Menu, X, Sparkles } from "lucide-react";
 const links = [
   { label: "Platform", href: "#platform" },
   { label: "Modules", href: "#modules" },
+  { label: "Products", href: "#products" },
   { label: "How it works", href: "#flow" },
   { label: "Pricing", href: "#pricing" },
-  { label: "Community", href: "#community" },
 ];
 
 export function Nav() {

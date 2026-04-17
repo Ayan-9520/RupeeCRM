@@ -202,6 +202,9 @@ export type Database = {
           monthly_income: number | null
           notes: string | null
           price: number
+          product_category: Database["public"]["Enums"]["product_category"]
+          product_details: Json
+          product_subtype: string | null
           score: Database["public"]["Enums"]["lead_score"]
           source: string | null
           status: Database["public"]["Enums"]["lead_status"]
@@ -221,6 +224,9 @@ export type Database = {
           monthly_income?: number | null
           notes?: string | null
           price?: number
+          product_category?: Database["public"]["Enums"]["product_category"]
+          product_details?: Json
+          product_subtype?: string | null
           score?: Database["public"]["Enums"]["lead_score"]
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
@@ -240,6 +246,9 @@ export type Database = {
           monthly_income?: number | null
           notes?: string | null
           price?: number
+          product_category?: Database["public"]["Enums"]["product_category"]
+          product_details?: Json
+          product_subtype?: string | null
           score?: Database["public"]["Enums"]["lead_score"]
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
@@ -666,6 +675,7 @@ export type Database = {
         | "insurance"
         | "mutual_fund"
       payslip_status: "draft" | "processed" | "paid"
+      product_category: "loan" | "insurance" | "credit_card" | "investment"
       txn_type: "credit" | "debit"
       workspace_plan: "starter" | "growth" | "pro" | "enterprise"
       workspace_role: "owner" | "admin" | "manager" | "employee" | "viewer"
@@ -825,6 +835,7 @@ export const Constants = {
         "mutual_fund",
       ],
       payslip_status: ["draft", "processed", "paid"],
+      product_category: ["loan", "insurance", "credit_card", "investment"],
       txn_type: ["credit", "debit"],
       workspace_plan: ["starter", "growth", "pro", "enterprise"],
       workspace_role: ["owner", "admin", "manager", "employee", "viewer"],
