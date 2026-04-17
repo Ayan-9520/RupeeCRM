@@ -86,8 +86,12 @@ function CourseDetail() {
                 </div>
 
                 <div className="mt-8 flex flex-wrap gap-3">
-                  <Link to="/auth" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background font-semibold shadow-card hover:scale-[1.02] transition-smooth">
-                    Sign in to start <ArrowRight className="size-4" />
+                  <Link
+                    to="/learn-quiz/$slug"
+                    params={{ slug: course.slug }}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background font-semibold shadow-card hover:scale-[1.02] transition-smooth"
+                  >
+                    <Trophy className="size-4" /> Take the quiz
                   </Link>
                   <Link to="/auth" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-card border border-border font-medium hover:border-foreground/30 transition-smooth">
                     Create free account
@@ -178,8 +182,12 @@ function CourseDetail() {
               <Award className="size-8 mx-auto" strokeWidth={2.5} />
               <h3 className="font-display text-xl font-bold mt-3">Pass the quiz with ≥ 70% to earn</h3>
               <div className="font-display text-3xl font-bold mt-1">{course.badge}</div>
-              <Link to="/auth" className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold hover:scale-[1.02] transition-smooth">
-                Start the course <ArrowRight className="size-4" />
+              <Link
+                to="/learn-quiz/$slug"
+                params={{ slug: course.slug }}
+                className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold hover:scale-[1.02] transition-smooth"
+              >
+                Take the quiz <ArrowRight className="size-4" />
               </Link>
             </div>
           </div>
