@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon,
+  Palette, Image as ImageIcon, Award,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -34,6 +34,7 @@ const NAV: NavItem[] = [
   { title: "Marketing", url: "/dashboard/marketing", icon: Megaphone, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Community", url: "/dashboard/community", icon: Megaphone, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Learn & Earn", url: "/dashboard/learn", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
+  { title: "Certificates", url: "/dashboard/certificates", icon: Award, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Training", url: "/dashboard/training", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Users", url: "/dashboard/admin/users", icon: Users, roles: ["admin"] },
   { title: "Add Leads", url: "/dashboard/admin/leads", icon: ListPlus, roles: ["admin"] },
