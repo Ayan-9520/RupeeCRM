@@ -372,11 +372,16 @@ function PurchaseCard({ p, pipeline, onOpen }: { p: Purchase; pipeline?: Pipelin
       <div className="mt-4 space-y-1.5 text-sm text-foreground/80">
         <div className="flex items-center gap-2"><MapPin className="size-3.5 text-muted-foreground" /> {p.leads?.city}</div>
         <div className="flex items-center gap-2"><Banknote className="size-3.5 text-muted-foreground" /> ₹{p.leads?.loan_amount.toLocaleString("en-IN")}</div>
-        {p.next_followup_at && (
-          <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-            <CalendarClock className="size-3.5" /> Follow-up {new Date(p.next_followup_at).toLocaleDateString("en-IN")}
-          </div>
-        )}
+        {p.next_followup_at && (() => {
+          const due = new Date(p.next_followup_at);
+          const overdue = due.getTime() < Date.now();
+          return (
+            <div className={`flex items-center gap-2 ${overdue ? "text-red-600 dark:text-red-400 font-semibold" : "text-amber-600 dark:text-amber-400"}`}>
+              <CalendarClock className="size-3.5" />
+              {overdue ? "Overdue: " : "Follow-up "}{due.toLocaleDateString("en-IN")}
+            </div>
+          );
+        })()}
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1"><StickyNote className="size-3" /> {p.notes.length} notes</span>
