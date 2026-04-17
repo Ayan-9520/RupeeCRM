@@ -58,7 +58,7 @@ function PostsBuilder() {
       ]);
       const list = (tpls ?? []) as unknown as MarketingTemplate[];
       setTemplates(list);
-      setImages((imgs ?? []) as ProductImage[]);
+      setImages(((imgs ?? []) as unknown) as ProductImage[]);
       const code = generateReferralCode(profile?.full_name ?? user.email ?? "user", user.id);
       setBranding({
         name: profile?.full_name ?? user.email?.split("@")[0] ?? "Partner",
