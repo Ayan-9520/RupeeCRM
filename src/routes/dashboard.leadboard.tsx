@@ -67,9 +67,11 @@ function Leadboard() {
     let q = supabase
       .from("leads")
       .select("id,applicant_name,masked_phone,city,loan_amount,monthly_income,score,price,status,product_category,product_subtype,product_type_id")
-      .eq("status", "available")
-      .order("score", { ascending: false })
-      .order("created_at", { ascending: false });
+      .eq("status", "available");
+    if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
+    else if (sort === "newest") q = q.order("created_at", { ascending: false });
+    else if (sort === "price_asc") q = q.order("price", { ascending: true });
+    else if (sort === "price_desc") q = q.order("price", { ascending: false });
     if (city.trim()) q = q.ilike("city", `%${city.trim()}%`);
     if (category !== "all") q = q.eq("product_category", category);
     if (productTypeId !== "all") q = q.eq("product_type_id", productTypeId);
@@ -81,7 +83,26 @@ function Leadboard() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget]);
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget, sort]);
+
+  // Load top stats
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const [totalRes, hotRes, purchRes, walletRes] = await Promise.all([
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "available"),
+        supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "available").eq("score", "hot"),
+        supabase.from("lead_purchases").select("id", { count: "exact", head: true }).eq("dsa_id", user.id),
+        supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle(),
+      ]);
+      setStats({
+        total: totalRes.count ?? 0,
+        hot: hotRes.count ?? 0,
+        purchases: purchRes.count ?? 0,
+        balance: Number(walletRes.data?.balance ?? 0),
+      });
+    })();
+  }, [user, leads.length]);
 
   // reset sub-type when category changes
   useEffect(() => { setProductTypeId("all"); }, [category]);
