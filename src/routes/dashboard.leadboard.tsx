@@ -237,13 +237,21 @@ function Leadboard() {
             <Filter className="size-4 text-accent" /> Filters
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => { load(); refreshStats(); }}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-card hover:bg-secondary text-xs font-semibold transition-smooth disabled:opacity-50"
+              title="Refresh leads"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
+            </button>
             <ArrowUpDown className="size-4 text-muted-foreground" />
             <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="input-base !h-8 !py-0 text-xs">
               {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
             </select>
           </div>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
           <select value={category} onChange={(e) => setCategory(e.target.value as typeof category)} className="input-base">
             <option value="all">All categories</option>
             <option value="loan">Loans</option>
@@ -259,6 +267,9 @@ function Leadboard() {
           <input value={maxBudget} onChange={(e) => setMaxBudget(e.target.value)} type="number" placeholder="Max ₹ price" className="input-base" />
           <select value={score} onChange={(e) => setScore(e.target.value)} className="input-base">
             {SCORES.map((s) => <option key={s} value={s}>{s === "all" ? "All scores" : s.toUpperCase()}</option>)}
+          </select>
+          <select value={timeRange} onChange={(e) => setTimeRange(e.target.value as TimeRangeKey)} className="input-base">
+            {TIME_RANGES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
           </select>
         </div>
       </div>
