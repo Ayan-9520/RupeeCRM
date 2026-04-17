@@ -417,11 +417,11 @@ function LeadCard({
 
       <div className="mt-4 space-y-1.5 text-sm">
         <Row icon={MapPin} text={lead.city} />
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground" title={new Date(lead.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}>
           <Clock className="size-3 shrink-0" />
-          <span>Added {formatRelative(lead.created_at)}</span>
+          <span>Added {formatRelative(lead.created_at, now)}</span>
           {lead.updated_at && new Date(lead.updated_at).getTime() - new Date(lead.created_at).getTime() > 60000 && (
-            <span className="opacity-70">· Updated {formatRelative(lead.updated_at)}</span>
+            <span className="opacity-70">· Updated {formatRelative(lead.updated_at, now)}</span>
           )}
         </div>
         <Row icon={Banknote} text={`Ticket: ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
