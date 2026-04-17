@@ -1,4 +1,5 @@
 import { ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 export function CTA() {
   return (
@@ -13,27 +14,28 @@ export function CTA() {
               Ready to mine your next <span className="text-gradient">₹1 Cr</span>?
             </h2>
             <p className="mt-5 text-white/80 text-lg">
-              Join 12,400+ DSAs already closing more loans with LeadMines. 14-day free trial. No card required.
+              Join 12,400+ DSAs already closing more loans with LeadMines. ₹500 free wallet credit. No card required.
             </p>
 
-            <form className="mt-8 flex flex-col sm:flex-row gap-3 max-w-lg">
-              <input
-                type="email"
-                required
-                placeholder="you@company.com"
-                className="flex-1 px-5 py-3.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md placeholder:text-white/50 text-white focus:outline-none focus:border-[oklch(0.78_0.16_165)] transition-smooth"
-              />
-              <button
-                type="submit"
+            <div className="mt-8 flex flex-col sm:flex-row gap-3">
+              <Link
+                to="/auth"
                 className="group inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-mint-gradient text-primary font-semibold shadow-mint hover:scale-[1.02] transition-smooth"
               >
-                Get started
+                Create your free account
                 <ArrowRight className="size-4 group-hover:translate-x-1 transition-smooth" />
-              </button>
-            </form>
+              </Link>
+              <Link
+                to="/auth"
+                className="inline-flex items-center justify-center px-6 py-3.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-semibold hover:bg-white/15 transition-smooth"
+              >
+                Sign in
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     </section>
   );
 }
+
