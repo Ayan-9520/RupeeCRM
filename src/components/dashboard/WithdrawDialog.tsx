@@ -63,10 +63,10 @@ export function WithdrawDialog({ open, onOpenChange, onSuccess }: Props) {
     const { error } = await supabase.rpc("request_payout", {
       _amount: amt,
       _method: method,
-      _upi_id: method === "upi" ? upi.trim() : null,
-      _bank_account: method === "bank" ? bankAcc.trim() : null,
-      _ifsc: method === "bank" ? ifsc.trim().toUpperCase() : null,
-      _account_holder: method === "bank" ? holder.trim() : null,
+      _upi_id: method === "upi" ? upi.trim() : undefined,
+      _bank_account: method === "bank" ? bankAcc.trim() : undefined,
+      _ifsc: method === "bank" ? ifsc.trim().toUpperCase() : undefined,
+      _account_holder: method === "bank" ? holder.trim() : undefined,
     });
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }

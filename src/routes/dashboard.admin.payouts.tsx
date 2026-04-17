@@ -287,9 +287,9 @@ function ActionDialog({
     const { error } = await supabase.rpc("process_payout", {
       _payout_id: payout.id,
       _action: type,
-      _transaction_ref: type === "paid" ? txnRef.trim() : null,
-      _reject_reason: type === "reject" ? reason.trim() : null,
-      _admin_notes: notes.trim() || null,
+      _transaction_ref: type === "paid" ? txnRef.trim() : undefined,
+      _reject_reason: type === "reject" ? reason.trim() : undefined,
+      _admin_notes: notes.trim() || undefined,
     });
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
