@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   Loader2, Phone, MapPin, Banknote, Search, Filter, X, MessageSquare, Copy,
   CheckCircle2, TrendingUp, ShoppingBag, Wallet, Clock, ChevronRight, StickyNote,
-  CalendarClock, LayoutGrid, List, Trophy, IndianRupee,
+  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText,
 } from "lucide-react";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -384,7 +384,7 @@ function PurchaseCard({ p, pipeline, onOpen }: { p: Purchase; pipeline?: Pipelin
         })()}
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><StickyNote className="size-3" /> {p.notes.length} notes</span>
+        <span className="inline-flex items-center gap-1"><StickyNote className="size-3" /> {p.notes.filter((n) => !(n as { kind?: string }).kind).length} notes</span>
         <span className="inline-flex items-center gap-1">Open <ChevronRight className="size-3" /></span>
       </div>
     </button>
@@ -682,6 +682,21 @@ function LeadDetailDrawer({
           </button>
         </div>
 
+        {/* Process / Apply CTA */}
+        <div className="px-5 pb-2">
+          <Link
+            to="/dashboard/my-leads/$id/apply"
+            params={{ id: purchase.id }}
+            className="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-accent to-accent/80 text-accent-foreground font-bold text-sm shadow-card hover:shadow-elevated transition-smooth"
+          >
+            <FileText className="size-4" />
+            {purchase.notes.some((n) => (n as { kind?: string }).kind === "application_draft")
+              ? "Resume application"
+              : "Start processing application"}
+            <ChevronRight className="size-4" />
+          </Link>
+        </div>
+
         {/* Customer info */}
         <Section title="Customer">
           <Field label="Phone" value={lead.full_phone} />
@@ -793,38 +808,43 @@ function LeadDetailDrawer({
         </Section>
 
         {/* Notes / activity */}
-        <Section title={`Notes & activity (${purchase.notes.length})`}>
-          <div className="col-span-2 space-y-3">
-            <div className="flex gap-2">
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Add a note (call summary, client requirement, blocker…)"
-                rows={2}
-                className="input-base flex-1 !h-auto py-2"
-              />
-              <button onClick={addNote} disabled={busy || !noteText.trim()} className="px-4 self-stretch rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50">
-                Add
-              </button>
-            </div>
-            {purchase.notes.length === 0 ? (
-              <div className="text-center text-xs text-muted-foreground py-6 border border-dashed border-border rounded-xl">
-                No notes yet — add the first one above.
+        {(() => {
+          const visibleNotes = purchase.notes.filter((n) => !(n as { kind?: string }).kind);
+          return (
+            <Section title={`Notes & activity (${visibleNotes.length})`}>
+              <div className="col-span-2 space-y-3">
+                <div className="flex gap-2">
+                  <textarea
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder="Add a note (call summary, client requirement, blocker…)"
+                    rows={2}
+                    className="input-base flex-1 !h-auto py-2"
+                  />
+                  <button onClick={addNote} disabled={busy || !noteText.trim()} className="px-4 self-stretch rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50">
+                    Add
+                  </button>
+                </div>
+                {visibleNotes.length === 0 ? (
+                  <div className="text-center text-xs text-muted-foreground py-6 border border-dashed border-border rounded-xl">
+                    No notes yet — add the first one above.
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {[...visibleNotes].reverse().map((n, i) => (
+                      <li key={i} className="rounded-xl border border-border bg-secondary/40 p-3">
+                        <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                          <Clock className="size-3" /> {new Date(n.at).toLocaleString("en-IN")}
+                        </div>
+                        <div className="text-sm mt-1 whitespace-pre-wrap">{n.text}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
-            ) : (
-              <ul className="space-y-2">
-                {[...purchase.notes].reverse().map((n, i) => (
-                  <li key={i} className="rounded-xl border border-border bg-secondary/40 p-3">
-                    <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                      <Clock className="size-3" /> {new Date(n.at).toLocaleString("en-IN")}
-                    </div>
-                    <div className="text-sm mt-1 whitespace-pre-wrap">{n.text}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </Section>
+            </Section>
+          );
+        })()}
 
         <div className="h-6" />
       </div>
