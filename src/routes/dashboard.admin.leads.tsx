@@ -358,7 +358,7 @@ function NewLeadDrawer({
       internal_notes: form.internal_notes || null,
     } as const;
 
-    const { error } = await supabase.from("leads").insert(insertRow);
+    const { error } = await supabase.from("leads").insert([insertRow]);
     setSaving(false);
 
     if (error) {
