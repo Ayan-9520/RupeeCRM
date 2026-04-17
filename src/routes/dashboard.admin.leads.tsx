@@ -9,6 +9,7 @@ import {
   Tag, Megaphone, FileText, ChevronRight, X,
 } from "lucide-react";
 import { CATEGORIES, CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
+import type { Json } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/dashboard/admin/leads")({
   head: () => ({ meta: [{ title: "Admin · Leads — LeadMines" }] }),
@@ -334,7 +335,7 @@ function NewLeadDrawer({
       product_category: form.product_category,
       product_type_id: form.product_type_id,
       product_subtype: pt?.name ?? null,
-      product_details,
+      product_details: product_details as Json,
       loan_type: loan_type as "personal" | "home" | "business" | "credit_card" | "insurance" | "mutual_fund",
       loan_amount: amount,
       sum_insured: form.sum_insured ? Number(form.sum_insured) : null,
