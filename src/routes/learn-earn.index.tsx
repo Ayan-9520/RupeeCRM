@@ -8,7 +8,7 @@ import { Nav } from "@/components/landing/Nav";
 import { Footer } from "@/components/landing/Footer";
 import { COURSES, CATEGORY_LABEL, LEVEL_LABEL, type CourseCategory, type CourseLevel } from "@/lib/courses";
 
-export const Route = createFileRoute("/learn-earn")({
+export const Route = createFileRoute("/learn-earn/")({
   head: () => ({
     meta: [
       { title: "Learn & Earn — Get certified, unlock premium leads | LeadMines Academy" },
