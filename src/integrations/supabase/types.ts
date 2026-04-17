@@ -752,6 +752,198 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_conversations: {
+        Row: {
+          assigned_to: string | null
+          collected_data: Json
+          contact_name: string | null
+          created_at: string
+          current_step: string
+          id: string
+          last_inbound_at: string | null
+          last_message_preview: string | null
+          last_outbound_at: string | null
+          lead_id: string | null
+          product_interest: string | null
+          status: Database["public"]["Enums"]["wa_conversation_status"]
+          unread_count: number
+          updated_at: string
+          wa_phone: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          collected_data?: Json
+          contact_name?: string | null
+          created_at?: string
+          current_step?: string
+          id?: string
+          last_inbound_at?: string | null
+          last_message_preview?: string | null
+          last_outbound_at?: string | null
+          lead_id?: string | null
+          product_interest?: string | null
+          status?: Database["public"]["Enums"]["wa_conversation_status"]
+          unread_count?: number
+          updated_at?: string
+          wa_phone: string
+        }
+        Update: {
+          assigned_to?: string | null
+          collected_data?: Json
+          contact_name?: string | null
+          created_at?: string
+          current_step?: string
+          id?: string
+          last_inbound_at?: string | null
+          last_message_preview?: string | null
+          last_outbound_at?: string | null
+          lead_id?: string | null
+          product_interest?: string | null
+          status?: Database["public"]["Enums"]["wa_conversation_status"]
+          unread_count?: number
+          updated_at?: string
+          wa_phone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_followups: {
+        Row: {
+          attempt_count: number
+          conversation_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          send_at: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["wa_followup_status"]
+          template_name: string
+        }
+        Insert: {
+          attempt_count?: number
+          conversation_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          send_at: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["wa_followup_status"]
+          template_name: string
+        }
+        Update: {
+          attempt_count?: number
+          conversation_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          send_at?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["wa_followup_status"]
+          template_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_followups_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          direction: Database["public"]["Enums"]["wa_direction"]
+          id: string
+          is_bot: boolean
+          metadata: Json
+          sent_by: string | null
+          status: Database["public"]["Enums"]["wa_msg_status"]
+          template_name: string | null
+          wa_message_id: string | null
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          direction: Database["public"]["Enums"]["wa_direction"]
+          id?: string
+          is_bot?: boolean
+          metadata?: Json
+          sent_by?: string | null
+          status?: Database["public"]["Enums"]["wa_msg_status"]
+          template_name?: string | null
+          wa_message_id?: string | null
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          direction?: Database["public"]["Enums"]["wa_direction"]
+          id?: string
+          is_bot?: boolean
+          metadata?: Json
+          sent_by?: string | null
+          status?: Database["public"]["Enums"]["wa_msg_status"]
+          template_name?: string | null
+          wa_message_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      whatsapp_templates: {
+        Row: {
+          body: string
+          category: Database["public"]["Enums"]["wa_template_category"]
+          created_at: string
+          enabled: boolean
+          id: string
+          language: string
+          name: string
+          updated_at: string
+          variables: string[]
+        }
+        Insert: {
+          body: string
+          category?: Database["public"]["Enums"]["wa_template_category"]
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          language?: string
+          name: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Update: {
+          body?: string
+          category?: Database["public"]["Enums"]["wa_template_category"]
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          language?: string
+          name?: string
+          updated_at?: string
+          variables?: string[]
+        }
+        Relationships: []
+      }
       workspace_members: {
         Row: {
           id: string
@@ -935,6 +1127,26 @@ export type Database = {
       payslip_status: "draft" | "processed" | "paid"
       product_category: "loan" | "insurance" | "credit_card" | "investment"
       txn_type: "credit" | "debit"
+      wa_conversation_status: "active" | "qualified" | "closed" | "spam"
+      wa_direction: "inbound" | "outbound"
+      wa_followup_status: "scheduled" | "sent" | "cancelled" | "failed"
+      wa_msg_status:
+        | "queued"
+        | "sent"
+        | "delivered"
+        | "read"
+        | "failed"
+        | "received"
+      wa_template_category:
+        | "welcome"
+        | "menu"
+        | "collect_info"
+        | "offer"
+        | "festival"
+        | "reminder"
+        | "eligibility"
+        | "documents"
+        | "custom"
       workspace_plan: "starter" | "growth" | "pro" | "enterprise"
       workspace_role: "owner" | "admin" | "manager" | "employee" | "viewer"
     }
@@ -1097,6 +1309,28 @@ export const Constants = {
       payslip_status: ["draft", "processed", "paid"],
       product_category: ["loan", "insurance", "credit_card", "investment"],
       txn_type: ["credit", "debit"],
+      wa_conversation_status: ["active", "qualified", "closed", "spam"],
+      wa_direction: ["inbound", "outbound"],
+      wa_followup_status: ["scheduled", "sent", "cancelled", "failed"],
+      wa_msg_status: [
+        "queued",
+        "sent",
+        "delivered",
+        "read",
+        "failed",
+        "received",
+      ],
+      wa_template_category: [
+        "welcome",
+        "menu",
+        "collect_info",
+        "offer",
+        "festival",
+        "reminder",
+        "eligibility",
+        "documents",
+        "custom",
+      ],
       workspace_plan: ["starter", "growth", "pro", "enterprise"],
       workspace_role: ["owner", "admin", "manager", "employee", "viewer"],
     },
