@@ -10,6 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { PLAN_LABEL, formatSeats } from "@/lib/plans";
 
 export function WorkspaceSwitcher() {
   const { workspaces, current, switchWorkspace, refresh, loading } = useWorkspace();
