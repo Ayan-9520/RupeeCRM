@@ -125,14 +125,38 @@ function Leadboard() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <div>
-        <h1 className="font-display text-2xl lg:text-3xl font-bold">Leadboard Marketplace</h1>
-        <p className="text-muted-foreground mt-1">Loans · Insurance · Credit Cards · Investments — all in one feed.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold">Leadboard Marketplace</h1>
+          <p className="text-muted-foreground mt-1">Loans · Insurance · Credit Cards · Investments — all in one feed.</p>
+        </div>
+        <Link
+          to="/dashboard/wallet"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth"
+        >
+          <Wallet className="size-4" /> Add money
+        </Link>
       </div>
 
-      <div className="rounded-2xl bg-card border border-border p-4 shadow-card">
-        <div className="flex items-center gap-2 text-sm font-semibold text-foreground mb-3">
-          <Filter className="size-4 text-accent" /> Filters
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard icon={Layers} label="Total leads" value={stats.total.toLocaleString("en-IN")} tone="default" />
+        <StatCard icon={Flame} label="Hot leads" value={stats.hot.toLocaleString("en-IN")} tone="hot" />
+        <StatCard icon={ShoppingBag} label="My purchases" value={stats.purchases.toLocaleString("en-IN")} tone="default" />
+        <StatCard icon={Wallet} label="Wallet balance" value={`₹${stats.balance.toLocaleString("en-IN")}`} tone="accent" />
+      </div>
+
+      <div className="rounded-2xl bg-card border border-border p-4 shadow-card sticky top-2 z-10">
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <Filter className="size-4 text-accent" /> Filters
+          </div>
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="size-4 text-muted-foreground" />
+            <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="input-base !h-8 !py-0 text-xs">
+              {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            </select>
+          </div>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <select value={category} onChange={(e) => setCategory(e.target.value as typeof category)} className="input-base">
