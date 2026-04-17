@@ -368,8 +368,12 @@ function LeadCard({
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
           <Flame className="size-3" /> Hot lead
         </div>
-      ) : isNew && (
-        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
+      ) : isVeryNew ? (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md animate-pulse">
+          <Sparkles className="size-3" /> New
+        </div>
+      ) : showCornerBadge && (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/90 text-white shadow-md">
           <Sparkles className="size-3" /> New
         </div>
       )}
