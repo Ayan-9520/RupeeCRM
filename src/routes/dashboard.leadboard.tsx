@@ -205,7 +205,16 @@ function LeadCard({ lead, type, onBuy, buying }: { lead: Lead; type?: ProductTyp
   const meta = CATEGORY_META[lead.product_category];
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-5 shadow-card hover:border-accent/50 transition-smooth flex flex-col">
+    <div className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
+      lead.score === "hot"
+        ? "border-orange-500/60 ring-1 ring-orange-500/30 hover:ring-orange-500/60"
+        : "border-border hover:border-accent/50"
+    }`}>
+      {lead.score === "hot" && (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
+          <Flame className="size-3" /> Hot lead
+        </div>
+      )}
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${meta.chipBg} ${meta.chipText}`}>
           {meta.label}
