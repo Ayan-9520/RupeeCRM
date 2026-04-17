@@ -17,7 +17,6 @@ import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
 import { Route as DashboardTrainingRouteImport } from './routes/dashboard.training'
 import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.submissions'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
-import { Route as DashboardPlaceholderRouteImport } from './routes/dashboard.placeholder'
 import { Route as DashboardMyLeadsRouteImport } from './routes/dashboard.my-leads'
 import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadboard'
 import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
@@ -65,11 +64,6 @@ const DashboardSubmissionsRoute = DashboardSubmissionsRouteImport.update({
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => DashboardRoute,
-} as any)
-const DashboardPlaceholderRoute = DashboardPlaceholderRouteImport.update({
-  id: '/placeholder',
-  path: '/placeholder',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardMyLeadsRoute = DashboardMyLeadsRouteImport.update({
@@ -123,7 +117,6 @@ export interface FileRoutesByFullPath {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRoute
-  '/dashboard/placeholder': typeof DashboardPlaceholderRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
@@ -141,7 +134,6 @@ export interface FileRoutesByTo {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRoute
-  '/dashboard/placeholder': typeof DashboardPlaceholderRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
@@ -161,7 +153,6 @@ export interface FileRoutesById {
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRoute
-  '/dashboard/placeholder': typeof DashboardPlaceholderRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
@@ -182,7 +173,6 @@ export interface FileRouteTypes {
     | '/dashboard/earnings'
     | '/dashboard/leadboard'
     | '/dashboard/my-leads'
-    | '/dashboard/placeholder'
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
@@ -200,7 +190,6 @@ export interface FileRouteTypes {
     | '/dashboard/earnings'
     | '/dashboard/leadboard'
     | '/dashboard/my-leads'
-    | '/dashboard/placeholder'
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
@@ -219,7 +208,6 @@ export interface FileRouteTypes {
     | '/dashboard/earnings'
     | '/dashboard/leadboard'
     | '/dashboard/my-leads'
-    | '/dashboard/placeholder'
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
@@ -293,13 +281,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRoute
     }
-    '/dashboard/placeholder': {
-      id: '/dashboard/placeholder'
-      path: '/placeholder'
-      fullPath: '/dashboard/placeholder'
-      preLoaderRoute: typeof DashboardPlaceholderRouteImport
-      parentRoute: typeof DashboardRoute
-    }
     '/dashboard/my-leads': {
       id: '/dashboard/my-leads'
       path: '/my-leads'
@@ -366,7 +347,6 @@ interface DashboardRouteChildren {
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardLeadboardRoute: typeof DashboardLeadboardRoute
   DashboardMyLeadsRoute: typeof DashboardMyLeadsRoute
-  DashboardPlaceholderRoute: typeof DashboardPlaceholderRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
   DashboardTrainingRoute: typeof DashboardTrainingRoute
@@ -383,7 +363,6 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardLeadboardRoute: DashboardLeadboardRoute,
   DashboardMyLeadsRoute: DashboardMyLeadsRoute,
-  DashboardPlaceholderRoute: DashboardPlaceholderRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSubmissionsRoute: DashboardSubmissionsRoute,
   DashboardTrainingRoute: DashboardTrainingRoute,
