@@ -32,11 +32,21 @@ type Lead = {
 const SCORES = ["all", "hot", "warm", "cold"];
 const SORTS = [
   { key: "newest", label: "Latest leads" },
+  { key: "oldest", label: "Oldest leads" },
   { key: "score", label: "Hottest first" },
   { key: "price_asc", label: "Price: low to high" },
   { key: "price_desc", label: "Price: high to low" },
 ] as const;
 type SortKey = (typeof SORTS)[number]["key"];
+
+const TIME_RANGES = [
+  { key: "all", label: "Any time", hours: 0 },
+  { key: "1h", label: "Last 1 hour", hours: 1 },
+  { key: "24h", label: "Last 24 hours", hours: 24 },
+  { key: "3d", label: "Last 3 days", hours: 72 },
+  { key: "7d", label: "Last 7 days", hours: 168 },
+] as const;
+type TimeRangeKey = (typeof TIME_RANGES)[number]["key"];
 
 const QUICK_RECHARGE = [500, 1000, 2500, 5000];
 const LOW_BALANCE_THRESHOLD = 300;
