@@ -14,6 +14,135 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance: {
+        Row: {
+          check_in: string | null
+          check_out: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          status: Database["public"]["Enums"]["attendance_status"]
+          workspace_id: string
+        }
+        Insert: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          date: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"]
+          workspace_id: string
+        }
+        Update: {
+          check_in?: string | null
+          check_out?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          status?: Database["public"]["Enums"]["attendance_status"]
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attendance_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          bank_account: string | null
+          created_at: string
+          ctc: number
+          department: string | null
+          designation: string | null
+          email: string | null
+          employee_code: string
+          full_name: string
+          id: string
+          ifsc: string | null
+          join_date: string
+          pan: string | null
+          phone: string | null
+          reports_to: string | null
+          status: Database["public"]["Enums"]["employee_status"]
+          updated_at: string
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          bank_account?: string | null
+          created_at?: string
+          ctc?: number
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          employee_code: string
+          full_name: string
+          id?: string
+          ifsc?: string | null
+          join_date?: string
+          pan?: string | null
+          phone?: string | null
+          reports_to?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          bank_account?: string | null
+          created_at?: string
+          ctc?: number
+          department?: string | null
+          designation?: string | null
+          email?: string | null
+          employee_code?: string
+          full_name?: string
+          id?: string
+          ifsc?: string | null
+          join_date?: string
+          pan?: string | null
+          phone?: string | null
+          reports_to?: string | null
+          status?: Database["public"]["Enums"]["employee_status"]
+          updated_at?: string
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_reports_to_fkey"
+            columns: ["reports_to"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "employees_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_purchases: {
         Row: {
           created_at: string
@@ -127,6 +256,75 @@ export type Database = {
           },
         ]
       }
+      payslips: {
+        Row: {
+          deductions: Json
+          earnings: Json
+          employee_id: string
+          generated_at: string
+          gross: number
+          id: string
+          net_pay: number
+          paid_at: string | null
+          paid_days: number
+          period_month: number
+          period_year: number
+          status: Database["public"]["Enums"]["payslip_status"]
+          total_deductions: number
+          working_days: number
+          workspace_id: string
+        }
+        Insert: {
+          deductions?: Json
+          earnings?: Json
+          employee_id: string
+          generated_at?: string
+          gross?: number
+          id?: string
+          net_pay?: number
+          paid_at?: string | null
+          paid_days?: number
+          period_month: number
+          period_year: number
+          status?: Database["public"]["Enums"]["payslip_status"]
+          total_deductions?: number
+          working_days?: number
+          workspace_id: string
+        }
+        Update: {
+          deductions?: Json
+          earnings?: Json
+          employee_id?: string
+          generated_at?: string
+          gross?: number
+          id?: string
+          net_pay?: number
+          paid_at?: string | null
+          paid_days?: number
+          period_month?: number
+          period_year?: number
+          status?: Database["public"]["Enums"]["payslip_status"]
+          total_deductions?: number
+          working_days?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payslips_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payslips_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -159,6 +357,75 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      salary_structures: {
+        Row: {
+          basic: number
+          conveyance: number
+          created_at: string
+          effective_from: string
+          employee_id: string
+          hra: number
+          id: string
+          is_active: boolean
+          medical: number
+          other_deductions: number
+          pf: number
+          professional_tax: number
+          special_allowance: number
+          tds: number
+          workspace_id: string
+        }
+        Insert: {
+          basic?: number
+          conveyance?: number
+          created_at?: string
+          effective_from?: string
+          employee_id: string
+          hra?: number
+          id?: string
+          is_active?: boolean
+          medical?: number
+          other_deductions?: number
+          pf?: number
+          professional_tax?: number
+          special_allowance?: number
+          tds?: number
+          workspace_id: string
+        }
+        Update: {
+          basic?: number
+          conveyance?: number
+          created_at?: string
+          effective_from?: string
+          employee_id?: string
+          hra?: number
+          id?: string
+          is_active?: boolean
+          medical?: number
+          other_deductions?: number
+          pf?: number
+          professional_tax?: number
+          special_allowance?: number
+          tds?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salary_structures_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "salary_structures_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -346,6 +613,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_workspace_employee: {
+        Args: { _user_id: string; _workspace_id: string }
+        Returns: boolean
+      }
       is_workspace_member: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
@@ -353,6 +624,10 @@ export type Database = {
       plan_seat_limit: {
         Args: { _plan: Database["public"]["Enums"]["workspace_plan"] }
         Returns: number
+      }
+      process_payroll: {
+        Args: { _month: number; _workspace_id: string; _year: number }
+        Returns: Json
       }
       purchase_lead: { Args: { _lead_id: string }; Returns: Json }
       recharge_wallet: { Args: { _amount: number }; Returns: Json }
@@ -366,6 +641,14 @@ export type Database = {
         | "lender"
         | "affiliate"
         | "customer"
+      attendance_status:
+        | "present"
+        | "absent"
+        | "half_day"
+        | "leave"
+        | "holiday"
+        | "weekend"
+      employee_status: "active" | "on_leave" | "terminated"
       lead_score: "cold" | "warm" | "hot"
       lead_status: "available" | "sold" | "archived"
       loan_type:
@@ -375,6 +658,7 @@ export type Database = {
         | "credit_card"
         | "insurance"
         | "mutual_fund"
+      payslip_status: "draft" | "processed" | "paid"
       txn_type: "credit" | "debit"
       workspace_plan: "starter" | "growth" | "pro" | "enterprise"
       workspace_role: "owner" | "admin" | "manager" | "employee" | "viewer"
@@ -514,6 +798,15 @@ export const Constants = {
         "affiliate",
         "customer",
       ],
+      attendance_status: [
+        "present",
+        "absent",
+        "half_day",
+        "leave",
+        "holiday",
+        "weekend",
+      ],
+      employee_status: ["active", "on_leave", "terminated"],
       lead_score: ["cold", "warm", "hot"],
       lead_status: ["available", "sold", "archived"],
       loan_type: [
@@ -524,6 +817,7 @@ export const Constants = {
         "insurance",
         "mutual_fund",
       ],
+      payslip_status: ["draft", "processed", "paid"],
       txn_type: ["credit", "debit"],
       workspace_plan: ["starter", "growth", "pro", "enterprise"],
       workspace_role: ["owner", "admin", "manager", "employee", "viewer"],
