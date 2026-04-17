@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight } from "lucide-react";
+import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight, Clock, Zap } from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
 
@@ -25,12 +25,14 @@ type Lead = {
   product_category: ProductCategory;
   product_subtype: string | null;
   product_type_id: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 const SCORES = ["all", "hot", "warm", "cold"];
 const SORTS = [
-  { key: "score", label: "Hottest first" },
   { key: "newest", label: "Latest leads" },
+  { key: "score", label: "Hottest first" },
   { key: "price_asc", label: "Price: low to high" },
   { key: "price_desc", label: "Price: high to low" },
 ] as const;
@@ -49,7 +51,7 @@ function Leadboard() {
   const [productTypeId, setProductTypeId] = useState<"all" | string>("all");
   const [score, setScore] = useState("all");
   const [maxBudget, setMaxBudget] = useState<string>("");
-  const [sort, setSort] = useState<SortKey>("score");
+  const [sort, setSort] = useState<SortKey>("newest");
   const [buying, setBuying] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
 
@@ -75,7 +77,7 @@ function Leadboard() {
     setLoading(true);
     let q = supabase
       .from("leads")
-      .select("id,applicant_name,masked_phone,city,loan_amount,monthly_income,score,price,status,product_category,product_subtype,product_type_id")
+      .select("id,applicant_name,masked_phone,city,loan_amount,monthly_income,score,price,status,product_category,product_subtype,product_type_id,created_at,updated_at")
       .eq("status", "available");
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
@@ -276,6 +278,18 @@ function Leadboard() {
   );
 }
 
+function formatRelative(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
+
 function LeadCard({
   lead, type, onBuy, buying, purchased,
 }: {
@@ -294,21 +308,31 @@ function LeadCard({
   const meta = CATEGORY_META[lead.product_category];
   const isPurchased = !!purchased;
 
+  const ageHours = (Date.now() - new Date(lead.created_at).getTime()) / 36e5;
+  const isFresh = ageHours < 12;
+  const isNew = ageHours < 24;
+
   return (
     <div className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
       isPurchased
         ? "border-emerald-500/60 ring-1 ring-emerald-500/30"
         : lead.score === "hot"
           ? "border-orange-500/60 ring-1 ring-orange-500/30 hover:ring-orange-500/60"
-          : "border-border hover:border-accent/50"
+          : isFresh
+            ? "border-emerald-400/50 ring-1 ring-emerald-400/20 hover:border-accent/50"
+            : "border-border hover:border-accent/50"
     }`}>
       {isPurchased ? (
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
           <Check className="size-3" /> Purchased
         </div>
-      ) : lead.score === "hot" && (
+      ) : lead.score === "hot" ? (
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
           <Flame className="size-3" /> Hot lead
+        </div>
+      ) : isNew && (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
+          <Sparkles className="size-3" /> New
         </div>
       )}
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
@@ -320,7 +344,12 @@ function LeadCard({
             {type.name}
           </span>
         )}
-        {type?.high_demand && !isPurchased && (
+        {isFresh && !isPurchased && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <Zap className="size-2.5" /> Fresh
+          </span>
+        )}
+        {type?.high_demand && !isPurchased && !isFresh && (
           <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400">
             <Sparkles className="size-2.5" /> Hot
           </span>
@@ -346,6 +375,13 @@ function LeadCard({
 
       <div className="mt-4 space-y-1.5 text-sm">
         <Row icon={MapPin} text={lead.city} />
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Clock className="size-3 shrink-0" />
+          <span>Added {formatRelative(lead.created_at)}</span>
+          {lead.updated_at && new Date(lead.updated_at).getTime() - new Date(lead.created_at).getTime() > 60000 && (
+            <span className="opacity-70">· Updated {formatRelative(lead.updated_at)}</span>
+          )}
+        </div>
         <Row icon={Banknote} text={`Ticket: ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
         {lead.monthly_income && <Row icon={Banknote} text={`Income: ₹${lead.monthly_income.toLocaleString("en-IN")}/mo`} />}
       </div>
