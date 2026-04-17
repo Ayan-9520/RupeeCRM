@@ -27,6 +27,7 @@ import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
 import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
 import { Route as DashboardHrmsIndexRouteImport } from './routes/dashboard.hrms.index'
 import { Route as DashboardHrmsPayrollRouteImport } from './routes/dashboard.hrms.payroll'
+import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
 import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.hrms.attendance'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
 import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
@@ -124,6 +125,11 @@ const DashboardHrmsPayrollRoute = DashboardHrmsPayrollRouteImport.update({
   path: '/payroll',
   getParentRoute: () => DashboardHrmsRoute,
 } as any)
+const DashboardHrmsBillingRoute = DashboardHrmsBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => DashboardHrmsRoute,
+} as any)
 const DashboardHrmsAttendanceRoute = DashboardHrmsAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -177,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
+  '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
@@ -201,6 +208,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
+  '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/hrms': typeof DashboardHrmsIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
@@ -228,6 +236,7 @@ export interface FileRoutesById {
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
+  '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
+    | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
     | '/dashboard/hrms/'
     | '/dashboard/hrms/employees/$id'
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
+    | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
     | '/dashboard/hrms'
     | '/dashboard/hrms/employees/$id'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
+    | '/dashboard/hrms/billing'
     | '/dashboard/hrms/payroll'
     | '/dashboard/hrms/'
     | '/dashboard/hrms/employees/$id'
@@ -447,6 +459,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardHrmsPayrollRouteImport
       parentRoute: typeof DashboardHrmsRoute
     }
+    '/dashboard/hrms/billing': {
+      id: '/dashboard/hrms/billing'
+      path: '/billing'
+      fullPath: '/dashboard/hrms/billing'
+      preLoaderRoute: typeof DashboardHrmsBillingRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
     '/dashboard/hrms/attendance': {
       id: '/dashboard/hrms/attendance'
       path: '/attendance'
@@ -494,6 +513,7 @@ declare module '@tanstack/react-router' {
 
 interface DashboardHrmsRouteChildren {
   DashboardHrmsAttendanceRoute: typeof DashboardHrmsAttendanceRoute
+  DashboardHrmsBillingRoute: typeof DashboardHrmsBillingRoute
   DashboardHrmsPayrollRoute: typeof DashboardHrmsPayrollRoute
   DashboardHrmsIndexRoute: typeof DashboardHrmsIndexRoute
   DashboardHrmsEmployeesIdRoute: typeof DashboardHrmsEmployeesIdRoute
@@ -503,6 +523,7 @@ interface DashboardHrmsRouteChildren {
 
 const DashboardHrmsRouteChildren: DashboardHrmsRouteChildren = {
   DashboardHrmsAttendanceRoute: DashboardHrmsAttendanceRoute,
+  DashboardHrmsBillingRoute: DashboardHrmsBillingRoute,
   DashboardHrmsPayrollRoute: DashboardHrmsPayrollRoute,
   DashboardHrmsIndexRoute: DashboardHrmsIndexRoute,
   DashboardHrmsEmployeesIdRoute: DashboardHrmsEmployeesIdRoute,
