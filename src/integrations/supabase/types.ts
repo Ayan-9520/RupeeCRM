@@ -14,16 +14,253 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      lead_purchases: {
+        Row: {
+          created_at: string
+          dsa_id: string
+          id: string
+          lead_id: string
+          pipeline_stage: string
+          price_paid: number
+        }
+        Insert: {
+          created_at?: string
+          dsa_id: string
+          id?: string
+          lead_id: string
+          pipeline_stage?: string
+          price_paid: number
+        }
+        Update: {
+          created_at?: string
+          dsa_id?: string
+          id?: string
+          lead_id?: string
+          pipeline_stage?: string
+          price_paid?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_purchases_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leads: {
+        Row: {
+          applicant_name: string
+          city: string
+          created_at: string
+          email: string | null
+          full_phone: string
+          id: string
+          loan_amount: number
+          loan_type: Database["public"]["Enums"]["loan_type"]
+          masked_phone: string
+          monthly_income: number | null
+          notes: string | null
+          price: number
+          score: Database["public"]["Enums"]["lead_score"]
+          source: string | null
+          status: Database["public"]["Enums"]["lead_status"]
+          updated_at: string
+        }
+        Insert: {
+          applicant_name: string
+          city: string
+          created_at?: string
+          email?: string | null
+          full_phone: string
+          id?: string
+          loan_amount: number
+          loan_type: Database["public"]["Enums"]["loan_type"]
+          masked_phone: string
+          monthly_income?: number | null
+          notes?: string | null
+          price?: number
+          score?: Database["public"]["Enums"]["lead_score"]
+          source?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Update: {
+          applicant_name?: string
+          city?: string
+          created_at?: string
+          email?: string | null
+          full_phone?: string
+          id?: string
+          loan_amount?: number
+          loan_type?: Database["public"]["Enums"]["loan_type"]
+          masked_phone?: string
+          monthly_income?: number | null
+          notes?: string | null
+          price?: number
+          score?: Database["public"]["Enums"]["lead_score"]
+          source?: string | null
+          status?: Database["public"]["Enums"]["lead_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          city: string | null
+          company_name: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string
+          description: string
+          id: string
+          reference_id: string | null
+          type: Database["public"]["Enums"]["txn_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string
+          description: string
+          id?: string
+          reference_id?: string | null
+          type: Database["public"]["Enums"]["txn_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string
+          description?: string
+          id?: string
+          reference_id?: string | null
+          type?: Database["public"]["Enums"]["txn_type"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          total_recharged: number
+          total_spent: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_recharged?: number
+          total_spent?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          total_recharged?: number
+          total_spent?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_primary_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      purchase_lead: { Args: { _lead_id: string }; Returns: Json }
+      recharge_wallet: { Args: { _amount: number }; Returns: Json }
     }
     Enums: {
-      [_ in never]: never
+      app_role:
+        | "admin"
+        | "dsa"
+        | "caller"
+        | "coordinator"
+        | "lender"
+        | "affiliate"
+        | "customer"
+      lead_score: "cold" | "warm" | "hot"
+      lead_status: "available" | "sold" | "archived"
+      loan_type:
+        | "personal"
+        | "home"
+        | "business"
+        | "credit_card"
+        | "insurance"
+        | "mutual_fund"
+      txn_type: "credit" | "debit"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +387,27 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: [
+        "admin",
+        "dsa",
+        "caller",
+        "coordinator",
+        "lender",
+        "affiliate",
+        "customer",
+      ],
+      lead_score: ["cold", "warm", "hot"],
+      lead_status: ["available", "sold", "archived"],
+      loan_type: [
+        "personal",
+        "home",
+        "business",
+        "credit_card",
+        "insurance",
+        "mutual_fund",
+      ],
+      txn_type: ["credit", "debit"],
+    },
   },
 } as const
