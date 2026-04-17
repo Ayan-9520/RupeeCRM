@@ -549,6 +549,8 @@ export type Database = {
       workspaces: {
         Row: {
           created_at: string
+          hrms_enabled: boolean
+          hrms_price_per_employee: number
           id: string
           logo_url: string | null
           name: string
@@ -560,6 +562,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          hrms_enabled?: boolean
+          hrms_price_per_employee?: number
           id?: string
           logo_url?: string | null
           name: string
@@ -571,6 +575,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          hrms_enabled?: boolean
+          hrms_price_per_employee?: number
           id?: string
           logo_url?: string | null
           name?: string
@@ -613,6 +619,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hrms_monthly_bill: { Args: { _workspace_id: string }; Returns: Json }
       is_workspace_employee: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
