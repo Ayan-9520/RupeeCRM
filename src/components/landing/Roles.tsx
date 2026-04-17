@@ -23,7 +23,13 @@ export function Roles() {
             Role-based access control means each user sees exactly what they need. No clutter, no leaks,
             no fighting over spreadsheets.
           </p>
-          <div className="mt-8 flex flex-wrap gap-2">
+          <div className="mt-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-mint-gradient/10 border border-[oklch(0.78_0.16_165)]/40">
+            <span className="size-1.5 rounded-full bg-[oklch(0.55_0.18_165)]" />
+            <span className="text-xs font-semibold text-foreground">
+              Supports Multi-Product Distribution — Loans · Insurance · Cards
+            </span>
+          </div>
+          <div className="mt-6 flex flex-wrap gap-2">
             {["JWT Auth", "RBAC", "Audit Trail", "Refund Policy", "WhatsApp Alerts"].map((t) => (
               <span key={t} className="px-3 py-1.5 rounded-full bg-secondary border border-border text-xs font-medium text-foreground/80">
                 {t}
