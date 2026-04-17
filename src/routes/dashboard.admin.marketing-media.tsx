@@ -17,7 +17,7 @@ import { Loader2, Upload, Trash2, ArrowUp, ArrowDown, Image as ImageIcon, Video,
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard/admin/marketing-media")({
-  component: AdminMarketingMedia;
+  component: AdminMarketingMedia,
 });
 
 type MediaType = "image" | "video";
