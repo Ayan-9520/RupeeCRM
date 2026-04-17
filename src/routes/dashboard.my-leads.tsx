@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   Loader2, Phone, MapPin, Banknote, Search, Filter, X, MessageSquare, Copy,
   CheckCircle2, TrendingUp, ShoppingBag, Wallet, Clock, ChevronRight, StickyNote,
-  CalendarClock, ArrowRight, LayoutGrid, List, Trophy, IndianRupee,
+  CalendarClock, LayoutGrid, List, Trophy, IndianRupee,
 } from "lucide-react";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
