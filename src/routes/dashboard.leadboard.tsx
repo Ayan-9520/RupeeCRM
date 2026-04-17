@@ -296,21 +296,31 @@ function LeadCard({
   const meta = CATEGORY_META[lead.product_category];
   const isPurchased = !!purchased;
 
+  const ageHours = (Date.now() - new Date(lead.created_at).getTime()) / 36e5;
+  const isFresh = ageHours < 12;
+  const isNew = ageHours < 24;
+
   return (
     <div className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
       isPurchased
         ? "border-emerald-500/60 ring-1 ring-emerald-500/30"
         : lead.score === "hot"
           ? "border-orange-500/60 ring-1 ring-orange-500/30 hover:ring-orange-500/60"
-          : "border-border hover:border-accent/50"
+          : isFresh
+            ? "border-emerald-400/50 ring-1 ring-emerald-400/20 hover:border-accent/50"
+            : "border-border hover:border-accent/50"
     }`}>
       {isPurchased ? (
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
           <Check className="size-3" /> Purchased
         </div>
-      ) : lead.score === "hot" && (
+      ) : lead.score === "hot" ? (
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
           <Flame className="size-3" /> Hot lead
+        </div>
+      ) : isNew && (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
+          <Sparkles className="size-3" /> New
         </div>
       )}
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
@@ -322,7 +332,12 @@ function LeadCard({
             {type.name}
           </span>
         )}
-        {type?.high_demand && !isPurchased && (
+        {isFresh && !isPurchased && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+            <Zap className="size-2.5" /> Fresh
+          </span>
+        )}
+        {type?.high_demand && !isPurchased && !isFresh && (
           <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400">
             <Sparkles className="size-2.5" /> Hot
           </span>
@@ -348,6 +363,13 @@ function LeadCard({
 
       <div className="mt-4 space-y-1.5 text-sm">
         <Row icon={MapPin} text={lead.city} />
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <Clock className="size-3 shrink-0" />
+          <span>Added {formatRelative(lead.created_at)}</span>
+          {lead.updated_at && new Date(lead.updated_at).getTime() - new Date(lead.created_at).getTime() > 60000 && (
+            <span className="opacity-70">· Updated {formatRelative(lead.updated_at)}</span>
+          )}
+        </div>
         <Row icon={Banknote} text={`Ticket: ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
         {lead.monthly_income && <Row icon={Banknote} text={`Income: ₹${lead.monthly_income.toLocaleString("en-IN")}/mo`} />}
       </div>
