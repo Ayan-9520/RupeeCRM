@@ -205,6 +205,7 @@ export type Database = {
           product_category: Database["public"]["Enums"]["product_category"]
           product_details: Json
           product_subtype: string | null
+          product_type_id: string | null
           score: Database["public"]["Enums"]["lead_score"]
           source: string | null
           status: Database["public"]["Enums"]["lead_status"]
@@ -227,6 +228,7 @@ export type Database = {
           product_category?: Database["public"]["Enums"]["product_category"]
           product_details?: Json
           product_subtype?: string | null
+          product_type_id?: string | null
           score?: Database["public"]["Enums"]["lead_score"]
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
@@ -249,6 +251,7 @@ export type Database = {
           product_category?: Database["public"]["Enums"]["product_category"]
           product_details?: Json
           product_subtype?: string | null
+          product_type_id?: string | null
           score?: Database["public"]["Enums"]["lead_score"]
           source?: string | null
           status?: Database["public"]["Enums"]["lead_status"]
@@ -256,6 +259,13 @@ export type Database = {
           workspace_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "leads_product_type_id_fkey"
+            columns: ["product_type_id"]
+            isOneToOne: false
+            referencedRelation: "product_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "leads_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -333,6 +343,96 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      product_pipelines: {
+        Row: {
+          category: Database["public"]["Enums"]["product_category"]
+          created_at: string
+          id: string
+          name: string
+          stages: Json
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          id?: string
+          name: string
+          stages?: Json
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["product_category"]
+          created_at?: string
+          id?: string
+          name?: string
+          stages?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      product_types: {
+        Row: {
+          category: Database["public"]["Enums"]["product_category"]
+          code: string
+          color: string | null
+          commission_flat_max: number
+          commission_flat_min: number
+          commission_pct_max: number
+          commission_pct_min: number
+          created_at: string
+          default_lead_price: number
+          description: string | null
+          display_order: number
+          enabled: boolean
+          high_commission: boolean
+          high_demand: boolean
+          icon: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["product_category"]
+          code: string
+          color?: string | null
+          commission_flat_max?: number
+          commission_flat_min?: number
+          commission_pct_max?: number
+          commission_pct_min?: number
+          created_at?: string
+          default_lead_price?: number
+          description?: string | null
+          display_order?: number
+          enabled?: boolean
+          high_commission?: boolean
+          high_demand?: boolean
+          icon?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["product_category"]
+          code?: string
+          color?: string | null
+          commission_flat_max?: number
+          commission_flat_min?: number
+          commission_pct_max?: number
+          commission_pct_min?: number
+          created_at?: string
+          default_lead_price?: number
+          description?: string | null
+          display_order?: number
+          enabled?: boolean
+          high_commission?: boolean
+          high_demand?: boolean
+          icon?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
