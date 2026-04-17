@@ -65,6 +65,90 @@ export type Database = {
           },
         ]
       }
+      disbursals: {
+        Row: {
+          commission_amount: number
+          created_at: string
+          customer_paid_at: string | null
+          disbursed_amount: number
+          disbursed_at: string | null
+          docs_clear_at: string | null
+          dsa_id: string
+          id: string
+          lead_id: string
+          lead_purchase_id: string
+          lender_id: string | null
+          lender_name: string | null
+          loan_account_no: string | null
+          notes: string | null
+          payout_due_at: string | null
+          payout_eligible_at: string | null
+          payout_id: string | null
+          status: Database["public"]["Enums"]["disbursal_status"]
+          updated_at: string
+          webhook_payload: Json | null
+        }
+        Insert: {
+          commission_amount?: number
+          created_at?: string
+          customer_paid_at?: string | null
+          disbursed_amount?: number
+          disbursed_at?: string | null
+          docs_clear_at?: string | null
+          dsa_id: string
+          id?: string
+          lead_id: string
+          lead_purchase_id: string
+          lender_id?: string | null
+          lender_name?: string | null
+          loan_account_no?: string | null
+          notes?: string | null
+          payout_due_at?: string | null
+          payout_eligible_at?: string | null
+          payout_id?: string | null
+          status?: Database["public"]["Enums"]["disbursal_status"]
+          updated_at?: string
+          webhook_payload?: Json | null
+        }
+        Update: {
+          commission_amount?: number
+          created_at?: string
+          customer_paid_at?: string | null
+          disbursed_amount?: number
+          disbursed_at?: string | null
+          docs_clear_at?: string | null
+          dsa_id?: string
+          id?: string
+          lead_id?: string
+          lead_purchase_id?: string
+          lender_id?: string | null
+          lender_name?: string | null
+          loan_account_no?: string | null
+          notes?: string | null
+          payout_due_at?: string | null
+          payout_eligible_at?: string | null
+          payout_id?: string | null
+          status?: Database["public"]["Enums"]["disbursal_status"]
+          updated_at?: string
+          webhook_payload?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disbursals_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disbursals_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employees: {
         Row: {
           bank_account: string | null
@@ -203,6 +287,72 @@ export type Database = {
           },
         ]
       }
+      lead_refunds: {
+        Row: {
+          admin_notes: string | null
+          amount: number
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          dsa_id: string
+          evidence_urls: string[] | null
+          id: string
+          lead_id: string
+          lead_purchase_id: string
+          reason: Database["public"]["Enums"]["refund_reason"]
+          status: Database["public"]["Enums"]["refund_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          amount: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description?: string | null
+          dsa_id: string
+          evidence_urls?: string[] | null
+          id?: string
+          lead_id: string
+          lead_purchase_id: string
+          reason: Database["public"]["Enums"]["refund_reason"]
+          status?: Database["public"]["Enums"]["refund_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          amount?: number
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description?: string | null
+          dsa_id?: string
+          evidence_urls?: string[] | null
+          id?: string
+          lead_id?: string
+          lead_purchase_id?: string
+          reason?: Database["public"]["Enums"]["refund_reason"]
+          status?: Database["public"]["Enums"]["refund_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_refunds_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_refunds_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
           age: number | null
@@ -220,6 +370,7 @@ export type Database = {
           employment_type: string | null
           family_members: number | null
           follow_up_date: string | null
+          fraud_risk: string
           full_phone: string
           gender: string | null
           id: string
@@ -230,11 +381,14 @@ export type Database = {
           monthly_income: number | null
           next_call_date: string | null
           notes: string | null
+          phone_verified: boolean
           price: number
           product_category: Database["public"]["Enums"]["product_category"]
           product_details: Json
           product_subtype: string | null
           product_type_id: string | null
+          quality_factors: Json
+          quality_score: number | null
           remarks: string | null
           sale_available: boolean
           score: Database["public"]["Enums"]["lead_score"]
@@ -261,6 +415,7 @@ export type Database = {
           employment_type?: string | null
           family_members?: number | null
           follow_up_date?: string | null
+          fraud_risk?: string
           full_phone: string
           gender?: string | null
           id?: string
@@ -271,11 +426,14 @@ export type Database = {
           monthly_income?: number | null
           next_call_date?: string | null
           notes?: string | null
+          phone_verified?: boolean
           price?: number
           product_category?: Database["public"]["Enums"]["product_category"]
           product_details?: Json
           product_subtype?: string | null
           product_type_id?: string | null
+          quality_factors?: Json
+          quality_score?: number | null
           remarks?: string | null
           sale_available?: boolean
           score?: Database["public"]["Enums"]["lead_score"]
@@ -302,6 +460,7 @@ export type Database = {
           employment_type?: string | null
           family_members?: number | null
           follow_up_date?: string | null
+          fraud_risk?: string
           full_phone?: string
           gender?: string | null
           id?: string
@@ -312,11 +471,14 @@ export type Database = {
           monthly_income?: number | null
           next_call_date?: string | null
           notes?: string | null
+          phone_verified?: boolean
           price?: number
           product_category?: Database["public"]["Enums"]["product_category"]
           product_details?: Json
           product_subtype?: string | null
           product_type_id?: string | null
+          quality_factors?: Json
+          quality_score?: number | null
           remarks?: string | null
           sale_available?: boolean
           score?: Database["public"]["Enums"]["lead_score"]
@@ -469,6 +631,42 @@ export type Database = {
           tags?: string[]
           theme?: Json
           updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          link: string | null
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          link?: string | null
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
         }
         Relationships: []
       }
@@ -751,9 +949,15 @@ export type Database = {
           city: string | null
           company_name: string | null
           created_at: string
+          dsa_tier: string
+          fraud_flags: number
           full_name: string | null
           id: string
           phone: string | null
+          reputation_score: number
+          total_conversions: number
+          total_leads_purchased: number
+          total_refunds: number
           updated_at: string
         }
         Insert: {
@@ -761,9 +965,15 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          dsa_tier?: string
+          fraud_flags?: number
           full_name?: string | null
           id: string
           phone?: string | null
+          reputation_score?: number
+          total_conversions?: number
+          total_leads_purchased?: number
+          total_refunds?: number
           updated_at?: string
         }
         Update: {
@@ -771,9 +981,15 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          dsa_tier?: string
+          fraud_flags?: number
           full_name?: string | null
           id?: string
           phone?: string | null
+          reputation_score?: number
+          total_conversions?: number
+          total_leads_purchased?: number
+          total_refunds?: number
           updated_at?: string
         }
         Relationships: []
@@ -1265,6 +1481,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      confirm_disbursal: {
+        Args: {
+          _amount?: number
+          _disbursal_id: string
+          _new_status: Database["public"]["Enums"]["disbursal_status"]
+          _notes?: string
+        }
+        Returns: Json
+      }
+      dsa_tier_from_score: { Args: { _score: number }; Returns: string }
       get_primary_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1300,6 +1526,20 @@ export type Database = {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
       }
+      mark_all_notifications_read: { Args: never; Returns: number }
+      mark_notification_read: { Args: { _id: string }; Returns: boolean }
+      notify: {
+        Args: {
+          _body?: string
+          _link?: string
+          _metadata?: Json
+          _title: string
+          _type: Database["public"]["Enums"]["notification_type"]
+          _user_id: string
+        }
+        Returns: string
+      }
+      payout_sla_days: { Args: { _tier: string }; Returns: number }
       plan_seat_limit: {
         Args: { _plan: Database["public"]["Enums"]["workspace_plan"] }
         Returns: number
@@ -1319,6 +1559,7 @@ export type Database = {
         Returns: Json
       }
       purchase_lead: { Args: { _lead_id: string }; Returns: Json }
+      recalc_reputation: { Args: { _user_id: string }; Returns: number }
       recharge_wallet: { Args: { _amount: number }; Returns: Json }
       request_payout: {
         Args: {
@@ -1328,6 +1569,15 @@ export type Database = {
           _ifsc?: string
           _method: Database["public"]["Enums"]["payout_method"]
           _upi_id?: string
+        }
+        Returns: Json
+      }
+      submit_refund: {
+        Args: {
+          _description?: string
+          _evidence?: string[]
+          _lead_id: string
+          _reason: Database["public"]["Enums"]["refund_reason"]
         }
         Returns: Json
       }
@@ -1351,6 +1601,14 @@ export type Database = {
         | "leave"
         | "holiday"
         | "weekend"
+      disbursal_status:
+        | "pending"
+        | "disbursed"
+        | "docs_pending"
+        | "docs_clear"
+        | "customer_paid"
+        | "rejected"
+        | "cancelled"
       employee_status: "active" | "on_leave" | "terminated"
       lead_score: "cold" | "warm" | "hot"
       lead_status: "available" | "sold" | "archived"
@@ -1372,10 +1630,36 @@ export type Database = {
         | "investment"
         | "generic"
       marketing_template_kind: "post" | "reel" | "whatsapp" | "visiting_card"
+      notification_type:
+        | "payout_approved"
+        | "payout_paid"
+        | "payout_rejected"
+        | "refund_approved"
+        | "refund_rejected"
+        | "disbursal_confirmed"
+        | "docs_pending"
+        | "docs_clear"
+        | "lead_purchased"
+        | "lead_assigned"
+        | "followup_due"
+        | "tier_upgraded"
+        | "badge_earned"
+        | "course_completed"
+        | "system"
+        | "marketing"
       payout_method: "bank" | "upi"
       payout_status: "pending" | "approved" | "rejected" | "paid"
       payslip_status: "draft" | "processed" | "paid"
       product_category: "loan" | "insurance" | "credit_card" | "investment"
+      refund_reason:
+        | "invalid_phone"
+        | "wrong_number"
+        | "do_not_call"
+        | "duplicate"
+        | "fake_data"
+        | "no_intent"
+        | "other"
+      refund_status: "pending" | "approved" | "rejected" | "auto_approved"
       txn_type: "credit" | "debit"
       wa_conversation_status: "active" | "qualified" | "closed" | "spam"
       wa_direction: "inbound" | "outbound"
@@ -1543,6 +1827,15 @@ export const Constants = {
         "holiday",
         "weekend",
       ],
+      disbursal_status: [
+        "pending",
+        "disbursed",
+        "docs_pending",
+        "docs_clear",
+        "customer_paid",
+        "rejected",
+        "cancelled",
+      ],
       employee_status: ["active", "on_leave", "terminated"],
       lead_score: ["cold", "warm", "hot"],
       lead_status: ["available", "sold", "archived"],
@@ -1566,10 +1859,38 @@ export const Constants = {
         "generic",
       ],
       marketing_template_kind: ["post", "reel", "whatsapp", "visiting_card"],
+      notification_type: [
+        "payout_approved",
+        "payout_paid",
+        "payout_rejected",
+        "refund_approved",
+        "refund_rejected",
+        "disbursal_confirmed",
+        "docs_pending",
+        "docs_clear",
+        "lead_purchased",
+        "lead_assigned",
+        "followup_due",
+        "tier_upgraded",
+        "badge_earned",
+        "course_completed",
+        "system",
+        "marketing",
+      ],
       payout_method: ["bank", "upi"],
       payout_status: ["pending", "approved", "rejected", "paid"],
       payslip_status: ["draft", "processed", "paid"],
       product_category: ["loan", "insurance", "credit_card", "investment"],
+      refund_reason: [
+        "invalid_phone",
+        "wrong_number",
+        "do_not_call",
+        "duplicate",
+        "fake_data",
+        "no_intent",
+        "other",
+      ],
+      refund_status: ["pending", "approved", "rejected", "auto_approved"],
       txn_type: ["credit", "debit"],
       wa_conversation_status: ["active", "qualified", "closed", "spam"],
       wa_direction: ["inbound", "outbound"],
