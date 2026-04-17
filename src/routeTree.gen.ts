@@ -25,6 +25,7 @@ import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnin
 import { Route as DashboardCommunityRouteImport } from './routes/dashboard.community'
 import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
 import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
+import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
 import { Route as DashboardHrmsIndexRouteImport } from './routes/dashboard.hrms.index'
 import { Route as DashboardHrmsPayrollRouteImport } from './routes/dashboard.hrms.payroll'
 import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
@@ -115,6 +116,11 @@ const DashboardCallsRoute = DashboardCallsRouteImport.update({
   path: '/calls',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardBillingRoute = DashboardBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardHrmsIndexRoute = DashboardHrmsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
   '/dashboard/community': typeof DashboardCommunityRoute
@@ -193,6 +200,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
   '/dashboard/community': typeof DashboardCommunityRoute
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
   '/dashboard/community': typeof DashboardCommunityRoute
@@ -249,6 +258,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
     | '/dashboard/community'
@@ -275,6 +285,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
     | '/dashboard/community'
@@ -301,6 +312,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/dashboard'
+    | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
     | '/dashboard/community'
@@ -445,6 +457,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCallsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/billing': {
+      id: '/dashboard/billing'
+      path: '/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof DashboardBillingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/hrms/': {
       id: '/dashboard/hrms/'
       path: '/'
@@ -536,6 +555,7 @@ const DashboardHrmsRouteWithChildren = DashboardHrmsRoute._addFileChildren(
 )
 
 interface DashboardRouteChildren {
+  DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardCallsRoute: typeof DashboardCallsRoute
   DashboardCasesRoute: typeof DashboardCasesRoute
   DashboardCommunityRoute: typeof DashboardCommunityRoute
@@ -554,6 +574,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardBillingRoute: DashboardBillingRoute,
   DashboardCallsRoute: DashboardCallsRoute,
   DashboardCasesRoute: DashboardCasesRoute,
   DashboardCommunityRoute: DashboardCommunityRoute,
