@@ -361,6 +361,11 @@ function PurchaseCard({ p, pipeline, onOpen }: { p: Purchase; pipeline?: Pipelin
         {meta && (
           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>{meta.label}</span>
         )}
+        {p.leads?.ref_dsa_id && Number(p.price_paid) === 0 && (
+          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5" title="Customer applied through your referral link — free lead">
+            <Sparkles className="size-2.5" /> Partner Sourced
+          </span>
+        )}
         {p.converted && (
           <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5">
             <CheckCircle2 className="size-2.5" /> Won
