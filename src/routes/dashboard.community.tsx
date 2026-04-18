@@ -46,7 +46,7 @@ function Community() {
   const load = async () => {
     setLoading(true);
     let q = supabase.from("community_posts").select("*").order("pinned", { ascending: false }).order("created_at", { ascending: false });
-    if (filter !== "all") q = q.eq("category", filter);
+    if (filter !== "all") q = q.eq("category", filter as "tip");
     const { data, error } = await q;
     if (error) { toast.error(error.message); setLoading(false); return; }
     const ids = (data ?? []).map((p) => p.author_id);
