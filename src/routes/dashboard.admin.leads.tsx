@@ -29,6 +29,10 @@ type LeadRow = {
   created_at: string;
   follow_up_date: string | null;
   source: string | null;
+  ref_dsa_id: string | null;
+  is_marketplace: boolean;
+  utm_source: string | null;
+  referrer?: { dsa_id: string | null; full_name: string | null } | null;
 };
 
 function AdminLeadsPage() {
@@ -45,7 +49,7 @@ function AdminLeadsPage() {
     const [lRes, pRes] = await Promise.all([
       supabase
         .from("leads")
-        .select("id,applicant_name,full_phone,city,product_category,product_type_id,score,status,price,created_at,follow_up_date,source")
+        .select("id,applicant_name,full_phone,city,product_category,product_type_id,score,status,price,created_at,follow_up_date,source,ref_dsa_id,is_marketplace,utm_source,referrer:profiles!leads_ref_dsa_id_fkey(dsa_id,full_name)")
         .order("created_at", { ascending: false })
         .limit(200),
       supabase.from("product_types").select("*").eq("enabled", true).order("display_order"),
