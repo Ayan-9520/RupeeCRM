@@ -2417,6 +2417,10 @@ export type Database = {
       user_locked_payouts: { Args: { _user_id: string }; Returns: number }
       user_paid_commission: { Args: { _user_id: string }; Returns: number }
       user_withdrawable: { Args: { _user_id: string }; Returns: number }
+      verify_lead_phone: {
+        Args: { _lead_id: string; _phone: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role:
