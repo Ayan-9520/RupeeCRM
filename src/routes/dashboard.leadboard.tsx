@@ -146,6 +146,11 @@ function Leadboard() {
   const buy = async (lead: Lead) => {
     if (!user) return;
     if (purchased[lead.id]) return; // already bought in this session
+    // Plan-gating: daily quota
+    if (leadQuota && !leadQuota.unlimited && !leadQuota.allowed) {
+      toast.error(`Daily lead limit reached (${leadQuota.used}/${leadQuota.limit}). Upgrade your plan to buy more.`);
+      return;
+    }
     // Pre-flight balance check for nicer UX
     if (stats.balance < lead.price) {
       setShortfallLead(lead);
@@ -161,6 +166,9 @@ function Leadboard() {
       } else if (/no longer available/i.test(error.message)) {
         toast.error("This lead was just sold. Refreshing list.");
         load();
+      } else if (/daily lead limit/i.test(error.message) || /limit reached/i.test(error.message)) {
+        toast.error(error.message);
+        refreshQuota();
       } else {
         toast.error(error.message);
       }
@@ -169,6 +177,7 @@ function Leadboard() {
     const result = data as { success: boolean; full_phone: string; new_balance: number };
     setPurchased((prev) => ({ ...prev, [lead.id]: { full_phone: result.full_phone } }));
     setStats((s) => ({ ...s, balance: result.new_balance, purchases: s.purchases + 1 }));
+    refreshQuota();
     toast.success(`Lead unlocked! ₹${lead.price} debited. New balance ₹${result.new_balance.toLocaleString("en-IN")}`);
   };
 
