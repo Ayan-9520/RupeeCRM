@@ -243,6 +243,8 @@ function Leadboard() {
         <StatCard icon={Wallet} label="Wallet balance" value={`₹${stats.balance.toLocaleString("en-IN")}`} tone="accent" />
       </div>
 
+      <PlanQuotaBanner quota={leadQuota} kind="leads" />
+
       <div className="rounded-2xl bg-card border border-border p-4 shadow-card sticky top-2 z-10">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <div className="flex items-center gap-2 text-sm font-semibold text-foreground">

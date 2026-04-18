@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { title: "Add Leads", url: "/dashboard/admin/leads", icon: ListPlus, roles: ["admin"] },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", icon: UserCog, roles: ["admin"] },
   { title: "Payouts", url: "/dashboard/admin/payouts", icon: Banknote, roles: ["admin"] },
+  { title: "Billing Overview", url: "/dashboard/admin/billing", icon: CreditCard, roles: ["admin"] },
   { title: "MKT Templates", url: "/dashboard/admin/marketing", icon: Palette, roles: ["admin"] },
   { title: "MKT Media", url: "/dashboard/admin/marketing-media", icon: ImageIcon, roles: ["admin"] },
 ];
