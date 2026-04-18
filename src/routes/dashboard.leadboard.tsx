@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight, Clock, Zap, RefreshCw } from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
+import { useQuota } from "@/hooks/use-subscription";
+import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
   head: () => ({ meta: [{ title: "Leadboard Marketplace — LeadMines" }] }),
