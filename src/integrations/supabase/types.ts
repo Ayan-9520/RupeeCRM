@@ -243,6 +243,30 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_logins: {
+        Row: {
+          created_at: string
+          id: string
+          login_date: string
+          points_awarded: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          login_date?: string
+          points_awarded?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          login_date?: string
+          points_awarded?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       disbursals: {
         Row: {
           commission_amount: number
@@ -1608,6 +1632,33 @@ export type Database = {
           },
         ]
       }
+      rewards: {
+        Row: {
+          created_at: string
+          id: string
+          points_used: number
+          reward_amount: number
+          user_id: string
+          wallet_txn_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_used: number
+          reward_amount: number
+          user_id: string
+          wallet_txn_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_used?: number
+          reward_amount?: number
+          user_id?: string
+          wallet_txn_id?: string | null
+        }
+        Relationships: []
+      }
       salary_structures: {
         Row: {
           basic: number
@@ -2437,6 +2488,7 @@ export type Database = {
         Args: { _immediate?: boolean; _subscription_id: string }
         Returns: Json
       }
+      claim_daily_login_points: { Args: never; Returns: Json }
       confirm_disbursal: {
         Args: {
           _amount?: number
@@ -2450,6 +2502,10 @@ export type Database = {
       generate_dsa_id: { Args: { _city: string }; Returns: string }
       get_active_subscription: {
         Args: { _workspace_id: string }
+        Returns: Json
+      }
+      get_leaderboard: {
+        Args: { _basis?: string; _limit?: number }
         Returns: Json
       }
       get_primary_role: {
@@ -2527,6 +2583,7 @@ export type Database = {
       purchase_lead: { Args: { _lead_id: string }; Returns: Json }
       recalc_reputation: { Args: { _user_id: string }; Returns: number }
       recharge_wallet: { Args: { _amount: number }; Returns: Json }
+      redeem_points_for_bonus: { Args: { _points: number }; Returns: Json }
       reject_partner_application: {
         Args: { _application_id: string; _reason: string }
         Returns: Json
