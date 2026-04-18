@@ -549,6 +549,7 @@ export type Database = {
           gender: string | null
           id: string
           internal_notes: string | null
+          is_marketplace: boolean
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type"]
           masked_phone: string
@@ -563,6 +564,7 @@ export type Database = {
           product_type_id: string | null
           quality_factors: Json
           quality_score: number | null
+          ref_dsa_id: string | null
           remarks: string | null
           sale_available: boolean
           score: Database["public"]["Enums"]["lead_score"]
@@ -571,6 +573,9 @@ export type Database = {
           status: Database["public"]["Enums"]["lead_status"]
           sum_insured: number | null
           updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
           workspace_id: string | null
         }
         Insert: {
@@ -594,6 +599,7 @@ export type Database = {
           gender?: string | null
           id?: string
           internal_notes?: string | null
+          is_marketplace?: boolean
           loan_amount: number
           loan_type: Database["public"]["Enums"]["loan_type"]
           masked_phone: string
@@ -608,6 +614,7 @@ export type Database = {
           product_type_id?: string | null
           quality_factors?: Json
           quality_score?: number | null
+          ref_dsa_id?: string | null
           remarks?: string | null
           sale_available?: boolean
           score?: Database["public"]["Enums"]["lead_score"]
@@ -616,6 +623,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["lead_status"]
           sum_insured?: number | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           workspace_id?: string | null
         }
         Update: {
@@ -639,6 +649,7 @@ export type Database = {
           gender?: string | null
           id?: string
           internal_notes?: string | null
+          is_marketplace?: boolean
           loan_amount?: number
           loan_type?: Database["public"]["Enums"]["loan_type"]
           masked_phone?: string
@@ -653,6 +664,7 @@ export type Database = {
           product_type_id?: string | null
           quality_factors?: Json
           quality_score?: number | null
+          ref_dsa_id?: string | null
           remarks?: string | null
           sale_available?: boolean
           score?: Database["public"]["Enums"]["lead_score"]
@@ -661,6 +673,9 @@ export type Database = {
           status?: Database["public"]["Enums"]["lead_status"]
           sum_insured?: number | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
           workspace_id?: string | null
         }
         Relationships: [
@@ -669,6 +684,13 @@ export type Database = {
             columns: ["product_type_id"]
             isOneToOne: false
             referencedRelation: "product_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_ref_dsa_id_fkey"
+            columns: ["ref_dsa_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -1242,6 +1264,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allow_marketplace: boolean
           avatar_url: string | null
           city: string | null
           company_name: string | null
@@ -1261,6 +1284,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_marketplace?: boolean
           avatar_url?: string | null
           city?: string | null
           company_name?: string | null
@@ -1280,6 +1304,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_marketplace?: boolean
           avatar_url?: string | null
           city?: string | null
           company_name?: string | null
@@ -1390,6 +1415,89 @@ export type Database = {
             columns: ["quiz_id"]
             isOneToOne: false
             referencedRelation: "course_quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_commissions: {
+        Row: {
+          amount: number
+          approved_at: string | null
+          buyer_id: string
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          commission_pct: number
+          created_at: string
+          id: string
+          lead_id: string
+          lead_price: number
+          lead_purchase_id: string
+          paid_at: string | null
+          referrer_id: string
+          status: Database["public"]["Enums"]["referral_commission_status"]
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          approved_at?: string | null
+          buyer_id: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          commission_pct?: number
+          created_at?: string
+          id?: string
+          lead_id: string
+          lead_price?: number
+          lead_purchase_id: string
+          paid_at?: string | null
+          referrer_id: string
+          status?: Database["public"]["Enums"]["referral_commission_status"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          approved_at?: string | null
+          buyer_id?: string
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          commission_pct?: number
+          created_at?: string
+          id?: string
+          lead_id?: string
+          lead_price?: number
+          lead_purchase_id?: string
+          paid_at?: string | null
+          referrer_id?: string
+          status?: Database["public"]["Enums"]["referral_commission_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_commissions_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: true
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_commissions_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2147,6 +2255,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
       }
+      get_referral_stats: { Args: { _user_id: string }; Returns: Json }
       get_user_workspaces: {
         Args: { _user_id: string }
         Returns: {
@@ -2261,6 +2370,25 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_public_lead: {
+        Args: {
+          _applicant_name: string
+          _city: string
+          _email?: string
+          _employment_type?: string
+          _loan_amount: number
+          _loan_type: Database["public"]["Enums"]["loan_type"]
+          _monthly_income?: number
+          _phone: string
+          _product_category?: Database["public"]["Enums"]["product_category"]
+          _product_subtype?: string
+          _ref_code?: string
+          _utm_campaign?: string
+          _utm_medium?: string
+          _utm_source?: string
+        }
+        Returns: Json
+      }
       submit_quiz: {
         Args: { _answers: Json; _course_slug: string }
         Returns: Json
@@ -2358,6 +2486,7 @@ export type Database = {
       payout_status: "pending" | "approved" | "rejected" | "paid"
       payslip_status: "draft" | "processed" | "paid"
       product_category: "loan" | "insurance" | "credit_card" | "investment"
+      referral_commission_status: "pending" | "approved" | "cancelled" | "paid"
       refund_reason:
         | "invalid_phone"
         | "wrong_number"
@@ -2596,6 +2725,7 @@ export const Constants = {
       payout_status: ["pending", "approved", "rejected", "paid"],
       payslip_status: ["draft", "processed", "paid"],
       product_category: ["loan", "insurance", "credit_card", "investment"],
+      referral_commission_status: ["pending", "approved", "cancelled", "paid"],
       refund_reason: [
         "invalid_phone",
         "wrong_number",

@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import {
   Loader2, Phone, MapPin, Banknote, Search, Filter, X, MessageSquare, Copy,
   CheckCircle2, TrendingUp, ShoppingBag, Wallet, Clock, ChevronRight, StickyNote,
-  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText,
+  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText, Sparkles,
 } from "lucide-react";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
@@ -45,6 +45,9 @@ type Purchase = {
     product_subtype: string | null;
     product_type_id: string | null;
     product_details: Record<string, unknown>;
+    source: string | null;
+    ref_dsa_id: string | null;
+    is_marketplace: boolean;
   } | null;
 };
 
@@ -84,7 +87,7 @@ function MyLeads() {
     setLoading(true);
     const { data, error } = await supabase
       .from("lead_purchases")
-      .select("id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,email,city,loan_amount,monthly_income,score,product_category,product_subtype,product_type_id,product_details)")
+      .select("id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,email,city,loan_amount,monthly_income,score,product_category,product_subtype,product_type_id,product_details,source,ref_dsa_id,is_marketplace)")
       .eq("dsa_id", user.id)
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
@@ -357,6 +360,11 @@ function PurchaseCard({ p, pipeline, onOpen }: { p: Purchase; pipeline?: Pipelin
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
         {meta && (
           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>{meta.label}</span>
+        )}
+        {p.leads?.ref_dsa_id && Number(p.price_paid) === 0 && (
+          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5" title="Customer applied through your referral link — free lead">
+            <Sparkles className="size-2.5" /> Partner Sourced
+          </span>
         )}
         {p.converted && (
           <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5">
