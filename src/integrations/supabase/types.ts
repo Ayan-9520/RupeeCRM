@@ -65,6 +65,123 @@ export type Database = {
           },
         ]
       }
+      case_documents: {
+        Row: {
+          created_at: string
+          doc_type: string
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          lead_id: string
+          lead_purchase_id: string
+          mime_type: string | null
+          notes: string | null
+          uploaded_by: string
+          verified: boolean
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_type: string
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          lead_id: string
+          lead_purchase_id: string
+          mime_type?: string | null
+          notes?: string | null
+          uploaded_by: string
+          verified?: boolean
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_type?: string
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          lead_id?: string
+          lead_purchase_id?: string
+          mime_type?: string | null
+          notes?: string | null
+          uploaded_by?: string
+          verified?: boolean
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_documents_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_documents_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      case_status_logs: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          from_stage: string | null
+          id: string
+          lead_id: string
+          lead_purchase_id: string
+          metadata: Json
+          notes: string | null
+          to_stage: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          lead_id: string
+          lead_purchase_id: string
+          metadata?: Json
+          notes?: string | null
+          to_stage: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          from_stage?: string | null
+          id?: string
+          lead_id?: string
+          lead_purchase_id?: string
+          metadata?: Json
+          notes?: string | null
+          to_stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "case_status_logs_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "case_status_logs_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificates: {
         Row: {
           badge: string | null
