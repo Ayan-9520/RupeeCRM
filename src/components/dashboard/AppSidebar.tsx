@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon, Award,
+  Palette, Image as ImageIcon, Award, UserCheck,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -41,6 +41,7 @@ const NAV: NavItem[] = [
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", icon: UserCog, roles: ["admin"] },
   { title: "Payouts", url: "/dashboard/admin/payouts", icon: Banknote, roles: ["admin"] },
   { title: "Billing Overview", url: "/dashboard/admin/billing", icon: CreditCard, roles: ["admin"] },
+  { title: "Partner Applications", url: "/dashboard/admin/partners", icon: UserCheck, roles: ["admin"] },
   { title: "MKT Templates", url: "/dashboard/admin/marketing", icon: Palette, roles: ["admin"] },
   { title: "MKT Media", url: "/dashboard/admin/marketing-media", icon: ImageIcon, roles: ["admin"] },
 ];

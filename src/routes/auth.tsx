@@ -305,6 +305,18 @@ function AuthPage() {
               {mode === "signin" ? "Create account" : "Sign in"}
             </button>
           </p>
+
+          <div className="mt-6 pt-6 border-t border-border">
+            <Link
+              to="/become-partner"
+              className="block w-full py-3 text-center rounded-full border-2 border-accent text-accent text-sm font-semibold hover:bg-accent/10 transition-smooth"
+            >
+              Apply as DSA Partner — Get your own DSA ID
+            </Link>
+            <p className="mt-2 text-xs text-center text-muted-foreground">
+              Public KYC application · Auto-approval in 24h · No upfront fees
+            </p>
+          </div>
         </div>
       </div>
     </div>
