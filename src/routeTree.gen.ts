@@ -56,6 +56,7 @@ import { Route as DashboardAdminMarketingMediaRouteImport } from './routes/dashb
 import { Route as DashboardAdminMarketingRouteImport } from './routes/dashboard.admin.marketing'
 import { Route as DashboardAdminLeadsRouteImport } from './routes/dashboard.admin.leads'
 import { Route as DashboardAdminBillingRouteImport } from './routes/dashboard.admin.billing'
+import { Route as ApiLenderWebhookRouteImport } from './routes/api.lender.webhook'
 import { Route as DashboardHrmsPayslipsIndexRouteImport } from './routes/dashboard.hrms.payslips.index'
 import { Route as DashboardMyLeadsIdApplyRouteImport } from './routes/dashboard.my-leads.$id.apply'
 import { Route as DashboardHrmsPayslipsIdRouteImport } from './routes/dashboard.hrms.payslips.$id'
@@ -300,6 +301,11 @@ const DashboardAdminBillingRoute = DashboardAdminBillingRouteImport.update({
   path: '/admin/billing',
   getParentRoute: () => DashboardRoute,
 } as any)
+const ApiLenderWebhookRoute = ApiLenderWebhookRouteImport.update({
+  id: '/api/lender/webhook',
+  path: '/api/lender/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardHrmsPayslipsIndexRoute =
   DashboardHrmsPayslipsIndexRouteImport.update({
     id: '/payslips/',
@@ -352,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/learn-earn/': typeof LearnEarnIndexRoute
+  '/api/lender/webhook': typeof ApiLenderWebhookRoute
   '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -402,6 +409,7 @@ export interface FileRoutesByTo {
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard': typeof DashboardIndexRoute
   '/learn-earn': typeof LearnEarnIndexRoute
+  '/api/lender/webhook': typeof ApiLenderWebhookRoute
   '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -456,6 +464,7 @@ export interface FileRoutesById {
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/learn-earn/': typeof LearnEarnIndexRoute
+  '/api/lender/webhook': typeof ApiLenderWebhookRoute
   '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/learn-quiz/$slug'
     | '/dashboard/'
     | '/learn-earn/'
+    | '/api/lender/webhook'
     | '/dashboard/admin/billing'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
     | '/learn-quiz/$slug'
     | '/dashboard'
     | '/learn-earn'
+    | '/api/lender/webhook'
     | '/dashboard/admin/billing'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -614,6 +625,7 @@ export interface FileRouteTypes {
     | '/learn-quiz/$slug'
     | '/dashboard/'
     | '/learn-earn/'
+    | '/api/lender/webhook'
     | '/dashboard/admin/billing'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
@@ -649,6 +661,7 @@ export interface RootRouteChildren {
   LearnEarnSlugRoute: typeof LearnEarnSlugRoute
   LearnQuizSlugRoute: typeof LearnQuizSlugRoute
   LearnEarnIndexRoute: typeof LearnEarnIndexRoute
+  ApiLenderWebhookRoute: typeof ApiLenderWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -982,6 +995,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminBillingRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/api/lender/webhook': {
+      id: '/api/lender/webhook'
+      path: '/api/lender/webhook'
+      fullPath: '/api/lender/webhook'
+      preLoaderRoute: typeof ApiLenderWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard/hrms/payslips/': {
       id: '/dashboard/hrms/payslips/'
       path: '/payslips'
@@ -1145,6 +1165,7 @@ const rootRouteChildren: RootRouteChildren = {
   LearnEarnSlugRoute: LearnEarnSlugRoute,
   LearnQuizSlugRoute: LearnQuizSlugRoute,
   LearnEarnIndexRoute: LearnEarnIndexRoute,
+  ApiLenderWebhookRoute: ApiLenderWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
