@@ -55,6 +55,7 @@ const LOW_BALANCE_THRESHOLD = 300;
 
 function Leadboard() {
   const { user } = useAuth();
+  const { quota: leadQuota, refresh: refreshQuota } = useQuota("leads");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
