@@ -101,6 +101,112 @@ export type Database = {
         }
         Relationships: []
       }
+      community_post_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_post_likes: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_post_likes_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "community_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_posts: {
+        Row: {
+          author_id: string
+          body: string
+          category: Database["public"]["Enums"]["community_post_category"]
+          comments_count: number
+          created_at: string
+          id: string
+          image_url: string | null
+          is_demo: boolean
+          likes_count: number
+          pinned: boolean
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          category?: Database["public"]["Enums"]["community_post_category"]
+          comments_count?: number
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_demo?: boolean
+          likes_count?: number
+          pinned?: boolean
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          category?: Database["public"]["Enums"]["community_post_category"]
+          comments_count?: number
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_demo?: boolean
+          likes_count?: number
+          pinned?: boolean
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       course_quizzes: {
         Row: {
           badge: string | null
@@ -1742,6 +1848,101 @@ export type Database = {
           },
         ]
       }
+      training_courses: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          difficulty: string
+          display_order: number
+          duration_minutes: number
+          enabled: boolean
+          id: string
+          modules: Json
+          slug: string
+          tags: string[]
+          thumbnail_url: string | null
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          display_order?: number
+          duration_minutes?: number
+          enabled?: boolean
+          id?: string
+          modules?: Json
+          slug: string
+          tags?: string[]
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          difficulty?: string
+          display_order?: number
+          duration_minutes?: number
+          enabled?: boolean
+          id?: string
+          modules?: Json
+          slug?: string
+          tags?: string[]
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      training_progress: {
+        Row: {
+          completed_at: string | null
+          completed_modules: string[]
+          course_id: string
+          created_at: string
+          id: string
+          last_watched_at: string
+          progress_percent: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_modules?: string[]
+          course_id: string
+          created_at?: string
+          id?: string
+          last_watched_at?: string
+          progress_percent?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_modules?: string[]
+          course_id?: string
+          created_at?: string
+          id?: string
+          last_watched_at?: string
+          progress_percent?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_progress_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "training_courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       usage_counters: {
         Row: {
           count: number
@@ -2439,6 +2640,13 @@ export type Database = {
         | "holiday"
         | "weekend"
       billing_cycle: "monthly" | "quarterly" | "yearly"
+      community_post_category:
+        | "success_story"
+        | "tip"
+        | "motivation"
+        | "sales_hack"
+        | "question"
+        | "announcement"
       disbursal_status:
         | "pending"
         | "disbursed"
@@ -2674,6 +2882,14 @@ export const Constants = {
         "weekend",
       ],
       billing_cycle: ["monthly", "quarterly", "yearly"],
+      community_post_category: [
+        "success_story",
+        "tip",
+        "motivation",
+        "sales_hack",
+        "question",
+        "announcement",
+      ],
       disbursal_status: [
         "pending",
         "disbursed",
