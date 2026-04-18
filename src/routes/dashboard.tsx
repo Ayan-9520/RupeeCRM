@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 import { useAuth } from "@/lib/auth-context";
+import { useDailyLogin } from "@/hooks/use-daily-login";
 import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
@@ -14,6 +15,7 @@ export const Route = createFileRoute("/dashboard")({
 function DashboardLayout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  useDailyLogin();
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/auth" });
