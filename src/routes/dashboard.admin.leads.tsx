@@ -126,6 +126,7 @@ function AdminLeadsPage() {
               <thead className="bg-secondary/40 text-xs uppercase tracking-wide text-muted-foreground">
                 <tr>
                   <th className="text-left px-4 py-3">Applicant</th>
+                  <th className="text-left px-4 py-3">Source</th>
                   <th className="text-left px-4 py-3">Product</th>
                   <th className="text-left px-4 py-3">City</th>
                   <th className="text-left px-4 py-3">Score</th>
@@ -144,6 +145,16 @@ function AdminLeadsPage() {
                       <td className="px-4 py-3">
                         <div className="font-semibold">{l.applicant_name}</div>
                         <div className="text-xs text-muted-foreground">{l.full_phone}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {l.ref_dsa_id ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 w-fit">Referral</span>
+                            <span className="text-[10px] text-muted-foreground font-mono">{l.referrer?.dsa_id ?? "—"}</span>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-secondary text-foreground/70">{l.source ?? "Manual"}</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>{meta.label}</span>
