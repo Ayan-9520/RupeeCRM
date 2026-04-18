@@ -66,43 +66,46 @@ export type SubmitPartnerInput = {
 };
 
 export async function submitPartnerApplication(input: SubmitPartnerInput) {
-  const { data, error } = await supabase.rpc("submit_partner_application", {
+  const payload: Record<string, unknown> = {
     _full_name: input.full_name,
     _email: input.email,
     _phone: input.phone,
     _city: input.city,
-    _state: input.state ?? null,
-    _pincode: input.pincode ?? null,
-    _date_of_birth: input.date_of_birth ?? null,
-    _gender: input.gender ?? null,
-    _company_name: input.company_name ?? null,
+    _state: input.state,
+    _pincode: input.pincode,
+    _date_of_birth: input.date_of_birth,
+    _gender: input.gender,
+    _company_name: input.company_name,
     _experience_years: input.experience_years ?? 0,
     _products: input.products ?? [],
-    _monthly_target: input.monthly_target ?? null,
+    _monthly_target: input.monthly_target,
     _pan: input.pan,
-    _aadhaar_last4: input.aadhaar_last4 ?? null,
-    _bank_account: input.bank_account ?? null,
-    _ifsc: input.ifsc ?? null,
-    _account_holder: input.account_holder ?? null,
-    _pan_doc_url: input.pan_doc_url ?? null,
-    _aadhaar_doc_url: input.aadhaar_doc_url ?? null,
-    _bank_proof_url: input.bank_proof_url ?? null,
-    _selfie_url: input.selfie_url ?? null,
-    _utm_source: input.utm_source ?? null,
-    _utm_medium: input.utm_medium ?? null,
-    _utm_campaign: input.utm_campaign ?? null,
-  });
+    _aadhaar_last4: input.aadhaar_last4,
+    _bank_account: input.bank_account,
+    _ifsc: input.ifsc,
+    _account_holder: input.account_holder,
+    _pan_doc_url: input.pan_doc_url,
+    _aadhaar_doc_url: input.aadhaar_doc_url,
+    _bank_proof_url: input.bank_proof_url,
+    _selfie_url: input.selfie_url,
+    _utm_source: input.utm_source,
+    _utm_medium: input.utm_medium,
+    _utm_campaign: input.utm_campaign,
+  };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error } = await supabase.rpc("submit_partner_application", payload as any);
   if (error) throw error;
-  return data as { success: boolean; application_id: string; status: string };
+  return data as unknown as { success: boolean; application_id: string; status: string };
 }
 
 export async function approvePartnerApplication(id: string, notes?: string) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error } = await supabase.rpc("approve_partner_application", {
     _application_id: id,
-    _notes: notes ?? null,
-  });
+    _notes: notes,
+  } as any);
   if (error) throw error;
-  return data as { success: boolean; dsa_id: string; lead_id: string | null; application_id: string };
+  return data as unknown as { success: boolean; dsa_id: string; lead_id: string | null; application_id: string };
 }
 
 export async function rejectPartnerApplication(id: string, reason: string) {
