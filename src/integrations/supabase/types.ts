@@ -1875,7 +1875,7 @@ export type Database = {
         | "eligibility"
         | "documents"
         | "custom"
-      workspace_plan: "starter" | "growth" | "pro" | "enterprise"
+      workspace_plan: "free" | "starter" | "growth" | "pro" | "enterprise"
       workspace_role: "owner" | "admin" | "manager" | "employee" | "viewer"
     }
     CompositeTypes: {
@@ -2108,7 +2108,7 @@ export const Constants = {
         "documents",
         "custom",
       ],
-      workspace_plan: ["starter", "growth", "pro", "enterprise"],
+      workspace_plan: ["free", "starter", "growth", "pro", "enterprise"],
       workspace_role: ["owner", "admin", "manager", "employee", "viewer"],
     },
   },
