@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon, Award, UserCheck,
+  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -36,6 +36,8 @@ const NAV: NavItem[] = [
   { title: "Learn & Earn", url: "/dashboard/learn", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Certificates", url: "/dashboard/certificates", icon: Award, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Training", url: "/dashboard/training", icon: GraduationCap, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
+  { title: "Leaderboard", url: "/dashboard/leaderboard", icon: Trophy, roles: ["admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
+  { title: "Rewards", url: "/dashboard/rewards", icon: Gift, roles: ["admin", "dsa", "caller", "coordinator", "affiliate"] },
   { title: "Users", url: "/dashboard/admin/users", icon: Users, roles: ["admin"] },
   { title: "Add Leads", url: "/dashboard/admin/leads", icon: ListPlus, roles: ["admin"] },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", icon: UserCog, roles: ["admin"] },
