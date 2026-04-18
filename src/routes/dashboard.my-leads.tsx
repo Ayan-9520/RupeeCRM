@@ -45,6 +45,9 @@ type Purchase = {
     product_subtype: string | null;
     product_type_id: string | null;
     product_details: Record<string, unknown>;
+    source: string | null;
+    ref_dsa_id: string | null;
+    is_marketplace: boolean;
   } | null;
 };
 
@@ -84,7 +87,7 @@ function MyLeads() {
     setLoading(true);
     const { data, error } = await supabase
       .from("lead_purchases")
-      .select("id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,email,city,loan_amount,monthly_income,score,product_category,product_subtype,product_type_id,product_details)")
+      .select("id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,email,city,loan_amount,monthly_income,score,product_category,product_subtype,product_type_id,product_details,source,ref_dsa_id,is_marketplace)")
       .eq("dsa_id", user.id)
       .order("created_at", { ascending: false });
     if (error) toast.error(error.message);

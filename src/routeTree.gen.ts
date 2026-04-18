@@ -34,6 +34,7 @@ import { Route as DashboardCertificatesRouteImport } from './routes/dashboard.ce
 import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
 import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
+import { Route as ApplySlugRouteImport } from './routes/apply.$slug'
 import { Route as DashboardMarketingIndexRouteImport } from './routes/dashboard.marketing.index'
 import { Route as DashboardHrmsIndexRouteImport } from './routes/dashboard.hrms.index'
 import { Route as DashboardMarketingWhatsappRouteImport } from './routes/dashboard.marketing.whatsapp'
@@ -183,6 +184,11 @@ const DashboardBillingRoute = DashboardBillingRouteImport.update({
   path: '/billing',
   getParentRoute: () => DashboardRoute,
 } as any)
+const ApplySlugRoute = ApplySlugRouteImport.update({
+  id: '/apply/$slug',
+  path: '/apply/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardMarketingIndexRoute = DashboardMarketingIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -311,6 +317,7 @@ export interface FileRoutesByFullPath {
   '/become-partner': typeof BecomePartnerRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/apply/$slug': typeof ApplySlugRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
@@ -360,6 +367,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/become-partner': typeof BecomePartnerRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/apply/$slug': typeof ApplySlugRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
@@ -409,6 +417,7 @@ export interface FileRoutesById {
   '/become-partner': typeof BecomePartnerRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
+  '/apply/$slug': typeof ApplySlugRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
@@ -461,6 +470,7 @@ export interface FileRouteTypes {
     | '/become-partner'
     | '/dashboard'
     | '/reset-password'
+    | '/apply/$slug'
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
@@ -510,6 +520,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/become-partner'
     | '/reset-password'
+    | '/apply/$slug'
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
@@ -558,6 +569,7 @@ export interface FileRouteTypes {
     | '/become-partner'
     | '/dashboard'
     | '/reset-password'
+    | '/apply/$slug'
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
@@ -609,6 +621,7 @@ export interface RootRouteChildren {
   BecomePartnerRoute: typeof BecomePartnerRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApplySlugRoute: typeof ApplySlugRoute
   LearnEarnSlugRoute: typeof LearnEarnSlugRoute
   LearnQuizSlugRoute: typeof LearnQuizSlugRoute
   LearnEarnIndexRoute: typeof LearnEarnIndexRoute
@@ -790,6 +803,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/billing'
       preLoaderRoute: typeof DashboardBillingRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/apply/$slug': {
+      id: '/apply/$slug'
+      path: '/apply/$slug'
+      fullPath: '/apply/$slug'
+      preLoaderRoute: typeof ApplySlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dashboard/marketing/': {
       id: '/dashboard/marketing/'
@@ -1079,6 +1099,7 @@ const rootRouteChildren: RootRouteChildren = {
   BecomePartnerRoute: BecomePartnerRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApplySlugRoute: ApplySlugRoute,
   LearnEarnSlugRoute: LearnEarnSlugRoute,
   LearnQuizSlugRoute: LearnQuizSlugRoute,
   LearnEarnIndexRoute: LearnEarnIndexRoute,
