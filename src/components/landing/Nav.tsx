@@ -38,6 +38,9 @@ export function Nav() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
+          <Link to="/become-partner" className="text-sm font-medium text-accent hover:text-accent/80 transition-smooth">
+            Become a Partner
+          </Link>
           <Link to="/auth" className="text-sm font-medium text-foreground/80 hover:text-foreground transition-smooth">
             Sign in
           </Link>
@@ -71,7 +74,10 @@ export function Nav() {
               Learn & Earn
               <span className="px-1.5 py-0.5 rounded-full bg-accent/20 text-accent-foreground text-[9px] font-bold">NEW</span>
             </Link>
-            <Link to="/auth" className="mt-3 py-2.5 text-center rounded-full bg-foreground text-background text-sm font-medium">
+            <Link to="/become-partner" onClick={() => setOpen(false)} className="mt-3 py-2.5 text-center rounded-full border-2 border-accent text-accent text-sm font-semibold">
+              Become a Partner
+            </Link>
+            <Link to="/auth" onClick={() => setOpen(false)} className="mt-2 py-2.5 text-center rounded-full bg-foreground text-background text-sm font-medium">
               Get started
             </Link>
           </div>

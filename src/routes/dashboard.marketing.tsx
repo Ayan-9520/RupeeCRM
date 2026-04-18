@@ -1,6 +1,8 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
 import { Megaphone, Image as ImageIcon, MessageCircle, IdCard, Film, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useQuota } from "@/hooks/use-subscription";
+import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
 
 export const Route = createFileRoute("/dashboard/marketing")({
   component: MarketingLayout,
@@ -17,6 +19,7 @@ const TABS = [
 
 function MarketingLayout() {
   const loc = useLocation();
+  const { quota } = useQuota("marketing");
   const isActive = (to: string, exact?: boolean) =>
     exact ? loc.pathname === to : loc.pathname.startsWith(to);
 
@@ -28,6 +31,8 @@ function MarketingLayout() {
           Create, personalize, and share branded creatives across every channel.
         </p>
       </div>
+
+      <PlanQuotaBanner quota={quota} kind="marketing" />
 
       <div className="border-b overflow-x-auto">
         <nav className="flex gap-1 min-w-max">
