@@ -402,10 +402,10 @@ function CheckoutDialog({
       _workspace_id: workspaceId,
       _plan_code: plan.code,
       _cycle: cycle,
-      _billing_name: billingName || null,
-      _billing_email: billingEmail || null,
-      _billing_phone: billingPhone || null,
-      _gstin: gstin || null,
+      _billing_name: billingName || undefined,
+      _billing_email: billingEmail || undefined,
+      _billing_phone: billingPhone || undefined,
+      _gstin: gstin || undefined,
     });
     setBusy(false);
     if (error) { toast.error(error.message); return; }
