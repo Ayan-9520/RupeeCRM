@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as BecomePartnerRouteImport } from './routes/become-partner'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnEarnIndexRouteImport } from './routes/learn-earn.index'
@@ -47,6 +48,7 @@ import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
 import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
 import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
+import { Route as DashboardAdminPartnersRouteImport } from './routes/dashboard.admin.partners'
 import { Route as DashboardAdminMarketingMediaRouteImport } from './routes/dashboard.admin.marketing-media'
 import { Route as DashboardAdminMarketingRouteImport } from './routes/dashboard.admin.marketing'
 import { Route as DashboardAdminLeadsRouteImport } from './routes/dashboard.admin.leads'
@@ -64,6 +66,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BecomePartnerRoute = BecomePartnerRouteImport.update({
+  id: '/become-partner',
+  path: '/become-partner',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -249,6 +256,11 @@ const DashboardAdminPayoutsRoute = DashboardAdminPayoutsRouteImport.update({
   path: '/admin/payouts',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAdminPartnersRoute = DashboardAdminPartnersRouteImport.update({
+  id: '/admin/partners',
+  path: '/admin/partners',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAdminMarketingMediaRoute =
   DashboardAdminMarketingMediaRouteImport.update({
     id: '/admin/marketing-media',
@@ -296,6 +308,7 @@ const DashboardHrmsEmployeesIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/become-partner': typeof BecomePartnerRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -322,6 +335,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
+  '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
@@ -344,6 +358,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/become-partner': typeof BecomePartnerRoute
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
@@ -367,6 +382,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
+  '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
@@ -390,6 +406,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/become-partner': typeof BecomePartnerRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/dashboard/billing': typeof DashboardBillingRoute
@@ -416,6 +433,7 @@ export interface FileRoutesById {
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
+  '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
@@ -440,6 +458,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/become-partner'
     | '/dashboard'
     | '/reset-password'
     | '/dashboard/billing'
@@ -466,6 +485,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
+    | '/dashboard/admin/partners'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
@@ -488,6 +508,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/become-partner'
     | '/reset-password'
     | '/dashboard/billing'
     | '/dashboard/calls'
@@ -511,6 +532,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
+    | '/dashboard/admin/partners'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
@@ -533,6 +555,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/auth'
+    | '/become-partner'
     | '/dashboard'
     | '/reset-password'
     | '/dashboard/billing'
@@ -559,6 +582,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
+    | '/dashboard/admin/partners'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
@@ -582,6 +606,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRoute
+  BecomePartnerRoute: typeof BecomePartnerRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   ResetPasswordRoute: typeof ResetPasswordRoute
   LearnEarnSlugRoute: typeof LearnEarnSlugRoute
@@ -603,6 +628,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/become-partner': {
+      id: '/become-partner'
+      path: '/become-partner'
+      fullPath: '/become-partner'
+      preLoaderRoute: typeof BecomePartnerRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -857,6 +889,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminPayoutsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin/partners': {
+      id: '/dashboard/admin/partners'
+      path: '/admin/partners'
+      fullPath: '/dashboard/admin/partners'
+      preLoaderRoute: typeof DashboardAdminPartnersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/admin/marketing-media': {
       id: '/dashboard/admin/marketing-media'
       path: '/admin/marketing-media'
@@ -996,6 +1035,7 @@ interface DashboardRouteChildren {
   DashboardAdminLeadsRoute: typeof DashboardAdminLeadsRoute
   DashboardAdminMarketingRoute: typeof DashboardAdminMarketingRoute
   DashboardAdminMarketingMediaRoute: typeof DashboardAdminMarketingMediaRoute
+  DashboardAdminPartnersRoute: typeof DashboardAdminPartnersRoute
   DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute
   DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
@@ -1023,6 +1063,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminLeadsRoute: DashboardAdminLeadsRoute,
   DashboardAdminMarketingRoute: DashboardAdminMarketingRoute,
   DashboardAdminMarketingMediaRoute: DashboardAdminMarketingMediaRoute,
+  DashboardAdminPartnersRoute: DashboardAdminPartnersRoute,
   DashboardAdminPayoutsRoute: DashboardAdminPayoutsRoute,
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
@@ -1035,6 +1076,7 @@ const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRoute,
+  BecomePartnerRoute: BecomePartnerRoute,
   DashboardRoute: DashboardRouteWithChildren,
   ResetPasswordRoute: ResetPasswordRoute,
   LearnEarnSlugRoute: LearnEarnSlugRoute,
