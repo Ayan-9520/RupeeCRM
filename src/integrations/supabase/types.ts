@@ -299,6 +299,108 @@ export type Database = {
           },
         ]
       }
+      invoices: {
+        Row: {
+          billing_address: Json | null
+          billing_email: string | null
+          billing_name: string | null
+          billing_phone: string | null
+          created_at: string
+          cycle: Database["public"]["Enums"]["billing_cycle"]
+          discount: number
+          due_at: string | null
+          gst_amount: number
+          gst_percent: number
+          gstin: string | null
+          id: string
+          invoice_number: string
+          line_items: Json
+          paid_at: string | null
+          pdf_url: string | null
+          plan_code: Database["public"]["Enums"]["workspace_plan"]
+          razorpay_order_id: string | null
+          razorpay_payment_id: string | null
+          status: Database["public"]["Enums"]["invoice_status"]
+          subscription_id: string | null
+          subtotal: number
+          total_amount: number
+          updated_at: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          billing_address?: Json | null
+          billing_email?: string | null
+          billing_name?: string | null
+          billing_phone?: string | null
+          created_at?: string
+          cycle: Database["public"]["Enums"]["billing_cycle"]
+          discount?: number
+          due_at?: string | null
+          gst_amount?: number
+          gst_percent?: number
+          gstin?: string | null
+          id?: string
+          invoice_number: string
+          line_items?: Json
+          paid_at?: string | null
+          pdf_url?: string | null
+          plan_code: Database["public"]["Enums"]["workspace_plan"]
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subscription_id?: string | null
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          billing_address?: Json | null
+          billing_email?: string | null
+          billing_name?: string | null
+          billing_phone?: string | null
+          created_at?: string
+          cycle?: Database["public"]["Enums"]["billing_cycle"]
+          discount?: number
+          due_at?: string | null
+          gst_amount?: number
+          gst_percent?: number
+          gstin?: string | null
+          id?: string
+          invoice_number?: string
+          line_items?: Json
+          paid_at?: string | null
+          pdf_url?: string | null
+          plan_code?: Database["public"]["Enums"]["workspace_plan"]
+          razorpay_order_id?: string | null
+          razorpay_payment_id?: string | null
+          status?: Database["public"]["Enums"]["invoice_status"]
+          subscription_id?: string | null
+          subtotal?: number
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "subscriptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lead_purchases: {
         Row: {
           converted: boolean
@@ -1229,6 +1331,215 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          affiliate_enabled: boolean
+          api_access: boolean
+          code: Database["public"]["Enums"]["workspace_plan"]
+          created_at: string
+          custom_branding: boolean
+          description: string | null
+          display_order: number
+          features: Json
+          gst_percent: number
+          hrms_user_limit: number
+          id: string
+          is_active: boolean
+          is_popular: boolean
+          leads_per_day: number
+          marketing_posts_per_month: number
+          name: string
+          price_monthly: number
+          price_quarterly: number
+          price_yearly: number
+          priority_leads: boolean
+          recharge_bonus_max_pct: number
+          seat_limit: number
+          tagline: string | null
+          updated_at: string
+          whatsapp_enabled: boolean
+          withdrawal_enabled: boolean
+        }
+        Insert: {
+          affiliate_enabled?: boolean
+          api_access?: boolean
+          code: Database["public"]["Enums"]["workspace_plan"]
+          created_at?: string
+          custom_branding?: boolean
+          description?: string | null
+          display_order?: number
+          features?: Json
+          gst_percent?: number
+          hrms_user_limit?: number
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          leads_per_day?: number
+          marketing_posts_per_month?: number
+          name: string
+          price_monthly?: number
+          price_quarterly?: number
+          price_yearly?: number
+          priority_leads?: boolean
+          recharge_bonus_max_pct?: number
+          seat_limit?: number
+          tagline?: string | null
+          updated_at?: string
+          whatsapp_enabled?: boolean
+          withdrawal_enabled?: boolean
+        }
+        Update: {
+          affiliate_enabled?: boolean
+          api_access?: boolean
+          code?: Database["public"]["Enums"]["workspace_plan"]
+          created_at?: string
+          custom_branding?: boolean
+          description?: string | null
+          display_order?: number
+          features?: Json
+          gst_percent?: number
+          hrms_user_limit?: number
+          id?: string
+          is_active?: boolean
+          is_popular?: boolean
+          leads_per_day?: number
+          marketing_posts_per_month?: number
+          name?: string
+          price_monthly?: number
+          price_quarterly?: number
+          price_yearly?: number
+          priority_leads?: boolean
+          recharge_bonus_max_pct?: number
+          seat_limit?: number
+          tagline?: string | null
+          updated_at?: string
+          whatsapp_enabled?: boolean
+          withdrawal_enabled?: boolean
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          amount: number
+          auto_renew: boolean
+          cancel_at_period_end: boolean
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string
+          current_period_start: string
+          cycle: Database["public"]["Enums"]["billing_cycle"]
+          gst_amount: number
+          id: string
+          metadata: Json
+          plan_code: Database["public"]["Enums"]["workspace_plan"]
+          plan_id: string
+          razorpay_customer_id: string | null
+          razorpay_subscription_id: string | null
+          status: Database["public"]["Enums"]["subscription_status"]
+          total_amount: number
+          trial_ends_at: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          amount?: number
+          auto_renew?: boolean
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end: string
+          current_period_start?: string
+          cycle?: Database["public"]["Enums"]["billing_cycle"]
+          gst_amount?: number
+          id?: string
+          metadata?: Json
+          plan_code: Database["public"]["Enums"]["workspace_plan"]
+          plan_id: string
+          razorpay_customer_id?: string | null
+          razorpay_subscription_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          total_amount?: number
+          trial_ends_at?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          amount?: number
+          auto_renew?: boolean
+          cancel_at_period_end?: boolean
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string
+          current_period_start?: string
+          cycle?: Database["public"]["Enums"]["billing_cycle"]
+          gst_amount?: number
+          id?: string
+          metadata?: Json
+          plan_code?: Database["public"]["Enums"]["workspace_plan"]
+          plan_id?: string
+          razorpay_customer_id?: string | null
+          razorpay_subscription_id?: string | null
+          status?: Database["public"]["Enums"]["subscription_status"]
+          total_amount?: number
+          trial_ends_at?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      usage_counters: {
+        Row: {
+          count: number
+          created_at: string
+          id: string
+          kind: string
+          period_key: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          count?: number
+          created_at?: string
+          id?: string
+          kind: string
+          period_key: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          count?: number
+          created_at?: string
+          id?: string
+          kind?: string
+          period_key?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usage_counters_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_points: {
         Row: {
           badges: string[]
@@ -1671,6 +1982,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_buy_lead: { Args: { _workspace_id: string }; Returns: Json }
+      can_create_marketing_post: {
+        Args: { _workspace_id: string }
+        Returns: Json
+      }
+      can_request_withdrawal: { Args: { _user_id: string }; Returns: boolean }
+      cancel_subscription: {
+        Args: { _immediate?: boolean; _subscription_id: string }
+        Returns: Json
+      }
       confirm_disbursal: {
         Args: {
           _amount?: number
@@ -1681,6 +2002,10 @@ export type Database = {
         Returns: Json
       }
       dsa_tier_from_score: { Args: { _score: number }; Returns: string }
+      get_active_subscription: {
+        Args: { _workspace_id: string }
+        Returns: Json
+      }
       get_primary_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1708,6 +2033,10 @@ export type Database = {
         Returns: boolean
       }
       hrms_monthly_bill: { Args: { _workspace_id: string }; Returns: Json }
+      increment_usage: {
+        Args: { _kind: string; _workspace_id: string }
+        Returns: number
+      }
       is_workspace_employee: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
@@ -1775,6 +2104,18 @@ export type Database = {
         }
         Returns: Json
       }
+      subscribe_workspace: {
+        Args: {
+          _billing_email?: string
+          _billing_name?: string
+          _billing_phone?: string
+          _cycle?: Database["public"]["Enums"]["billing_cycle"]
+          _gstin?: string
+          _plan_code: Database["public"]["Enums"]["workspace_plan"]
+          _workspace_id: string
+        }
+        Returns: Json
+      }
       user_locked_payouts: { Args: { _user_id: string }; Returns: number }
       user_paid_commission: { Args: { _user_id: string }; Returns: number }
       user_withdrawable: { Args: { _user_id: string }; Returns: number }
@@ -1795,6 +2136,7 @@ export type Database = {
         | "leave"
         | "holiday"
         | "weekend"
+      billing_cycle: "monthly" | "quarterly" | "yearly"
       disbursal_status:
         | "pending"
         | "disbursed"
@@ -1804,6 +2146,7 @@ export type Database = {
         | "rejected"
         | "cancelled"
       employee_status: "active" | "on_leave" | "terminated"
+      invoice_status: "draft" | "pending" | "paid" | "failed" | "refunded"
       lead_score: "cold" | "warm" | "hot"
       lead_status: "available" | "sold" | "archived"
       loan_type:
@@ -1854,6 +2197,12 @@ export type Database = {
         | "no_intent"
         | "other"
       refund_status: "pending" | "approved" | "rejected" | "auto_approved"
+      subscription_status:
+        | "trial"
+        | "active"
+        | "past_due"
+        | "cancelled"
+        | "expired"
       txn_type: "credit" | "debit"
       wa_conversation_status: "active" | "qualified" | "closed" | "spam"
       wa_direction: "inbound" | "outbound"
@@ -1875,7 +2224,7 @@ export type Database = {
         | "eligibility"
         | "documents"
         | "custom"
-      workspace_plan: "starter" | "growth" | "pro" | "enterprise"
+      workspace_plan: "free" | "starter" | "growth" | "pro" | "enterprise"
       workspace_role: "owner" | "admin" | "manager" | "employee" | "viewer"
     }
     CompositeTypes: {
@@ -2021,6 +2370,7 @@ export const Constants = {
         "holiday",
         "weekend",
       ],
+      billing_cycle: ["monthly", "quarterly", "yearly"],
       disbursal_status: [
         "pending",
         "disbursed",
@@ -2031,6 +2381,7 @@ export const Constants = {
         "cancelled",
       ],
       employee_status: ["active", "on_leave", "terminated"],
+      invoice_status: ["draft", "pending", "paid", "failed", "refunded"],
       lead_score: ["cold", "warm", "hot"],
       lead_status: ["available", "sold", "archived"],
       loan_type: [
@@ -2085,6 +2436,13 @@ export const Constants = {
         "other",
       ],
       refund_status: ["pending", "approved", "rejected", "auto_approved"],
+      subscription_status: [
+        "trial",
+        "active",
+        "past_due",
+        "cancelled",
+        "expired",
+      ],
       txn_type: ["credit", "debit"],
       wa_conversation_status: ["active", "qualified", "closed", "spam"],
       wa_direction: ["inbound", "outbound"],
@@ -2108,7 +2466,7 @@ export const Constants = {
         "documents",
         "custom",
       ],
-      workspace_plan: ["starter", "growth", "pro", "enterprise"],
+      workspace_plan: ["free", "starter", "growth", "pro", "enterprise"],
       workspace_role: ["owner", "admin", "manager", "employee", "viewer"],
     },
   },
