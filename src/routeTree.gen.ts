@@ -50,6 +50,7 @@ import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.ad
 import { Route as DashboardAdminMarketingMediaRouteImport } from './routes/dashboard.admin.marketing-media'
 import { Route as DashboardAdminMarketingRouteImport } from './routes/dashboard.admin.marketing'
 import { Route as DashboardAdminLeadsRouteImport } from './routes/dashboard.admin.leads'
+import { Route as DashboardAdminBillingRouteImport } from './routes/dashboard.admin.billing'
 import { Route as DashboardHrmsPayslipsIndexRouteImport } from './routes/dashboard.hrms.payslips.index'
 import { Route as DashboardMyLeadsIdApplyRouteImport } from './routes/dashboard.my-leads.$id.apply'
 import { Route as DashboardHrmsPayslipsIdRouteImport } from './routes/dashboard.hrms.payslips.$id'
@@ -264,6 +265,11 @@ const DashboardAdminLeadsRoute = DashboardAdminLeadsRouteImport.update({
   path: '/admin/leads',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAdminBillingRoute = DashboardAdminBillingRouteImport.update({
+  id: '/admin/billing',
+  path: '/admin/billing',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardHrmsPayslipsIndexRoute =
   DashboardHrmsPayslipsIndexRouteImport.update({
     id: '/payslips/',
@@ -312,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/learn-earn/': typeof LearnEarnIndexRoute
+  '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -356,6 +363,7 @@ export interface FileRoutesByTo {
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard': typeof DashboardIndexRoute
   '/learn-earn': typeof LearnEarnIndexRoute
+  '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -404,6 +412,7 @@ export interface FileRoutesById {
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/learn-earn/': typeof LearnEarnIndexRoute
+  '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -453,6 +462,7 @@ export interface FileRouteTypes {
     | '/learn-quiz/$slug'
     | '/dashboard/'
     | '/learn-earn/'
+    | '/dashboard/admin/billing'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -497,6 +507,7 @@ export interface FileRouteTypes {
     | '/learn-quiz/$slug'
     | '/dashboard'
     | '/learn-earn'
+    | '/dashboard/admin/billing'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -544,6 +555,7 @@ export interface FileRouteTypes {
     | '/learn-quiz/$slug'
     | '/dashboard/'
     | '/learn-earn/'
+    | '/dashboard/admin/billing'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -866,6 +878,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminLeadsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin/billing': {
+      id: '/dashboard/admin/billing'
+      path: '/admin/billing'
+      fullPath: '/dashboard/admin/billing'
+      preLoaderRoute: typeof DashboardAdminBillingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/hrms/payslips/': {
       id: '/dashboard/hrms/payslips/'
       path: '/payslips'
@@ -973,6 +992,7 @@ interface DashboardRouteChildren {
   DashboardWalletRoute: typeof DashboardWalletRoute
   DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardAdminBillingRoute: typeof DashboardAdminBillingRoute
   DashboardAdminLeadsRoute: typeof DashboardAdminLeadsRoute
   DashboardAdminMarketingRoute: typeof DashboardAdminMarketingRoute
   DashboardAdminMarketingMediaRoute: typeof DashboardAdminMarketingMediaRoute
@@ -999,6 +1019,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardWalletRoute: DashboardWalletRoute,
   DashboardWorkspaceRoute: DashboardWorkspaceRoute,
   DashboardIndexRoute: DashboardIndexRoute,
+  DashboardAdminBillingRoute: DashboardAdminBillingRoute,
   DashboardAdminLeadsRoute: DashboardAdminLeadsRoute,
   DashboardAdminMarketingRoute: DashboardAdminMarketingRoute,
   DashboardAdminMarketingMediaRoute: DashboardAdminMarketingMediaRoute,

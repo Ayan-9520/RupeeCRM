@@ -1,17 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { useWorkspace, type WorkspacePlan } from "@/lib/workspace-context";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useWorkspace } from "@/lib/workspace-context";
 import { supabase } from "@/integrations/supabase/client";
-import { PLAN_LABEL, PLAN_PRICE, PLAN_SEATS, isUnlimited } from "@/lib/plans";
+import {
+  PLAN_DISPLAY, CYCLE_LABEL, CYCLE_DISCOUNT,
+  priceForCycle, monthlyEquivalent, inr,
+  type PlanCode, type BillingCycle,
+} from "@/lib/subscription";
+import { useSubscription } from "@/hooks/use-subscription";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Crown, Users, Briefcase, Sparkles, Check, Zap, Receipt, ArrowRight, Loader2, CreditCard, ShieldCheck,
+  Crown, Check, Zap, Receipt, ArrowRight, Loader2, CreditCard,
+  ShieldCheck, Download, Sparkles, Users, Star, X, Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -21,344 +28,500 @@ export const Route = createFileRoute("/dashboard/billing")({
   component: BillingPage,
 });
 
-const PLAN_PRICE_NUM: Record<WorkspacePlan, number> = {
-  starter: 999,
-  growth: 4999,
-  pro: 24999 / 12, // shown monthly
-  enterprise: 0,
-};
+interface PlanRow {
+  id: string;
+  code: PlanCode;
+  name: string;
+  tagline: string | null;
+  description: string | null;
+  price_monthly: number;
+  price_quarterly: number;
+  price_yearly: number;
+  gst_percent: number;
+  seat_limit: number;
+  leads_per_day: number;
+  marketing_posts_per_month: number;
+  hrms_user_limit: number;
+  withdrawal_enabled: boolean;
+  whatsapp_enabled: boolean;
+  affiliate_enabled: boolean;
+  api_access: boolean;
+  custom_branding: boolean;
+  priority_leads: boolean;
+  recharge_bonus_max_pct: number;
+  features: string[];
+  is_popular: boolean;
+  display_order: number;
+}
 
-const PLAN_FEATURES: Record<WorkspacePlan, string[]> = {
-  starter: ["1 user seat", "Basic CRM", "Community access", "Wallet & lead marketplace"],
-  growth: ["3 user seats", "Full CRM + Pipeline", "Priority support", "HRMS add-on eligible"],
-  pro: ["10 user seats", "Unlimited leads", "Full HRMS + Payroll", "Org chart & reports"],
-  enterprise: ["Unlimited seats", "Custom payroll rules", "Dedicated CSM", "API access"],
-};
-
-const PLAN_TAGLINE: Record<WorkspacePlan, string> = {
-  starter: "For solo DSAs starting out",
-  growth: "Small teams scaling up",
-  pro: "Established agencies",
-  enterprise: "Large lenders & networks",
-};
+interface InvoiceRow {
+  id: string;
+  invoice_number: string;
+  plan_code: PlanCode;
+  cycle: BillingCycle;
+  subtotal: number;
+  gst_amount: number;
+  total_amount: number;
+  status: string;
+  paid_at: string | null;
+  created_at: string;
+  billing_name: string | null;
+  gstin: string | null;
+}
 
 function BillingPage() {
   const { current, canManage, refresh } = useWorkspace();
-  const [seatCount, setSeatCount] = useState(0);
-  const [empCount, setEmpCount] = useState(0);
+  const { subscription, loading: subLoading, refresh: refreshSub } = useSubscription();
+  const [plans, setPlans] = useState<PlanRow[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
+  const [cycle, setCycle] = useState<BillingCycle>("monthly");
+  const [checkout, setCheckout] = useState<PlanRow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
-  const [checkoutPlan, setCheckoutPlan] = useState<WorkspacePlan | null>(null);
 
-  useEffect(() => {
+  const loadAll = async () => {
     if (!current) return;
     setLoading(true);
-    Promise.all([
-      supabase.from("workspace_members").select("id", { count: "exact", head: true }).eq("workspace_id", current.id),
-      supabase.from("employees").select("id", { count: "exact", head: true }).eq("workspace_id", current.id).eq("status", "active"),
-    ]).then(([m, e]) => {
-      setSeatCount(m.count ?? 0);
-      setEmpCount(e.count ?? 0);
-      setLoading(false);
-    });
-  }, [current?.id]);
+    const [plansRes, invRes] = await Promise.all([
+      supabase.from("subscription_plans").select("*").eq("is_active", true).order("display_order"),
+      supabase.from("invoices").select("id,invoice_number,plan_code,cycle,subtotal,gst_amount,total_amount,status,paid_at,created_at,billing_name,gstin")
+        .eq("workspace_id", current.id).order("created_at", { ascending: false }).limit(20),
+    ]);
+    setPlans((plansRes.data ?? []) as PlanRow[]);
+    setInvoices((invRes.data ?? []) as InvoiceRow[]);
+    setLoading(false);
+  };
 
-  if (!current || loading) {
+  useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [current?.id]);
+
+  if (!current || loading || subLoading) {
     return <div className="py-16 grid place-items-center"><Loader2 className="size-6 animate-spin text-accent" /></div>;
   }
 
-  const plan = current.plan;
-  const seatLimit = PLAN_SEATS[plan];
-  const seatPct = isUnlimited(plan) ? 0 : Math.min(100, (seatCount / seatLimit) * 100);
-  const planPrice = PLAN_PRICE_NUM[plan];
-  const hrmsPrice = current.hrms_price_per_employee ?? 99;
-  const hrmsTotal = current.hrms_enabled ? empCount * hrmsPrice : 0;
-  const grandTotal = Math.round(planPrice + hrmsTotal);
-
-  const toggleHrms = async (next: boolean) => {
-    if (!canManage) return;
-    setBusy(true);
-    const { error } = await supabase.from("workspaces").update({ hrms_enabled: next }).eq("id", current.id);
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(next ? "HRMS add-on enabled" : "HRMS add-on disabled");
-    refresh();
-  };
+  const currentPlanCode = subscription?.plan_code ?? "free";
+  const periodEnd = subscription?.current_period_end
+    ? new Date(subscription.current_period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+    : null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl">
       <div className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold">Billing &amp; Subscription</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage your plan, add-ons and monthly bill for <span className="font-medium text-foreground">{current.name}</span>.</p>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold">Billing &amp; Subscription</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Manage <span className="font-semibold text-foreground">{current.name}</span>'s plan, invoices and add-ons.
+          </p>
         </div>
-        <Badge variant="secondary" className="gap-1.5">
-          <ShieldCheck className="size-3" /> Secure billing via Razorpay
+        <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
+          <ShieldCheck className="size-3.5" /> Test mode · Razorpay mock
         </Badge>
       </div>
 
-      {/* Top stats */}
-      <div className="grid md:grid-cols-3 gap-4">
-        <StatCard
-          icon={Crown}
-          label="Current plan"
-          value={PLAN_LABEL[plan]}
-          sub={PLAN_PRICE[plan]}
-          accent
-        />
-        <StatCard
-          icon={Users}
-          label="Seats used"
-          value={`${seatCount} / ${isUnlimited(plan) ? "∞" : seatLimit}`}
-          sub={isUnlimited(plan) ? "Unlimited" : `${Math.round(seatPct)}% of plan`}
-          progress={isUnlimited(plan) ? null : seatPct}
-        />
-        <StatCard
-          icon={Briefcase}
-          label="HRMS employees"
-          value={String(empCount)}
-          sub={current.hrms_enabled ? `Billed at ₹${hrmsPrice}/each` : "Add-on disabled"}
-        />
+      {/* Current subscription summary */}
+      {subscription && (
+        <div className="rounded-2xl border border-accent/40 bg-gradient-to-br from-accent/10 via-card to-card p-5 lg:p-6">
+          <div className="grid lg:grid-cols-4 gap-4 lg:gap-6 items-center">
+            <div className="lg:col-span-2">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+                <Crown className="size-3.5 text-accent" /> Current plan
+              </div>
+              <div className="font-display text-3xl font-bold mt-1">
+                {subscription.plan_name}
+                <span className="text-muted-foreground text-base font-normal ml-2 capitalize">{subscription.cycle ?? ""}</span>
+              </div>
+              <div className="text-xs text-muted-foreground mt-1.5 flex items-center gap-2 flex-wrap">
+                <Badge variant="outline" className="capitalize">{subscription.status}</Badge>
+                {periodEnd && (
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="size-3" /> Renews {periodEnd}
+                  </span>
+                )}
+              </div>
+            </div>
+            <UsageStat
+              label="Daily leads"
+              value={subscription.leads_per_day < 0 ? "Unlimited" : `${subscription.leads_per_day} / day`}
+              icon={Sparkles}
+            />
+            <UsageStat
+              label="Team seats"
+              value={subscription.seat_limit < 0 ? "Unlimited" : `${subscription.seat_limit} seats`}
+              icon={Users}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Plan picker */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h2 className="font-display text-xl font-bold">Choose a plan</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Switch anytime · GST inclusive on checkout</p>
+          </div>
+          <CycleToggle value={cycle} onChange={setCycle} />
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
+          {plans.map((p) => (
+            <PlanCard
+              key={p.id}
+              plan={p}
+              cycle={cycle}
+              isCurrent={p.code === currentPlanCode}
+              disabled={!canManage}
+              onSelect={() => setCheckout(p)}
+            />
+          ))}
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Bill summary */}
-        <div className="lg:col-span-1 order-2 lg:order-1 space-y-5">
-          <div className="rounded-2xl bg-card border border-border overflow-hidden sticky top-4">
-            <div className="px-5 py-4 border-b border-border flex items-center gap-2">
-              <Receipt className="size-4 text-accent" />
-              <h3 className="font-semibold text-sm">This month's bill</h3>
-            </div>
-            <div className="p-5 space-y-3">
-              <Row label={`${PLAN_LABEL[plan]} plan`} value={planPrice > 0 ? `₹${planPrice.toLocaleString("en-IN", { maximumFractionDigits: 0 })}` : "Custom"} />
-              <Row
-                label="HRMS add-on"
-                value={current.hrms_enabled ? `₹${hrmsTotal.toLocaleString("en-IN")}` : "—"}
-                sub={current.hrms_enabled ? `${empCount} × ₹${hrmsPrice}` : "Not enabled"}
-              />
-              <div className="border-t border-dashed border-border pt-3">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <div className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Total / month</div>
-                    <div className="text-[11px] text-muted-foreground mt-0.5">Excludes 18% GST</div>
-                  </div>
-                  <div className="font-display text-3xl font-bold">₹{grandTotal.toLocaleString("en-IN")}</div>
-                </div>
-              </div>
-              <Button className="w-full gap-2" disabled={!canManage} onClick={() => setCheckoutPlan(plan)}>
-                <CreditCard className="size-4" /> Pay now
-              </Button>
-              <p className="text-[11px] text-muted-foreground text-center">
-                Auto-charges on the 1st of every month. Cancel anytime.
-              </p>
-            </div>
-          </div>
-
-          {/* HRMS toggle */}
-          <div className="rounded-2xl bg-card border border-border p-5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="size-9 rounded-xl bg-accent/15 grid place-items-center shrink-0">
-                  <Sparkles className="size-4 text-accent" />
-                </div>
-                <div>
-                  <div className="font-semibold text-sm">HRMS &amp; Payroll add-on</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">₹{hrmsPrice}/employee/month</div>
-                </div>
-              </div>
-              <Switch checked={current.hrms_enabled} onCheckedChange={toggleHrms} disabled={busy || !canManage} />
-            </div>
-          </div>
+      {/* Invoices */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl font-bold flex items-center gap-2">
+            <Receipt className="size-5 text-accent" /> Invoices
+          </h2>
+          <span className="text-xs text-muted-foreground">{invoices.length} record{invoices.length === 1 ? "" : "s"}</span>
         </div>
-
-        {/* Plans */}
-        <div className="lg:col-span-2 order-1 lg:order-2 space-y-3">
-          <h2 className="font-display text-lg font-bold">Choose a plan</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {(Object.keys(PLAN_LABEL) as WorkspacePlan[]).map((p) => (
-              <PlanCard
-                key={p}
-                plan={p}
-                isCurrent={p === plan}
-                onSelect={() => setCheckoutPlan(p)}
-                disabled={!canManage}
-              />
-            ))}
+        {invoices.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border p-10 text-center text-muted-foreground text-sm">
+            No invoices yet. Upgrade to a paid plan to generate your first GST invoice.
           </div>
-        </div>
+        ) : (
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-secondary/50 text-xs uppercase tracking-wide text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-3">Invoice #</th>
+                    <th className="text-left px-4 py-3">Plan</th>
+                    <th className="text-left px-4 py-3">Cycle</th>
+                    <th className="text-right px-4 py-3">Subtotal</th>
+                    <th className="text-right px-4 py-3">GST</th>
+                    <th className="text-right px-4 py-3">Total</th>
+                    <th className="text-left px-4 py-3">Status</th>
+                    <th className="text-left px-4 py-3">Date</th>
+                    <th className="px-4 py-3"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((inv) => (
+                    <tr key={inv.id} className="border-t border-border hover:bg-secondary/30">
+                      <td className="px-4 py-3 font-mono text-xs">{inv.invoice_number}</td>
+                      <td className="px-4 py-3 capitalize">{PLAN_DISPLAY[inv.plan_code].name}</td>
+                      <td className="px-4 py-3 capitalize text-muted-foreground">{inv.cycle}</td>
+                      <td className="px-4 py-3 text-right font-mono">{inr(Number(inv.subtotal))}</td>
+                      <td className="px-4 py-3 text-right font-mono text-muted-foreground">{inr(Number(inv.gst_amount))}</td>
+                      <td className="px-4 py-3 text-right font-mono font-semibold">{inr(Number(inv.total_amount))}</td>
+                      <td className="px-4 py-3">
+                        <Badge variant={inv.status === "paid" ? "default" : "secondary"} className="capitalize">
+                          {inv.status}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">
+                        {new Date(inv.paid_at ?? inv.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Button
+                          variant="ghost" size="sm"
+                          onClick={() => downloadInvoice(inv, current.name)}
+                          className="gap-1.5 h-8"
+                        >
+                          <Download className="size-3.5" /> PDF
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       <CheckoutDialog
-        plan={checkoutPlan}
-        currentPlan={plan}
-        open={!!checkoutPlan}
-        onOpenChange={(o) => !o && setCheckoutPlan(null)}
-        hrmsEnabled={current.hrms_enabled}
-        empCount={empCount}
-        hrmsPrice={hrmsPrice}
+        plan={checkout}
+        cycle={cycle}
+        open={!!checkout}
+        currentPlan={currentPlanCode}
         workspaceId={current.id}
-        onSuccess={() => { setCheckoutPlan(null); refresh(); }}
+        onOpenChange={(o) => !o && setCheckout(null)}
+        onSuccess={() => {
+          setCheckout(null);
+          refresh();
+          refreshSub();
+          loadAll();
+        }}
       />
     </div>
   );
 }
 
-function StatCard({ icon: Icon, label, value, sub, progress, accent }: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  sub?: string;
-  progress?: number | null;
-  accent?: boolean;
-}) {
+function CycleToggle({ value, onChange }: { value: BillingCycle; onChange: (c: BillingCycle) => void }) {
+  const cycles: BillingCycle[] = ["monthly", "quarterly", "yearly"];
   return (
-    <div className={cn(
-      "rounded-2xl border p-5",
-      accent ? "border-accent/40 bg-gradient-to-br from-accent/10 to-transparent" : "border-border bg-card",
-    )}>
-      <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-        <Icon className="size-3.5" /> {label}
-      </div>
-      <div className="font-display text-2xl font-bold mt-2">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground mt-1">{sub}</div>}
-      {typeof progress === "number" && (
-        <Progress value={progress} className={cn("h-1.5 mt-3", progress >= 100 && "[&>div]:bg-destructive")} />
-      )}
+    <div className="inline-flex items-center gap-1 p-1 rounded-full bg-secondary border border-border">
+      {cycles.map((c) => (
+        <button
+          key={c}
+          onClick={() => onChange(c)}
+          className={cn(
+            "px-3 py-1.5 rounded-full text-xs font-semibold transition-smooth flex items-center gap-1.5",
+            value === c ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {CYCLE_LABEL[c]}
+          {CYCLE_DISCOUNT[c] && (
+            <span className={cn(
+              "text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase",
+              value === c ? "bg-accent/30 text-accent" : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
+            )}>
+              {CYCLE_DISCOUNT[c]}
+            </span>
+          )}
+        </button>
+      ))}
     </div>
   );
 }
 
-function Row({ label, value, sub }: { label: string; value: React.ReactNode; sub?: string }) {
+function UsageStat({ label, value, icon: Icon }: { label: string; value: string; icon: React.ComponentType<{ className?: string }> }) {
   return (
-    <div className="flex items-start justify-between gap-3 text-sm">
-      <div>
-        <div>{label}</div>
-        {sub && <div className="text-[11px] text-muted-foreground mt-0.5">{sub}</div>}
+    <div className="rounded-xl bg-background/60 border border-border p-3">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+        <Icon className="size-3" /> {label}
       </div>
-      <div className="font-mono font-medium">{value}</div>
+      <div className="font-display text-lg font-bold mt-0.5">{value}</div>
     </div>
   );
 }
 
-function PlanCard({ plan, isCurrent, onSelect, disabled }: {
-  plan: WorkspacePlan; isCurrent: boolean; onSelect: () => void; disabled: boolean;
+function PlanCard({ plan, cycle, isCurrent, disabled, onSelect }: {
+  plan: PlanRow; cycle: BillingCycle; isCurrent: boolean; disabled: boolean; onSelect: () => void;
 }) {
-  const recommended = plan === "growth";
+  const total = priceForCycle(plan, cycle);
+  const monthly = monthlyEquivalent(plan, cycle);
+  const isFree = plan.code === "free";
+  const display = PLAN_DISPLAY[plan.code];
+
   return (
     <div className={cn(
-      "rounded-2xl border p-5 relative flex flex-col",
-      isCurrent ? "border-accent bg-accent/5" : recommended ? "border-accent/50" : "border-border bg-card",
+      "rounded-2xl border p-5 relative flex flex-col bg-card transition-smooth",
+      isCurrent ? "border-accent ring-1 ring-accent/40" :
+        plan.is_popular ? "border-accent/50 shadow-mint" : "border-border hover:border-accent/30",
     )}>
-      {recommended && !isCurrent && (
-        <div className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide">
-          Popular
+      {plan.is_popular && !isCurrent && (
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
+          <Star className="size-2.5 fill-current" /> Most popular
         </div>
       )}
       {isCurrent && (
-        <div className="absolute -top-2.5 left-4 px-2 py-0.5 rounded-full bg-foreground text-background text-[10px] font-bold uppercase tracking-wide">
-          Current
+        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-foreground text-background text-[10px] font-bold uppercase tracking-wide">
+          Current plan
         </div>
       )}
-      <div className="font-display text-lg font-bold">{PLAN_LABEL[plan]}</div>
-      <div className="text-xs text-muted-foreground">{PLAN_TAGLINE[plan]}</div>
-      <div className="font-display text-2xl font-bold mt-3">{PLAN_PRICE[plan]}</div>
-      <ul className="mt-4 space-y-2 flex-1">
-        {PLAN_FEATURES[plan].map((f) => (
-          <li key={f} className="text-xs flex items-start gap-2">
-            <Check className="size-3.5 text-accent mt-0.5 shrink-0" /> {f}
-          </li>
-        ))}
+
+      <div className="font-display text-lg font-bold">{plan.name}</div>
+      <div className="text-[11px] text-muted-foreground min-h-[28px] mt-0.5">{plan.tagline ?? display.tagline}</div>
+
+      <div className="mt-4">
+        {isFree ? (
+          <div className="font-display text-3xl font-bold">Free</div>
+        ) : (
+          <>
+            <div className="font-display text-3xl font-bold">{inr(monthly)}<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
+            <div className="text-[11px] text-muted-foreground mt-0.5">
+              {cycle === "monthly" ? "Billed monthly" : `${inr(total)} billed ${cycle}`}
+            </div>
+          </>
+        )}
+      </div>
+
+      <ul className="mt-5 space-y-2 flex-1 text-xs">
+        <PlanFeature label={plan.seat_limit < 0 ? "Unlimited seats" : `${plan.seat_limit} team seat${plan.seat_limit > 1 ? "s" : ""}`} />
+        <PlanFeature label={plan.leads_per_day < 0 ? "Unlimited daily leads" : `${plan.leads_per_day} leads / day`} />
+        <PlanFeature label={plan.marketing_posts_per_month < 0 ? "Unlimited marketing posts" : `${plan.marketing_posts_per_month} marketing posts / mo`} />
+        {plan.hrms_user_limit > 0 && <PlanFeature label={`HRMS for ${plan.hrms_user_limit < 0 ? "unlimited" : plan.hrms_user_limit} employees`} />}
+        {plan.withdrawal_enabled && <PlanFeature label="Wallet withdrawals enabled" />}
+        {plan.recharge_bonus_max_pct > 0 && <PlanFeature label={`Up to ${plan.recharge_bonus_max_pct}% recharge bonus`} highlight />}
+        {plan.priority_leads && <PlanFeature label="Priority access to hot leads" highlight />}
+        {plan.whatsapp_enabled && <PlanFeature label="WhatsApp automation" />}
+        {plan.api_access && <PlanFeature label="API access" />}
+        {plan.custom_branding && <PlanFeature label="Custom branding" />}
+        {plan.affiliate_enabled && <PlanFeature label="Affiliate program" />}
       </ul>
+
       <Button
-        variant={isCurrent ? "secondary" : "default"}
+        variant={isCurrent ? "secondary" : plan.is_popular ? "default" : "outline"}
         className="mt-5 w-full gap-2"
         onClick={onSelect}
         disabled={disabled || isCurrent}
       >
-        {isCurrent ? "Active plan" : <>Switch to {PLAN_LABEL[plan]} <ArrowRight className="size-4" /></>}
+        {isCurrent ? "Active" : isFree ? <>Switch to Free</> : <>Choose {plan.name} <ArrowRight className="size-4" /></>}
       </Button>
     </div>
   );
 }
 
+function PlanFeature({ label, highlight }: { label: string; highlight?: boolean }) {
+  return (
+    <li className={cn("flex items-start gap-2", highlight && "font-semibold")}>
+      <Check className={cn("size-3.5 mt-0.5 shrink-0", highlight ? "text-accent" : "text-muted-foreground")} /> {label}
+    </li>
+  );
+}
+
 function CheckoutDialog({
-  plan, currentPlan, open, onOpenChange, hrmsEnabled, empCount, hrmsPrice, workspaceId, onSuccess,
+  plan, cycle, open, currentPlan, workspaceId, onOpenChange, onSuccess,
 }: {
-  plan: WorkspacePlan | null;
-  currentPlan: WorkspacePlan;
+  plan: PlanRow | null;
+  cycle: BillingCycle;
   open: boolean;
-  onOpenChange: (o: boolean) => void;
-  hrmsEnabled: boolean;
-  empCount: number;
-  hrmsPrice: number;
+  currentPlan: PlanCode;
   workspaceId: string;
+  onOpenChange: (o: boolean) => void;
   onSuccess: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [billingName, setBillingName] = useState("");
+  const [billingEmail, setBillingEmail] = useState("");
+  const [billingPhone, setBillingPhone] = useState("");
+  const [gstin, setGstin] = useState("");
+
   if (!plan) return null;
 
-  const planPrice = PLAN_PRICE_NUM[plan];
-  const hrmsTotal = hrmsEnabled ? empCount * hrmsPrice : 0;
-  const subtotal = Math.round(planPrice + hrmsTotal);
-  const gst = Math.round(subtotal * 0.18);
+  const subtotal = priceForCycle(plan, cycle);
+  const gst = Math.round((subtotal * Number(plan.gst_percent)) / 100);
   const total = subtotal + gst;
-  const isSwitch = plan !== currentPlan;
+  const isSwitch = plan.code !== currentPlan;
+  const isFree = plan.code === "free";
 
   const pay = async () => {
     setBusy(true);
-    // Update plan in DB to simulate successful payment for the demo flow.
-    if (isSwitch) {
-      const { error } = await supabase.from("workspaces").update({ plan }).eq("id", workspaceId);
-      if (error) { setBusy(false); toast.error(error.message); return; }
-    }
-    setTimeout(() => {
-      setBusy(false);
-      toast.success(isSwitch ? `Upgraded to ${PLAN_LABEL[plan]}` : "Payment successful");
-      onSuccess();
-    }, 900);
+    const { data, error } = await supabase.rpc("subscribe_workspace", {
+      _workspace_id: workspaceId,
+      _plan_code: plan.code,
+      _cycle: cycle,
+      _billing_name: billingName || undefined,
+      _billing_email: billingEmail || undefined,
+      _billing_phone: billingPhone || undefined,
+      _gstin: gstin || undefined,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    const result = data as { success: boolean; invoice_number?: string };
+    toast.success(
+      isFree ? `Switched to ${plan.name} plan`
+        : isSwitch ? `Upgraded to ${plan.name}! Invoice ${result.invoice_number ?? ""}`
+          : `Renewed ${plan.name} successfully`,
+    );
+    onSuccess();
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-gradient-to-br from-accent/30 to-accent/10 grid place-items-center">
+            <div className="size-10 rounded-xl bg-gradient-to-br from-accent/30 to-accent/10 grid place-items-center shrink-0">
               <Zap className="size-5 text-accent" />
             </div>
-            <div>
-              <DialogTitle>{isSwitch ? `Switch to ${PLAN_LABEL[plan]}` : "Pay monthly bill"}</DialogTitle>
-              <DialogDescription>Secure checkout powered by Razorpay</DialogDescription>
+            <div className="min-w-0">
+              <DialogTitle className="truncate">{isFree ? `Switch to ${plan.name}` : `Subscribe to ${plan.name}`}</DialogTitle>
+              <DialogDescription>
+                {isFree ? "No payment required" : `Test-mode checkout · ${CYCLE_LABEL[cycle]} billing`}
+              </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
-        <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-2.5 text-sm">
-          <Row label={`${PLAN_LABEL[plan]} plan`} value={`₹${planPrice.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`} />
-          {hrmsEnabled && (
-            <Row label="HRMS add-on" value={`₹${hrmsTotal.toLocaleString("en-IN")}`} sub={`${empCount} × ₹${hrmsPrice}`} />
+        {!isFree && (
+          <div className="space-y-3 pt-1">
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="col-span-2">
+                <Label className="text-xs">Billing name</Label>
+                <Input value={billingName} onChange={(e) => setBillingName(e.target.value)} placeholder="Your company / your name" className="mt-1 h-9" />
+              </div>
+              <div>
+                <Label className="text-xs">Email</Label>
+                <Input type="email" value={billingEmail} onChange={(e) => setBillingEmail(e.target.value)} placeholder="billing@…" className="mt-1 h-9" />
+              </div>
+              <div>
+                <Label className="text-xs">Phone</Label>
+                <Input value={billingPhone} onChange={(e) => setBillingPhone(e.target.value)} placeholder="+91…" className="mt-1 h-9" />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs">GSTIN <span className="text-muted-foreground">(optional)</span></Label>
+                <Input value={gstin} onChange={(e) => setGstin(e.target.value.toUpperCase())} placeholder="29ABCDE1234F1Z5" className="mt-1 h-9 font-mono" />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span>{plan.name} ({cycle})</span>
+            <span className="font-mono">{inr(subtotal)}</span>
+          </div>
+          {!isFree && (
+            <>
+              <div className="flex justify-between text-xs text-muted-foreground border-t border-dashed border-border pt-2">
+                <span>GST ({plan.gst_percent}%)</span>
+                <span className="font-mono">{inr(gst)}</span>
+              </div>
+              <div className="flex justify-between font-bold pt-1 border-t border-border">
+                <span>Total</span>
+                <span className="font-mono text-base">{inr(total)}</span>
+              </div>
+            </>
           )}
-          <div className="flex justify-between text-xs text-muted-foreground border-t border-dashed border-border pt-2">
-            <span>GST (18%)</span><span className="font-mono">₹{gst.toLocaleString("en-IN")}</span>
-          </div>
-          <div className="flex justify-between font-semibold pt-1">
-            <span>Total</span><span className="font-mono">₹{total.toLocaleString("en-IN")}</span>
-          </div>
         </div>
 
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <ShieldCheck className="size-3.5 text-accent" />
-          UPI, Cards, Netbanking & Wallets supported
-        </div>
+        {!isFree && (
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <ShieldCheck className="size-3.5 text-accent" />
+            Test mode · No real charge · GST invoice generated instantly
+          </div>
+        )}
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
           <Button onClick={pay} disabled={busy} className="gap-2">
-            {busy ? <Loader2 className="size-4 animate-spin" /> : <CreditCard className="size-4" />}
-            Pay ₹{total.toLocaleString("en-IN")}
+            {busy ? <Loader2 className="size-4 animate-spin" /> : isFree ? <Check className="size-4" /> : <CreditCard className="size-4" />}
+            {isFree ? "Confirm switch" : `Pay ${inr(total)}`}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
+}
+
+function downloadInvoice(inv: InvoiceRow, workspaceName: string) {
+  const lines = [
+    `INVOICE`,
+    `${inv.invoice_number}`,
+    ``,
+    `Workspace: ${workspaceName}`,
+    `Billed to: ${inv.billing_name ?? "—"}`,
+    `GSTIN: ${inv.gstin ?? "—"}`,
+    `Date: ${new Date(inv.paid_at ?? inv.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`,
+    ``,
+    `Plan:        ${PLAN_DISPLAY[inv.plan_code].name} (${inv.cycle})`,
+    `Subtotal:    ${inr(Number(inv.subtotal))}`,
+    `GST:         ${inr(Number(inv.gst_amount))}`,
+    `Total:       ${inr(Number(inv.total_amount))}`,
+    ``,
+    `Status:      ${inv.status.toUpperCase()}`,
+    ``,
+    `Thank you for choosing LeadMines by MoneyMines.`,
+    `For support: support@leadmines.in`,
+  ].join("\n");
+  const blob = new Blob([lines], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${inv.invoice_number}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast.success("Invoice downloaded");
 }

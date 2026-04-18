@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight, Clock, Zap, RefreshCw } from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
+import { useQuota } from "@/hooks/use-subscription";
+import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
   head: () => ({ meta: [{ title: "Leadboard Marketplace — LeadMines" }] }),
@@ -53,6 +55,7 @@ const LOW_BALANCE_THRESHOLD = 300;
 
 function Leadboard() {
   const { user } = useAuth();
+  const { quota: leadQuota, refresh: refreshQuota } = useQuota("leads");
   const [leads, setLeads] = useState<Lead[]>([]);
   const [productTypes, setProductTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,6 +146,11 @@ function Leadboard() {
   const buy = async (lead: Lead) => {
     if (!user) return;
     if (purchased[lead.id]) return; // already bought in this session
+    // Plan-gating: daily quota
+    if (leadQuota && !leadQuota.unlimited && !leadQuota.allowed) {
+      toast.error(`Daily lead limit reached (${leadQuota.used}/${leadQuota.limit}). Upgrade your plan to buy more.`);
+      return;
+    }
     // Pre-flight balance check for nicer UX
     if (stats.balance < lead.price) {
       setShortfallLead(lead);
@@ -158,6 +166,9 @@ function Leadboard() {
       } else if (/no longer available/i.test(error.message)) {
         toast.error("This lead was just sold. Refreshing list.");
         load();
+      } else if (/daily lead limit/i.test(error.message) || /limit reached/i.test(error.message)) {
+        toast.error(error.message);
+        refreshQuota();
       } else {
         toast.error(error.message);
       }
@@ -166,6 +177,7 @@ function Leadboard() {
     const result = data as { success: boolean; full_phone: string; new_balance: number };
     setPurchased((prev) => ({ ...prev, [lead.id]: { full_phone: result.full_phone } }));
     setStats((s) => ({ ...s, balance: result.new_balance, purchases: s.purchases + 1 }));
+    refreshQuota();
     toast.success(`Lead unlocked! ₹${lead.price} debited. New balance ₹${result.new_balance.toLocaleString("en-IN")}`);
   };
 
@@ -230,6 +242,8 @@ function Leadboard() {
         <StatCard icon={ShoppingBag} label="My purchases" value={stats.purchases.toLocaleString("en-IN")} tone="default" />
         <StatCard icon={Wallet} label="Wallet balance" value={`₹${stats.balance.toLocaleString("en-IN")}`} tone="accent" />
       </div>
+
+      <PlanQuotaBanner quota={leadQuota} kind="leads" />
 
       <div className="rounded-2xl bg-card border border-border p-4 shadow-card sticky top-2 z-10">
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
