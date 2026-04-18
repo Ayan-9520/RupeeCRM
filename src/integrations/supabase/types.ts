@@ -844,6 +844,129 @@ export type Database = {
         }
         Relationships: []
       }
+      partner_applications: {
+        Row: {
+          aadhaar_doc_url: string | null
+          aadhaar_last4: string | null
+          account_holder: string | null
+          address: string | null
+          bank_account: string | null
+          bank_proof_url: string | null
+          city: string
+          company_name: string | null
+          created_at: string
+          date_of_birth: string | null
+          email: string
+          experience_years: number | null
+          full_name: string
+          gender: string | null
+          generated_dsa_id: string | null
+          id: string
+          ifsc: string | null
+          internal_notes: string | null
+          metadata: Json | null
+          monthly_target: number | null
+          pan: string
+          pan_doc_url: string | null
+          phone: string
+          pincode: string | null
+          products_of_interest: string[] | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          selfie_url: string | null
+          source: string | null
+          state: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          aadhaar_doc_url?: string | null
+          aadhaar_last4?: string | null
+          account_holder?: string | null
+          address?: string | null
+          bank_account?: string | null
+          bank_proof_url?: string | null
+          city: string
+          company_name?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email: string
+          experience_years?: number | null
+          full_name: string
+          gender?: string | null
+          generated_dsa_id?: string | null
+          id?: string
+          ifsc?: string | null
+          internal_notes?: string | null
+          metadata?: Json | null
+          monthly_target?: number | null
+          pan: string
+          pan_doc_url?: string | null
+          phone: string
+          pincode?: string | null
+          products_of_interest?: string[] | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          aadhaar_doc_url?: string | null
+          aadhaar_last4?: string | null
+          account_holder?: string | null
+          address?: string | null
+          bank_account?: string | null
+          bank_proof_url?: string | null
+          city?: string
+          company_name?: string | null
+          created_at?: string
+          date_of_birth?: string | null
+          email?: string
+          experience_years?: number | null
+          full_name?: string
+          gender?: string | null
+          generated_dsa_id?: string | null
+          id?: string
+          ifsc?: string | null
+          internal_notes?: string | null
+          metadata?: Json | null
+          monthly_target?: number | null
+          pan?: string
+          pan_doc_url?: string | null
+          phone?: string
+          pincode?: string | null
+          products_of_interest?: string[] | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          selfie_url?: string | null
+          source?: string | null
+          state?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: []
+      }
       payout_requests: {
         Row: {
           account_holder: string | null
@@ -1123,10 +1246,13 @@ export type Database = {
           city: string | null
           company_name: string | null
           created_at: string
+          dsa_id: string | null
           dsa_tier: string
           fraud_flags: number
           full_name: string | null
           id: string
+          kyc_approved_at: string | null
+          kyc_status: string
           phone: string | null
           reputation_score: number
           total_conversions: number
@@ -1139,10 +1265,13 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          dsa_id?: string | null
           dsa_tier?: string
           fraud_flags?: number
           full_name?: string | null
           id: string
+          kyc_approved_at?: string | null
+          kyc_status?: string
           phone?: string | null
           reputation_score?: number
           total_conversions?: number
@@ -1155,10 +1284,13 @@ export type Database = {
           city?: string | null
           company_name?: string | null
           created_at?: string
+          dsa_id?: string | null
           dsa_tier?: string
           fraud_flags?: number
           full_name?: string | null
           id?: string
+          kyc_approved_at?: string | null
+          kyc_status?: string
           phone?: string | null
           reputation_score?: number
           total_conversions?: number
@@ -1982,6 +2114,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_partner_application: {
+        Args: { _application_id: string; _notes?: string }
+        Returns: Json
+      }
       can_buy_lead: { Args: { _workspace_id: string }; Returns: Json }
       can_create_marketing_post: {
         Args: { _workspace_id: string }
@@ -2002,6 +2138,7 @@ export type Database = {
         Returns: Json
       }
       dsa_tier_from_score: { Args: { _score: number }; Returns: string }
+      generate_dsa_id: { Args: { _city: string }; Returns: string }
       get_active_subscription: {
         Args: { _workspace_id: string }
         Returns: Json
@@ -2080,6 +2217,10 @@ export type Database = {
       purchase_lead: { Args: { _lead_id: string }; Returns: Json }
       recalc_reputation: { Args: { _user_id: string }; Returns: number }
       recharge_wallet: { Args: { _amount: number }; Returns: Json }
+      reject_partner_application: {
+        Args: { _application_id: string; _reason: string }
+        Returns: Json
+      }
       request_payout: {
         Args: {
           _account_holder?: string
@@ -2088,6 +2229,35 @@ export type Database = {
           _ifsc?: string
           _method: Database["public"]["Enums"]["payout_method"]
           _upi_id?: string
+        }
+        Returns: Json
+      }
+      submit_partner_application: {
+        Args: {
+          _aadhaar_doc_url?: string
+          _aadhaar_last4?: string
+          _account_holder?: string
+          _bank_account?: string
+          _bank_proof_url?: string
+          _city: string
+          _company_name?: string
+          _date_of_birth?: string
+          _email: string
+          _experience_years?: number
+          _full_name: string
+          _gender?: string
+          _ifsc?: string
+          _monthly_target?: number
+          _pan?: string
+          _pan_doc_url?: string
+          _phone: string
+          _pincode?: string
+          _products?: string[]
+          _selfie_url?: string
+          _state?: string
+          _utm_campaign?: string
+          _utm_medium?: string
+          _utm_source?: string
         }
         Returns: Json
       }
