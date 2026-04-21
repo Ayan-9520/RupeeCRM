@@ -14,9 +14,11 @@ export const Route = createFileRoute("/dashboard/admin/users")({
   component: AdminUsersPage,
 });
 
-const ROLES: AppRole[] = ["admin", "dsa", "caller", "coordinator", "lender", "affiliate", "customer"];
+const ROLES: AppRole[] = ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate", "customer"];
 
 const ROLE_BADGE: Record<AppRole, string> = {
+  ceo: "bg-accent/20 text-accent",
+  super_admin: "bg-orange-500/15 text-orange-600",
   admin: "bg-red-500/15 text-red-600",
   dsa: "bg-emerald-500/15 text-emerald-600",
   lender: "bg-purple-500/15 text-purple-600",
