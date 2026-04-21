@@ -152,7 +152,8 @@ function CertificatesPage() {
                   <Download className="size-3.5" /> Download PDF
                 </button>
                 <Link
-                  to={`/learn-earn/${c.course_slug}`}
+                  to="/learn-earn/$slug"
+                  params={{ slug: c.course_slug }}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-card border border-border text-sm font-medium hover:border-foreground/30 transition-smooth"
                 >
                   Course

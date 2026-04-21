@@ -292,7 +292,7 @@ function QuizRunner() {
                 >
                   <RotateCcw className="size-4" /> Retry quiz
                 </button>
-                <Link to={`/learn-earn/${slug}`} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border font-medium">
+                <Link to="/learn-earn/$slug" params={{ slug }} className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border font-medium">
                   Review course
                 </Link>
               </div>
@@ -366,7 +366,7 @@ function QuizRunner() {
   return (
     <div className="min-h-screen bg-background text-foreground py-10 px-5">
       <div className="max-w-3xl mx-auto">
-        <Link to={`/learn-earn/${slug}`} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-smooth">
+        <Link to="/learn-earn/$slug" params={{ slug }} className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-smooth">
           <ArrowLeft className="size-4" /> {course.title}
         </Link>
 

@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LearnEarnIndexRouteImport } from './routes/learn-earn.index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as CeoIndexRouteImport } from './routes/ceo.index'
 import { Route as LearnQuizSlugRouteImport } from './routes/learn-quiz.$slug'
 import { Route as LearnEarnSlugRouteImport } from './routes/learn-earn.$slug'
 import { Route as DashboardWorkspaceRouteImport } from './routes/dashboard.workspace'
@@ -96,6 +97,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRoute,
+} as any)
+const CeoIndexRoute = CeoIndexRouteImport.update({
+  id: '/ceo/',
+  path: '/ceo/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LearnQuizSlugRoute = LearnQuizSlugRouteImport.update({
   id: '/learn-quiz/$slug',
@@ -356,6 +362,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
+  '/ceo/': typeof CeoIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/learn-earn/': typeof LearnEarnIndexRoute
   '/api/lender/webhook': typeof ApiLenderWebhookRoute
@@ -407,6 +414,7 @@ export interface FileRoutesByTo {
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
+  '/ceo': typeof CeoIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/learn-earn': typeof LearnEarnIndexRoute
   '/api/lender/webhook': typeof ApiLenderWebhookRoute
@@ -462,6 +470,7 @@ export interface FileRoutesById {
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
+  '/ceo/': typeof CeoIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/learn-earn/': typeof LearnEarnIndexRoute
   '/api/lender/webhook': typeof ApiLenderWebhookRoute
@@ -518,6 +527,7 @@ export interface FileRouteTypes {
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
+    | '/ceo/'
     | '/dashboard/'
     | '/learn-earn/'
     | '/api/lender/webhook'
@@ -569,6 +579,7 @@ export interface FileRouteTypes {
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
+    | '/ceo'
     | '/dashboard'
     | '/learn-earn'
     | '/api/lender/webhook'
@@ -623,6 +634,7 @@ export interface FileRouteTypes {
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
+    | '/ceo/'
     | '/dashboard/'
     | '/learn-earn/'
     | '/api/lender/webhook'
@@ -660,6 +672,7 @@ export interface RootRouteChildren {
   ApplySlugRoute: typeof ApplySlugRoute
   LearnEarnSlugRoute: typeof LearnEarnSlugRoute
   LearnQuizSlugRoute: typeof LearnQuizSlugRoute
+  CeoIndexRoute: typeof CeoIndexRoute
   LearnEarnIndexRoute: typeof LearnEarnIndexRoute
   ApiLenderWebhookRoute: typeof ApiLenderWebhookRoute
 }
@@ -714,6 +727,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRoute
+    }
+    '/ceo/': {
+      id: '/ceo/'
+      path: '/ceo'
+      fullPath: '/ceo/'
+      preLoaderRoute: typeof CeoIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/learn-quiz/$slug': {
       id: '/learn-quiz/$slug'
@@ -1164,6 +1184,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApplySlugRoute: ApplySlugRoute,
   LearnEarnSlugRoute: LearnEarnSlugRoute,
   LearnQuizSlugRoute: LearnQuizSlugRoute,
+  CeoIndexRoute: CeoIndexRoute,
   LearnEarnIndexRoute: LearnEarnIndexRoute,
   ApiLenderWebhookRoute: ApiLenderWebhookRoute,
 }
