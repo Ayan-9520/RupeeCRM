@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift,
+  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -34,6 +34,7 @@ const NAV: NavItem[] = [
   { title: "Submissions", url: "/dashboard/submissions", icon: FileText, roles: ["ceo", "super_admin", "coordinator", "admin"] },
   { title: "Cases", url: "/dashboard/cases", icon: Building2, roles: ["ceo", "super_admin", "lender", "admin"] },
   { title: "Earnings", url: "/dashboard/earnings", icon: BarChart3, roles: ["ceo", "super_admin", "dsa", "affiliate", "admin"] },
+  { title: "Commissions", url: "/dashboard/commissions", icon: Percent, roles: ["ceo", "super_admin", "dsa", "affiliate", "admin"] },
   { title: "Marketing", url: "/dashboard/marketing", icon: Megaphone, roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Community", url: "/dashboard/community", icon: Megaphone, roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { title: "Learn & Earn", url: "/dashboard/learn", icon: GraduationCap, roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "affiliate"] },
@@ -44,6 +45,7 @@ const NAV: NavItem[] = [
   { title: "Users", url: "/dashboard/admin/users", icon: Users, roles: ["ceo", "super_admin", "admin"] },
   { title: "Add Leads", url: "/dashboard/admin/leads", icon: ListPlus, roles: ["ceo", "super_admin", "admin"] },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", icon: UserCog, roles: ["ceo", "super_admin", "admin"] },
+  { title: "Commission Rules", url: "/dashboard/admin/commissions", icon: Percent, roles: ["ceo", "super_admin", "admin"] },
   { title: "Payouts", url: "/dashboard/admin/payouts", icon: Banknote, roles: ["ceo", "super_admin", "admin"] },
   { title: "Billing Overview", url: "/dashboard/admin/billing", icon: CreditCard, roles: ["ceo", "super_admin", "admin"] },
   { title: "Partner Applications", url: "/dashboard/admin/partners", icon: UserCheck, roles: ["ceo", "super_admin", "admin"] },
