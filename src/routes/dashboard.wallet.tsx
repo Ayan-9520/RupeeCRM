@@ -3,7 +3,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Wallet as WalletIcon, ArrowDownCircle, ArrowUpCircle, Loader2, Plus } from "lucide-react";
+import { Wallet as WalletIcon, ArrowDownCircle, ArrowUpCircle, Loader2, Plus, Send } from "lucide-react";
+import { SendMoneyDialog } from "@/components/wallet/SendMoneyDialog";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/dashboard/wallet")({
   head: () => ({ meta: [{ title: "Wallet — LeadMines" }] }),
@@ -23,6 +25,7 @@ function WalletPage() {
   const [txns, setTxns] = useState<Txn[]>([]);
   const [recharging, setRecharging] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sendOpen, setSendOpen] = useState(false);
 
   const load = async () => {
     if (!user) return;
@@ -51,10 +54,22 @@ function WalletPage() {
 
   return (
     <div className="space-y-6 max-w-5xl">
-      <div>
-        <h1 className="font-display text-2xl lg:text-3xl font-bold">Wallet</h1>
-        <p className="text-muted-foreground mt-1">Recharge funds to purchase premium leads. Demo mode — no real charge.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold">Wallet</h1>
+          <p className="text-muted-foreground mt-1">Recharge funds to purchase premium leads. Demo mode — no real charge.</p>
+        </div>
+        <Button onClick={() => setSendOpen(true)} variant="outline" className="gap-2">
+          <Send className="size-4" /> Send money
+        </Button>
       </div>
+
+      <SendMoneyDialog
+        open={sendOpen}
+        onOpenChange={setSendOpen}
+        currentBalance={wallet.balance}
+        onSuccess={load}
+      />
 
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 rounded-3xl bg-hero-gradient text-white p-6 lg:p-8 relative overflow-hidden shadow-elevated">
