@@ -130,12 +130,12 @@ function LeavesPage() {
   }
 
   async function approve(id: string) {
-    const { error } = await supabase.rpc("approve_leave", { _leave_id: id, _notes: null });
+    const { error } = await supabase.rpc("approve_leave", { _leave_id: id, _notes: undefined });
     if (error) toast.error(error.message);
     else { toast.success("Approved"); load(); }
   }
   async function reject(id: string) {
-    const notes = prompt("Reason for rejection?") || null;
+    const notes = prompt("Reason for rejection?") || undefined;
     const { error } = await supabase.rpc("reject_leave", { _leave_id: id, _notes: notes });
     if (error) toast.error(error.message);
     else { toast.success("Rejected"); load(); }

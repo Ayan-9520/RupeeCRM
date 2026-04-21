@@ -48,6 +48,8 @@ import { Route as DashboardMarketingPostsRouteImport } from './routes/dashboard.
 import { Route as DashboardMarketingOneclickRouteImport } from './routes/dashboard.marketing.oneclick'
 import { Route as DashboardMarketingCardRouteImport } from './routes/dashboard.marketing.card'
 import { Route as DashboardHrmsPayrollRouteImport } from './routes/dashboard.hrms.payroll'
+import { Route as DashboardHrmsMeRouteImport } from './routes/dashboard.hrms.me'
+import { Route as DashboardHrmsLeavesRouteImport } from './routes/dashboard.hrms.leaves'
 import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
 import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.hrms.attendance'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
@@ -263,6 +265,16 @@ const DashboardHrmsPayrollRoute = DashboardHrmsPayrollRouteImport.update({
   path: '/payroll',
   getParentRoute: () => DashboardHrmsRoute,
 } as any)
+const DashboardHrmsMeRoute = DashboardHrmsMeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => DashboardHrmsRoute,
+} as any)
+const DashboardHrmsLeavesRoute = DashboardHrmsLeavesRouteImport.update({
+  id: '/leaves',
+  path: '/leaves',
+  getParentRoute: () => DashboardHrmsRoute,
+} as any)
 const DashboardHrmsBillingRoute = DashboardHrmsBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
@@ -391,6 +403,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
+  '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
+  '/dashboard/hrms/me': typeof DashboardHrmsMeRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
   '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
@@ -445,6 +459,8 @@ export interface FileRoutesByTo {
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
+  '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
+  '/dashboard/hrms/me': typeof DashboardHrmsMeRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
   '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
@@ -503,6 +519,8 @@ export interface FileRoutesById {
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
+  '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
+  '/dashboard/hrms/me': typeof DashboardHrmsMeRoute
   '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
   '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
   '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
@@ -562,6 +580,8 @@ export interface FileRouteTypes {
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
+    | '/dashboard/hrms/leaves'
+    | '/dashboard/hrms/me'
     | '/dashboard/hrms/payroll'
     | '/dashboard/marketing/card'
     | '/dashboard/marketing/oneclick'
@@ -616,6 +636,8 @@ export interface FileRouteTypes {
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
+    | '/dashboard/hrms/leaves'
+    | '/dashboard/hrms/me'
     | '/dashboard/hrms/payroll'
     | '/dashboard/marketing/card'
     | '/dashboard/marketing/oneclick'
@@ -673,6 +695,8 @@ export interface FileRouteTypes {
     | '/dashboard/admin/users'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
+    | '/dashboard/hrms/leaves'
+    | '/dashboard/hrms/me'
     | '/dashboard/hrms/payroll'
     | '/dashboard/marketing/card'
     | '/dashboard/marketing/oneclick'
@@ -977,6 +1001,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardHrmsPayrollRouteImport
       parentRoute: typeof DashboardHrmsRoute
     }
+    '/dashboard/hrms/me': {
+      id: '/dashboard/hrms/me'
+      path: '/me'
+      fullPath: '/dashboard/hrms/me'
+      preLoaderRoute: typeof DashboardHrmsMeRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/hrms/leaves': {
+      id: '/dashboard/hrms/leaves'
+      path: '/leaves'
+      fullPath: '/dashboard/hrms/leaves'
+      preLoaderRoute: typeof DashboardHrmsLeavesRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
     '/dashboard/hrms/billing': {
       id: '/dashboard/hrms/billing'
       path: '/billing'
@@ -1095,6 +1133,8 @@ declare module '@tanstack/react-router' {
 interface DashboardHrmsRouteChildren {
   DashboardHrmsAttendanceRoute: typeof DashboardHrmsAttendanceRoute
   DashboardHrmsBillingRoute: typeof DashboardHrmsBillingRoute
+  DashboardHrmsLeavesRoute: typeof DashboardHrmsLeavesRoute
+  DashboardHrmsMeRoute: typeof DashboardHrmsMeRoute
   DashboardHrmsPayrollRoute: typeof DashboardHrmsPayrollRoute
   DashboardHrmsIndexRoute: typeof DashboardHrmsIndexRoute
   DashboardHrmsEmployeesIdRoute: typeof DashboardHrmsEmployeesIdRoute
@@ -1105,6 +1145,8 @@ interface DashboardHrmsRouteChildren {
 const DashboardHrmsRouteChildren: DashboardHrmsRouteChildren = {
   DashboardHrmsAttendanceRoute: DashboardHrmsAttendanceRoute,
   DashboardHrmsBillingRoute: DashboardHrmsBillingRoute,
+  DashboardHrmsLeavesRoute: DashboardHrmsLeavesRoute,
+  DashboardHrmsMeRoute: DashboardHrmsMeRoute,
   DashboardHrmsPayrollRoute: DashboardHrmsPayrollRoute,
   DashboardHrmsIndexRoute: DashboardHrmsIndexRoute,
   DashboardHrmsEmployeesIdRoute: DashboardHrmsEmployeesIdRoute,
