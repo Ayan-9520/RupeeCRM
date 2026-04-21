@@ -2806,6 +2806,8 @@ export type Database = {
         | "lender"
         | "affiliate"
         | "customer"
+        | "ceo"
+        | "super_admin"
       attendance_status:
         | "present"
         | "absent"
@@ -3046,6 +3048,8 @@ export const Constants = {
         "lender",
         "affiliate",
         "customer",
+        "ceo",
+        "super_admin",
       ],
       attendance_status: [
         "present",
