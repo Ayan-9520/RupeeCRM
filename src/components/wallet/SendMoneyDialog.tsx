@@ -53,7 +53,7 @@ export function SendMoneyDialog({ open, onOpenChange, currentBalance, onSuccess 
     const { data, error } = await supabase.rpc("transfer_money", {
       _to_user_id: picked.id,
       _amount: amt,
-      _note: note.trim() || null,
+      _note: note.trim() || undefined,
     });
     setSending(false);
     if (error) return toast.error(error.message);
