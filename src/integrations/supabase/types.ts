@@ -218,6 +218,122 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          percentage: number
+          role: Database["public"]["Enums"]["commission_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          percentage: number
+          role: Database["public"]["Enums"]["commission_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          percentage?: number
+          role?: Database["public"]["Enums"]["commission_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      commissions: {
+        Row: {
+          amount: number
+          base_amount: number
+          created_at: string
+          credited_at: string | null
+          disbursal_id: string
+          id: string
+          lead_id: string
+          lead_purchase_id: string
+          notes: string | null
+          percentage: number
+          role: Database["public"]["Enums"]["commission_role"]
+          status: Database["public"]["Enums"]["commission_status"]
+          updated_at: string
+          user_id: string | null
+          wallet_txn_id: string | null
+          workspace_id: string | null
+        }
+        Insert: {
+          amount: number
+          base_amount: number
+          created_at?: string
+          credited_at?: string | null
+          disbursal_id: string
+          id?: string
+          lead_id: string
+          lead_purchase_id: string
+          notes?: string | null
+          percentage: number
+          role: Database["public"]["Enums"]["commission_role"]
+          status?: Database["public"]["Enums"]["commission_status"]
+          updated_at?: string
+          user_id?: string | null
+          wallet_txn_id?: string | null
+          workspace_id?: string | null
+        }
+        Update: {
+          amount?: number
+          base_amount?: number
+          created_at?: string
+          credited_at?: string | null
+          disbursal_id?: string
+          id?: string
+          lead_id?: string
+          lead_purchase_id?: string
+          notes?: string | null
+          percentage?: number
+          role?: Database["public"]["Enums"]["commission_role"]
+          status?: Database["public"]["Enums"]["commission_status"]
+          updated_at?: string
+          user_id?: string | null
+          wallet_txn_id?: string | null
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commissions_disbursal_id_fkey"
+            columns: ["disbursal_id"]
+            isOneToOne: false
+            referencedRelation: "disbursals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_lead_purchase_id_fkey"
+            columns: ["lead_purchase_id"]
+            isOneToOne: false
+            referencedRelation: "lead_purchases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commissions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_post_comments: {
         Row: {
           author_id: string
@@ -2606,6 +2722,10 @@ export type Database = {
         Args: { _application_id: string; _notes?: string }
         Returns: Json
       }
+      calculate_and_distribute_commission: {
+        Args: { _disbursal_id: string }
+        Returns: Json
+      }
       can_buy_lead: { Args: { _workspace_id: string }; Returns: Json }
       can_create_marketing_post: {
         Args: { _workspace_id: string }
@@ -2845,6 +2965,13 @@ export type Database = {
         | "holiday"
         | "weekend"
       billing_cycle: "monthly" | "quarterly" | "yearly"
+      commission_role:
+        | "company"
+        | "manager"
+        | "employee"
+        | "partner"
+        | "referrer"
+      commission_status: "pending" | "credited" | "cancelled"
       community_post_category:
         | "success_story"
         | "tip"
@@ -2899,6 +3026,7 @@ export type Database = {
         | "course_completed"
         | "system"
         | "marketing"
+        | "commission_credited"
       payout_method: "bank" | "upi"
       payout_status: "pending" | "approved" | "rejected" | "paid"
       payslip_status: "draft" | "processed" | "paid"
@@ -3089,6 +3217,14 @@ export const Constants = {
         "weekend",
       ],
       billing_cycle: ["monthly", "quarterly", "yearly"],
+      commission_role: [
+        "company",
+        "manager",
+        "employee",
+        "partner",
+        "referrer",
+      ],
+      commission_status: ["pending", "credited", "cancelled"],
       community_post_category: [
         "success_story",
         "tip",
@@ -3147,6 +3283,7 @@ export const Constants = {
         "course_completed",
         "system",
         "marketing",
+        "commission_credited",
       ],
       payout_method: ["bank", "upi"],
       payout_status: ["pending", "approved", "rejected", "paid"],
