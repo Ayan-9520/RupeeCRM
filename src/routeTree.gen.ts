@@ -33,6 +33,7 @@ import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadb
 import { Route as DashboardHrmsRouteImport } from './routes/dashboard.hrms'
 import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
 import { Route as DashboardCommunityRouteImport } from './routes/dashboard.community'
+import { Route as DashboardCommissionsRouteImport } from './routes/dashboard.commissions'
 import { Route as DashboardCertificatesRouteImport } from './routes/dashboard.certificates'
 import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
 import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
@@ -56,6 +57,7 @@ import { Route as DashboardAdminPartnersRouteImport } from './routes/dashboard.a
 import { Route as DashboardAdminMarketingMediaRouteImport } from './routes/dashboard.admin.marketing-media'
 import { Route as DashboardAdminMarketingRouteImport } from './routes/dashboard.admin.marketing'
 import { Route as DashboardAdminLeadsRouteImport } from './routes/dashboard.admin.leads'
+import { Route as DashboardAdminCommissionsRouteImport } from './routes/dashboard.admin.commissions'
 import { Route as DashboardAdminBillingRouteImport } from './routes/dashboard.admin.billing'
 import { Route as ApiLenderWebhookRouteImport } from './routes/api.lender.webhook'
 import { Route as DashboardHrmsPayslipsIndexRouteImport } from './routes/dashboard.hrms.payslips.index'
@@ -183,6 +185,11 @@ const DashboardCommunityRoute = DashboardCommunityRouteImport.update({
   path: '/community',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardCommissionsRoute = DashboardCommissionsRouteImport.update({
+  id: '/commissions',
+  path: '/commissions',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardCertificatesRoute = DashboardCertificatesRouteImport.update({
   id: '/certificates',
   path: '/certificates',
@@ -302,6 +309,12 @@ const DashboardAdminLeadsRoute = DashboardAdminLeadsRouteImport.update({
   path: '/admin/leads',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAdminCommissionsRoute =
+  DashboardAdminCommissionsRouteImport.update({
+    id: '/admin/commissions',
+    path: '/admin/commissions',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardAdminBillingRoute = DashboardAdminBillingRouteImport.update({
   id: '/admin/billing',
   path: '/admin/billing',
@@ -346,6 +359,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
   '/dashboard/certificates': typeof DashboardCertificatesRoute
+  '/dashboard/commissions': typeof DashboardCommissionsRoute
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
@@ -367,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/learn-earn/': typeof LearnEarnIndexRoute
   '/api/lender/webhook': typeof ApiLenderWebhookRoute
   '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
+  '/dashboard/admin/commissions': typeof DashboardAdminCommissionsRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -400,6 +415,7 @@ export interface FileRoutesByTo {
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
   '/dashboard/certificates': typeof DashboardCertificatesRoute
+  '/dashboard/commissions': typeof DashboardCommissionsRoute
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
@@ -419,6 +435,7 @@ export interface FileRoutesByTo {
   '/learn-earn': typeof LearnEarnIndexRoute
   '/api/lender/webhook': typeof ApiLenderWebhookRoute
   '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
+  '/dashboard/admin/commissions': typeof DashboardAdminCommissionsRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -454,6 +471,7 @@ export interface FileRoutesById {
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
   '/dashboard/certificates': typeof DashboardCertificatesRoute
+  '/dashboard/commissions': typeof DashboardCommissionsRoute
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
@@ -475,6 +493,7 @@ export interface FileRoutesById {
   '/learn-earn/': typeof LearnEarnIndexRoute
   '/api/lender/webhook': typeof ApiLenderWebhookRoute
   '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
+  '/dashboard/admin/commissions': typeof DashboardAdminCommissionsRoute
   '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
   '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
@@ -511,6 +530,7 @@ export interface FileRouteTypes {
     | '/dashboard/calls'
     | '/dashboard/cases'
     | '/dashboard/certificates'
+    | '/dashboard/commissions'
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/hrms'
@@ -532,6 +552,7 @@ export interface FileRouteTypes {
     | '/learn-earn/'
     | '/api/lender/webhook'
     | '/dashboard/admin/billing'
+    | '/dashboard/admin/commissions'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -565,6 +586,7 @@ export interface FileRouteTypes {
     | '/dashboard/calls'
     | '/dashboard/cases'
     | '/dashboard/certificates'
+    | '/dashboard/commissions'
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/leadboard'
@@ -584,6 +606,7 @@ export interface FileRouteTypes {
     | '/learn-earn'
     | '/api/lender/webhook'
     | '/dashboard/admin/billing'
+    | '/dashboard/admin/commissions'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -618,6 +641,7 @@ export interface FileRouteTypes {
     | '/dashboard/calls'
     | '/dashboard/cases'
     | '/dashboard/certificates'
+    | '/dashboard/commissions'
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/hrms'
@@ -639,6 +663,7 @@ export interface FileRouteTypes {
     | '/learn-earn/'
     | '/api/lender/webhook'
     | '/dashboard/admin/billing'
+    | '/dashboard/admin/commissions'
     | '/dashboard/admin/leads'
     | '/dashboard/admin/marketing'
     | '/dashboard/admin/marketing-media'
@@ -847,6 +872,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardCommunityRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/commissions': {
+      id: '/dashboard/commissions'
+      path: '/commissions'
+      fullPath: '/dashboard/commissions'
+      preLoaderRoute: typeof DashboardCommissionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/certificates': {
       id: '/dashboard/certificates'
       path: '/certificates'
@@ -1008,6 +1040,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminLeadsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin/commissions': {
+      id: '/dashboard/admin/commissions'
+      path: '/admin/commissions'
+      fullPath: '/dashboard/admin/commissions'
+      preLoaderRoute: typeof DashboardAdminCommissionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/admin/billing': {
       id: '/dashboard/admin/billing'
       path: '/admin/billing'
@@ -1116,6 +1155,7 @@ interface DashboardRouteChildren {
   DashboardCallsRoute: typeof DashboardCallsRoute
   DashboardCasesRoute: typeof DashboardCasesRoute
   DashboardCertificatesRoute: typeof DashboardCertificatesRoute
+  DashboardCommissionsRoute: typeof DashboardCommissionsRoute
   DashboardCommunityRoute: typeof DashboardCommunityRoute
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren
@@ -1132,6 +1172,7 @@ interface DashboardRouteChildren {
   DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardAdminBillingRoute: typeof DashboardAdminBillingRoute
+  DashboardAdminCommissionsRoute: typeof DashboardAdminCommissionsRoute
   DashboardAdminLeadsRoute: typeof DashboardAdminLeadsRoute
   DashboardAdminMarketingRoute: typeof DashboardAdminMarketingRoute
   DashboardAdminMarketingMediaRoute: typeof DashboardAdminMarketingMediaRoute
@@ -1146,6 +1187,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCallsRoute: DashboardCallsRoute,
   DashboardCasesRoute: DashboardCasesRoute,
   DashboardCertificatesRoute: DashboardCertificatesRoute,
+  DashboardCommissionsRoute: DashboardCommissionsRoute,
   DashboardCommunityRoute: DashboardCommunityRoute,
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardHrmsRoute: DashboardHrmsRouteWithChildren,
@@ -1162,6 +1204,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardWorkspaceRoute: DashboardWorkspaceRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardAdminBillingRoute: DashboardAdminBillingRoute,
+  DashboardAdminCommissionsRoute: DashboardAdminCommissionsRoute,
   DashboardAdminLeadsRoute: DashboardAdminLeadsRoute,
   DashboardAdminMarketingRoute: DashboardAdminMarketingRoute,
   DashboardAdminMarketingMediaRoute: DashboardAdminMarketingMediaRoute,
