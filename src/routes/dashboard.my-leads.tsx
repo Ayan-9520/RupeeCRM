@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import {
   Loader2, Phone, MapPin, Banknote, Search, Filter, X, MessageSquare, Copy,
   CheckCircle2, TrendingUp, ShoppingBag, Wallet, Clock, ChevronRight, StickyNote,
-  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText, Sparkles,
+  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText, Sparkles, RefreshCw,
 } from "lucide-react";
+import { RefundRequestDialog } from "@/components/leads/RefundRequestDialog";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
 import {
