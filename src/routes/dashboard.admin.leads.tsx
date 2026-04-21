@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import {
   Loader2, Plus, Search, ShieldAlert, User, Phone, Mail, MapPin,
   Banknote, Briefcase, IndianRupee, Sparkles, AlertTriangle, CalendarClock,
-  Tag, Megaphone, FileText, ChevronRight, X,
+  Tag, Megaphone, FileText, ChevronRight, X, Upload,
 } from "lucide-react";
 import { CATEGORIES, CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Json } from "@/integrations/supabase/types";
+import { BulkUploadLeadsDialog } from "@/components/admin/BulkUploadLeadsDialog";
 
 export const Route = createFileRoute("/dashboard/admin/leads")({
   head: () => ({ meta: [{ title: "Admin · Leads — LeadMines" }] }),
