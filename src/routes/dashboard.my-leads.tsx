@@ -596,6 +596,7 @@ function LeadDetailDrawer({
   const [followup, setFollowup] = useState(purchase.next_followup_at?.slice(0, 10) ?? "");
   const [dealValue, setDealValue] = useState<string>(String(purchase.deal_value || lead?.loan_amount || 0));
   const [busy, setBusy] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
 
   if (!lead) return null;
 
