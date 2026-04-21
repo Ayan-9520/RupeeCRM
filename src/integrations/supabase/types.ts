@@ -2810,8 +2810,16 @@ export type Database = {
         }
         Returns: Json
       }
+      transfer_money: {
+        Args: { _amount: number; _note?: string; _to_user_id: string }
+        Returns: Json
+      }
       user_locked_payouts: { Args: { _user_id: string }; Returns: number }
       user_paid_commission: { Args: { _user_id: string }; Returns: number }
+      user_shares_workspace_with_admin: {
+        Args: { _target_user: string; _viewer: string }
+        Returns: boolean
+      }
       user_withdrawable: { Args: { _user_id: string }; Returns: number }
       verify_lead_phone: {
         Args: { _lead_id: string; _phone: string }
