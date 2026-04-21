@@ -594,6 +594,7 @@ export type Database = {
           email: string | null
           employee_code: string
           full_name: string
+          grade: Database["public"]["Enums"]["employee_grade"] | null
           id: string
           ifsc: string | null
           join_date: string
@@ -614,6 +615,7 @@ export type Database = {
           email?: string | null
           employee_code: string
           full_name: string
+          grade?: Database["public"]["Enums"]["employee_grade"] | null
           id?: string
           ifsc?: string | null
           join_date?: string
@@ -634,6 +636,7 @@ export type Database = {
           email?: string | null
           employee_code?: string
           full_name?: string
+          grade?: Database["public"]["Enums"]["employee_grade"] | null
           id?: string
           ifsc?: string | null
           join_date?: string
@@ -1058,6 +1061,176 @@ export type Database = {
           },
           {
             foreignKeyName: "leads_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_balances: {
+        Row: {
+          allocated: number
+          carried_forward: number
+          created_at: string
+          employee_id: string
+          id: string
+          leave_type_code: string
+          updated_at: string
+          used: number
+          workspace_id: string
+          year: number
+        }
+        Insert: {
+          allocated?: number
+          carried_forward?: number
+          created_at?: string
+          employee_id: string
+          id?: string
+          leave_type_code: string
+          updated_at?: string
+          used?: number
+          workspace_id: string
+          year: number
+        }
+        Update: {
+          allocated?: number
+          carried_forward?: number
+          created_at?: string
+          employee_id?: string
+          id?: string
+          leave_type_code?: string
+          updated_at?: string
+          used?: number
+          workspace_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_balances_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_balances_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_types: {
+        Row: {
+          code: string
+          color: string | null
+          created_at: string
+          default_annual_quota: number
+          id: string
+          is_active: boolean
+          is_paid: boolean
+          name: string
+          updated_at: string
+          workspace_id: string | null
+        }
+        Insert: {
+          code: string
+          color?: string | null
+          created_at?: string
+          default_annual_quota?: number
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          name: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Update: {
+          code?: string
+          color?: string | null
+          created_at?: string
+          default_annual_quota?: number
+          id?: string
+          is_active?: boolean
+          is_paid?: boolean
+          name?: string
+          updated_at?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_types_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leaves: {
+        Row: {
+          approver_id: string | null
+          created_at: string
+          days: number
+          decided_at: string | null
+          decision_notes: string | null
+          employee_id: string
+          end_date: string
+          id: string
+          leave_type_code: string
+          reason: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["leave_status"]
+          updated_at: string
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          approver_id?: string | null
+          created_at?: string
+          days: number
+          decided_at?: string | null
+          decision_notes?: string | null
+          employee_id: string
+          end_date: string
+          id?: string
+          leave_type_code: string
+          reason?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          updated_at?: string
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          approver_id?: string | null
+          created_at?: string
+          days?: number
+          decided_at?: string | null
+          decision_notes?: string | null
+          employee_id?: string
+          end_date?: string
+          id?: string
+          leave_type_code?: string
+          reason?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          updated_at?: string
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaves_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leaves_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
@@ -2718,6 +2891,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      approve_leave: {
+        Args: { _leave_id: string; _notes?: string }
+        Returns: Json
+      }
       approve_partner_application: {
         Args: { _application_id: string; _notes?: string }
         Returns: Json
@@ -2732,6 +2909,7 @@ export type Database = {
         Returns: Json
       }
       can_request_withdrawal: { Args: { _user_id: string }; Returns: boolean }
+      cancel_own_leave: { Args: { _leave_id: string }; Returns: Json }
       cancel_subscription: {
         Args: { _immediate?: boolean; _subscription_id: string }
         Returns: Json
@@ -2842,6 +3020,10 @@ export type Database = {
       recalc_reputation: { Args: { _user_id: string }; Returns: number }
       recharge_wallet: { Args: { _amount: number }; Returns: Json }
       redeem_points_for_bonus: { Args: { _points: number }; Returns: Json }
+      reject_leave: {
+        Args: { _leave_id: string; _notes?: string }
+        Returns: Json
+      }
       reject_partner_application: {
         Args: { _application_id: string; _reason: string }
         Returns: Json
@@ -2964,6 +3146,7 @@ export type Database = {
         | "leave"
         | "holiday"
         | "weekend"
+        | "on_leave"
       billing_cycle: "monthly" | "quarterly" | "yearly"
       commission_role:
         | "company"
@@ -2987,10 +3170,20 @@ export type Database = {
         | "customer_paid"
         | "rejected"
         | "cancelled"
+      employee_grade:
+        | "NSM"
+        | "RSM"
+        | "ASM"
+        | "SM"
+        | "RM"
+        | "RO"
+        | "MGR"
+        | "EXEC"
       employee_status: "active" | "on_leave" | "terminated"
       invoice_status: "draft" | "pending" | "paid" | "failed" | "refunded"
       lead_score: "cold" | "warm" | "hot"
       lead_status: "available" | "sold" | "archived"
+      leave_status: "pending" | "approved" | "rejected" | "cancelled"
       loan_type:
         | "personal"
         | "home"
@@ -3215,6 +3408,7 @@ export const Constants = {
         "leave",
         "holiday",
         "weekend",
+        "on_leave",
       ],
       billing_cycle: ["monthly", "quarterly", "yearly"],
       commission_role: [
@@ -3242,10 +3436,12 @@ export const Constants = {
         "rejected",
         "cancelled",
       ],
+      employee_grade: ["NSM", "RSM", "ASM", "SM", "RM", "RO", "MGR", "EXEC"],
       employee_status: ["active", "on_leave", "terminated"],
       invoice_status: ["draft", "pending", "paid", "failed", "refunded"],
       lead_score: ["cold", "warm", "hot"],
       lead_status: ["available", "sold", "archived"],
+      leave_status: ["pending", "approved", "rejected", "cancelled"],
       loan_type: [
         "personal",
         "home",
