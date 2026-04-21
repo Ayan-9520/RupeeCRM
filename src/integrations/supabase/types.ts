@@ -2553,6 +2553,7 @@ export type Database = {
           logo_url: string | null
           name: string
           owner_id: string
+          parent_workspace_id: string | null
           plan: Database["public"]["Enums"]["workspace_plan"]
           seat_limit: number
           slug: string
@@ -2566,6 +2567,7 @@ export type Database = {
           logo_url?: string | null
           name: string
           owner_id: string
+          parent_workspace_id?: string | null
           plan?: Database["public"]["Enums"]["workspace_plan"]
           seat_limit?: number
           slug: string
@@ -2579,12 +2581,21 @@ export type Database = {
           logo_url?: string | null
           name?: string
           owner_id?: string
+          parent_workspace_id?: string | null
           plan?: Database["public"]["Enums"]["workspace_plan"]
           seat_limit?: number
           slug?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_parent_workspace_id_fkey"
+            columns: ["parent_workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -2620,6 +2631,15 @@ export type Database = {
       get_active_subscription: {
         Args: { _workspace_id: string }
         Returns: Json
+      }
+      get_ceo_workspaces: {
+        Args: { _user_id: string }
+        Returns: {
+          depth: number
+          name: string
+          parent_workspace_id: string
+          workspace_id: string
+        }[]
       }
       get_leaderboard: {
         Args: { _basis?: string; _limit?: number }
@@ -2657,6 +2677,7 @@ export type Database = {
         Args: { _kind: string; _workspace_id: string }
         Returns: number
       }
+      is_ceo_or_super_admin: { Args: { _user_id: string }; Returns: boolean }
       is_workspace_employee: {
         Args: { _user_id: string; _workspace_id: string }
         Returns: boolean
