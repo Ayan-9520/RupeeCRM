@@ -22,7 +22,7 @@ type NavItem = {
 const ALL_ROLES: AppRole[] = ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate", "customer"];
 
 const NAV: NavItem[] = [
-  { title: "CEO Overview", url: "/ceo", icon: Building, roles: ["ceo", "super_admin"] },
+  { title: "CEO Overview", url: "/ceo", icon: Building, roles: ["ceo", "super_admin", "admin"] },
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ALL_ROLES },
   { title: "Workspace", url: "/dashboard/workspace", icon: Building, roles: ALL_ROLES },
   { title: "Billing", url: "/dashboard/billing", icon: CreditCard, roles: ["ceo", "super_admin", "admin", "dsa", "lender", "coordinator", "affiliate"] },
