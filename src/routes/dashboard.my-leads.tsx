@@ -6,8 +6,9 @@ import { toast } from "sonner";
 import {
   Loader2, Phone, MapPin, Banknote, Search, Filter, X, MessageSquare, Copy,
   CheckCircle2, TrendingUp, ShoppingBag, Wallet, Clock, ChevronRight, StickyNote,
-  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText, Sparkles,
+  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText, Sparkles, RefreshCw,
 } from "lucide-react";
+import { RefundRequestDialog } from "@/components/leads/RefundRequestDialog";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
 import {
@@ -595,6 +596,7 @@ function LeadDetailDrawer({
   const [followup, setFollowup] = useState(purchase.next_followup_at?.slice(0, 10) ?? "");
   const [dealValue, setDealValue] = useState<string>(String(purchase.deal_value || lead?.loan_amount || 0));
   const [busy, setBusy] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
 
   if (!lead) return null;
 
@@ -691,7 +693,7 @@ function LeadDetailDrawer({
         </div>
 
         {/* Process / Apply CTA */}
-        <div className="px-5 pb-2">
+        <div className="px-5 pb-2 space-y-2">
           <Link
             to="/dashboard/my-leads/$id/apply"
             params={{ id: purchase.id }}
@@ -703,7 +705,22 @@ function LeadDetailDrawer({
               : "Start processing application"}
             <ChevronRight className="size-4" />
           </Link>
+          <button
+            onClick={() => setRefundOpen(true)}
+            className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 font-semibold text-xs transition-smooth"
+          >
+            <RefreshCw className="size-3.5" />
+            Bad lead? Request refund
+          </button>
         </div>
+        <RefundRequestDialog
+          open={refundOpen}
+          onClose={() => setRefundOpen(false)}
+          leadPurchaseId={purchase.id}
+          leadId={lead.id}
+          applicantName={lead.applicant_name}
+          pricePaid={Number(purchase.price_paid)}
+        />
 
         {/* Customer info */}
         <Section title="Customer">

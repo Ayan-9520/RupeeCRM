@@ -6,10 +6,11 @@ import { toast } from "sonner";
 import {
   Loader2, Plus, Search, ShieldAlert, User, Phone, Mail, MapPin,
   Banknote, Briefcase, IndianRupee, Sparkles, AlertTriangle, CalendarClock,
-  Tag, Megaphone, FileText, ChevronRight, X,
+  Tag, Megaphone, FileText, ChevronRight, X, Upload,
 } from "lucide-react";
 import { CATEGORIES, CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Json } from "@/integrations/supabase/types";
+import { BulkUploadLeadsDialog } from "@/components/admin/BulkUploadLeadsDialog";
 
 export const Route = createFileRoute("/dashboard/admin/leads")({
   head: () => ({ meta: [{ title: "Admin · Leads — LeadMines" }] }),
@@ -43,6 +44,7 @@ function AdminLeadsPage() {
   const [search, setSearch] = useState("");
   const [filterCat, setFilterCat] = useState<ProductCategory | "all">("all");
   const [openForm, setOpenForm] = useState(false);
+  const [openBulk, setOpenBulk] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -89,12 +91,20 @@ function AdminLeadsPage() {
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Leads (Admin)</h1>
           <p className="text-muted-foreground mt-1">Add structured leads with auto-scoring, smart follow-ups, and duplicate protection.</p>
         </div>
-        <button
-          onClick={() => setOpenForm(true)}
-          className="inline-flex items-center gap-2 bg-accent text-accent-foreground rounded-xl px-4 py-2.5 font-semibold shadow-mint hover:opacity-90 transition"
-        >
-          <Plus className="size-4" /> New lead
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setOpenBulk(true)}
+            className="inline-flex items-center gap-2 border border-border bg-card rounded-xl px-4 py-2.5 font-semibold text-sm hover:bg-secondary transition"
+          >
+            <Upload className="size-4" /> Bulk import
+          </button>
+          <button
+            onClick={() => setOpenForm(true)}
+            className="inline-flex items-center gap-2 bg-accent text-accent-foreground rounded-xl px-4 py-2.5 font-semibold shadow-mint hover:opacity-90 transition"
+          >
+            <Plus className="size-4" /> New lead
+          </button>
+        </div>
       </div>
 
       <div className="rounded-2xl bg-card border border-border p-4 shadow-card">
@@ -196,6 +206,12 @@ function AdminLeadsPage() {
           onCreated={() => { setOpenForm(false); load(); }}
         />
       )}
+      <BulkUploadLeadsDialog
+        open={openBulk}
+        onClose={() => setOpenBulk(false)}
+        onImported={load}
+        productTypes={productTypes}
+      />
     </div>
   );
 }
