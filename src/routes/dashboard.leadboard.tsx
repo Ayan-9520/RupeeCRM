@@ -3,7 +3,29 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Filter, Loader2, Phone, MapPin, Banknote, Flame, Snowflake, Sun, ShoppingCart, Sparkles, Wallet, Layers, ShoppingBag, ArrowUpDown, AlertTriangle, X, Check, ArrowRight, Clock, Zap, RefreshCw } from "lucide-react";
+import {
+  Filter,
+  Loader2,
+  Phone,
+  MapPin,
+  Banknote,
+  Flame,
+  Snowflake,
+  Sun,
+  ShoppingCart,
+  Sparkles,
+  Wallet,
+  Layers,
+  ShoppingBag,
+  ArrowUpDown,
+  AlertTriangle,
+  X,
+  Check,
+  ArrowRight,
+  Clock,
+  Zap,
+  RefreshCw,
+} from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
 import { useQuota } from "@/hooks/use-subscription";
@@ -97,7 +119,9 @@ function Leadboard() {
     setLoading(true);
     let q = supabase
       .from("leads")
-      .select("id,applicant_name,masked_phone,city,loan_amount,monthly_income,score,price,status,product_category,product_subtype,product_type_id,created_at,updated_at")
+      .select(
+        "id,applicant_name,masked_phone,city,loan_amount,monthly_income,score,price,status,product_category,product_subtype,product_type_id,created_at,updated_at",
+      )
       .eq("status", "available");
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
@@ -120,7 +144,9 @@ function Leadboard() {
     setLoading(false);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
+  useEffect(() => {
+    load(); /* eslint-disable-next-line */
+  }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
 
   const refreshStats = async () => {
     if (!user) return;
@@ -138,10 +164,14 @@ function Leadboard() {
     });
   };
 
-  useEffect(() => { refreshStats(); /* eslint-disable-next-line */ }, [user, leads.length]);
+  useEffect(() => {
+    refreshStats(); /* eslint-disable-next-line */
+  }, [user, leads.length]);
 
   // reset sub-type when category changes
-  useEffect(() => { setProductTypeId("all"); }, [category]);
+  useEffect(() => {
+    setProductTypeId("all");
+  }, [category]);
 
   const buy = async (lead: Lead) => {
     if (!user) return;
@@ -184,13 +214,21 @@ function Leadboard() {
   const recharge = async (amount: number) => {
     if (amount <= 0) return;
     const { data, error } = await supabase.rpc("recharge_wallet", { _amount: amount });
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     const res = data as { success: boolean; new_balance: number };
     setStats((s) => ({ ...s, balance: Number(res.new_balance) }));
-    toast.success(`₹${amount.toLocaleString("en-IN")} added. Balance ₹${Number(res.new_balance).toLocaleString("en-IN")}`);
+    toast.success(
+      `₹${amount.toLocaleString("en-IN")} added. Balance ₹${Number(res.new_balance).toLocaleString("en-IN")}`,
+    );
   };
 
-  const typeMap = useMemo(() => Object.fromEntries(productTypes.map((p) => [p.id, p])) as Record<string, ProductType>, [productTypes]);
+  const typeMap = useMemo(
+    () => Object.fromEntries(productTypes.map((p) => [p.id, p])) as Record<string, ProductType>,
+    [productTypes],
+  );
 
   const lowBalance = stats.balance < LOW_BALANCE_THRESHOLD;
 
@@ -199,7 +237,9 @@ function Leadboard() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Leadboard Marketplace</h1>
-          <p className="text-muted-foreground mt-1">Loans · Insurance · Credit Cards · Investments — all in one feed.</p>
+          <p className="text-muted-foreground mt-1">
+            Loans · Insurance · Credit Cards · Investments — all in one feed.
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-card border border-border shadow-card">
@@ -224,11 +264,18 @@ function Leadboard() {
           </p>
           <div className="flex items-center gap-2">
             {[500, 1000].map((a) => (
-              <button key={a} onClick={() => recharge(a)} className="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500 text-white hover:opacity-90">
+              <button
+                key={a}
+                onClick={() => recharge(a)}
+                className="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500 text-white hover:opacity-90"
+              >
                 +₹{a}
               </button>
             ))}
-            <Link to="/dashboard/wallet" className="text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/50 hover:bg-amber-500/20">
+            <Link
+              to="/dashboard/wallet"
+              className="text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/50 hover:bg-amber-500/20"
+            >
               Wallet →
             </Link>
           </div>
@@ -239,8 +286,18 @@ function Leadboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard icon={Layers} label="Total leads" value={stats.total.toLocaleString("en-IN")} tone="default" />
         <StatCard icon={Flame} label="Hot leads" value={stats.hot.toLocaleString("en-IN")} tone="hot" />
-        <StatCard icon={ShoppingBag} label="My purchases" value={stats.purchases.toLocaleString("en-IN")} tone="default" />
-        <StatCard icon={Wallet} label="Wallet balance" value={`₹${stats.balance.toLocaleString("en-IN")}`} tone="accent" />
+        <StatCard
+          icon={ShoppingBag}
+          label="My purchases"
+          value={stats.purchases.toLocaleString("en-IN")}
+          tone="default"
+        />
+        <StatCard
+          icon={Wallet}
+          label="Wallet balance"
+          value={`₹${stats.balance.toLocaleString("en-IN")}`}
+          tone="accent"
+        />
       </div>
 
       <PlanQuotaBanner quota={leadQuota} kind="leads" />
@@ -252,7 +309,10 @@ function Leadboard() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => { load(); refreshStats(); }}
+              onClick={() => {
+                load();
+                refreshStats();
+              }}
               disabled={loading}
               className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-card hover:bg-secondary text-xs font-semibold transition-smooth disabled:opacity-50"
               title="Refresh leads"
@@ -260,13 +320,25 @@ function Leadboard() {
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
             </button>
             <ArrowUpDown className="size-4 text-muted-foreground" />
-            <select value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className="input-base !h-8 !py-0 text-xs">
-              {SORTS.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="input-base !h-8 !py-0 text-xs"
+            >
+              {SORTS.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
             </select>
           </div>
         </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
-          <select value={category} onChange={(e) => setCategory(e.target.value as typeof category)} className="input-base">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value as typeof category)}
+            className="input-base"
+          >
             <option value="all">All categories</option>
             <option value="loan">Loans</option>
             <option value="insurance">Insurance</option>
@@ -275,21 +347,45 @@ function Leadboard() {
           </select>
           <select value={productTypeId} onChange={(e) => setProductTypeId(e.target.value)} className="input-base">
             <option value="all">All sub-types</option>
-            {filteredTypes.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {filteredTypes.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
           </select>
           <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City…" className="input-base" />
-          <input value={maxBudget} onChange={(e) => setMaxBudget(e.target.value)} type="number" placeholder="Max ₹ price" className="input-base" />
+          <input
+            value={maxBudget}
+            onChange={(e) => setMaxBudget(e.target.value)}
+            type="number"
+            placeholder="Max ₹ price"
+            className="input-base"
+          />
           <select value={score} onChange={(e) => setScore(e.target.value)} className="input-base">
-            {SCORES.map((s) => <option key={s} value={s}>{s === "all" ? "All scores" : s.toUpperCase()}</option>)}
+            {SCORES.map((s) => (
+              <option key={s} value={s}>
+                {s === "all" ? "All scores" : s.toUpperCase()}
+              </option>
+            ))}
           </select>
-          <select value={timeRange} onChange={(e) => setTimeRange(e.target.value as TimeRangeKey)} className="input-base">
-            {TIME_RANGES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value as TimeRangeKey)}
+            className="input-base"
+          >
+            {TIME_RANGES.map((r) => (
+              <option key={r.key} value={r.key}>
+                {r.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="size-6 animate-spin text-accent" /></div>
+        <div className="grid place-items-center py-20">
+          <Loader2 className="size-6 animate-spin text-accent" />
+        </div>
       ) : leads.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">
           No leads match your filters. Try clearing them.
@@ -315,7 +411,9 @@ function Leadboard() {
           lead={shortfallLead}
           balance={stats.balance}
           onClose={() => setShortfallLead(null)}
-          onRecharge={async (amt) => { await recharge(amt); }}
+          onRecharge={async (amt) => {
+            await recharge(amt);
+          }}
           onRetry={async () => {
             const lead = shortfallLead;
             setShortfallLead(null);
@@ -336,12 +434,20 @@ function formatRelative(iso: string, nowMs: number = Date.now()): string {
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return `${hrs}h ago`;
   return new Date(iso).toLocaleDateString("en-IN", {
-    day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "Asia/Kolkata",
   });
 }
 
 function LeadCard({
-  lead, type, onBuy, buying, purchased, now,
+  lead,
+  type,
+  onBuy,
+  buying,
+  purchased,
+  now,
 }: {
   lead: Lead;
   type?: ProductType;
@@ -352,28 +458,32 @@ function LeadCard({
 }) {
   const ScoreIcon = lead.score === "hot" ? Flame : lead.score === "warm" ? Sun : Snowflake;
   const scoreColor =
-    lead.score === "hot" ? "bg-orange-500/15 text-orange-600 dark:text-orange-400" :
-    lead.score === "warm" ? "bg-amber-500/15 text-amber-600 dark:text-amber-400" :
-    "bg-blue-500/15 text-blue-600 dark:text-blue-400";
+    lead.score === "hot"
+      ? "bg-orange-500/15 text-orange-600 dark:text-orange-400"
+      : lead.score === "warm"
+        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+        : "bg-blue-500/15 text-blue-600 dark:text-blue-400";
 
-  const meta = CATEGORY_META[lead.product_category];
+  const meta = CATEGORY_META[lead.product_category] || CATEGORY_META["loan"];
   const isPurchased = !!purchased;
 
   const ageHours = (now - new Date(lead.created_at).getTime()) / 36e5;
-  const isVeryNew = ageHours < 1;       // <1 hour → "New" badge
-  const isFresh = ageHours < 12;        // <12 hours → "Fresh" badge
+  const isVeryNew = ageHours < 1; // <1 hour → "New" badge
+  const isFresh = ageHours < 12; // <12 hours → "Fresh" badge
   const showCornerBadge = ageHours < 24;
 
   return (
-    <div className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
-      isPurchased
-        ? "border-emerald-500/60 ring-1 ring-emerald-500/30"
-        : lead.score === "hot"
-          ? "border-orange-500/60 ring-1 ring-orange-500/30 hover:ring-orange-500/60"
-          : isFresh
-            ? "border-emerald-400/50 ring-1 ring-emerald-400/20 hover:border-accent/50"
-            : "border-border hover:border-accent/50"
-    }`}>
+    <div
+      className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
+        isPurchased
+          ? "border-emerald-500/60 ring-1 ring-emerald-500/30"
+          : lead.score === "hot"
+            ? "border-orange-500/60 ring-1 ring-orange-500/30 hover:ring-orange-500/60"
+            : isFresh
+              ? "border-emerald-400/50 ring-1 ring-emerald-400/20 hover:border-accent/50"
+              : "border-border hover:border-accent/50"
+      }`}
+    >
       {isPurchased ? (
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
           <Check className="size-3" /> Purchased
@@ -386,13 +496,17 @@ function LeadCard({
         <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md animate-pulse">
           <Sparkles className="size-3" /> New
         </div>
-      ) : showCornerBadge && (
-        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/90 text-white shadow-md">
-          <Sparkles className="size-3" /> New
-        </div>
+      ) : (
+        showCornerBadge && (
+          <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/90 text-white shadow-md">
+            <Sparkles className="size-3" /> New
+          </div>
+        )
       )}
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
-        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${meta.chipBg} ${meta.chipText}`}>
+        <span
+          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${meta.chipBg} ${meta.chipText}`}
+        >
           {meta.label}
         </span>
         {type && (
@@ -418,20 +532,27 @@ function LeadCard({
           <div className="flex items-center gap-1 text-xs mt-0.5">
             <Phone className="size-3 text-muted-foreground" />
             {isPurchased ? (
-              <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">{purchased.full_phone}</span>
+              <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                {purchased.full_phone}
+              </span>
             ) : (
               <span className="text-muted-foreground">{lead.masked_phone}</span>
             )}
           </div>
         </div>
-        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${scoreColor}`}>
+        <span
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${scoreColor}`}
+        >
           <ScoreIcon className="size-3" /> {lead.score}
         </span>
       </div>
 
       <div className="mt-4 space-y-1.5 text-sm">
         <Row icon={MapPin} text={lead.city} />
-        <div className="flex items-center gap-2 text-[11px] text-muted-foreground" title={new Date(lead.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}>
+        <div
+          className="flex items-center gap-2 text-[11px] text-muted-foreground"
+          title={new Date(lead.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
+        >
           <Clock className="size-3 shrink-0" />
           <span>Added {formatRelative(lead.created_at, now)}</span>
           {lead.updated_at && new Date(lead.updated_at).getTime() - new Date(lead.created_at).getTime() > 60000 && (
@@ -439,7 +560,9 @@ function LeadCard({
           )}
         </div>
         <Row icon={Banknote} text={`Ticket: ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
-        {lead.monthly_income && <Row icon={Banknote} text={`Income: ₹${lead.monthly_income.toLocaleString("en-IN")}/mo`} />}
+        {lead.monthly_income && (
+          <Row icon={Banknote} text={`Income: ₹${lead.monthly_income.toLocaleString("en-IN")}/mo`} />
+        )}
       </div>
 
       <div className="mt-auto pt-4 flex items-center justify-between border-t border-border mt-4">
@@ -509,7 +632,11 @@ function StatCard({
 }
 
 function InsufficientBalanceModal({
-  lead, balance, onClose, onRecharge, onRetry,
+  lead,
+  balance,
+  onClose,
+  onRecharge,
+  onRetry,
 }: {
   lead: Lead;
   balance: number;
@@ -530,9 +657,15 @@ function InsufficientBalanceModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-3xl bg-card border border-border shadow-elevated overflow-hidden" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="w-full max-w-md rounded-3xl bg-card border border-border shadow-elevated overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6 bg-gradient-to-br from-amber-500/15 to-orange-500/10 border-b border-border relative">
-          <button onClick={onClose} className="absolute top-3 right-3 size-8 rounded-full grid place-items-center hover:bg-secondary">
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 size-8 rounded-full grid place-items-center hover:bg-secondary"
+          >
             <X className="size-4" />
           </button>
           <div className="size-12 rounded-2xl bg-amber-500 text-white grid place-items-center mb-3">
@@ -541,8 +674,8 @@ function InsufficientBalanceModal({
           <h3 className="font-display text-xl font-bold">Insufficient balance</h3>
           <p className="text-sm text-muted-foreground mt-1">
             Lead costs <strong className="text-foreground">₹{lead.price}</strong> but your wallet has only{" "}
-            <strong className="text-foreground">₹{balance.toLocaleString("en-IN")}</strong>.
-            You need <strong className="text-foreground">₹{shortfall.toLocaleString("en-IN")}</strong> more.
+            <strong className="text-foreground">₹{balance.toLocaleString("en-IN")}</strong>. You need{" "}
+            <strong className="text-foreground">₹{shortfall.toLocaleString("en-IN")}</strong> more.
           </p>
         </div>
 
@@ -557,8 +690,7 @@ function InsufficientBalanceModal({
                   disabled={busy !== null}
                   className="px-4 py-2.5 rounded-xl border border-border hover:border-accent hover:bg-accent/5 transition-smooth font-semibold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
                 >
-                  {busy === a ? <Loader2 className="size-4 animate-spin" /> : null}
-                  ₹{a.toLocaleString("en-IN")}
+                  {busy === a ? <Loader2 className="size-4 animate-spin" /> : null}₹{a.toLocaleString("en-IN")}
                 </button>
               ))}
             </div>
@@ -584,7 +716,9 @@ function InsufficientBalanceModal({
                 Add
               </button>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1.5">Razorpay integration coming soon — demo recharge instantly credits your wallet.</p>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Razorpay integration coming soon — demo recharge instantly credits your wallet.
+            </p>
           </div>
 
           <div className="flex items-center gap-2 pt-2 border-t border-border">
