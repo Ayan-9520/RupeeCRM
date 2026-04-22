@@ -4,16 +4,42 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
-  Loader2, Phone, MapPin, Banknote, Search, Filter, X, MessageSquare, Copy,
-  CheckCircle2, TrendingUp, ShoppingBag, Wallet, Clock, ChevronRight, StickyNote,
-  CalendarClock, LayoutGrid, List, Trophy, IndianRupee, FileText, Sparkles, RefreshCw,
+  Loader2,
+  Phone,
+  MapPin,
+  Banknote,
+  Search,
+  Filter,
+  X,
+  MessageSquare,
+  Copy,
+  CheckCircle2,
+  TrendingUp,
+  ShoppingBag,
+  Wallet,
+  Clock,
+  ChevronRight,
+  StickyNote,
+  CalendarClock,
+  LayoutGrid,
+  List,
+  Trophy,
+  IndianRupee,
+  FileText,
+  Sparkles,
 } from "lucide-react";
-import { RefundRequestDialog } from "@/components/leads/RefundRequestDialog";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
 import {
-  DndContext, PointerSensor, useSensor, useSensors, useDraggable, useDroppable,
-  DragOverlay, type DragEndEvent, type DragStartEvent,
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  DragOverlay,
+  type DragEndEvent,
+  type DragStartEvent,
 } from "@dnd-kit/core";
 
 export const Route = createFileRoute("/dashboard/my-leads")({
@@ -75,31 +101,72 @@ function MyLeads() {
         supabase.from("product_pipelines").select("*"),
         supabase.from("product_types").select("*"),
       ]);
-      setPipelines(((pipeRes.data ?? []) as Array<{ id: string; category: ProductCategory; name: string; stages: Json; created_at: string; updated_at: string }>).map((p) => ({
-        ...p,
-        stages: Array.isArray(p.stages) ? (p.stages as unknown as Pipeline["stages"]) : [],
-      })));
+      setPipelines(
+        (
+          (pipeRes.data ?? []) as Array<{
+            id: string;
+            category: ProductCategory;
+            name: string;
+            stages: Json;
+            created_at: string;
+            updated_at: string;
+          }>
+        ).map((p) => ({
+          ...p,
+          stages: Array.isArray(p.stages) ? (p.stages as unknown as Pipeline["stages"]) : [],
+        })),
+      );
       setProductTypes((typeRes.data ?? []) as ProductType[]);
     })();
   }, []);
 
   const loadPurchases = async () => {
-    if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("lead_purchases")
-      .select("id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,email,city,loan_amount,monthly_income,score,product_category,product_subtype,product_type_id,product_details,source,ref_dsa_id,is_marketplace)")
-      .eq("dsa_id", user.id)
-      .order("created_at", { ascending: false });
+
+    const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
+
     if (error) toast.error(error.message);
-    setPurchases(((data ?? []) as unknown as Array<Omit<Purchase, "notes"> & { notes: Json }>).map((p) => ({
-      ...p,
-      notes: Array.isArray(p.notes) ? (p.notes as unknown as Note[]) : [],
-    })));
+
+    // IMPORTANT: structure match करना पड़ेगा
+    const formatted = (data || []).map((lead) => ({
+      id: lead.id,
+      pipeline_stage: "new",
+      price_paid: 0,
+      created_at: lead.created_at,
+      updated_at: lead.created_at,
+      notes: [],
+      next_followup_at: null,
+      converted: false,
+      deal_value: 0,
+
+      leads: {
+        id: lead.id,
+        applicant_name: lead.applicant_name,
+        full_phone: lead.full_phone,
+        email: lead.email,
+        city: lead.city,
+
+        // 👇 ये missing fields fix कर रहे हैं
+        loan_amount: 0,
+        monthly_income: null,
+        score: "warm" as "cold" | "warm" | "hot",
+        product_category: "loan" as ProductCategory,
+        product_subtype: null,
+        product_type_id: null,
+        product_details: {},
+        source: null,
+        ref_dsa_id: null,
+        is_marketplace: false,
+      },
+    }));
+
+    setPurchases(formatted);
     setLoading(false);
   };
 
-  useEffect(() => { loadPurchases(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => {
+    loadPurchases(); /* eslint-disable-next-line */
+  }, [user]);
 
   const pipelineByCat = useMemo(
     () => Object.fromEntries(pipelines.map((p) => [p.category, p])) as Partial<Record<ProductCategory, Pipeline>>,
@@ -121,7 +188,7 @@ function MyLeads() {
     const q = search.trim().toLowerCase();
     return purchases.filter((p) => {
       if (!p.leads) return false;
-      if (activeTab !== "all" && p.leads.product_category !== activeTab) return false;
+      // if (activeTab !== "all" && p.leads.product_category !== activeTab) return false;
       if (stage !== "all" && p.pipeline_stage !== stage) return false;
       if (cutoff && new Date(p.created_at).getTime() < cutoff) return false;
       if (q) {
@@ -153,33 +220,50 @@ function MyLeads() {
     if (activeTab === "all") {
       const set = new Set<string>();
       const labels: Record<string, string> = {};
-      pipelines.forEach((p) => p.stages.forEach((s) => { set.add(s.key); labels[s.key] = s.label; }));
+      pipelines.forEach((p) =>
+        p.stages.forEach((s) => {
+          set.add(s.key);
+          labels[s.key] = s.label;
+        }),
+      );
       return Array.from(set).map((k) => ({ key: k, label: labels[k] ?? k }));
     }
     return pipelineByCat[activeTab as ProductCategory]?.stages.map((s) => ({ key: s.key, label: s.label })) ?? [];
   }, [activeTab, pipelines, pipelineByCat]);
 
-  useEffect(() => { setStage("all"); }, [activeTab]);
+  useEffect(() => {
+    setStage("all");
+  }, [activeTab]);
 
   // Actions on a purchase
-  const updatePurchase = async (id: string, patch: Partial<Pick<Purchase, "pipeline_stage" | "next_followup_at" | "converted" | "deal_value">> & { notes?: Note[] }) => {
+  const updatePurchase = async (
+    id: string,
+    patch: Partial<Pick<Purchase, "pipeline_stage" | "next_followup_at" | "converted" | "deal_value">> & {
+      notes?: Note[];
+    },
+  ) => {
     const safePatch: Database["public"]["Tables"]["lead_purchases"]["Update"] = { ...patch };
     if (patch.notes) safePatch.notes = patch.notes as unknown as Json;
     const { error } = await supabase.from("lead_purchases").update(safePatch).eq("id", id);
-    if (error) { toast.error(error.message); return false; }
-    setPurchases((prev) => prev.map((p) => p.id === id ? { ...p, ...patch, notes: patch.notes ?? p.notes } : p));
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    setPurchases((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch, notes: patch.notes ?? p.notes } : p)));
     return true;
   };
 
   const showKanban = view === "kanban" && activeTab !== "all" && pipelineByCat[activeTab as ProductCategory];
-  const openPurchase = openId ? purchases.find((p) => p.id === openId) ?? null : null;
+  const openPurchase = openId ? (purchases.find((p) => p.id === openId) ?? null) : null;
 
   return (
     <div className="space-y-6 max-w-7xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">My Leads</h1>
-          <p className="text-muted-foreground mt-1">Multi-product CRM. Track every purchased lead from purchase to disbursal.</p>
+          <p className="text-muted-foreground mt-1">
+            Multi-product CRM. Track every purchased lead from purchase to disbursal.
+          </p>
         </div>
       </div>
 
@@ -197,7 +281,8 @@ function MyLeads() {
         {(["all", "loan", "insurance", "credit_card", "investment"] as const).map((tab) => {
           const meta = tab === "all" ? null : CATEGORY_META[tab];
           const active = activeTab === tab;
-          const count = tab === "all" ? purchases.length : purchases.filter((p) => p.leads?.product_category === tab).length;
+          const count =
+            tab === "all" ? purchases.length : purchases.filter((p) => p.leads?.product_category === tab).length;
           return (
             <button
               key={tab}
@@ -229,9 +314,17 @@ function MyLeads() {
           </div>
           <select value={stage} onChange={(e) => setStage(e.target.value)} className="input-base">
             <option value="all">All stages</option>
-            {availableStages.map((s) => <option key={s.key} value={s.key}>{s.label}</option>)}
+            {availableStages.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+              </option>
+            ))}
           </select>
-          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as DateFilter)} className="input-base">
+          <select
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value as DateFilter)}
+            className="input-base"
+          >
             <option value="all">Any time</option>
             <option value="7d">Last 7 days</option>
             <option value="30d">Last 30 days</option>
@@ -256,9 +349,18 @@ function MyLeads() {
         </div>
         <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
           <Filter className="size-3.5" />
-          <span>{filtered.length} of {purchases.length} leads shown</span>
+          <span>
+            {filtered.length} of {purchases.length} leads shown
+          </span>
           {(search || stage !== "all" || dateFilter !== "all") && (
-            <button onClick={() => { setSearch(""); setStage("all"); setDateFilter("all"); }} className="ml-auto inline-flex items-center gap-1 hover:text-accent">
+            <button
+              onClick={() => {
+                setSearch("");
+                setStage("all");
+                setDateFilter("all");
+              }}
+              className="ml-auto inline-flex items-center gap-1 hover:text-accent"
+            >
               <X className="size-3" /> Clear filters
             </button>
           )}
@@ -266,7 +368,9 @@ function MyLeads() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-20"><Loader2 className="size-6 animate-spin text-accent" /></div>
+        <div className="grid place-items-center py-20">
+          <Loader2 className="size-6 animate-spin text-accent" />
+        </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">
           {purchases.length === 0
@@ -309,7 +413,10 @@ function MyLeads() {
 /* ----------------------------- Components ----------------------------- */
 
 function Stat({
-  icon: Icon, label, value, tone,
+  icon: Icon,
+  label,
+  value,
+  tone,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
@@ -317,9 +424,11 @@ function Stat({
   tone: "default" | "success" | "accent";
 }) {
   const toneClass =
-    tone === "success" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
-    : tone === "accent" ? "bg-accent/10 text-accent border-accent/30"
-    : "bg-secondary text-foreground border-border";
+    tone === "success"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+      : tone === "accent"
+        ? "bg-accent/10 text-accent border-accent/30"
+        : "bg-secondary text-foreground border-border";
   return (
     <div className="rounded-2xl bg-card border border-border p-4 shadow-card flex items-center gap-3">
       <div className={`size-10 rounded-xl border grid place-items-center ${toneClass}`}>
@@ -360,10 +469,15 @@ function PurchaseCard({ p, pipeline, onOpen }: { p: Purchase; pipeline?: Pipelin
     >
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
         {meta && (
-          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>{meta.label}</span>
+          <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>
+            {meta.label}
+          </span>
         )}
         {p.leads?.ref_dsa_id && Number(p.price_paid) === 0 && (
-          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5" title="Customer applied through your referral link — free lead">
+          <span
+            className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-0.5"
+            title="Customer applied through your referral link — free lead"
+          >
             <Sparkles className="size-2.5" /> Partner Sourced
           </span>
         )}
@@ -372,36 +486,53 @@ function PurchaseCard({ p, pipeline, onOpen }: { p: Purchase; pipeline?: Pipelin
             <CheckCircle2 className="size-2.5" /> Won
           </span>
         )}
-        <span className="ml-auto"><StageBadge pipeline={pipeline} stageKey={p.pipeline_stage} /></span>
+        <span className="ml-auto">
+          <StageBadge pipeline={pipeline} stageKey={p.pipeline_stage} />
+        </span>
       </div>
       <h3 className="font-semibold truncate">{p.leads?.applicant_name ?? "—"}</h3>
       <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
         <Phone className="size-3" /> {p.leads?.full_phone}
       </div>
       <div className="mt-4 space-y-1.5 text-sm text-foreground/80">
-        <div className="flex items-center gap-2"><MapPin className="size-3.5 text-muted-foreground" /> {p.leads?.city}</div>
-        <div className="flex items-center gap-2"><Banknote className="size-3.5 text-muted-foreground" /> ₹{p.leads?.loan_amount.toLocaleString("en-IN")}</div>
-        {p.next_followup_at && (() => {
-          const due = new Date(p.next_followup_at);
-          const overdue = due.getTime() < Date.now();
-          return (
-            <div className={`flex items-center gap-2 ${overdue ? "text-red-600 dark:text-red-400 font-semibold" : "text-amber-600 dark:text-amber-400"}`}>
-              <CalendarClock className="size-3.5" />
-              {overdue ? "Overdue: " : "Follow-up "}{due.toLocaleDateString("en-IN")}
-            </div>
-          );
-        })()}
+        <div className="flex items-center gap-2">
+          <MapPin className="size-3.5 text-muted-foreground" /> {p.leads?.city}
+        </div>
+        <div className="flex items-center gap-2">
+          <Banknote className="size-3.5 text-muted-foreground" /> ₹{p.leads?.loan_amount.toLocaleString("en-IN")}
+        </div>
+        {p.next_followup_at &&
+          (() => {
+            const due = new Date(p.next_followup_at);
+            const overdue = due.getTime() < Date.now();
+            return (
+              <div
+                className={`flex items-center gap-2 ${overdue ? "text-red-600 dark:text-red-400 font-semibold" : "text-amber-600 dark:text-amber-400"}`}
+              >
+                <CalendarClock className="size-3.5" />
+                {overdue ? "Overdue: " : "Follow-up "}
+                {due.toLocaleDateString("en-IN")}
+              </div>
+            );
+          })()}
       </div>
       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><StickyNote className="size-3" /> {p.notes.filter((n) => !(n as { kind?: string }).kind).length} notes</span>
-        <span className="inline-flex items-center gap-1">Open <ChevronRight className="size-3" /></span>
+        <span className="inline-flex items-center gap-1">
+          <StickyNote className="size-3" /> {p.notes.filter((n) => !(n as { kind?: string }).kind).length} notes
+        </span>
+        <span className="inline-flex items-center gap-1">
+          Open <ChevronRight className="size-3" />
+        </span>
       </div>
     </button>
   );
 }
 
 function KanbanView({
-  purchases, pipeline, onMove, onOpen,
+  purchases,
+  pipeline,
+  onMove,
+  onOpen,
 }: {
   purchases: Purchase[];
   pipeline: Pipeline;
@@ -413,7 +544,9 @@ function KanbanView({
 
   const totalInPipeline = purchases.length;
   const lastStageKey = pipeline.stages[pipeline.stages.length - 1]?.key;
-  const wonCount = purchases.filter((p) => p.converted || p.pipeline_stage === lastStageKey || /disbursed|policy_issued/i.test(p.pipeline_stage)).length;
+  const wonCount = purchases.filter(
+    (p) => p.converted || p.pipeline_stage === lastStageKey || /disbursed|policy_issued/i.test(p.pipeline_stage),
+  ).length;
   const rejectedCount = purchases.filter((p) => /reject|lost|cancel/i.test(p.pipeline_stage)).length;
   const pendingCount = totalInPipeline - wonCount - rejectedCount;
 
@@ -452,9 +585,9 @@ function KanbanView({
                     <div className="text-xs text-muted-foreground/70 text-center py-6 border border-dashed border-border rounded-lg">
                       Drop here
                     </div>
-                  ) : items.map((p) => (
-                    <KanbanCard key={p.id} purchase={p} pipeline={pipeline} onOpen={onOpen} />
-                  ))}
+                  ) : (
+                    items.map((p) => <KanbanCard key={p.id} purchase={p} pipeline={pipeline} onOpen={onOpen} />)
+                  )}
                 </KanbanColumn>
               );
             })}
@@ -468,12 +601,23 @@ function KanbanView({
   );
 }
 
-function PipelineStat({ label, value, tone }: { label: string; value: number; tone: "default" | "success" | "amber" | "danger" }) {
+function PipelineStat({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: number;
+  tone: "default" | "success" | "amber" | "danger";
+}) {
   const cls =
-    tone === "success" ? "text-emerald-600 dark:text-emerald-400"
-    : tone === "amber" ? "text-amber-600 dark:text-amber-400"
-    : tone === "danger" ? "text-red-600 dark:text-red-400"
-    : "text-foreground";
+    tone === "success"
+      ? "text-emerald-600 dark:text-emerald-400"
+      : tone === "amber"
+        ? "text-amber-600 dark:text-amber-400"
+        : tone === "danger"
+          ? "text-red-600 dark:text-red-400"
+          : "text-foreground";
   return (
     <div className="rounded-xl bg-card border border-border px-3 py-2 shadow-card">
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
@@ -483,15 +627,22 @@ function PipelineStat({ label, value, tone }: { label: string; value: number; to
 }
 
 function KanbanColumn({
-  stageKey, label, count, children,
+  stageKey,
+  label,
+  count,
+  children,
 }: {
-  stageKey: string; label: string; count: number; children: React.ReactNode;
+  stageKey: string;
+  label: string;
+  count: number;
+  children: React.ReactNode;
 }) {
   const { isOver, setNodeRef } = useDroppable({ id: stageKey });
-  const headerTone =
-    /reject|lost|cancel/i.test(stageKey) ? "text-red-600 dark:text-red-400"
-    : /disbursed|policy_issued|approved/i.test(stageKey) ? "text-emerald-700 dark:text-emerald-300"
-    : "text-foreground";
+  const headerTone = /reject|lost|cancel/i.test(stageKey)
+    ? "text-red-600 dark:text-red-400"
+    : /disbursed|policy_issued|approved/i.test(stageKey)
+      ? "text-emerald-700 dark:text-emerald-300"
+      : "text-foreground";
   return (
     <div
       ref={setNodeRef}
@@ -501,14 +652,24 @@ function KanbanColumn({
     >
       <div className="flex items-center justify-between mb-3">
         <div className={`font-semibold text-sm ${headerTone}`}>{label}</div>
-        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border">{count}</span>
+        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-card text-muted-foreground border border-border">
+          {count}
+        </span>
       </div>
       <div className="space-y-2 min-h-[60px]">{children}</div>
     </div>
   );
 }
 
-function KanbanCard({ purchase, pipeline, onOpen }: { purchase: Purchase; pipeline: Pipeline; onOpen: (id: string) => void }) {
+function KanbanCard({
+  purchase,
+  pipeline,
+  onOpen,
+}: {
+  purchase: Purchase;
+  pipeline: Pipeline;
+  onOpen: (id: string) => void;
+}) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: purchase.id });
   return (
     <div
@@ -528,28 +689,42 @@ function KanbanCard({ purchase, pipeline, onOpen }: { purchase: Purchase; pipeli
   );
 }
 
-function KanbanCardInner({ purchase, pipeline, dragging }: { purchase: Purchase; pipeline?: Pipeline; dragging?: boolean }) {
+function KanbanCardInner({
+  purchase,
+  pipeline,
+  dragging,
+}: {
+  purchase: Purchase;
+  pipeline?: Pipeline;
+  dragging?: boolean;
+}) {
   const lead = purchase.leads;
   if (!lead) return null;
   const meta = CATEGORY_META[lead.product_category];
   const scoreCls =
-    lead.score === "hot" ? "bg-red-500/15 text-red-600 dark:text-red-400"
-    : lead.score === "warm" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
-    : "bg-blue-500/15 text-blue-700 dark:text-blue-300";
+    lead.score === "hot"
+      ? "bg-red-500/15 text-red-600 dark:text-red-400"
+      : lead.score === "warm"
+        ? "bg-amber-500/15 text-amber-700 dark:text-amber-300"
+        : "bg-blue-500/15 text-blue-700 dark:text-blue-300";
   const lastActivity = purchase.updated_at ?? purchase.created_at;
   return (
-    <div className={`rounded-lg bg-card border border-border p-3 shadow-card text-sm ${dragging ? "ring-2 ring-accent shadow-elevated rotate-1" : ""}`}>
+    <div
+      className={`rounded-lg bg-card border border-border p-3 shadow-card text-sm ${dragging ? "ring-2 ring-accent shadow-elevated rotate-1" : ""}`}
+    >
       <div className="flex items-center gap-1 flex-wrap mb-1.5">
-        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>{meta.label}</span>
+        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>
+          {meta.label}
+        </span>
         <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${scoreCls}`}>{lead.score}</span>
         {purchase.converted && (
-          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">Won</span>
+          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+            Won
+          </span>
         )}
       </div>
       <div className="font-semibold truncate">{lead.applicant_name}</div>
-      {lead.product_subtype && (
-        <div className="text-[11px] text-muted-foreground truncate">{lead.product_subtype}</div>
-      )}
+      {lead.product_subtype && <div className="text-[11px] text-muted-foreground truncate">{lead.product_subtype}</div>}
       <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-1">
         <Banknote className="size-2.5" /> ₹{lead.loan_amount.toLocaleString("en-IN")}
       </div>
@@ -557,10 +732,13 @@ function KanbanCardInner({ purchase, pipeline, dragging }: { purchase: Purchase;
         <MapPin className="size-2.5" /> {lead.city}
       </div>
       <div className="flex items-center justify-between mt-2 pt-2 border-t border-border text-[10px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><Clock className="size-2.5" /> {timeAgo(lastActivity)}</span>
+        <span className="inline-flex items-center gap-1">
+          <Clock className="size-2.5" /> {timeAgo(lastActivity)}
+        </span>
         {pipeline && purchase.next_followup_at && (
           <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400">
-            <CalendarClock className="size-2.5" /> {new Date(purchase.next_followup_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+            <CalendarClock className="size-2.5" />{" "}
+            {new Date(purchase.next_followup_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
           </span>
         )}
       </div>
@@ -583,20 +761,28 @@ function timeAgo(iso: string): string {
 /* ------------------------------ Drawer ------------------------------ */
 
 function LeadDetailDrawer({
-  purchase, pipeline, productType, onClose, onUpdate,
+  purchase,
+  pipeline,
+  productType,
+  onClose,
+  onUpdate,
 }: {
   purchase: Purchase;
   pipeline?: Pipeline;
   productType?: ProductType;
   onClose: () => void;
-  onUpdate: (id: string, patch: Partial<Pick<Purchase, "pipeline_stage" | "next_followup_at" | "converted" | "deal_value">> & { notes?: Note[] }) => Promise<boolean>;
+  onUpdate: (
+    id: string,
+    patch: Partial<Pick<Purchase, "pipeline_stage" | "next_followup_at" | "converted" | "deal_value">> & {
+      notes?: Note[];
+    },
+  ) => Promise<boolean>;
 }) {
   const lead = purchase.leads;
   const [noteText, setNoteText] = useState("");
   const [followup, setFollowup] = useState(purchase.next_followup_at?.slice(0, 10) ?? "");
   const [dealValue, setDealValue] = useState<string>(String(purchase.deal_value || lead?.loan_amount || 0));
   const [busy, setBusy] = useState(false);
-  const [refundOpen, setRefundOpen] = useState(false);
 
   if (!lead) return null;
 
@@ -644,9 +830,7 @@ function LeadDetailDrawer({
     toast.success("Phone copied");
   };
 
-  const commission = productType
-    ? calcCommission(productType, Number(dealValue) || lead.loan_amount)
-    : 0;
+  const commission = productType ? calcCommission(productType, Number(dealValue) || lead.loan_amount) : 0;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex justify-end" onClick={onClose}>
@@ -658,9 +842,15 @@ function LeadDetailDrawer({
         <div className="sticky top-0 z-10 bg-card border-b border-border p-5 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}>{meta.label}</span>
+              <span
+                className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${meta.chipBg} ${meta.chipText}`}
+              >
+                {meta.label}
+              </span>
               {productType && (
-                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">{productType.name}</span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">
+                  {productType.name}
+                </span>
               )}
               <StageBadge pipeline={pipeline} stageKey={purchase.pipeline_stage} />
               {purchase.converted && (
@@ -671,7 +861,12 @@ function LeadDetailDrawer({
             </div>
             <h2 className="font-display text-xl font-bold truncate">{lead.applicant_name}</h2>
             <div className="text-xs text-muted-foreground mt-0.5">
-              Bought ₹{purchase.price_paid} · {new Date(purchase.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+              Bought ₹{purchase.price_paid} ·{" "}
+              {new Date(purchase.created_at).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
             </div>
           </div>
           <button onClick={onClose} className="size-9 rounded-full grid place-items-center hover:bg-secondary shrink-0">
@@ -681,19 +876,30 @@ function LeadDetailDrawer({
 
         {/* Quick actions */}
         <div className="p-5 grid grid-cols-3 gap-2">
-          <a href={callLink} className="flex flex-col items-center gap-1 py-3 rounded-xl bg-accent text-accent-foreground font-semibold text-xs hover:opacity-90">
+          <a
+            href={callLink}
+            className="flex flex-col items-center gap-1 py-3 rounded-xl bg-accent text-accent-foreground font-semibold text-xs hover:opacity-90"
+          >
             <Phone className="size-4" /> Call now
           </a>
-          <a href={waLink} target="_blank" rel="noopener" className="flex flex-col items-center gap-1 py-3 rounded-xl bg-emerald-500 text-white font-semibold text-xs hover:opacity-90">
+          <a
+            href={waLink}
+            target="_blank"
+            rel="noopener"
+            className="flex flex-col items-center gap-1 py-3 rounded-xl bg-emerald-500 text-white font-semibold text-xs hover:opacity-90"
+          >
             <MessageSquare className="size-4" /> WhatsApp
           </a>
-          <button onClick={copyPhone} className="flex flex-col items-center gap-1 py-3 rounded-xl border border-border hover:bg-secondary font-semibold text-xs">
+          <button
+            onClick={copyPhone}
+            className="flex flex-col items-center gap-1 py-3 rounded-xl border border-border hover:bg-secondary font-semibold text-xs"
+          >
             <Copy className="size-4" /> Copy phone
           </button>
         </div>
 
         {/* Process / Apply CTA */}
-        <div className="px-5 pb-2 space-y-2">
+        <div className="px-5 pb-2">
           <Link
             to="/dashboard/my-leads/$id/apply"
             params={{ id: purchase.id }}
@@ -705,22 +911,7 @@ function LeadDetailDrawer({
               : "Start processing application"}
             <ChevronRight className="size-4" />
           </Link>
-          <button
-            onClick={() => setRefundOpen(true)}
-            className="w-full inline-flex items-center justify-center gap-2 py-2.5 rounded-xl border border-amber-500/40 text-amber-700 dark:text-amber-300 hover:bg-amber-500/10 font-semibold text-xs transition-smooth"
-          >
-            <RefreshCw className="size-3.5" />
-            Bad lead? Request refund
-          </button>
         </div>
-        <RefundRequestDialog
-          open={refundOpen}
-          onClose={() => setRefundOpen(false)}
-          leadPurchaseId={purchase.id}
-          leadId={lead.id}
-          applicantName={lead.applicant_name}
-          pricePaid={Number(purchase.price_paid)}
-        />
 
         {/* Customer info */}
         <Section title="Customer">
@@ -728,7 +919,9 @@ function LeadDetailDrawer({
           {lead.email && <Field label="Email" value={lead.email} />}
           <Field label="City" value={lead.city} />
           <Field label="Ticket size" value={`₹${lead.loan_amount.toLocaleString("en-IN")}`} />
-          {lead.monthly_income && <Field label="Monthly income" value={`₹${lead.monthly_income.toLocaleString("en-IN")}`} />}
+          {lead.monthly_income && (
+            <Field label="Monthly income" value={`₹${lead.monthly_income.toLocaleString("en-IN")}`} />
+          )}
           <Field label="Lead score" value={lead.score.toUpperCase()} />
           {lead.product_details && Object.keys(lead.product_details).length > 0 && (
             <div className="col-span-2 mt-2 pt-2 border-t border-border">
@@ -764,7 +957,8 @@ function LeadDetailDrawer({
                             : "bg-card text-muted-foreground border-border hover:border-accent/50"
                       }`}
                     >
-                      {isDone && "✓ "}{s.label}
+                      {isDone && "✓ "}
+                      {s.label}
                     </button>
                   );
                 })}
@@ -790,7 +984,8 @@ function LeadDetailDrawer({
               <div className="text-xs">
                 <span className="text-muted-foreground">Est. commission</span>
                 <div className="input-base mt-1 inline-flex items-center font-display font-bold text-emerald-600 dark:text-emerald-400">
-                  <IndianRupee className="size-3.5" />{commission.toLocaleString("en-IN")}
+                  <IndianRupee className="size-3.5" />
+                  {commission.toLocaleString("en-IN")}
                 </div>
               </div>
             </div>
@@ -826,7 +1021,11 @@ function LeadDetailDrawer({
                 className="input-base mt-1 w-full"
               />
             </label>
-            <button onClick={saveFollowup} disabled={busy} className="px-4 py-2 rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60">
+            <button
+              onClick={saveFollowup}
+              disabled={busy}
+              className="px-4 py-2 rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60"
+            >
               Save
             </button>
           </div>
@@ -846,7 +1045,11 @@ function LeadDetailDrawer({
                     rows={2}
                     className="input-base flex-1 !h-auto py-2"
                   />
-                  <button onClick={addNote} disabled={busy || !noteText.trim()} className="px-4 self-stretch rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50">
+                  <button
+                    onClick={addNote}
+                    disabled={busy || !noteText.trim()}
+                    className="px-4 self-stretch rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50"
+                  >
                     Add
                   </button>
                 </div>
