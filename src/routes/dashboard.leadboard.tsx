@@ -1,4 +1,3 @@
-
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -443,8 +442,6 @@ function formatRelative(iso: string, nowMs: number = Date.now()): string {
 }
 
 function LeadCard({
-  
-  console.log("LEAD DATA:", lead);
   lead,
   type,
   onBuy,
@@ -459,6 +456,7 @@ function LeadCard({
   purchased?: { full_phone: string };
   now: number;
 }) {
+  console.log("LEAD DATA:", lead);
   const ScoreIcon = lead.score === "hot" ? Flame : lead.score === "warm" ? Sun : Snowflake;
   const scoreColor =
     lead.score === "hot"
