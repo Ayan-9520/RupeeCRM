@@ -442,6 +442,8 @@ function formatRelative(iso: string, nowMs: number = Date.now()): string {
 }
 
 function LeadCard({
+  
+  console.log("LEAD DATA:", lead);
   lead,
   type,
   onBuy,
