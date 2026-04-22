@@ -121,46 +121,22 @@ function MyLeads() {
   }, []);
 
   const loadPurchases = async () => {
+    if (!user) return;
     setLoading(true);
-
-    const { data, error } = await supabase.from("leads").select("*").order("created_at", { ascending: false });
-
+    const { data, error } = await supabase
+      .from("lead_purchases")
+      .select(
+        "id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,email,city,loan_amount,monthly_income,score,product_category,product_subtype,product_type_id,product_details,source,ref_dsa_id,is_marketplace)",
+      )
+      .eq("dsa_id", user.id)
+      .order("created_at", { ascending: false });
     if (error) toast.error(error.message);
-
-    // IMPORTANT: structure match करना पड़ेगा
-    const formatted = (data || []).map((lead) => ({
-      id: lead.id,
-      pipeline_stage: "new",
-      price_paid: 0,
-      created_at: lead.created_at,
-      updated_at: lead.created_at,
-      notes: [],
-      next_followup_at: null,
-      converted: false,
-      deal_value: 0,
-
-      leads: {
-        id: lead.id,
-        applicant_name: lead.applicant_name,
-        full_phone: lead.full_phone,
-        email: lead.email,
-        city: lead.city,
-
-        // 👇 ये missing fields fix कर रहे हैं
-        loan_amount: 0,
-        monthly_income: null,
-        score: "warm" as "cold" | "warm" | "hot",
-        product_category: "loan" as ProductCategory,
-        product_subtype: null,
-        product_type_id: null,
-        product_details: {},
-        source: null,
-        ref_dsa_id: null,
-        is_marketplace: false,
-      },
-    }));
-
-    setPurchases(formatted);
+    setPurchases(
+      ((data ?? []) as unknown as Array<Omit<Purchase, "notes"> & { notes: Json }>).map((p) => ({
+        ...p,
+        notes: Array.isArray(p.notes) ? (p.notes as unknown as Note[]) : [],
+      })),
+    );
     setLoading(false);
   };
 
@@ -188,7 +164,7 @@ function MyLeads() {
     const q = search.trim().toLowerCase();
     return purchases.filter((p) => {
       if (!p.leads) return false;
-      // if (activeTab !== "all" && p.leads.product_category !== activeTab) return false;
+      if (activeTab !== "all" && p.leads.product_category !== activeTab) return false;
       if (stage !== "all" && p.pipeline_stage !== stage) return false;
       if (cutoff && new Date(p.created_at).getTime() < cutoff) return false;
       if (q) {
