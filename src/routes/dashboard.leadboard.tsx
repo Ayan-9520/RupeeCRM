@@ -392,17 +392,24 @@ function Leadboard() {
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {leads.map((lead) => (
-            <LeadCard
-              key={lead.id}
-              lead={lead}
-              type={lead.product_type_id ? typeMap[lead.product_type_id] : undefined}
-              onBuy={buy}
-              buying={buying === lead.id}
-              purchased={purchased[lead.id]}
-              now={now}
-            />
-          ))}
+          {leads.map((lead) => {
+            try {
+              return (
+                <LeadCard
+                  key={lead.id}
+                  lead={lead}
+                  type={lead.product_type_id ? typeMap[lead.product_type_id] : undefined}
+                  onBuy={buy}
+                  buying={buying === lead.id}
+                  purchased={purchased[lead.id]}
+                  now={now}
+                />
+              );
+            } catch (e) {
+              console.log("❌ ERROR IN LEAD:", lead, e);
+              return null;
+            }
+          })}
         </div>
       )}
 
@@ -465,7 +472,11 @@ function LeadCard({
         ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
         : "bg-blue-500/15 text-blue-600 dark:text-blue-400";
 
-  const meta = CATEGORY_META[lead.product_category] || CATEGORY_META["loan"];
+  const meta = CATEGORY_META[lead.product_category as keyof typeof CATEGORY_META] || {
+    label: "Other",
+    chipBg: "bg-gray-100",
+    chipText: "text-gray-600",
+  };
   const isPurchased = !!purchased;
 
   const ageHours = (now - new Date(lead.created_at).getTime()) / 36e5;
