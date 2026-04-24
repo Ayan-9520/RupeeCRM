@@ -4,11 +4,12 @@ import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { Wallet, Store, KanbanSquare, TrendingUp, Sparkles } from "lucide-react";
 import { CATEGORY_META, type ProductCategory } from "@/lib/products";
-
+import { useNavigate } from "@tanstack/react-router";
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
 });
-
+const navigate = useNavigate();
+const { user, role, loading } = useAuth();
 type CatStats = Record<ProductCategory, { leads: number; spent: number }>;
 
 const EMPTY: CatStats = {
@@ -23,7 +24,13 @@ function DashboardHome() {
   const [stats, setStats] = useState({ balance: 0, leadsBought: 0, available: 0, totalSpent: 0 });
   const [byCategory, setByCategory] = useState<CatStats>(EMPTY);
   const [profileName, setProfileName] = useState("");
+  useEffect(() => {
+    if (loading) return;
 
+    if (!user) {
+      navigate({ to: "/auth" });
+    }
+  }, [user, loading]);
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -32,10 +39,7 @@ function DashboardHome() {
         supabase.from("lead_purchases").select("id", { count: "exact", head: true }).eq("dsa_id", user.id),
         supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "available"),
         supabase.from("profiles").select("full_name").eq("id", user.id).maybeSingle(),
-        supabase
-          .from("lead_purchases")
-          .select("price_paid,leads!inner(product_category)")
-          .eq("dsa_id", user.id),
+        supabase.from("lead_purchases").select("price_paid,leads!inner(product_category)").eq("dsa_id", user.id),
       ]);
       setStats({
         balance: Number(walletRes.data?.balance ?? 0),
@@ -89,7 +93,9 @@ function DashboardHome() {
           <span className="text-xs text-muted-foreground">{totalLeadsByCat} total</span>
         </div>
         {totalLeadsByCat === 0 ? (
-          <p className="text-sm text-muted-foreground py-4">No purchases yet — your category breakdown will appear here.</p>
+          <p className="text-sm text-muted-foreground py-4">
+            No purchases yet — your category breakdown will appear here.
+          </p>
         ) : (
           <div className="space-y-3">
             {(Object.keys(byCategory) as ProductCategory[]).map((cat) => {
@@ -97,9 +103,13 @@ function DashboardHome() {
               const meta = CATEGORY_META[cat];
               const pct = totalLeadsByCat > 0 ? (v.leads / totalLeadsByCat) * 100 : 0;
               const barColor =
-                cat === "loan" ? "bg-blue-500" :
-                cat === "insurance" ? "bg-emerald-500" :
-                cat === "credit_card" ? "bg-orange-500" : "bg-violet-500";
+                cat === "loan"
+                  ? "bg-blue-500"
+                  : cat === "insurance"
+                    ? "bg-emerald-500"
+                    : cat === "credit_card"
+                      ? "bg-orange-500"
+                      : "bg-violet-500";
               return (
                 <div key={cat}>
                   <div className="flex items-center justify-between text-sm mb-1">
@@ -122,13 +132,23 @@ function DashboardHome() {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <Link to="/dashboard/leadboard" className="group rounded-2xl bg-card border border-border p-6 hover:border-accent transition-smooth shadow-card">
+        <Link
+          to="/dashboard/leadboard"
+          className="group rounded-2xl bg-card border border-border p-6 hover:border-accent transition-smooth shadow-card"
+        >
           <Store className="size-8 text-accent mb-3" />
           <h3 className="font-display text-lg font-semibold">Browse Leadboard</h3>
-          <p className="text-sm text-muted-foreground mt-1">{stats.available} verified leads — filter by category, sub-type, city & budget.</p>
-          <span className="mt-3 inline-block text-sm font-semibold text-accent group-hover:underline">Open marketplace →</span>
+          <p className="text-sm text-muted-foreground mt-1">
+            {stats.available} verified leads — filter by category, sub-type, city & budget.
+          </p>
+          <span className="mt-3 inline-block text-sm font-semibold text-accent group-hover:underline">
+            Open marketplace →
+          </span>
         </Link>
-        <Link to="/dashboard/wallet" className="group rounded-2xl bg-card border border-border p-6 hover:border-accent transition-smooth shadow-card">
+        <Link
+          to="/dashboard/wallet"
+          className="group rounded-2xl bg-card border border-border p-6 hover:border-accent transition-smooth shadow-card"
+        >
           <Wallet className="size-8 text-accent mb-3" />
           <h3 className="font-display text-lg font-semibold">Recharge wallet</h3>
           <p className="text-sm text-muted-foreground mt-1">Add funds to buy premium hot leads. Razorpay-ready.</p>
@@ -139,12 +159,28 @@ function DashboardHome() {
   );
 }
 
-function StatCard({ icon: Icon, label, value, accent = false }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string; accent?: boolean }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent = false,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
   return (
-    <div className={`rounded-2xl p-5 border shadow-card ${accent ? "bg-mint-gradient border-transparent" : "bg-card border-border"}`}>
+    <div
+      className={`rounded-2xl p-5 border shadow-card ${accent ? "bg-mint-gradient border-transparent" : "bg-card border-border"}`}
+    >
       <Icon className={`size-5 ${accent ? "text-primary" : "text-accent"}`} />
-      <div className={`text-xs mt-3 uppercase tracking-wide ${accent ? "text-primary/70" : "text-muted-foreground"}`}>{label}</div>
-      <div className={`mt-1 text-2xl font-bold font-display ${accent ? "text-primary" : "text-foreground"}`}>{value}</div>
+      <div className={`text-xs mt-3 uppercase tracking-wide ${accent ? "text-primary/70" : "text-muted-foreground"}`}>
+        {label}
+      </div>
+      <div className={`mt-1 text-2xl font-bold font-display ${accent ? "text-primary" : "text-foreground"}`}>
+        {value}
+      </div>
     </div>
   );
 }
