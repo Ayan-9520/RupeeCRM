@@ -82,9 +82,7 @@ function AuthPage() {
   };
 
   useEffect(() => {
-    if (!loading && user) {
-      console.log("USER READY:", user);
-    }
+    console.log("Auth state:", { user, loading });
   }, [user, loading]);
 
   const onSubmit = async (e: React.FormEvent) => {
