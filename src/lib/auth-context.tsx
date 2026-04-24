@@ -2,7 +2,16 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AppRole = "ceo" | "super_admin" | "admin" | "dsa" | "caller" | "coordinator" | "lender" | "affiliate" | "customer";
+export type AppRole =
+  | "ceo"
+  | "super_admin"
+  | "admin"
+  | "dsa"
+  | "caller"
+  | "coordinator"
+  | "lender"
+  | "affiliate"
+  | "customer";
 
 interface AuthContextValue {
   session: Session | null;
@@ -32,8 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(sess);
       setUser(sess?.user ?? null);
       if (sess?.user) {
-        // defer to avoid deadlock
-        setTimeout(() => fetchRole(sess.user.id), 0);
+        fetchRole(sess.user.id);
       } else {
         setRole(null);
       }
