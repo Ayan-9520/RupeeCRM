@@ -21,7 +21,6 @@ const EMPTY: CatStats = {
 function DashboardHome() {
   const navigate = useNavigate();
   const { user, role, loading } = useAuth();
-  const { user, role } = useAuth();
   const [stats, setStats] = useState({ balance: 0, leadsBought: 0, available: 0, totalSpent: 0 });
   const [byCategory, setByCategory] = useState<CatStats>(EMPTY);
   const [profileName, setProfileName] = useState("");
