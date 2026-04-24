@@ -153,6 +153,9 @@ function Leadboard() {
       q = q.gte("created_at", since);
     }
     const { data, error } = await q;
+
+    console.log("DATA:", data);
+    console.log("ERROR:", error);
     if (error) toast.error(error.message);
     else setLeads((data ?? []) as Lead[]);
     setLoading(false);
