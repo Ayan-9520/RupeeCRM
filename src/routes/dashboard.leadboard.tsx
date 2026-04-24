@@ -160,8 +160,6 @@ function Leadboard() {
 
   useEffect(() => {
     load(); /* eslint-disable-next-line */
-    console.log("LEADS DATA:", data);
-    console.log("LEADS ERROR:", error);
   }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
 
   const refreshStats = async () => {
