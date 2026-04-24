@@ -134,7 +134,7 @@ function Leadboard() {
     updated_at
   `,
     );
-
+.eq("status", "available");
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
     else if (sort === "oldest") q = q.order("created_at", { ascending: true });
