@@ -8,8 +8,7 @@ import { useNavigate } from "@tanstack/react-router";
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
 });
-const navigate = useNavigate();
-const { user, role, loading } = useAuth();
+
 type CatStats = Record<ProductCategory, { leads: number; spent: number }>;
 
 const EMPTY: CatStats = {
@@ -20,6 +19,8 @@ const EMPTY: CatStats = {
 };
 
 function DashboardHome() {
+  const navigate = useNavigate();
+  const { user, role, loading } = useAuth();
   const { user, role } = useAuth();
   const [stats, setStats] = useState({ balance: 0, leadsBought: 0, available: 0, totalSpent: 0 });
   const [byCategory, setByCategory] = useState<CatStats>(EMPTY);
