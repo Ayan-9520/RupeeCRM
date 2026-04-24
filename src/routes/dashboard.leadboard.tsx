@@ -121,20 +121,20 @@ function Leadboard() {
       .from("leads")
       .select(
         `
-  id,
-  applicant_name,
-  masked_phone,
-  city,
-  loan_amount,
-  monthly_income,
-  score,
-  price,
-  status,
-  product_category,
-  product_type_id,
-  created_at,
-  updated_at
-`,
+    id,
+    applicant_name,
+    masked_phone,
+    city,
+    loan_amount,
+    monthly_income,
+    score,
+    price,
+    status,
+    product_category,
+    product_type_id,
+    created_at,
+    updated_at
+  `,
       )
       .eq("status", "available");
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
@@ -160,6 +160,8 @@ function Leadboard() {
 
   useEffect(() => {
     load(); /* eslint-disable-next-line */
+    console.log("LEADS DATA:", data);
+    console.log("LEADS ERROR:", error);
   }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
 
   const refreshStats = async () => {
