@@ -83,7 +83,22 @@ function AuthPage() {
 
   useEffect(() => {
     console.log("Auth state:", { user, loading });
-  }, [user, loading]);
+    if (!loading && user) {
+      navigate({ to: "/dashboard" });
+    }
+  }, [user, loading, navigate]);
+
+  // While restoring session, show a centered spinner so the form doesn't flash
+  if (loading || (!loading && user)) {
+    return (
+      <div className="min-h-screen grid place-items-center bg-background">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+          <Loader2 className="size-8 animate-spin text-accent" />
+          <p className="text-sm">Restoring your session…</p>
+        </div>
+      </div>
+    );
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

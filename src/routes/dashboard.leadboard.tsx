@@ -400,12 +400,23 @@ function Leadboard() {
       </div>
 
       {loading ? (
-        <div className="grid place-items-center py-20">
-          <Loader2 className="size-6 animate-spin text-accent" />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <LeadCardSkeleton key={i} />
+          ))}
         </div>
       ) : leads.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground">
-          No leads match your filters. Try clearing them.
+        <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground space-y-3">
+          <p>No leads match your filters. Try clearing them or refresh to fetch the latest.</p>
+          <button
+            onClick={() => {
+              load();
+              refreshStats();
+            }}
+            className="inline-flex items-center gap-2 px-4 h-9 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 transition-smooth"
+          >
+            <RefreshCw className="size-4" /> Refresh now
+          </button>
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -767,6 +778,23 @@ function InsufficientBalanceModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function LeadCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-card animate-pulse space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="h-5 w-32 rounded bg-muted" />
+        <div className="h-6 w-14 rounded-full bg-muted" />
+      </div>
+      <div className="h-4 w-24 rounded bg-muted" />
+      <div className="grid grid-cols-2 gap-2 pt-2">
+        <div className="h-12 rounded-lg bg-muted" />
+        <div className="h-12 rounded-lg bg-muted" />
+      </div>
+      <div className="h-10 rounded-xl bg-muted mt-2" />
     </div>
   );
 }
