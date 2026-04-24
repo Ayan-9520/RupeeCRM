@@ -83,8 +83,7 @@ function AuthPage() {
 
   useEffect(() => {
     if (!loading && user) {
-      console.log("USER DETECTED:", user);
-      window.location.href = "/dashboard";
+      console.log("USER READY:", user);
     }
   }, [user, loading]);
 
