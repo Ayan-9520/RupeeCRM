@@ -781,3 +781,20 @@ function InsufficientBalanceModal({
     </div>
   );
 }
+
+function LeadCardSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-card animate-pulse space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="h-5 w-32 rounded bg-muted" />
+        <div className="h-6 w-14 rounded-full bg-muted" />
+      </div>
+      <div className="h-4 w-24 rounded bg-muted" />
+      <div className="grid grid-cols-2 gap-2 pt-2">
+        <div className="h-12 rounded-lg bg-muted" />
+        <div className="h-12 rounded-lg bg-muted" />
+      </div>
+      <div className="h-10 rounded-xl bg-muted mt-2" />
+    </div>
+  );
+}
