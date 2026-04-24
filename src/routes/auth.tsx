@@ -11,7 +11,10 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in or create account — LeadMines" },
-      { name: "description", content: "Access your LeadMines dashboard. DSA partners, lenders, callers and admins log in here." },
+      {
+        name: "description",
+        content: "Access your LeadMines dashboard. DSA partners, lenders, callers and admins log in here.",
+      },
     ],
   }),
   component: AuthPage,
@@ -79,8 +82,11 @@ function AuthPage() {
   };
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
-  }, [user, loading, navigate]);
+    if (!loading && user) {
+      console.log("USER DETECTED:", user);
+      window.location.href = "/dashboard";
+    }
+  }, [user, loading]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +116,9 @@ function AuthPage() {
           toast.error(error.message);
         } else {
           toast.success("Account created! Welcome to LeadMines 🎉");
-          navigate({ to: "/dashboard" });
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 500);
         }
       } else {
         const parsed = signinSchema.safeParse({ email, password });
@@ -119,15 +127,22 @@ function AuthPage() {
           setSubmitting(false);
           return;
         }
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: parsed.data.email,
           password: parsed.data.password,
         });
+
         if (error) {
           toast.error(error.message);
         } else {
+          console.log("LOGIN SUCCESS:", data);
+
           toast.success("Welcome back!");
-          navigate({ to: "/dashboard" });
+
+          // 🔥 delay add करो (important)
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 500);
         }
       }
     } finally {
@@ -160,9 +175,15 @@ function AuthPage() {
             12,400+ DSAs, 60+ lenders, ₹420 Cr+ disbursed. Join the platform serious DSAs use every day.
           </p>
           <div className="mt-8 flex items-center gap-6 text-sm">
-            <div><div className="text-2xl font-bold">₹500</div><div className="text-white/60">Welcome wallet bonus</div></div>
+            <div>
+              <div className="text-2xl font-bold">₹500</div>
+              <div className="text-white/60">Welcome wallet bonus</div>
+            </div>
             <div className="h-10 w-px bg-white/20" />
-            <div><div className="text-2xl font-bold">14d</div><div className="text-white/60">Free trial</div></div>
+            <div>
+              <div className="text-2xl font-bold">14d</div>
+              <div className="text-white/60">Free trial</div>
+            </div>
           </div>
         </div>
 
@@ -190,16 +211,33 @@ function AuthPage() {
             {mode === "signup" && (
               <>
                 <Field label="Full name">
-                  <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-base" placeholder="Rahul Sharma" />
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="input-base"
+                    placeholder="Rahul Sharma"
+                  />
                 </Field>
                 <Field label="Phone">
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} className="input-base" placeholder="+91 98765 43210" />
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="input-base"
+                    placeholder="+91 98765 43210"
+                  />
                 </Field>
               </>
             )}
 
             <Field label="Email">
-              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="input-base" placeholder="you@company.com" required />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input-base"
+                placeholder="you@company.com"
+                required
+              />
             </Field>
 
             <Field label="Password">
@@ -224,13 +262,18 @@ function AuthPage() {
                 </button>
               </div>
               {mode === "signup" && (
-                <p className="mt-1 text-xs text-muted-foreground">Use 8+ characters with a mix of letters, numbers & symbols.</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use 8+ characters with a mix of letters, numbers & symbols.
+                </p>
               )}
               {mode === "signin" && (
                 <div className="mt-1.5 text-right">
                   <button
                     type="button"
-                    onClick={() => { setForgotEmail(email); setForgotOpen((v) => !v); }}
+                    onClick={() => {
+                      setForgotEmail(email);
+                      setForgotOpen((v) => !v);
+                    }}
                     className="text-xs text-accent font-medium hover:underline"
                   >
                     Forgot password?
@@ -273,9 +316,7 @@ function AuthPage() {
                       key={r.value}
                       onClick={() => setRole(r.value)}
                       className={`text-left p-3 rounded-xl border-2 transition-smooth ${
-                        role === r.value
-                          ? "border-accent bg-accent/10"
-                          : "border-border hover:border-accent/50"
+                        role === r.value ? "border-accent bg-accent/10" : "border-border hover:border-accent/50"
                       }`}
                     >
                       <div className="text-sm font-semibold">{r.label}</div>
