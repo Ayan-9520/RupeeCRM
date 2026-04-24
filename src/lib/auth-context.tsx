@@ -45,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         setRole(null);
       }
+      setLoading(false);
     });
 
     // Then check existing session
