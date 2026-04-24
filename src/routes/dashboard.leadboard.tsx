@@ -76,6 +76,7 @@ const QUICK_RECHARGE = [500, 1000, 2500, 5000];
 const LOW_BALANCE_THRESHOLD = 300;
 
 function Leadboard() {
+  console.log("PAGE LOADED");
   const { user } = useAuth();
   const { quota: leadQuota, refresh: refreshQuota } = useQuota("leads");
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -117,6 +118,7 @@ function Leadboard() {
 
   const load = async () => {
     setLoading(true);
+    console.log("LOAD RUNNING");
     let q = supabase.from("leads").select(
       `
     id,
