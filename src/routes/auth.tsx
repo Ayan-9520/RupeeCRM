@@ -114,7 +114,7 @@ function AuthPage() {
         } else {
           toast.success("Account created! Welcome to LeadMines 🎉");
           setTimeout(() => {
-            window.location.href = "/dashboard";
+            navigate({ to: "/dashboard" });
           }, 500);
         }
       } else {
@@ -138,7 +138,7 @@ function AuthPage() {
 
           // 🔥 delay add करो (important)
           setTimeout(() => {
-            window.location.href = "/dashboard";
+            navigate({ to: "/dashboard" });
           }, 500);
         }
       }
