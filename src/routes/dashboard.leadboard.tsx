@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+-import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -32,7 +32,7 @@ import { useQuota } from "@/hooks/use-subscription";
 import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
-  head: () => ({ meta: [{ title: "Leadboard Marketplace — LeadMines" }] }),
+  head: () => ({ meta: [{ title: "RupeeDial Lead - Marketplace" }] }),
   component: Leadboard,
 });
 
