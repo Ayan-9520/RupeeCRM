@@ -1,8 +1,13 @@
-@import "tailwindcss" source(none);
-@source "../src";
+// @import "tailwindcss" source(none);
+// @source "../src";
+// @import "tw-animate-css";
+// @plugin "@tailwindcss/typography";
+@import "tailwindcss";
 @import "tw-animate-css";
-@plugin "@tailwindcss/typography";
 
+@source "../src";
+
+@plugin "@tailwindcss/typography";
 @custom-variant dark (&:is(.dark *));
 
 /*
