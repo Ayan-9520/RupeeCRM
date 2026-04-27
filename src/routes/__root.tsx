@@ -1,9 +1,8 @@
-import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { Outlet, Link, createRootRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/auth-context";
 import { WorkspaceProvider } from "@/lib/workspace-context";
-
-import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
@@ -27,50 +26,36 @@ function NotFoundComponent() {
   );
 }
 
+const META = {
+  title: "Rupeedial CRM",
+  description:
+    "India's premium fintech lead marketplace. AI-verified loan, credit card & insurance leads, DSA CRM pipeline, partner community & affiliate earnings — all in one platform.",
+};
+
+function useDocumentMeta() {
+  useEffect(() => {
+    document.title = META.title;
+    const setMeta = (selector: string, attr: string, value: string) => {
+      let el = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!el) {
+        el = document.createElement("meta");
+        const [key, val] = selector.replace(/[\[\]"]/g, "").split("=");
+        el.setAttribute(key, val);
+        document.head.appendChild(el);
+      }
+      el.setAttribute(attr, value);
+    };
+    setMeta('meta[name="description"]', "content", META.description);
+  }, []);
+}
+
 export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Rupeedial CRM" },
-      { name: "description", content: "India's premium fintech lead marketplace. AI-verified loan, credit card & insurance leads, DSA CRM pipeline, partner community & affiliate earnings — all in one platform." },
-      { name: "author", content: "MoneyMines" },
-      { property: "og:title", content: "Rupeedial CRM" },
-      { property: "og:description", content: "India's premium fintech lead marketplace. AI-verified loan, credit card & insurance leads, DSA CRM pipeline, partner community & affiliate earnings — all in one platform." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Rupeedial CRM" },
-      { name: "twitter:description", content: "India's premium fintech lead marketplace. AI-verified loan, credit card & insurance leads, DSA CRM pipeline, partner community & affiliate earnings — all in one platform." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/92528b4a-baca-4d89-aa99-81ae69c070ba" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/92528b4a-baca-4d89-aa99-81ae69c070ba" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
 
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
-
 function RootComponent() {
+  useDocumentMeta();
   return (
     <AuthProvider>
       <WorkspaceProvider>
