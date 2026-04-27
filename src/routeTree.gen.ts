@@ -8,1131 +8,1138 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as ResetPasswordRouteImport } from "./routes/reset-password";
-import { Route as DashboardRouteImport } from "./routes/dashboard";
-import { Route as BecomePartnerRouteImport } from "./routes/become-partner";
-import { Route as AuthRouteImport } from "./routes/auth";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as LearnEarnIndexRouteImport } from "./routes/learn-earn.index";
-import { Route as DashboardIndexRouteImport } from "./routes/dashboard.index";
-import { Route as CeoIndexRouteImport } from "./routes/ceo.index";
-import { Route as LearnQuizSlugRouteImport } from "./routes/learn-quiz.$slug";
-import { Route as LearnEarnSlugRouteImport } from "./routes/learn-earn.$slug";
-import { Route as DashboardWorkspaceRouteImport } from "./routes/dashboard.workspace";
-import { Route as DashboardWalletRouteImport } from "./routes/dashboard.wallet";
-import { Route as DashboardTrainingRouteImport } from "./routes/dashboard.training";
-import { Route as DashboardSubmissionsRouteImport } from "./routes/dashboard.submissions";
-import { Route as DashboardSettingsRouteImport } from "./routes/dashboard.settings";
-import { Route as DashboardRewardsRouteImport } from "./routes/dashboard.rewards";
-import { Route as DashboardMyLeadsRouteImport } from "./routes/dashboard.my-leads";
-import { Route as DashboardMarketingRouteImport } from "./routes/dashboard.marketing";
-import { Route as DashboardLearnRouteImport } from "./routes/dashboard.learn";
-import { Route as DashboardLeaderboardRouteImport } from "./routes/dashboard.leaderboard";
-import { Route as DashboardLeadboardRouteImport } from "./routes/dashboard.leadboard";
-import { Route as DashboardHrmsRouteImport } from "./routes/dashboard.hrms";
-import { Route as DashboardEarningsRouteImport } from "./routes/dashboard.earnings";
-import { Route as DashboardCommunityRouteImport } from "./routes/dashboard.community";
-import { Route as DashboardCommissionsRouteImport } from "./routes/dashboard.commissions";
-import { Route as DashboardCertificatesRouteImport } from "./routes/dashboard.certificates";
-import { Route as DashboardCasesRouteImport } from "./routes/dashboard.cases";
-import { Route as DashboardCallsRouteImport } from "./routes/dashboard.calls";
-import { Route as DashboardBillingRouteImport } from "./routes/dashboard.billing";
-import { Route as ApplySlugRouteImport } from "./routes/apply.$slug";
-import { Route as DashboardMarketingIndexRouteImport } from "./routes/dashboard.marketing.index";
-import { Route as DashboardHrmsIndexRouteImport } from "./routes/dashboard.hrms.index";
-import { Route as DashboardMarketingWhatsappRouteImport } from "./routes/dashboard.marketing.whatsapp";
-import { Route as DashboardMarketingReferralRouteImport } from "./routes/dashboard.marketing.referral";
-import { Route as DashboardMarketingReelsRouteImport } from "./routes/dashboard.marketing.reels";
-import { Route as DashboardMarketingPostsRouteImport } from "./routes/dashboard.marketing.posts";
-import { Route as DashboardMarketingOneclickRouteImport } from "./routes/dashboard.marketing.oneclick";
-import { Route as DashboardMarketingCardRouteImport } from "./routes/dashboard.marketing.card";
-import { Route as DashboardHrmsPayrollRouteImport } from "./routes/dashboard.hrms.payroll";
-import { Route as DashboardHrmsMeRouteImport } from "./routes/dashboard.hrms.me";
-import { Route as DashboardHrmsLeavesRouteImport } from "./routes/dashboard.hrms.leaves";
-import { Route as DashboardHrmsBillingRouteImport } from "./routes/dashboard.hrms.billing";
-import { Route as DashboardHrmsAttendanceRouteImport } from "./routes/dashboard.hrms.attendance";
-import { Route as DashboardAdminUsersRouteImport } from "./routes/dashboard.admin.users";
-import { Route as DashboardAdminPricingRouteImport } from "./routes/dashboard.admin.pricing";
-import { Route as DashboardAdminPayoutsRouteImport } from "./routes/dashboard.admin.payouts";
-import { Route as DashboardAdminPartnersRouteImport } from "./routes/dashboard.admin.partners";
-import { Route as DashboardAdminMarketingMediaRouteImport } from "./routes/dashboard.admin.marketing-media";
-import { Route as DashboardAdminMarketingRouteImport } from "./routes/dashboard.admin.marketing";
-import { Route as DashboardAdminLeadsRouteImport } from "./routes/dashboard.admin.leads";
-import { Route as DashboardAdminCommissionsRouteImport } from "./routes/dashboard.admin.commissions";
-import { Route as DashboardAdminBillingRouteImport } from "./routes/dashboard.admin.billing";
-import { Route as ApiLenderWebhookRouteImport } from "./routes/api.lender.webhook";
-import { Route as DashboardHrmsPayslipsIndexRouteImport } from "./routes/dashboard.hrms.payslips.index";
-import { Route as DashboardMyLeadsIdApplyRouteImport } from "./routes/dashboard.my-leads.$id.apply";
-import { Route as DashboardHrmsPayslipsIdRouteImport } from "./routes/dashboard.hrms.payslips.$id";
-import { Route as DashboardHrmsEmployeesIdRouteImport } from "./routes/dashboard.hrms.employees.$id";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as BecomePartnerRouteImport } from './routes/become-partner'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as LearnEarnIndexRouteImport } from './routes/learn-earn.index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard.index'
+import { Route as CeoIndexRouteImport } from './routes/ceo.index'
+import { Route as LearnQuizSlugRouteImport } from './routes/learn-quiz.$slug'
+import { Route as LearnEarnSlugRouteImport } from './routes/learn-earn.$slug'
+import { Route as DashboardWorkspaceRouteImport } from './routes/dashboard.workspace'
+import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
+import { Route as DashboardTrainingRouteImport } from './routes/dashboard.training'
+import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.submissions'
+import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
+import { Route as DashboardRewardsRouteImport } from './routes/dashboard.rewards'
+import { Route as DashboardMyLeadsRouteImport } from './routes/dashboard.my-leads'
+import { Route as DashboardMarketingRouteImport } from './routes/dashboard.marketing'
+import { Route as DashboardLearnRouteImport } from './routes/dashboard.learn'
+import { Route as DashboardLeaderboardRouteImport } from './routes/dashboard.leaderboard'
+import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadboard'
+import { Route as DashboardHrmsRouteImport } from './routes/dashboard.hrms'
+import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
+import { Route as DashboardCommunityRouteImport } from './routes/dashboard.community'
+import { Route as DashboardCommissionsRouteImport } from './routes/dashboard.commissions'
+import { Route as DashboardCertificatesRouteImport } from './routes/dashboard.certificates'
+import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
+import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
+import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
+import { Route as ApplySlugRouteImport } from './routes/apply.$slug'
+import { Route as DashboardMarketingIndexRouteImport } from './routes/dashboard.marketing.index'
+import { Route as DashboardHrmsIndexRouteImport } from './routes/dashboard.hrms.index'
+import { Route as DashboardMarketingWhatsappRouteImport } from './routes/dashboard.marketing.whatsapp'
+import { Route as DashboardMarketingReferralRouteImport } from './routes/dashboard.marketing.referral'
+import { Route as DashboardMarketingReelsRouteImport } from './routes/dashboard.marketing.reels'
+import { Route as DashboardMarketingPostsRouteImport } from './routes/dashboard.marketing.posts'
+import { Route as DashboardMarketingOneclickRouteImport } from './routes/dashboard.marketing.oneclick'
+import { Route as DashboardMarketingCardRouteImport } from './routes/dashboard.marketing.card'
+import { Route as DashboardHrmsPayrollRouteImport } from './routes/dashboard.hrms.payroll'
+import { Route as DashboardHrmsMeRouteImport } from './routes/dashboard.hrms.me'
+import { Route as DashboardHrmsLeavesRouteImport } from './routes/dashboard.hrms.leaves'
+import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
+import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.hrms.attendance'
+import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
+import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
+import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
+import { Route as DashboardAdminPartnersRouteImport } from './routes/dashboard.admin.partners'
+import { Route as DashboardAdminMarketingMediaRouteImport } from './routes/dashboard.admin.marketing-media'
+import { Route as DashboardAdminMarketingRouteImport } from './routes/dashboard.admin.marketing'
+import { Route as DashboardAdminLeadsRouteImport } from './routes/dashboard.admin.leads'
+import { Route as DashboardAdminCommissionsRouteImport } from './routes/dashboard.admin.commissions'
+import { Route as DashboardAdminBillingRouteImport } from './routes/dashboard.admin.billing'
+import { Route as ApiLenderWebhookRouteImport } from './routes/api.lender.webhook'
+import { Route as DashboardHrmsPayslipsIndexRouteImport } from './routes/dashboard.hrms.payslips.index'
+import { Route as DashboardMyLeadsIdApplyRouteImport } from './routes/dashboard.my-leads.$id.apply'
+import { Route as DashboardHrmsPayslipsIdRouteImport } from './routes/dashboard.hrms.payslips.$id'
+import { Route as DashboardHrmsEmployeesIdRouteImport } from './routes/dashboard.hrms.employees.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: "/reset-password",
-  path: "/reset-password",
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
-  id: "/dashboard",
-  path: "/dashboard",
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const BecomePartnerRoute = BecomePartnerRouteImport.update({
-  id: "/become-partner",
-  path: "/become-partner",
+  id: '/become-partner',
+  path: '/become-partner',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthRoute = AuthRouteImport.update({
-  id: "/auth",
-  path: "/auth",
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LearnEarnIndexRoute = LearnEarnIndexRouteImport.update({
-  id: "/learn-earn/",
-  path: "/learn-earn/",
+  id: '/learn-earn/',
+  path: '/learn-earn/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const CeoIndexRoute = CeoIndexRouteImport.update({
-  id: "/ceo/",
-  path: "/ceo/",
+  id: '/ceo/',
+  path: '/ceo/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LearnQuizSlugRoute = LearnQuizSlugRouteImport.update({
-  id: "/learn-quiz/$slug",
-  path: "/learn-quiz/$slug",
+  id: '/learn-quiz/$slug',
+  path: '/learn-quiz/$slug',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LearnEarnSlugRoute = LearnEarnSlugRouteImport.update({
-  id: "/learn-earn/$slug",
-  path: "/learn-earn/$slug",
+  id: '/learn-earn/$slug',
+  path: '/learn-earn/$slug',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardWorkspaceRoute = DashboardWorkspaceRouteImport.update({
-  id: "/workspace",
-  path: "/workspace",
+  id: '/workspace',
+  path: '/workspace',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardWalletRoute = DashboardWalletRouteImport.update({
-  id: "/wallet",
-  path: "/wallet",
+  id: '/wallet',
+  path: '/wallet',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardTrainingRoute = DashboardTrainingRouteImport.update({
-  id: "/training",
-  path: "/training",
+  id: '/training',
+  path: '/training',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardSubmissionsRoute = DashboardSubmissionsRouteImport.update({
-  id: "/submissions",
-  path: "/submissions",
+  id: '/submissions',
+  path: '/submissions',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: "/settings",
-  path: "/settings",
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardRewardsRoute = DashboardRewardsRouteImport.update({
-  id: "/rewards",
-  path: "/rewards",
+  id: '/rewards',
+  path: '/rewards',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardMyLeadsRoute = DashboardMyLeadsRouteImport.update({
-  id: "/my-leads",
-  path: "/my-leads",
+  id: '/my-leads',
+  path: '/my-leads',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardMarketingRoute = DashboardMarketingRouteImport.update({
-  id: "/marketing",
-  path: "/marketing",
+  id: '/marketing',
+  path: '/marketing',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLearnRoute = DashboardLearnRouteImport.update({
-  id: "/learn",
-  path: "/learn",
+  id: '/learn',
+  path: '/learn',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLeaderboardRoute = DashboardLeaderboardRouteImport.update({
-  id: "/leaderboard",
-  path: "/leaderboard",
+  id: '/leaderboard',
+  path: '/leaderboard',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardLeadboardRoute = DashboardLeadboardRouteImport.update({
-  id: "/leadboard",
-  path: "/leadboard",
+  id: '/leadboard',
+  path: '/leadboard',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardHrmsRoute = DashboardHrmsRouteImport.update({
-  id: "/hrms",
-  path: "/hrms",
+  id: '/hrms',
+  path: '/hrms',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardEarningsRoute = DashboardEarningsRouteImport.update({
-  id: "/earnings",
-  path: "/earnings",
+  id: '/earnings',
+  path: '/earnings',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCommunityRoute = DashboardCommunityRouteImport.update({
-  id: "/community",
-  path: "/community",
+  id: '/community',
+  path: '/community',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCommissionsRoute = DashboardCommissionsRouteImport.update({
-  id: "/commissions",
-  path: "/commissions",
+  id: '/commissions',
+  path: '/commissions',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCertificatesRoute = DashboardCertificatesRouteImport.update({
-  id: "/certificates",
-  path: "/certificates",
+  id: '/certificates',
+  path: '/certificates',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCasesRoute = DashboardCasesRouteImport.update({
-  id: "/cases",
-  path: "/cases",
+  id: '/cases',
+  path: '/cases',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardCallsRoute = DashboardCallsRouteImport.update({
-  id: "/calls",
-  path: "/calls",
+  id: '/calls',
+  path: '/calls',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardBillingRoute = DashboardBillingRouteImport.update({
-  id: "/billing",
-  path: "/billing",
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const ApplySlugRoute = ApplySlugRouteImport.update({
-  id: "/apply/$slug",
-  path: "/apply/$slug",
+  id: '/apply/$slug',
+  path: '/apply/$slug',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DashboardMarketingIndexRoute = DashboardMarketingIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => DashboardMarketingRoute,
-} as any);
+} as any)
 const DashboardHrmsIndexRoute = DashboardHrmsIndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => DashboardHrmsRoute,
-} as any);
-const DashboardMarketingWhatsappRoute = DashboardMarketingWhatsappRouteImport.update({
-  id: "/whatsapp",
-  path: "/whatsapp",
-  getParentRoute: () => DashboardMarketingRoute,
-} as any);
-const DashboardMarketingReferralRoute = DashboardMarketingReferralRouteImport.update({
-  id: "/referral",
-  path: "/referral",
-  getParentRoute: () => DashboardMarketingRoute,
-} as any);
+} as any)
+const DashboardMarketingWhatsappRoute =
+  DashboardMarketingWhatsappRouteImport.update({
+    id: '/whatsapp',
+    path: '/whatsapp',
+    getParentRoute: () => DashboardMarketingRoute,
+  } as any)
+const DashboardMarketingReferralRoute =
+  DashboardMarketingReferralRouteImport.update({
+    id: '/referral',
+    path: '/referral',
+    getParentRoute: () => DashboardMarketingRoute,
+  } as any)
 const DashboardMarketingReelsRoute = DashboardMarketingReelsRouteImport.update({
-  id: "/reels",
-  path: "/reels",
+  id: '/reels',
+  path: '/reels',
   getParentRoute: () => DashboardMarketingRoute,
-} as any);
+} as any)
 const DashboardMarketingPostsRoute = DashboardMarketingPostsRouteImport.update({
-  id: "/posts",
-  path: "/posts",
+  id: '/posts',
+  path: '/posts',
   getParentRoute: () => DashboardMarketingRoute,
-} as any);
-const DashboardMarketingOneclickRoute = DashboardMarketingOneclickRouteImport.update({
-  id: "/oneclick",
-  path: "/oneclick",
-  getParentRoute: () => DashboardMarketingRoute,
-} as any);
+} as any)
+const DashboardMarketingOneclickRoute =
+  DashboardMarketingOneclickRouteImport.update({
+    id: '/oneclick',
+    path: '/oneclick',
+    getParentRoute: () => DashboardMarketingRoute,
+  } as any)
 const DashboardMarketingCardRoute = DashboardMarketingCardRouteImport.update({
-  id: "/card",
-  path: "/card",
+  id: '/card',
+  path: '/card',
   getParentRoute: () => DashboardMarketingRoute,
-} as any);
+} as any)
 const DashboardHrmsPayrollRoute = DashboardHrmsPayrollRouteImport.update({
-  id: "/payroll",
-  path: "/payroll",
+  id: '/payroll',
+  path: '/payroll',
   getParentRoute: () => DashboardHrmsRoute,
-} as any);
+} as any)
 const DashboardHrmsMeRoute = DashboardHrmsMeRouteImport.update({
-  id: "/me",
-  path: "/me",
+  id: '/me',
+  path: '/me',
   getParentRoute: () => DashboardHrmsRoute,
-} as any);
+} as any)
 const DashboardHrmsLeavesRoute = DashboardHrmsLeavesRouteImport.update({
-  id: "/leaves",
-  path: "/leaves",
+  id: '/leaves',
+  path: '/leaves',
   getParentRoute: () => DashboardHrmsRoute,
-} as any);
+} as any)
 const DashboardHrmsBillingRoute = DashboardHrmsBillingRouteImport.update({
-  id: "/billing",
-  path: "/billing",
+  id: '/billing',
+  path: '/billing',
   getParentRoute: () => DashboardHrmsRoute,
-} as any);
+} as any)
 const DashboardHrmsAttendanceRoute = DashboardHrmsAttendanceRouteImport.update({
-  id: "/attendance",
-  path: "/attendance",
+  id: '/attendance',
+  path: '/attendance',
   getParentRoute: () => DashboardHrmsRoute,
-} as any);
+} as any)
 const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
-  id: "/admin/users",
-  path: "/admin/users",
+  id: '/admin/users',
+  path: '/admin/users',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAdminPricingRoute = DashboardAdminPricingRouteImport.update({
-  id: "/admin/pricing",
-  path: "/admin/pricing",
+  id: '/admin/pricing',
+  path: '/admin/pricing',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAdminPayoutsRoute = DashboardAdminPayoutsRouteImport.update({
-  id: "/admin/payouts",
-  path: "/admin/payouts",
+  id: '/admin/payouts',
+  path: '/admin/payouts',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAdminPartnersRoute = DashboardAdminPartnersRouteImport.update({
-  id: "/admin/partners",
-  path: "/admin/partners",
+  id: '/admin/partners',
+  path: '/admin/partners',
   getParentRoute: () => DashboardRoute,
-} as any);
-const DashboardAdminMarketingMediaRoute = DashboardAdminMarketingMediaRouteImport.update({
-  id: "/admin/marketing-media",
-  path: "/admin/marketing-media",
-  getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
+const DashboardAdminMarketingMediaRoute =
+  DashboardAdminMarketingMediaRouteImport.update({
+    id: '/admin/marketing-media',
+    path: '/admin/marketing-media',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardAdminMarketingRoute = DashboardAdminMarketingRouteImport.update({
-  id: "/admin/marketing",
-  path: "/admin/marketing",
+  id: '/admin/marketing',
+  path: '/admin/marketing',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const DashboardAdminLeadsRoute = DashboardAdminLeadsRouteImport.update({
-  id: "/admin/leads",
-  path: "/admin/leads",
+  id: '/admin/leads',
+  path: '/admin/leads',
   getParentRoute: () => DashboardRoute,
-} as any);
-const DashboardAdminCommissionsRoute = DashboardAdminCommissionsRouteImport.update({
-  id: "/admin/commissions",
-  path: "/admin/commissions",
-  getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
+const DashboardAdminCommissionsRoute =
+  DashboardAdminCommissionsRouteImport.update({
+    id: '/admin/commissions',
+    path: '/admin/commissions',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardAdminBillingRoute = DashboardAdminBillingRouteImport.update({
-  id: "/admin/billing",
-  path: "/admin/billing",
+  id: '/admin/billing',
+  path: '/admin/billing',
   getParentRoute: () => DashboardRoute,
-} as any);
+} as any)
 const ApiLenderWebhookRoute = ApiLenderWebhookRouteImport.update({
-  id: "/api/lender/webhook",
-  path: "/api/lender/webhook",
+  id: '/api/lender/webhook',
+  path: '/api/lender/webhook',
   getParentRoute: () => rootRouteImport,
-} as any);
-const DashboardHrmsPayslipsIndexRoute = DashboardHrmsPayslipsIndexRouteImport.update({
-  id: "/payslips/",
-  path: "/payslips/",
-  getParentRoute: () => DashboardHrmsRoute,
-} as any);
+} as any)
+const DashboardHrmsPayslipsIndexRoute =
+  DashboardHrmsPayslipsIndexRouteImport.update({
+    id: '/payslips/',
+    path: '/payslips/',
+    getParentRoute: () => DashboardHrmsRoute,
+  } as any)
 const DashboardMyLeadsIdApplyRoute = DashboardMyLeadsIdApplyRouteImport.update({
-  id: "/$id/apply",
-  path: "/$id/apply",
+  id: '/$id/apply',
+  path: '/$id/apply',
   getParentRoute: () => DashboardMyLeadsRoute,
-} as any);
+} as any)
 const DashboardHrmsPayslipsIdRoute = DashboardHrmsPayslipsIdRouteImport.update({
-  id: "/payslips/$id",
-  path: "/payslips/$id",
+  id: '/payslips/$id',
+  path: '/payslips/$id',
   getParentRoute: () => DashboardHrmsRoute,
-} as any);
-const DashboardHrmsEmployeesIdRoute = DashboardHrmsEmployeesIdRouteImport.update({
-  id: "/employees/$id",
-  path: "/employees/$id",
-  getParentRoute: () => DashboardHrmsRoute,
-} as any);
+} as any)
+const DashboardHrmsEmployeesIdRoute =
+  DashboardHrmsEmployeesIdRouteImport.update({
+    id: '/employees/$id',
+    path: '/employees/$id',
+    getParentRoute: () => DashboardHrmsRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/become-partner": typeof BecomePartnerRoute;
-  "/dashboard": typeof DashboardRouteWithChildren;
-  "/reset-password": typeof ResetPasswordRoute;
-  "/apply/$slug": typeof ApplySlugRoute;
-  "/dashboard/billing": typeof DashboardBillingRoute;
-  "/dashboard/calls": typeof DashboardCallsRoute;
-  "/dashboard/cases": typeof DashboardCasesRoute;
-  "/dashboard/certificates": typeof DashboardCertificatesRoute;
-  "/dashboard/commissions": typeof DashboardCommissionsRoute;
-  "/dashboard/community": typeof DashboardCommunityRoute;
-  "/dashboard/earnings": typeof DashboardEarningsRoute;
-  "/dashboard/hrms": typeof DashboardHrmsRouteWithChildren;
-  "/dashboard/leadboard": typeof DashboardLeadboardRoute;
-  "/dashboard/leaderboard": typeof DashboardLeaderboardRoute;
-  "/dashboard/learn": typeof DashboardLearnRoute;
-  "/dashboard/marketing": typeof DashboardMarketingRouteWithChildren;
-  "/dashboard/my-leads": typeof DashboardMyLeadsRouteWithChildren;
-  "/dashboard/rewards": typeof DashboardRewardsRoute;
-  "/dashboard/settings": typeof DashboardSettingsRoute;
-  "/dashboard/submissions": typeof DashboardSubmissionsRoute;
-  "/dashboard/training": typeof DashboardTrainingRoute;
-  "/dashboard/wallet": typeof DashboardWalletRoute;
-  "/dashboard/workspace": typeof DashboardWorkspaceRoute;
-  "/learn-earn/$slug": typeof LearnEarnSlugRoute;
-  "/learn-quiz/$slug": typeof LearnQuizSlugRoute;
-  "/ceo/": typeof CeoIndexRoute;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/learn-earn/": typeof LearnEarnIndexRoute;
-  "/api/lender/webhook": typeof ApiLenderWebhookRoute;
-  "/dashboard/admin/billing": typeof DashboardAdminBillingRoute;
-  "/dashboard/admin/commissions": typeof DashboardAdminCommissionsRoute;
-  "/dashboard/admin/leads": typeof DashboardAdminLeadsRoute;
-  "/dashboard/admin/marketing": typeof DashboardAdminMarketingRoute;
-  "/dashboard/admin/marketing-media": typeof DashboardAdminMarketingMediaRoute;
-  "/dashboard/admin/partners": typeof DashboardAdminPartnersRoute;
-  "/dashboard/admin/payouts": typeof DashboardAdminPayoutsRoute;
-  "/dashboard/admin/pricing": typeof DashboardAdminPricingRoute;
-  "/dashboard/admin/users": typeof DashboardAdminUsersRoute;
-  "/dashboard/hrms/attendance": typeof DashboardHrmsAttendanceRoute;
-  "/dashboard/hrms/billing": typeof DashboardHrmsBillingRoute;
-  "/dashboard/hrms/leaves": typeof DashboardHrmsLeavesRoute;
-  "/dashboard/hrms/me": typeof DashboardHrmsMeRoute;
-  "/dashboard/hrms/payroll": typeof DashboardHrmsPayrollRoute;
-  "/dashboard/marketing/card": typeof DashboardMarketingCardRoute;
-  "/dashboard/marketing/oneclick": typeof DashboardMarketingOneclickRoute;
-  "/dashboard/marketing/posts": typeof DashboardMarketingPostsRoute;
-  "/dashboard/marketing/reels": typeof DashboardMarketingReelsRoute;
-  "/dashboard/marketing/referral": typeof DashboardMarketingReferralRoute;
-  "/dashboard/marketing/whatsapp": typeof DashboardMarketingWhatsappRoute;
-  "/dashboard/hrms/": typeof DashboardHrmsIndexRoute;
-  "/dashboard/marketing/": typeof DashboardMarketingIndexRoute;
-  "/dashboard/hrms/employees/$id": typeof DashboardHrmsEmployeesIdRoute;
-  "/dashboard/hrms/payslips/$id": typeof DashboardHrmsPayslipsIdRoute;
-  "/dashboard/my-leads/$id/apply": typeof DashboardMyLeadsIdApplyRoute;
-  "/dashboard/hrms/payslips/": typeof DashboardHrmsPayslipsIndexRoute;
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/become-partner': typeof BecomePartnerRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
+  '/apply/$slug': typeof ApplySlugRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/calls': typeof DashboardCallsRoute
+  '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/certificates': typeof DashboardCertificatesRoute
+  '/dashboard/commissions': typeof DashboardCommissionsRoute
+  '/dashboard/community': typeof DashboardCommunityRoute
+  '/dashboard/earnings': typeof DashboardEarningsRoute
+  '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
+  '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
+  '/dashboard/learn': typeof DashboardLearnRoute
+  '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
+  '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
+  '/dashboard/rewards': typeof DashboardRewardsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/submissions': typeof DashboardSubmissionsRoute
+  '/dashboard/training': typeof DashboardTrainingRoute
+  '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/workspace': typeof DashboardWorkspaceRoute
+  '/learn-earn/$slug': typeof LearnEarnSlugRoute
+  '/learn-quiz/$slug': typeof LearnQuizSlugRoute
+  '/ceo/': typeof CeoIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/learn-earn/': typeof LearnEarnIndexRoute
+  '/api/lender/webhook': typeof ApiLenderWebhookRoute
+  '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
+  '/dashboard/admin/commissions': typeof DashboardAdminCommissionsRoute
+  '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
+  '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
+  '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
+  '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
+  '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
+  '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
+  '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
+  '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
+  '/dashboard/hrms/me': typeof DashboardHrmsMeRoute
+  '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
+  '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
+  '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
+  '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
+  '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
+  '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
+  '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
+  '/dashboard/marketing/': typeof DashboardMarketingIndexRoute
+  '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
+  '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
+  '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
+  '/dashboard/hrms/payslips/': typeof DashboardHrmsPayslipsIndexRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/become-partner": typeof BecomePartnerRoute;
-  "/reset-password": typeof ResetPasswordRoute;
-  "/apply/$slug": typeof ApplySlugRoute;
-  "/dashboard/billing": typeof DashboardBillingRoute;
-  "/dashboard/calls": typeof DashboardCallsRoute;
-  "/dashboard/cases": typeof DashboardCasesRoute;
-  "/dashboard/certificates": typeof DashboardCertificatesRoute;
-  "/dashboard/commissions": typeof DashboardCommissionsRoute;
-  "/dashboard/community": typeof DashboardCommunityRoute;
-  "/dashboard/earnings": typeof DashboardEarningsRoute;
-  "/dashboard/leadboard": typeof DashboardLeadboardRoute;
-  "/dashboard/leaderboard": typeof DashboardLeaderboardRoute;
-  "/dashboard/learn": typeof DashboardLearnRoute;
-  "/dashboard/my-leads": typeof DashboardMyLeadsRouteWithChildren;
-  "/dashboard/rewards": typeof DashboardRewardsRoute;
-  "/dashboard/settings": typeof DashboardSettingsRoute;
-  "/dashboard/submissions": typeof DashboardSubmissionsRoute;
-  "/dashboard/training": typeof DashboardTrainingRoute;
-  "/dashboard/wallet": typeof DashboardWalletRoute;
-  "/dashboard/workspace": typeof DashboardWorkspaceRoute;
-  "/learn-earn/$slug": typeof LearnEarnSlugRoute;
-  "/learn-quiz/$slug": typeof LearnQuizSlugRoute;
-  "/ceo": typeof CeoIndexRoute;
-  "/dashboard": typeof DashboardIndexRoute;
-  "/learn-earn": typeof LearnEarnIndexRoute;
-  "/api/lender/webhook": typeof ApiLenderWebhookRoute;
-  "/dashboard/admin/billing": typeof DashboardAdminBillingRoute;
-  "/dashboard/admin/commissions": typeof DashboardAdminCommissionsRoute;
-  "/dashboard/admin/leads": typeof DashboardAdminLeadsRoute;
-  "/dashboard/admin/marketing": typeof DashboardAdminMarketingRoute;
-  "/dashboard/admin/marketing-media": typeof DashboardAdminMarketingMediaRoute;
-  "/dashboard/admin/partners": typeof DashboardAdminPartnersRoute;
-  "/dashboard/admin/payouts": typeof DashboardAdminPayoutsRoute;
-  "/dashboard/admin/pricing": typeof DashboardAdminPricingRoute;
-  "/dashboard/admin/users": typeof DashboardAdminUsersRoute;
-  "/dashboard/hrms/attendance": typeof DashboardHrmsAttendanceRoute;
-  "/dashboard/hrms/billing": typeof DashboardHrmsBillingRoute;
-  "/dashboard/hrms/leaves": typeof DashboardHrmsLeavesRoute;
-  "/dashboard/hrms/me": typeof DashboardHrmsMeRoute;
-  "/dashboard/hrms/payroll": typeof DashboardHrmsPayrollRoute;
-  "/dashboard/marketing/card": typeof DashboardMarketingCardRoute;
-  "/dashboard/marketing/oneclick": typeof DashboardMarketingOneclickRoute;
-  "/dashboard/marketing/posts": typeof DashboardMarketingPostsRoute;
-  "/dashboard/marketing/reels": typeof DashboardMarketingReelsRoute;
-  "/dashboard/marketing/referral": typeof DashboardMarketingReferralRoute;
-  "/dashboard/marketing/whatsapp": typeof DashboardMarketingWhatsappRoute;
-  "/dashboard/hrms": typeof DashboardHrmsIndexRoute;
-  "/dashboard/marketing": typeof DashboardMarketingIndexRoute;
-  "/dashboard/hrms/employees/$id": typeof DashboardHrmsEmployeesIdRoute;
-  "/dashboard/hrms/payslips/$id": typeof DashboardHrmsPayslipsIdRoute;
-  "/dashboard/my-leads/$id/apply": typeof DashboardMyLeadsIdApplyRoute;
-  "/dashboard/hrms/payslips": typeof DashboardHrmsPayslipsIndexRoute;
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/become-partner': typeof BecomePartnerRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/apply/$slug': typeof ApplySlugRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/calls': typeof DashboardCallsRoute
+  '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/certificates': typeof DashboardCertificatesRoute
+  '/dashboard/commissions': typeof DashboardCommissionsRoute
+  '/dashboard/community': typeof DashboardCommunityRoute
+  '/dashboard/earnings': typeof DashboardEarningsRoute
+  '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
+  '/dashboard/learn': typeof DashboardLearnRoute
+  '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
+  '/dashboard/rewards': typeof DashboardRewardsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/submissions': typeof DashboardSubmissionsRoute
+  '/dashboard/training': typeof DashboardTrainingRoute
+  '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/workspace': typeof DashboardWorkspaceRoute
+  '/learn-earn/$slug': typeof LearnEarnSlugRoute
+  '/learn-quiz/$slug': typeof LearnQuizSlugRoute
+  '/ceo': typeof CeoIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
+  '/learn-earn': typeof LearnEarnIndexRoute
+  '/api/lender/webhook': typeof ApiLenderWebhookRoute
+  '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
+  '/dashboard/admin/commissions': typeof DashboardAdminCommissionsRoute
+  '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
+  '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
+  '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
+  '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
+  '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
+  '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
+  '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
+  '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
+  '/dashboard/hrms/me': typeof DashboardHrmsMeRoute
+  '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
+  '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
+  '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
+  '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
+  '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
+  '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
+  '/dashboard/hrms': typeof DashboardHrmsIndexRoute
+  '/dashboard/marketing': typeof DashboardMarketingIndexRoute
+  '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
+  '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
+  '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
+  '/dashboard/hrms/payslips': typeof DashboardHrmsPayslipsIndexRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/auth": typeof AuthRoute;
-  "/become-partner": typeof BecomePartnerRoute;
-  "/dashboard": typeof DashboardRouteWithChildren;
-  "/reset-password": typeof ResetPasswordRoute;
-  "/apply/$slug": typeof ApplySlugRoute;
-  "/dashboard/billing": typeof DashboardBillingRoute;
-  "/dashboard/calls": typeof DashboardCallsRoute;
-  "/dashboard/cases": typeof DashboardCasesRoute;
-  "/dashboard/certificates": typeof DashboardCertificatesRoute;
-  "/dashboard/commissions": typeof DashboardCommissionsRoute;
-  "/dashboard/community": typeof DashboardCommunityRoute;
-  "/dashboard/earnings": typeof DashboardEarningsRoute;
-  "/dashboard/hrms": typeof DashboardHrmsRouteWithChildren;
-  "/dashboard/leadboard": typeof DashboardLeadboardRoute;
-  "/dashboard/leaderboard": typeof DashboardLeaderboardRoute;
-  "/dashboard/learn": typeof DashboardLearnRoute;
-  "/dashboard/marketing": typeof DashboardMarketingRouteWithChildren;
-  "/dashboard/my-leads": typeof DashboardMyLeadsRouteWithChildren;
-  "/dashboard/rewards": typeof DashboardRewardsRoute;
-  "/dashboard/settings": typeof DashboardSettingsRoute;
-  "/dashboard/submissions": typeof DashboardSubmissionsRoute;
-  "/dashboard/training": typeof DashboardTrainingRoute;
-  "/dashboard/wallet": typeof DashboardWalletRoute;
-  "/dashboard/workspace": typeof DashboardWorkspaceRoute;
-  "/learn-earn/$slug": typeof LearnEarnSlugRoute;
-  "/learn-quiz/$slug": typeof LearnQuizSlugRoute;
-  "/ceo/": typeof CeoIndexRoute;
-  "/dashboard/": typeof DashboardIndexRoute;
-  "/learn-earn/": typeof LearnEarnIndexRoute;
-  "/api/lender/webhook": typeof ApiLenderWebhookRoute;
-  "/dashboard/admin/billing": typeof DashboardAdminBillingRoute;
-  "/dashboard/admin/commissions": typeof DashboardAdminCommissionsRoute;
-  "/dashboard/admin/leads": typeof DashboardAdminLeadsRoute;
-  "/dashboard/admin/marketing": typeof DashboardAdminMarketingRoute;
-  "/dashboard/admin/marketing-media": typeof DashboardAdminMarketingMediaRoute;
-  "/dashboard/admin/partners": typeof DashboardAdminPartnersRoute;
-  "/dashboard/admin/payouts": typeof DashboardAdminPayoutsRoute;
-  "/dashboard/admin/pricing": typeof DashboardAdminPricingRoute;
-  "/dashboard/admin/users": typeof DashboardAdminUsersRoute;
-  "/dashboard/hrms/attendance": typeof DashboardHrmsAttendanceRoute;
-  "/dashboard/hrms/billing": typeof DashboardHrmsBillingRoute;
-  "/dashboard/hrms/leaves": typeof DashboardHrmsLeavesRoute;
-  "/dashboard/hrms/me": typeof DashboardHrmsMeRoute;
-  "/dashboard/hrms/payroll": typeof DashboardHrmsPayrollRoute;
-  "/dashboard/marketing/card": typeof DashboardMarketingCardRoute;
-  "/dashboard/marketing/oneclick": typeof DashboardMarketingOneclickRoute;
-  "/dashboard/marketing/posts": typeof DashboardMarketingPostsRoute;
-  "/dashboard/marketing/reels": typeof DashboardMarketingReelsRoute;
-  "/dashboard/marketing/referral": typeof DashboardMarketingReferralRoute;
-  "/dashboard/marketing/whatsapp": typeof DashboardMarketingWhatsappRoute;
-  "/dashboard/hrms/": typeof DashboardHrmsIndexRoute;
-  "/dashboard/marketing/": typeof DashboardMarketingIndexRoute;
-  "/dashboard/hrms/employees/$id": typeof DashboardHrmsEmployeesIdRoute;
-  "/dashboard/hrms/payslips/$id": typeof DashboardHrmsPayslipsIdRoute;
-  "/dashboard/my-leads/$id/apply": typeof DashboardMyLeadsIdApplyRoute;
-  "/dashboard/hrms/payslips/": typeof DashboardHrmsPayslipsIndexRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/become-partner': typeof BecomePartnerRoute
+  '/dashboard': typeof DashboardRouteWithChildren
+  '/reset-password': typeof ResetPasswordRoute
+  '/apply/$slug': typeof ApplySlugRoute
+  '/dashboard/billing': typeof DashboardBillingRoute
+  '/dashboard/calls': typeof DashboardCallsRoute
+  '/dashboard/cases': typeof DashboardCasesRoute
+  '/dashboard/certificates': typeof DashboardCertificatesRoute
+  '/dashboard/commissions': typeof DashboardCommissionsRoute
+  '/dashboard/community': typeof DashboardCommunityRoute
+  '/dashboard/earnings': typeof DashboardEarningsRoute
+  '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
+  '/dashboard/leadboard': typeof DashboardLeadboardRoute
+  '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
+  '/dashboard/learn': typeof DashboardLearnRoute
+  '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
+  '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
+  '/dashboard/rewards': typeof DashboardRewardsRoute
+  '/dashboard/settings': typeof DashboardSettingsRoute
+  '/dashboard/submissions': typeof DashboardSubmissionsRoute
+  '/dashboard/training': typeof DashboardTrainingRoute
+  '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/workspace': typeof DashboardWorkspaceRoute
+  '/learn-earn/$slug': typeof LearnEarnSlugRoute
+  '/learn-quiz/$slug': typeof LearnQuizSlugRoute
+  '/ceo/': typeof CeoIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
+  '/learn-earn/': typeof LearnEarnIndexRoute
+  '/api/lender/webhook': typeof ApiLenderWebhookRoute
+  '/dashboard/admin/billing': typeof DashboardAdminBillingRoute
+  '/dashboard/admin/commissions': typeof DashboardAdminCommissionsRoute
+  '/dashboard/admin/leads': typeof DashboardAdminLeadsRoute
+  '/dashboard/admin/marketing': typeof DashboardAdminMarketingRoute
+  '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
+  '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
+  '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
+  '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
+  '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
+  '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
+  '/dashboard/hrms/me': typeof DashboardHrmsMeRoute
+  '/dashboard/hrms/payroll': typeof DashboardHrmsPayrollRoute
+  '/dashboard/marketing/card': typeof DashboardMarketingCardRoute
+  '/dashboard/marketing/oneclick': typeof DashboardMarketingOneclickRoute
+  '/dashboard/marketing/posts': typeof DashboardMarketingPostsRoute
+  '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
+  '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
+  '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
+  '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
+  '/dashboard/marketing/': typeof DashboardMarketingIndexRoute
+  '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
+  '/dashboard/hrms/payslips/$id': typeof DashboardHrmsPayslipsIdRoute
+  '/dashboard/my-leads/$id/apply': typeof DashboardMyLeadsIdApplyRoute
+  '/dashboard/hrms/payslips/': typeof DashboardHrmsPayslipsIndexRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/auth"
-    | "/become-partner"
-    | "/dashboard"
-    | "/reset-password"
-    | "/apply/$slug"
-    | "/dashboard/billing"
-    | "/dashboard/calls"
-    | "/dashboard/cases"
-    | "/dashboard/certificates"
-    | "/dashboard/commissions"
-    | "/dashboard/community"
-    | "/dashboard/earnings"
-    | "/dashboard/hrms"
-    | "/dashboard/leadboard"
-    | "/dashboard/leaderboard"
-    | "/dashboard/learn"
-    | "/dashboard/marketing"
-    | "/dashboard/my-leads"
-    | "/dashboard/rewards"
-    | "/dashboard/settings"
-    | "/dashboard/submissions"
-    | "/dashboard/training"
-    | "/dashboard/wallet"
-    | "/dashboard/workspace"
-    | "/learn-earn/$slug"
-    | "/learn-quiz/$slug"
-    | "/ceo/"
-    | "/dashboard/"
-    | "/learn-earn/"
-    | "/api/lender/webhook"
-    | "/dashboard/admin/billing"
-    | "/dashboard/admin/commissions"
-    | "/dashboard/admin/leads"
-    | "/dashboard/admin/marketing"
-    | "/dashboard/admin/marketing-media"
-    | "/dashboard/admin/partners"
-    | "/dashboard/admin/payouts"
-    | "/dashboard/admin/pricing"
-    | "/dashboard/admin/users"
-    | "/dashboard/hrms/attendance"
-    | "/dashboard/hrms/billing"
-    | "/dashboard/hrms/leaves"
-    | "/dashboard/hrms/me"
-    | "/dashboard/hrms/payroll"
-    | "/dashboard/marketing/card"
-    | "/dashboard/marketing/oneclick"
-    | "/dashboard/marketing/posts"
-    | "/dashboard/marketing/reels"
-    | "/dashboard/marketing/referral"
-    | "/dashboard/marketing/whatsapp"
-    | "/dashboard/hrms/"
-    | "/dashboard/marketing/"
-    | "/dashboard/hrms/employees/$id"
-    | "/dashboard/hrms/payslips/$id"
-    | "/dashboard/my-leads/$id/apply"
-    | "/dashboard/hrms/payslips/";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/auth'
+    | '/become-partner'
+    | '/dashboard'
+    | '/reset-password'
+    | '/apply/$slug'
+    | '/dashboard/billing'
+    | '/dashboard/calls'
+    | '/dashboard/cases'
+    | '/dashboard/certificates'
+    | '/dashboard/commissions'
+    | '/dashboard/community'
+    | '/dashboard/earnings'
+    | '/dashboard/hrms'
+    | '/dashboard/leadboard'
+    | '/dashboard/leaderboard'
+    | '/dashboard/learn'
+    | '/dashboard/marketing'
+    | '/dashboard/my-leads'
+    | '/dashboard/rewards'
+    | '/dashboard/settings'
+    | '/dashboard/submissions'
+    | '/dashboard/training'
+    | '/dashboard/wallet'
+    | '/dashboard/workspace'
+    | '/learn-earn/$slug'
+    | '/learn-quiz/$slug'
+    | '/ceo/'
+    | '/dashboard/'
+    | '/learn-earn/'
+    | '/api/lender/webhook'
+    | '/dashboard/admin/billing'
+    | '/dashboard/admin/commissions'
+    | '/dashboard/admin/leads'
+    | '/dashboard/admin/marketing'
+    | '/dashboard/admin/marketing-media'
+    | '/dashboard/admin/partners'
+    | '/dashboard/admin/payouts'
+    | '/dashboard/admin/pricing'
+    | '/dashboard/admin/users'
+    | '/dashboard/hrms/attendance'
+    | '/dashboard/hrms/billing'
+    | '/dashboard/hrms/leaves'
+    | '/dashboard/hrms/me'
+    | '/dashboard/hrms/payroll'
+    | '/dashboard/marketing/card'
+    | '/dashboard/marketing/oneclick'
+    | '/dashboard/marketing/posts'
+    | '/dashboard/marketing/reels'
+    | '/dashboard/marketing/referral'
+    | '/dashboard/marketing/whatsapp'
+    | '/dashboard/hrms/'
+    | '/dashboard/marketing/'
+    | '/dashboard/hrms/employees/$id'
+    | '/dashboard/hrms/payslips/$id'
+    | '/dashboard/my-leads/$id/apply'
+    | '/dashboard/hrms/payslips/'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/auth"
-    | "/become-partner"
-    | "/reset-password"
-    | "/apply/$slug"
-    | "/dashboard/billing"
-    | "/dashboard/calls"
-    | "/dashboard/cases"
-    | "/dashboard/certificates"
-    | "/dashboard/commissions"
-    | "/dashboard/community"
-    | "/dashboard/earnings"
-    | "/dashboard/leadboard"
-    | "/dashboard/leaderboard"
-    | "/dashboard/learn"
-    | "/dashboard/my-leads"
-    | "/dashboard/rewards"
-    | "/dashboard/settings"
-    | "/dashboard/submissions"
-    | "/dashboard/training"
-    | "/dashboard/wallet"
-    | "/dashboard/workspace"
-    | "/learn-earn/$slug"
-    | "/learn-quiz/$slug"
-    | "/ceo"
-    | "/dashboard"
-    | "/learn-earn"
-    | "/api/lender/webhook"
-    | "/dashboard/admin/billing"
-    | "/dashboard/admin/commissions"
-    | "/dashboard/admin/leads"
-    | "/dashboard/admin/marketing"
-    | "/dashboard/admin/marketing-media"
-    | "/dashboard/admin/partners"
-    | "/dashboard/admin/payouts"
-    | "/dashboard/admin/pricing"
-    | "/dashboard/admin/users"
-    | "/dashboard/hrms/attendance"
-    | "/dashboard/hrms/billing"
-    | "/dashboard/hrms/leaves"
-    | "/dashboard/hrms/me"
-    | "/dashboard/hrms/payroll"
-    | "/dashboard/marketing/card"
-    | "/dashboard/marketing/oneclick"
-    | "/dashboard/marketing/posts"
-    | "/dashboard/marketing/reels"
-    | "/dashboard/marketing/referral"
-    | "/dashboard/marketing/whatsapp"
-    | "/dashboard/hrms"
-    | "/dashboard/marketing"
-    | "/dashboard/hrms/employees/$id"
-    | "/dashboard/hrms/payslips/$id"
-    | "/dashboard/my-leads/$id/apply"
-    | "/dashboard/hrms/payslips";
+    | '/'
+    | '/auth'
+    | '/become-partner'
+    | '/reset-password'
+    | '/apply/$slug'
+    | '/dashboard/billing'
+    | '/dashboard/calls'
+    | '/dashboard/cases'
+    | '/dashboard/certificates'
+    | '/dashboard/commissions'
+    | '/dashboard/community'
+    | '/dashboard/earnings'
+    | '/dashboard/leadboard'
+    | '/dashboard/leaderboard'
+    | '/dashboard/learn'
+    | '/dashboard/my-leads'
+    | '/dashboard/rewards'
+    | '/dashboard/settings'
+    | '/dashboard/submissions'
+    | '/dashboard/training'
+    | '/dashboard/wallet'
+    | '/dashboard/workspace'
+    | '/learn-earn/$slug'
+    | '/learn-quiz/$slug'
+    | '/ceo'
+    | '/dashboard'
+    | '/learn-earn'
+    | '/api/lender/webhook'
+    | '/dashboard/admin/billing'
+    | '/dashboard/admin/commissions'
+    | '/dashboard/admin/leads'
+    | '/dashboard/admin/marketing'
+    | '/dashboard/admin/marketing-media'
+    | '/dashboard/admin/partners'
+    | '/dashboard/admin/payouts'
+    | '/dashboard/admin/pricing'
+    | '/dashboard/admin/users'
+    | '/dashboard/hrms/attendance'
+    | '/dashboard/hrms/billing'
+    | '/dashboard/hrms/leaves'
+    | '/dashboard/hrms/me'
+    | '/dashboard/hrms/payroll'
+    | '/dashboard/marketing/card'
+    | '/dashboard/marketing/oneclick'
+    | '/dashboard/marketing/posts'
+    | '/dashboard/marketing/reels'
+    | '/dashboard/marketing/referral'
+    | '/dashboard/marketing/whatsapp'
+    | '/dashboard/hrms'
+    | '/dashboard/marketing'
+    | '/dashboard/hrms/employees/$id'
+    | '/dashboard/hrms/payslips/$id'
+    | '/dashboard/my-leads/$id/apply'
+    | '/dashboard/hrms/payslips'
   id:
-    | "__root__"
-    | "/"
-    | "/auth"
-    | "/become-partner"
-    | "/dashboard"
-    | "/reset-password"
-    | "/apply/$slug"
-    | "/dashboard/billing"
-    | "/dashboard/calls"
-    | "/dashboard/cases"
-    | "/dashboard/certificates"
-    | "/dashboard/commissions"
-    | "/dashboard/community"
-    | "/dashboard/earnings"
-    | "/dashboard/hrms"
-    | "/dashboard/leadboard"
-    | "/dashboard/leaderboard"
-    | "/dashboard/learn"
-    | "/dashboard/marketing"
-    | "/dashboard/my-leads"
-    | "/dashboard/rewards"
-    | "/dashboard/settings"
-    | "/dashboard/submissions"
-    | "/dashboard/training"
-    | "/dashboard/wallet"
-    | "/dashboard/workspace"
-    | "/learn-earn/$slug"
-    | "/learn-quiz/$slug"
-    | "/ceo/"
-    | "/dashboard/"
-    | "/learn-earn/"
-    | "/api/lender/webhook"
-    | "/dashboard/admin/billing"
-    | "/dashboard/admin/commissions"
-    | "/dashboard/admin/leads"
-    | "/dashboard/admin/marketing"
-    | "/dashboard/admin/marketing-media"
-    | "/dashboard/admin/partners"
-    | "/dashboard/admin/payouts"
-    | "/dashboard/admin/pricing"
-    | "/dashboard/admin/users"
-    | "/dashboard/hrms/attendance"
-    | "/dashboard/hrms/billing"
-    | "/dashboard/hrms/leaves"
-    | "/dashboard/hrms/me"
-    | "/dashboard/hrms/payroll"
-    | "/dashboard/marketing/card"
-    | "/dashboard/marketing/oneclick"
-    | "/dashboard/marketing/posts"
-    | "/dashboard/marketing/reels"
-    | "/dashboard/marketing/referral"
-    | "/dashboard/marketing/whatsapp"
-    | "/dashboard/hrms/"
-    | "/dashboard/marketing/"
-    | "/dashboard/hrms/employees/$id"
-    | "/dashboard/hrms/payslips/$id"
-    | "/dashboard/my-leads/$id/apply"
-    | "/dashboard/hrms/payslips/";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/become-partner'
+    | '/dashboard'
+    | '/reset-password'
+    | '/apply/$slug'
+    | '/dashboard/billing'
+    | '/dashboard/calls'
+    | '/dashboard/cases'
+    | '/dashboard/certificates'
+    | '/dashboard/commissions'
+    | '/dashboard/community'
+    | '/dashboard/earnings'
+    | '/dashboard/hrms'
+    | '/dashboard/leadboard'
+    | '/dashboard/leaderboard'
+    | '/dashboard/learn'
+    | '/dashboard/marketing'
+    | '/dashboard/my-leads'
+    | '/dashboard/rewards'
+    | '/dashboard/settings'
+    | '/dashboard/submissions'
+    | '/dashboard/training'
+    | '/dashboard/wallet'
+    | '/dashboard/workspace'
+    | '/learn-earn/$slug'
+    | '/learn-quiz/$slug'
+    | '/ceo/'
+    | '/dashboard/'
+    | '/learn-earn/'
+    | '/api/lender/webhook'
+    | '/dashboard/admin/billing'
+    | '/dashboard/admin/commissions'
+    | '/dashboard/admin/leads'
+    | '/dashboard/admin/marketing'
+    | '/dashboard/admin/marketing-media'
+    | '/dashboard/admin/partners'
+    | '/dashboard/admin/payouts'
+    | '/dashboard/admin/pricing'
+    | '/dashboard/admin/users'
+    | '/dashboard/hrms/attendance'
+    | '/dashboard/hrms/billing'
+    | '/dashboard/hrms/leaves'
+    | '/dashboard/hrms/me'
+    | '/dashboard/hrms/payroll'
+    | '/dashboard/marketing/card'
+    | '/dashboard/marketing/oneclick'
+    | '/dashboard/marketing/posts'
+    | '/dashboard/marketing/reels'
+    | '/dashboard/marketing/referral'
+    | '/dashboard/marketing/whatsapp'
+    | '/dashboard/hrms/'
+    | '/dashboard/marketing/'
+    | '/dashboard/hrms/employees/$id'
+    | '/dashboard/hrms/payslips/$id'
+    | '/dashboard/my-leads/$id/apply'
+    | '/dashboard/hrms/payslips/'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AuthRoute: typeof AuthRoute;
-  BecomePartnerRoute: typeof BecomePartnerRoute;
-  DashboardRoute: typeof DashboardRouteWithChildren;
-  ResetPasswordRoute: typeof ResetPasswordRoute;
-  ApplySlugRoute: typeof ApplySlugRoute;
-  LearnEarnSlugRoute: typeof LearnEarnSlugRoute;
-  LearnQuizSlugRoute: typeof LearnQuizSlugRoute;
-  CeoIndexRoute: typeof CeoIndexRoute;
-  LearnEarnIndexRoute: typeof LearnEarnIndexRoute;
-  ApiLenderWebhookRoute: typeof ApiLenderWebhookRoute;
+  IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
+  BecomePartnerRoute: typeof BecomePartnerRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  ApplySlugRoute: typeof ApplySlugRoute
+  LearnEarnSlugRoute: typeof LearnEarnSlugRoute
+  LearnQuizSlugRoute: typeof LearnQuizSlugRoute
+  CeoIndexRoute: typeof CeoIndexRoute
+  LearnEarnIndexRoute: typeof LearnEarnIndexRoute
+  ApiLenderWebhookRoute: typeof ApiLenderWebhookRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/reset-password": {
-      id: "/reset-password";
-      path: "/reset-password";
-      fullPath: "/reset-password";
-      preLoaderRoute: typeof ResetPasswordRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard": {
-      id: "/dashboard";
-      path: "/dashboard";
-      fullPath: "/dashboard";
-      preLoaderRoute: typeof DashboardRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/become-partner": {
-      id: "/become-partner";
-      path: "/become-partner";
-      fullPath: "/become-partner";
-      preLoaderRoute: typeof BecomePartnerRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/auth": {
-      id: "/auth";
-      path: "/auth";
-      fullPath: "/auth";
-      preLoaderRoute: typeof AuthRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/learn-earn/": {
-      id: "/learn-earn/";
-      path: "/learn-earn";
-      fullPath: "/learn-earn/";
-      preLoaderRoute: typeof LearnEarnIndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/": {
-      id: "/dashboard/";
-      path: "/";
-      fullPath: "/dashboard/";
-      preLoaderRoute: typeof DashboardIndexRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/ceo/": {
-      id: "/ceo/";
-      path: "/ceo";
-      fullPath: "/ceo/";
-      preLoaderRoute: typeof CeoIndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/learn-quiz/$slug": {
-      id: "/learn-quiz/$slug";
-      path: "/learn-quiz/$slug";
-      fullPath: "/learn-quiz/$slug";
-      preLoaderRoute: typeof LearnQuizSlugRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/learn-earn/$slug": {
-      id: "/learn-earn/$slug";
-      path: "/learn-earn/$slug";
-      fullPath: "/learn-earn/$slug";
-      preLoaderRoute: typeof LearnEarnSlugRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/workspace": {
-      id: "/dashboard/workspace";
-      path: "/workspace";
-      fullPath: "/dashboard/workspace";
-      preLoaderRoute: typeof DashboardWorkspaceRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/wallet": {
-      id: "/dashboard/wallet";
-      path: "/wallet";
-      fullPath: "/dashboard/wallet";
-      preLoaderRoute: typeof DashboardWalletRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/training": {
-      id: "/dashboard/training";
-      path: "/training";
-      fullPath: "/dashboard/training";
-      preLoaderRoute: typeof DashboardTrainingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/submissions": {
-      id: "/dashboard/submissions";
-      path: "/submissions";
-      fullPath: "/dashboard/submissions";
-      preLoaderRoute: typeof DashboardSubmissionsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/settings": {
-      id: "/dashboard/settings";
-      path: "/settings";
-      fullPath: "/dashboard/settings";
-      preLoaderRoute: typeof DashboardSettingsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/rewards": {
-      id: "/dashboard/rewards";
-      path: "/rewards";
-      fullPath: "/dashboard/rewards";
-      preLoaderRoute: typeof DashboardRewardsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/my-leads": {
-      id: "/dashboard/my-leads";
-      path: "/my-leads";
-      fullPath: "/dashboard/my-leads";
-      preLoaderRoute: typeof DashboardMyLeadsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/marketing": {
-      id: "/dashboard/marketing";
-      path: "/marketing";
-      fullPath: "/dashboard/marketing";
-      preLoaderRoute: typeof DashboardMarketingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/learn": {
-      id: "/dashboard/learn";
-      path: "/learn";
-      fullPath: "/dashboard/learn";
-      preLoaderRoute: typeof DashboardLearnRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/leaderboard": {
-      id: "/dashboard/leaderboard";
-      path: "/leaderboard";
-      fullPath: "/dashboard/leaderboard";
-      preLoaderRoute: typeof DashboardLeaderboardRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/leadboard": {
-      id: "/dashboard/leadboard";
-      path: "/leadboard";
-      fullPath: "/dashboard/leadboard";
-      preLoaderRoute: typeof DashboardLeadboardRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/hrms": {
-      id: "/dashboard/hrms";
-      path: "/hrms";
-      fullPath: "/dashboard/hrms";
-      preLoaderRoute: typeof DashboardHrmsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/earnings": {
-      id: "/dashboard/earnings";
-      path: "/earnings";
-      fullPath: "/dashboard/earnings";
-      preLoaderRoute: typeof DashboardEarningsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/community": {
-      id: "/dashboard/community";
-      path: "/community";
-      fullPath: "/dashboard/community";
-      preLoaderRoute: typeof DashboardCommunityRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/commissions": {
-      id: "/dashboard/commissions";
-      path: "/commissions";
-      fullPath: "/dashboard/commissions";
-      preLoaderRoute: typeof DashboardCommissionsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/certificates": {
-      id: "/dashboard/certificates";
-      path: "/certificates";
-      fullPath: "/dashboard/certificates";
-      preLoaderRoute: typeof DashboardCertificatesRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/cases": {
-      id: "/dashboard/cases";
-      path: "/cases";
-      fullPath: "/dashboard/cases";
-      preLoaderRoute: typeof DashboardCasesRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/calls": {
-      id: "/dashboard/calls";
-      path: "/calls";
-      fullPath: "/dashboard/calls";
-      preLoaderRoute: typeof DashboardCallsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/billing": {
-      id: "/dashboard/billing";
-      path: "/billing";
-      fullPath: "/dashboard/billing";
-      preLoaderRoute: typeof DashboardBillingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/apply/$slug": {
-      id: "/apply/$slug";
-      path: "/apply/$slug";
-      fullPath: "/apply/$slug";
-      preLoaderRoute: typeof ApplySlugRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/marketing/": {
-      id: "/dashboard/marketing/";
-      path: "/";
-      fullPath: "/dashboard/marketing/";
-      preLoaderRoute: typeof DashboardMarketingIndexRouteImport;
-      parentRoute: typeof DashboardMarketingRoute;
-    };
-    "/dashboard/hrms/": {
-      id: "/dashboard/hrms/";
-      path: "/";
-      fullPath: "/dashboard/hrms/";
-      preLoaderRoute: typeof DashboardHrmsIndexRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/marketing/whatsapp": {
-      id: "/dashboard/marketing/whatsapp";
-      path: "/whatsapp";
-      fullPath: "/dashboard/marketing/whatsapp";
-      preLoaderRoute: typeof DashboardMarketingWhatsappRouteImport;
-      parentRoute: typeof DashboardMarketingRoute;
-    };
-    "/dashboard/marketing/referral": {
-      id: "/dashboard/marketing/referral";
-      path: "/referral";
-      fullPath: "/dashboard/marketing/referral";
-      preLoaderRoute: typeof DashboardMarketingReferralRouteImport;
-      parentRoute: typeof DashboardMarketingRoute;
-    };
-    "/dashboard/marketing/reels": {
-      id: "/dashboard/marketing/reels";
-      path: "/reels";
-      fullPath: "/dashboard/marketing/reels";
-      preLoaderRoute: typeof DashboardMarketingReelsRouteImport;
-      parentRoute: typeof DashboardMarketingRoute;
-    };
-    "/dashboard/marketing/posts": {
-      id: "/dashboard/marketing/posts";
-      path: "/posts";
-      fullPath: "/dashboard/marketing/posts";
-      preLoaderRoute: typeof DashboardMarketingPostsRouteImport;
-      parentRoute: typeof DashboardMarketingRoute;
-    };
-    "/dashboard/marketing/oneclick": {
-      id: "/dashboard/marketing/oneclick";
-      path: "/oneclick";
-      fullPath: "/dashboard/marketing/oneclick";
-      preLoaderRoute: typeof DashboardMarketingOneclickRouteImport;
-      parentRoute: typeof DashboardMarketingRoute;
-    };
-    "/dashboard/marketing/card": {
-      id: "/dashboard/marketing/card";
-      path: "/card";
-      fullPath: "/dashboard/marketing/card";
-      preLoaderRoute: typeof DashboardMarketingCardRouteImport;
-      parentRoute: typeof DashboardMarketingRoute;
-    };
-    "/dashboard/hrms/payroll": {
-      id: "/dashboard/hrms/payroll";
-      path: "/payroll";
-      fullPath: "/dashboard/hrms/payroll";
-      preLoaderRoute: typeof DashboardHrmsPayrollRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/hrms/me": {
-      id: "/dashboard/hrms/me";
-      path: "/me";
-      fullPath: "/dashboard/hrms/me";
-      preLoaderRoute: typeof DashboardHrmsMeRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/hrms/leaves": {
-      id: "/dashboard/hrms/leaves";
-      path: "/leaves";
-      fullPath: "/dashboard/hrms/leaves";
-      preLoaderRoute: typeof DashboardHrmsLeavesRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/hrms/billing": {
-      id: "/dashboard/hrms/billing";
-      path: "/billing";
-      fullPath: "/dashboard/hrms/billing";
-      preLoaderRoute: typeof DashboardHrmsBillingRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/hrms/attendance": {
-      id: "/dashboard/hrms/attendance";
-      path: "/attendance";
-      fullPath: "/dashboard/hrms/attendance";
-      preLoaderRoute: typeof DashboardHrmsAttendanceRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/admin/users": {
-      id: "/dashboard/admin/users";
-      path: "/admin/users";
-      fullPath: "/dashboard/admin/users";
-      preLoaderRoute: typeof DashboardAdminUsersRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/pricing": {
-      id: "/dashboard/admin/pricing";
-      path: "/admin/pricing";
-      fullPath: "/dashboard/admin/pricing";
-      preLoaderRoute: typeof DashboardAdminPricingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/payouts": {
-      id: "/dashboard/admin/payouts";
-      path: "/admin/payouts";
-      fullPath: "/dashboard/admin/payouts";
-      preLoaderRoute: typeof DashboardAdminPayoutsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/partners": {
-      id: "/dashboard/admin/partners";
-      path: "/admin/partners";
-      fullPath: "/dashboard/admin/partners";
-      preLoaderRoute: typeof DashboardAdminPartnersRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/marketing-media": {
-      id: "/dashboard/admin/marketing-media";
-      path: "/admin/marketing-media";
-      fullPath: "/dashboard/admin/marketing-media";
-      preLoaderRoute: typeof DashboardAdminMarketingMediaRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/marketing": {
-      id: "/dashboard/admin/marketing";
-      path: "/admin/marketing";
-      fullPath: "/dashboard/admin/marketing";
-      preLoaderRoute: typeof DashboardAdminMarketingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/leads": {
-      id: "/dashboard/admin/leads";
-      path: "/admin/leads";
-      fullPath: "/dashboard/admin/leads";
-      preLoaderRoute: typeof DashboardAdminLeadsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/commissions": {
-      id: "/dashboard/admin/commissions";
-      path: "/admin/commissions";
-      fullPath: "/dashboard/admin/commissions";
-      preLoaderRoute: typeof DashboardAdminCommissionsRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/dashboard/admin/billing": {
-      id: "/dashboard/admin/billing";
-      path: "/admin/billing";
-      fullPath: "/dashboard/admin/billing";
-      preLoaderRoute: typeof DashboardAdminBillingRouteImport;
-      parentRoute: typeof DashboardRoute;
-    };
-    "/api/lender/webhook": {
-      id: "/api/lender/webhook";
-      path: "/api/lender/webhook";
-      fullPath: "/api/lender/webhook";
-      preLoaderRoute: typeof ApiLenderWebhookRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/dashboard/hrms/payslips/": {
-      id: "/dashboard/hrms/payslips/";
-      path: "/payslips";
-      fullPath: "/dashboard/hrms/payslips/";
-      preLoaderRoute: typeof DashboardHrmsPayslipsIndexRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/my-leads/$id/apply": {
-      id: "/dashboard/my-leads/$id/apply";
-      path: "/$id/apply";
-      fullPath: "/dashboard/my-leads/$id/apply";
-      preLoaderRoute: typeof DashboardMyLeadsIdApplyRouteImport;
-      parentRoute: typeof DashboardMyLeadsRoute;
-    };
-    "/dashboard/hrms/payslips/$id": {
-      id: "/dashboard/hrms/payslips/$id";
-      path: "/payslips/$id";
-      fullPath: "/dashboard/hrms/payslips/$id";
-      preLoaderRoute: typeof DashboardHrmsPayslipsIdRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
-    "/dashboard/hrms/employees/$id": {
-      id: "/dashboard/hrms/employees/$id";
-      path: "/employees/$id";
-      fullPath: "/dashboard/hrms/employees/$id";
-      preLoaderRoute: typeof DashboardHrmsEmployeesIdRouteImport;
-      parentRoute: typeof DashboardHrmsRoute;
-    };
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/become-partner': {
+      id: '/become-partner'
+      path: '/become-partner'
+      fullPath: '/become-partner'
+      preLoaderRoute: typeof BecomePartnerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn-earn/': {
+      id: '/learn-earn/'
+      path: '/learn-earn'
+      fullPath: '/learn-earn/'
+      preLoaderRoute: typeof LearnEarnIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/ceo/': {
+      id: '/ceo/'
+      path: '/ceo'
+      fullPath: '/ceo/'
+      preLoaderRoute: typeof CeoIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn-quiz/$slug': {
+      id: '/learn-quiz/$slug'
+      path: '/learn-quiz/$slug'
+      fullPath: '/learn-quiz/$slug'
+      preLoaderRoute: typeof LearnQuizSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn-earn/$slug': {
+      id: '/learn-earn/$slug'
+      path: '/learn-earn/$slug'
+      fullPath: '/learn-earn/$slug'
+      preLoaderRoute: typeof LearnEarnSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/workspace': {
+      id: '/dashboard/workspace'
+      path: '/workspace'
+      fullPath: '/dashboard/workspace'
+      preLoaderRoute: typeof DashboardWorkspaceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/wallet': {
+      id: '/dashboard/wallet'
+      path: '/wallet'
+      fullPath: '/dashboard/wallet'
+      preLoaderRoute: typeof DashboardWalletRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/training': {
+      id: '/dashboard/training'
+      path: '/training'
+      fullPath: '/dashboard/training'
+      preLoaderRoute: typeof DashboardTrainingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/submissions': {
+      id: '/dashboard/submissions'
+      path: '/submissions'
+      fullPath: '/dashboard/submissions'
+      preLoaderRoute: typeof DashboardSubmissionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/settings': {
+      id: '/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof DashboardSettingsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/rewards': {
+      id: '/dashboard/rewards'
+      path: '/rewards'
+      fullPath: '/dashboard/rewards'
+      preLoaderRoute: typeof DashboardRewardsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/my-leads': {
+      id: '/dashboard/my-leads'
+      path: '/my-leads'
+      fullPath: '/dashboard/my-leads'
+      preLoaderRoute: typeof DashboardMyLeadsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/marketing': {
+      id: '/dashboard/marketing'
+      path: '/marketing'
+      fullPath: '/dashboard/marketing'
+      preLoaderRoute: typeof DashboardMarketingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/learn': {
+      id: '/dashboard/learn'
+      path: '/learn'
+      fullPath: '/dashboard/learn'
+      preLoaderRoute: typeof DashboardLearnRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/leaderboard': {
+      id: '/dashboard/leaderboard'
+      path: '/leaderboard'
+      fullPath: '/dashboard/leaderboard'
+      preLoaderRoute: typeof DashboardLeaderboardRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/leadboard': {
+      id: '/dashboard/leadboard'
+      path: '/leadboard'
+      fullPath: '/dashboard/leadboard'
+      preLoaderRoute: typeof DashboardLeadboardRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/hrms': {
+      id: '/dashboard/hrms'
+      path: '/hrms'
+      fullPath: '/dashboard/hrms'
+      preLoaderRoute: typeof DashboardHrmsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/earnings': {
+      id: '/dashboard/earnings'
+      path: '/earnings'
+      fullPath: '/dashboard/earnings'
+      preLoaderRoute: typeof DashboardEarningsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/community': {
+      id: '/dashboard/community'
+      path: '/community'
+      fullPath: '/dashboard/community'
+      preLoaderRoute: typeof DashboardCommunityRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/commissions': {
+      id: '/dashboard/commissions'
+      path: '/commissions'
+      fullPath: '/dashboard/commissions'
+      preLoaderRoute: typeof DashboardCommissionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/certificates': {
+      id: '/dashboard/certificates'
+      path: '/certificates'
+      fullPath: '/dashboard/certificates'
+      preLoaderRoute: typeof DashboardCertificatesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/cases': {
+      id: '/dashboard/cases'
+      path: '/cases'
+      fullPath: '/dashboard/cases'
+      preLoaderRoute: typeof DashboardCasesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/calls': {
+      id: '/dashboard/calls'
+      path: '/calls'
+      fullPath: '/dashboard/calls'
+      preLoaderRoute: typeof DashboardCallsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/billing': {
+      id: '/dashboard/billing'
+      path: '/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof DashboardBillingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/apply/$slug': {
+      id: '/apply/$slug'
+      path: '/apply/$slug'
+      fullPath: '/apply/$slug'
+      preLoaderRoute: typeof ApplySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/marketing/': {
+      id: '/dashboard/marketing/'
+      path: '/'
+      fullPath: '/dashboard/marketing/'
+      preLoaderRoute: typeof DashboardMarketingIndexRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/hrms/': {
+      id: '/dashboard/hrms/'
+      path: '/'
+      fullPath: '/dashboard/hrms/'
+      preLoaderRoute: typeof DashboardHrmsIndexRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/marketing/whatsapp': {
+      id: '/dashboard/marketing/whatsapp'
+      path: '/whatsapp'
+      fullPath: '/dashboard/marketing/whatsapp'
+      preLoaderRoute: typeof DashboardMarketingWhatsappRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/referral': {
+      id: '/dashboard/marketing/referral'
+      path: '/referral'
+      fullPath: '/dashboard/marketing/referral'
+      preLoaderRoute: typeof DashboardMarketingReferralRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/reels': {
+      id: '/dashboard/marketing/reels'
+      path: '/reels'
+      fullPath: '/dashboard/marketing/reels'
+      preLoaderRoute: typeof DashboardMarketingReelsRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/posts': {
+      id: '/dashboard/marketing/posts'
+      path: '/posts'
+      fullPath: '/dashboard/marketing/posts'
+      preLoaderRoute: typeof DashboardMarketingPostsRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/oneclick': {
+      id: '/dashboard/marketing/oneclick'
+      path: '/oneclick'
+      fullPath: '/dashboard/marketing/oneclick'
+      preLoaderRoute: typeof DashboardMarketingOneclickRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/marketing/card': {
+      id: '/dashboard/marketing/card'
+      path: '/card'
+      fullPath: '/dashboard/marketing/card'
+      preLoaderRoute: typeof DashboardMarketingCardRouteImport
+      parentRoute: typeof DashboardMarketingRoute
+    }
+    '/dashboard/hrms/payroll': {
+      id: '/dashboard/hrms/payroll'
+      path: '/payroll'
+      fullPath: '/dashboard/hrms/payroll'
+      preLoaderRoute: typeof DashboardHrmsPayrollRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/hrms/me': {
+      id: '/dashboard/hrms/me'
+      path: '/me'
+      fullPath: '/dashboard/hrms/me'
+      preLoaderRoute: typeof DashboardHrmsMeRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/hrms/leaves': {
+      id: '/dashboard/hrms/leaves'
+      path: '/leaves'
+      fullPath: '/dashboard/hrms/leaves'
+      preLoaderRoute: typeof DashboardHrmsLeavesRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/hrms/billing': {
+      id: '/dashboard/hrms/billing'
+      path: '/billing'
+      fullPath: '/dashboard/hrms/billing'
+      preLoaderRoute: typeof DashboardHrmsBillingRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/hrms/attendance': {
+      id: '/dashboard/hrms/attendance'
+      path: '/attendance'
+      fullPath: '/dashboard/hrms/attendance'
+      preLoaderRoute: typeof DashboardHrmsAttendanceRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/admin/users': {
+      id: '/dashboard/admin/users'
+      path: '/admin/users'
+      fullPath: '/dashboard/admin/users'
+      preLoaderRoute: typeof DashboardAdminUsersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/pricing': {
+      id: '/dashboard/admin/pricing'
+      path: '/admin/pricing'
+      fullPath: '/dashboard/admin/pricing'
+      preLoaderRoute: typeof DashboardAdminPricingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/payouts': {
+      id: '/dashboard/admin/payouts'
+      path: '/admin/payouts'
+      fullPath: '/dashboard/admin/payouts'
+      preLoaderRoute: typeof DashboardAdminPayoutsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/partners': {
+      id: '/dashboard/admin/partners'
+      path: '/admin/partners'
+      fullPath: '/dashboard/admin/partners'
+      preLoaderRoute: typeof DashboardAdminPartnersRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/marketing-media': {
+      id: '/dashboard/admin/marketing-media'
+      path: '/admin/marketing-media'
+      fullPath: '/dashboard/admin/marketing-media'
+      preLoaderRoute: typeof DashboardAdminMarketingMediaRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/marketing': {
+      id: '/dashboard/admin/marketing'
+      path: '/admin/marketing'
+      fullPath: '/dashboard/admin/marketing'
+      preLoaderRoute: typeof DashboardAdminMarketingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/leads': {
+      id: '/dashboard/admin/leads'
+      path: '/admin/leads'
+      fullPath: '/dashboard/admin/leads'
+      preLoaderRoute: typeof DashboardAdminLeadsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/commissions': {
+      id: '/dashboard/admin/commissions'
+      path: '/admin/commissions'
+      fullPath: '/dashboard/admin/commissions'
+      preLoaderRoute: typeof DashboardAdminCommissionsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/admin/billing': {
+      id: '/dashboard/admin/billing'
+      path: '/admin/billing'
+      fullPath: '/dashboard/admin/billing'
+      preLoaderRoute: typeof DashboardAdminBillingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/api/lender/webhook': {
+      id: '/api/lender/webhook'
+      path: '/api/lender/webhook'
+      fullPath: '/api/lender/webhook'
+      preLoaderRoute: typeof ApiLenderWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard/hrms/payslips/': {
+      id: '/dashboard/hrms/payslips/'
+      path: '/payslips'
+      fullPath: '/dashboard/hrms/payslips/'
+      preLoaderRoute: typeof DashboardHrmsPayslipsIndexRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/my-leads/$id/apply': {
+      id: '/dashboard/my-leads/$id/apply'
+      path: '/$id/apply'
+      fullPath: '/dashboard/my-leads/$id/apply'
+      preLoaderRoute: typeof DashboardMyLeadsIdApplyRouteImport
+      parentRoute: typeof DashboardMyLeadsRoute
+    }
+    '/dashboard/hrms/payslips/$id': {
+      id: '/dashboard/hrms/payslips/$id'
+      path: '/payslips/$id'
+      fullPath: '/dashboard/hrms/payslips/$id'
+      preLoaderRoute: typeof DashboardHrmsPayslipsIdRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
+    '/dashboard/hrms/employees/$id': {
+      id: '/dashboard/hrms/employees/$id'
+      path: '/employees/$id'
+      fullPath: '/dashboard/hrms/employees/$id'
+      preLoaderRoute: typeof DashboardHrmsEmployeesIdRouteImport
+      parentRoute: typeof DashboardHrmsRoute
+    }
   }
 }
 
 interface DashboardHrmsRouteChildren {
-  DashboardHrmsAttendanceRoute: typeof DashboardHrmsAttendanceRoute;
-  DashboardHrmsBillingRoute: typeof DashboardHrmsBillingRoute;
-  DashboardHrmsLeavesRoute: typeof DashboardHrmsLeavesRoute;
-  DashboardHrmsMeRoute: typeof DashboardHrmsMeRoute;
-  DashboardHrmsPayrollRoute: typeof DashboardHrmsPayrollRoute;
-  DashboardHrmsIndexRoute: typeof DashboardHrmsIndexRoute;
-  DashboardHrmsEmployeesIdRoute: typeof DashboardHrmsEmployeesIdRoute;
-  DashboardHrmsPayslipsIdRoute: typeof DashboardHrmsPayslipsIdRoute;
-  DashboardHrmsPayslipsIndexRoute: typeof DashboardHrmsPayslipsIndexRoute;
+  DashboardHrmsAttendanceRoute: typeof DashboardHrmsAttendanceRoute
+  DashboardHrmsBillingRoute: typeof DashboardHrmsBillingRoute
+  DashboardHrmsLeavesRoute: typeof DashboardHrmsLeavesRoute
+  DashboardHrmsMeRoute: typeof DashboardHrmsMeRoute
+  DashboardHrmsPayrollRoute: typeof DashboardHrmsPayrollRoute
+  DashboardHrmsIndexRoute: typeof DashboardHrmsIndexRoute
+  DashboardHrmsEmployeesIdRoute: typeof DashboardHrmsEmployeesIdRoute
+  DashboardHrmsPayslipsIdRoute: typeof DashboardHrmsPayslipsIdRoute
+  DashboardHrmsPayslipsIndexRoute: typeof DashboardHrmsPayslipsIndexRoute
 }
 
 const DashboardHrmsRouteChildren: DashboardHrmsRouteChildren = {
@@ -1145,18 +1152,20 @@ const DashboardHrmsRouteChildren: DashboardHrmsRouteChildren = {
   DashboardHrmsEmployeesIdRoute: DashboardHrmsEmployeesIdRoute,
   DashboardHrmsPayslipsIdRoute: DashboardHrmsPayslipsIdRoute,
   DashboardHrmsPayslipsIndexRoute: DashboardHrmsPayslipsIndexRoute,
-};
+}
 
-const DashboardHrmsRouteWithChildren = DashboardHrmsRoute._addFileChildren(DashboardHrmsRouteChildren);
+const DashboardHrmsRouteWithChildren = DashboardHrmsRoute._addFileChildren(
+  DashboardHrmsRouteChildren,
+)
 
 interface DashboardMarketingRouteChildren {
-  DashboardMarketingCardRoute: typeof DashboardMarketingCardRoute;
-  DashboardMarketingOneclickRoute: typeof DashboardMarketingOneclickRoute;
-  DashboardMarketingPostsRoute: typeof DashboardMarketingPostsRoute;
-  DashboardMarketingReelsRoute: typeof DashboardMarketingReelsRoute;
-  DashboardMarketingReferralRoute: typeof DashboardMarketingReferralRoute;
-  DashboardMarketingWhatsappRoute: typeof DashboardMarketingWhatsappRoute;
-  DashboardMarketingIndexRoute: typeof DashboardMarketingIndexRoute;
+  DashboardMarketingCardRoute: typeof DashboardMarketingCardRoute
+  DashboardMarketingOneclickRoute: typeof DashboardMarketingOneclickRoute
+  DashboardMarketingPostsRoute: typeof DashboardMarketingPostsRoute
+  DashboardMarketingReelsRoute: typeof DashboardMarketingReelsRoute
+  DashboardMarketingReferralRoute: typeof DashboardMarketingReferralRoute
+  DashboardMarketingWhatsappRoute: typeof DashboardMarketingWhatsappRoute
+  DashboardMarketingIndexRoute: typeof DashboardMarketingIndexRoute
 }
 
 const DashboardMarketingRouteChildren: DashboardMarketingRouteChildren = {
@@ -1167,50 +1176,52 @@ const DashboardMarketingRouteChildren: DashboardMarketingRouteChildren = {
   DashboardMarketingReferralRoute: DashboardMarketingReferralRoute,
   DashboardMarketingWhatsappRoute: DashboardMarketingWhatsappRoute,
   DashboardMarketingIndexRoute: DashboardMarketingIndexRoute,
-};
+}
 
-const DashboardMarketingRouteWithChildren = DashboardMarketingRoute._addFileChildren(DashboardMarketingRouteChildren);
+const DashboardMarketingRouteWithChildren =
+  DashboardMarketingRoute._addFileChildren(DashboardMarketingRouteChildren)
 
 interface DashboardMyLeadsRouteChildren {
-  DashboardMyLeadsIdApplyRoute: typeof DashboardMyLeadsIdApplyRoute;
+  DashboardMyLeadsIdApplyRoute: typeof DashboardMyLeadsIdApplyRoute
 }
 
 const DashboardMyLeadsRouteChildren: DashboardMyLeadsRouteChildren = {
   DashboardMyLeadsIdApplyRoute: DashboardMyLeadsIdApplyRoute,
-};
+}
 
-const DashboardMyLeadsRouteWithChildren = DashboardMyLeadsRoute._addFileChildren(DashboardMyLeadsRouteChildren);
+const DashboardMyLeadsRouteWithChildren =
+  DashboardMyLeadsRoute._addFileChildren(DashboardMyLeadsRouteChildren)
 
 interface DashboardRouteChildren {
-  DashboardBillingRoute: typeof DashboardBillingRoute;
-  DashboardCallsRoute: typeof DashboardCallsRoute;
-  DashboardCasesRoute: typeof DashboardCasesRoute;
-  DashboardCertificatesRoute: typeof DashboardCertificatesRoute;
-  DashboardCommissionsRoute: typeof DashboardCommissionsRoute;
-  DashboardCommunityRoute: typeof DashboardCommunityRoute;
-  DashboardEarningsRoute: typeof DashboardEarningsRoute;
-  DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren;
-  DashboardLeadboardRoute: typeof DashboardLeadboardRoute;
-  DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute;
-  DashboardLearnRoute: typeof DashboardLearnRoute;
-  DashboardMarketingRoute: typeof DashboardMarketingRouteWithChildren;
-  DashboardMyLeadsRoute: typeof DashboardMyLeadsRouteWithChildren;
-  DashboardRewardsRoute: typeof DashboardRewardsRoute;
-  DashboardSettingsRoute: typeof DashboardSettingsRoute;
-  DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute;
-  DashboardTrainingRoute: typeof DashboardTrainingRoute;
-  DashboardWalletRoute: typeof DashboardWalletRoute;
-  DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute;
-  DashboardIndexRoute: typeof DashboardIndexRoute;
-  DashboardAdminBillingRoute: typeof DashboardAdminBillingRoute;
-  DashboardAdminCommissionsRoute: typeof DashboardAdminCommissionsRoute;
-  DashboardAdminLeadsRoute: typeof DashboardAdminLeadsRoute;
-  DashboardAdminMarketingRoute: typeof DashboardAdminMarketingRoute;
-  DashboardAdminMarketingMediaRoute: typeof DashboardAdminMarketingMediaRoute;
-  DashboardAdminPartnersRoute: typeof DashboardAdminPartnersRoute;
-  DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute;
-  DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute;
-  DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute;
+  DashboardBillingRoute: typeof DashboardBillingRoute
+  DashboardCallsRoute: typeof DashboardCallsRoute
+  DashboardCasesRoute: typeof DashboardCasesRoute
+  DashboardCertificatesRoute: typeof DashboardCertificatesRoute
+  DashboardCommissionsRoute: typeof DashboardCommissionsRoute
+  DashboardCommunityRoute: typeof DashboardCommunityRoute
+  DashboardEarningsRoute: typeof DashboardEarningsRoute
+  DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren
+  DashboardLeadboardRoute: typeof DashboardLeadboardRoute
+  DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
+  DashboardLearnRoute: typeof DashboardLearnRoute
+  DashboardMarketingRoute: typeof DashboardMarketingRouteWithChildren
+  DashboardMyLeadsRoute: typeof DashboardMyLeadsRouteWithChildren
+  DashboardRewardsRoute: typeof DashboardRewardsRoute
+  DashboardSettingsRoute: typeof DashboardSettingsRoute
+  DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
+  DashboardTrainingRoute: typeof DashboardTrainingRoute
+  DashboardWalletRoute: typeof DashboardWalletRoute
+  DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+  DashboardAdminBillingRoute: typeof DashboardAdminBillingRoute
+  DashboardAdminCommissionsRoute: typeof DashboardAdminCommissionsRoute
+  DashboardAdminLeadsRoute: typeof DashboardAdminLeadsRoute
+  DashboardAdminMarketingRoute: typeof DashboardAdminMarketingRoute
+  DashboardAdminMarketingMediaRoute: typeof DashboardAdminMarketingMediaRoute
+  DashboardAdminPartnersRoute: typeof DashboardAdminPartnersRoute
+  DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute
+  DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
+  DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -1243,9 +1254,11 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminPayoutsRoute: DashboardAdminPayoutsRoute,
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
-};
+}
 
-const DashboardRouteWithChildren = DashboardRoute._addFileChildren(DashboardRouteChildren);
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1259,14 +1272,16 @@ const rootRouteChildren: RootRouteChildren = {
   CeoIndexRoute: CeoIndexRoute,
   LearnEarnIndexRoute: LearnEarnIndexRoute,
   ApiLenderWebhookRoute: ApiLenderWebhookRoute,
-};
-export const routeTree = rootRouteImport._addFileChildren(rootRouteChildren)._addFileTypes<FileRouteTypes>();
+}
+export const routeTree = rootRouteImport
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
-// import type { getRouter } from './router.tsx'
-import type { createStart } from "@tanstack/react-start";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }
