@@ -119,23 +119,22 @@ function Leadboard() {
   const load = async () => {
     setLoading(true);
     console.log("LOAD RUNNING");
-    let q = supabase.from("leads").select(
-      `
-    id,
-    applicant_name,
-    masked_phone,
-    city,
-    loan_amount,
-    monthly_income,
-    score,
-    price,
-    status,
-    product_category,
-    product_type_id,
-    created_at,
-    updated_at
-  `,
-    );
+    let q = supabase.from("leads").select(`
+  id,
+  applicant_name,
+  masked_phone,
+  city,
+  loan_amount,
+  monthly_income,
+  score,
+  price,
+  status,
+  product_category,
+  product_subtype,
+  product_type_id,
+  created_at,
+  updated_at
+`);
     // .eq("status", "available");
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
