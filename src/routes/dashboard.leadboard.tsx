@@ -486,7 +486,7 @@ function formatRelative(iso: string, nowMs: number = Date.now()): string {
 
 function LeadCard({
   lead,
-  type,
+  typeName,
   onBuy,
   buying,
   purchased,
@@ -557,9 +557,9 @@ function LeadCard({
         >
           {meta.label}
         </span>
-        {type && (
+        {typeName && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">
-            {type.name}
+            {typeName}
           </span>
         )}
         {isFresh && !isPurchased && (
