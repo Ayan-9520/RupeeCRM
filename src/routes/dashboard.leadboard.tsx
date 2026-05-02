@@ -426,15 +426,7 @@ function Leadboard() {
                 <LeadCard
                   key={lead.id}
                   lead={lead}
-                  typeName={
-                    lead.product_subtype === "home_loan"
-                      ? "Home Loan"
-                      : lead.product_subtype === "personal_loan"
-                        ? "Personal Loan"
-                        : lead.product_subtype === "business_loan"
-                          ? "Business Loan"
-                          : null
-                  }
+                  type={lead.product_type_id ? typeMap[lead.product_type_id] : undefined}
                   onBuy={buy}
                   buying={buying === lead.id}
                   purchased={purchased[lead.id]}
@@ -486,7 +478,7 @@ function formatRelative(iso: string, nowMs: number = Date.now()): string {
 
 function LeadCard({
   lead,
-  typeName,
+  type,
   onBuy,
   buying,
   purchased,
@@ -557,9 +549,9 @@ function LeadCard({
         >
           {meta.label}
         </span>
-        {typeName && (
+        {type && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">
-            {typeName}
+            {type.name}
           </span>
         )}
         {isFresh && !isPurchased && (
