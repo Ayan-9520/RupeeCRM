@@ -557,7 +557,9 @@ function LeadCard({
         )}
         {lead.product_subtype && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary border border-border text-foreground/70">
-            {lead.product_subtype.replace("_", " ")}
+            {lead.product_subtype
+  .replace(/_/g, " ")
+  .replace(/\b\w/g, (c) => c.toUpperCase())}
           </span>
         )}
         {isFresh && !isPurchased && (
