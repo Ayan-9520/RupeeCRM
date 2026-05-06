@@ -224,6 +224,9 @@ function Leadboard() {
     }
     const result = data as { success: boolean; full_phone: string; new_balance: number };
     setPurchased((prev) => ({ ...prev, [lead.id]: { full_phone: result.full_phone } }));
+    setLeads((prev) =>
+  prev.filter((l) => l.id !== lead.id)
+);
     setStats((s) => ({ ...s, balance: result.new_balance, purchases: s.purchases + 1 }));
     refreshQuota();
     toast.success(`Lead unlocked! ₹${lead.price} debited. New balance ₹${result.new_balance.toLocaleString("en-IN")}`);
