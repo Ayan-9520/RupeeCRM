@@ -119,7 +119,10 @@ function Leadboard() {
   const load = async () => {
     setLoading(true);
     console.log("LOAD RUNNING");
-    let q = supabase.from("leads").select(`
+    let q = supabase
+      .from("leads")
+      .select(
+        `
   id,
   applicant_name,
   masked_phone,
@@ -134,10 +137,11 @@ function Leadboard() {
   product_type_id,
   created_at,
   updated_at
-`);
-.eq("status", "available")
-.eq("sale_available", true)
-.eq("is_marketplace", true);
+`,
+      )
+      .eq("status", "available")
+      .eq("sale_available", true)
+      .eq("is_marketplace", true);
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
     else if (sort === "oldest") q = q.order("created_at", { ascending: true });
@@ -224,9 +228,7 @@ function Leadboard() {
     }
     const result = data as { success: boolean; full_phone: string; new_balance: number };
     setPurchased((prev) => ({ ...prev, [lead.id]: { full_phone: result.full_phone } }));
-    setLeads((prev) =>
-  prev.filter((l) => l.id !== lead.id)
-);
+    setLeads((prev) => prev.filter((l) => l.id !== lead.id));
     setStats((s) => ({ ...s, balance: result.new_balance, purchases: s.purchases + 1 }));
     refreshQuota();
     toast.success(`Lead unlocked! ₹${lead.price} debited. New balance ₹${result.new_balance.toLocaleString("en-IN")}`);
@@ -560,9 +562,7 @@ function LeadCard({
         )}
         {lead.product_subtype && (
           <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary border border-border text-foreground/70">
-            {lead.product_subtype
-  .replace(/_/g, " ")
-  .replace(/\b\w/g, (c) => c.toUpperCase())}
+            {lead.product_subtype.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
           </span>
         )}
         {isFresh && !isPurchased && (
