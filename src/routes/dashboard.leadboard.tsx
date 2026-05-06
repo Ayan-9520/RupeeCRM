@@ -135,7 +135,9 @@ function Leadboard() {
   created_at,
   updated_at
 `);
-    // .eq("status", "available");
+.eq("status", "available")
+.eq("sale_available", true)
+.eq("is_marketplace", true);
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
     else if (sort === "oldest") q = q.order("created_at", { ascending: true });
