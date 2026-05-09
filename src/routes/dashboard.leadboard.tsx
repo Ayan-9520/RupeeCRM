@@ -620,7 +620,7 @@ function LeadCard({
       {isPurchased ? (
         <Link
           to="/dashboard/my-leads"
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500 text-white font-semibold text-sm hover:opacity-90 transition-smooth"
+          className="w-full inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500 text-white font-semibold text-sm hover:opacity-90 transition-smooth"
         >
           View in My Leads <ArrowRight className="size-4" />
         </Link>
@@ -628,7 +628,7 @@ function LeadCard({
         <button
           onClick={() => onBuy(lead)}
           disabled={buying}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth disabled:opacity-60"
+          className="w-full inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth disabled:opacity-60"
         >
           {buying ? <Loader2 className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />}
           Buy
