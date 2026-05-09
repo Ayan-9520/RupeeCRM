@@ -513,7 +513,7 @@ function LeadCard({
     chipText: "text-gray-600",
   };
   const isPurchased = !!purchased;
-
+  const isSold = lead.status === "sold";
   const ageHours = (now - new Date(lead.created_at).getTime()) / 36e5;
   const isVeryNew = ageHours < 1; // <1 hour → "New" badge
   const isFresh = ageHours < 12; // <12 hours → "Fresh" badge
