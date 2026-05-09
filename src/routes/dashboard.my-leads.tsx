@@ -59,22 +59,32 @@ type Purchase = {
   next_followup_at: string | null;
   converted: boolean;
   deal_value: number;
+  lead_id?: string;
   leads: {
     id: string;
     applicant_name: string;
     full_phone: string;
+    alternate_phone: string | null;
     email: string | null;
     city: string;
+    state: string | null;
     loan_amount: number;
     monthly_income: number | null;
+    employment_type: string | null;
+    company_name: string | null;
+    cibil_score: number | null;
+    age: number | null;
+    gender: string | null;
     score: "cold" | "warm" | "hot";
     product_category: ProductCategory;
     product_subtype: string | null;
     product_type_id: string | null;
     product_details: Record<string, unknown>;
     source: string | null;
+    notes: string | null;
     ref_dsa_id: string | null;
     is_marketplace: boolean;
+    created_at: string;
   } | null;
 };
 
