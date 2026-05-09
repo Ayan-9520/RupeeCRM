@@ -574,7 +574,7 @@ function LeadCard({
         </span>
       </div>
 
-      <div className="mt-4 space-y-1.5 text-sm">
+      <div className="mt-4 space-y-1.5 text-sm min-h-[120px]">
         <Row icon={MapPin} text={lead.city} />
         <div
           className="flex items-center gap-2 text-[11px] text-muted-foreground"
