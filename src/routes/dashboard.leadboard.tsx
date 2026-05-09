@@ -555,6 +555,11 @@ function LeadCard({
         )
       )}
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
+        {isSold && !isPurchased && (
+          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-600 dark:text-red-400">
+            SOLD
+          </span>
+        )}
         <span
           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${meta.chipBg} ${meta.chipText}`}
         >
