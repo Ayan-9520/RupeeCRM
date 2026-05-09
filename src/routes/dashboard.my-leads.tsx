@@ -136,7 +136,7 @@ function MyLeads() {
     const { data, error } = await supabase
       .from("lead_purchases")
       .select(
-        "id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,email,city,loan_amount,monthly_income,score,product_category,product_subtype,product_type_id,product_details,source,ref_dsa_id,is_marketplace)",
+        "id,lead_id,pipeline_stage,price_paid,created_at,updated_at,notes,next_followup_at,converted,deal_value,leads(id,applicant_name,full_phone,alternate_phone,email,city,state,loan_amount,monthly_income,employment_type,company_name,cibil_score,age,gender,score,product_category,product_subtype,product_type_id,product_details,source,notes,ref_dsa_id,is_marketplace,created_at)",
       )
       .eq("dsa_id", user.id)
       .order("created_at", { ascending: false });
