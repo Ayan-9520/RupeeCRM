@@ -626,42 +626,31 @@ function LeadCard({
         )}
       </div>
 
-     <div>
-  <div className="text-xs text-muted-foreground">
-    {isSold ? "Sold" : isPurchased ? "Paid" : "Lead price"}
-  </div>
+      <div>
+        <div className="text-xs text-muted-foreground">{isSold ? "Sold" : isPurchased ? "Paid" : "Lead price"}</div>
 
-  <div className="font-display text-xl font-bold">
-    ₹{lead.price}
-  </div>
-</div>
-
-{isSold ? (
-  <div className="px-4 py-2 rounded-full bg-red-500 text-white font-semibold text-sm">
-    SOLD
-  </div>
-) : isPurchased ? (
-  <Link
-    to="/dashboard/my-leads"
-    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500 text-white font-semibold text-sm hover:opacity-90 transition-smooth"
-  >
-    View in My Leads <ArrowRight className="size-4" />
-  </Link>
-) : (
-  <button
-    onClick={() => onBuy(lead)}
-    disabled={buying}
-    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth disabled:opacity-60"
-  >
-    {buying ? (
-      <Loader2 className="size-4 animate-spin" />
-    ) : (
-      <ShoppingCart className="size-4" />
-    )}
-    Buy
-  </button>
-)}
+        <div className="font-display text-xl font-bold">₹{lead.price}</div>
       </div>
+
+      {isSold ? (
+        <div className="px-4 py-2 rounded-full bg-red-500 text-white font-semibold text-sm">SOLD</div>
+      ) : isPurchased ? (
+        <Link
+          to="/dashboard/my-leads"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500 text-white font-semibold text-sm hover:opacity-90 transition-smooth"
+        >
+          View in My Leads <ArrowRight className="size-4" />
+        </Link>
+      ) : (
+        <button
+          onClick={() => onBuy(lead)}
+          disabled={buying}
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth disabled:opacity-60"
+        >
+          {buying ? <Loader2 className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />}
+          Buy
+        </button>
+      )}
     </div>
   );
 }
