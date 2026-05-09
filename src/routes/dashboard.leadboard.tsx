@@ -531,33 +531,29 @@ function LeadCard({
               : "border-border hover:border-accent/50"
       }`}
     >
-     {isSold ? (
-  <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-500 text-white shadow-md">
-    SOLD
-  </div>
-{isSold ? (
-  <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-500 text-white shadow-md">
-    SOLD
-  </div>
-) : isPurchased ? (
-  <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
-    <Check className="size-3" /> Purchased
-  </div>
-) : lead.score === "hot" ? (
-  <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
-    <Flame className="size-3" /> Hot lead
-  </div>
-) : isVeryNew ? (
-  <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md animate-pulse">
-    <Sparkles className="size-3" /> New
-  </div>
-) : (
-  showCornerBadge && (
-    <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/90 text-white shadow-md">
-      <Sparkles className="size-3" /> New
-    </div>
-  )
-)}
+      {isSold ? (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-500 text-white shadow-md">
+          SOLD
+        </div>
+      ) : isPurchased ? (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
+          <Check className="size-3" /> Purchased
+        </div>
+      ) : lead.score === "hot" ? (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-orange-500 text-white shadow-md">
+          <Flame className="size-3" /> Hot lead
+        </div>
+      ) : isVeryNew ? (
+        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md animate-pulse">
+          <Sparkles className="size-3" /> New
+        </div>
+      ) : (
+        showCornerBadge && (
+          <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500/90 text-white shadow-md">
+            <Sparkles className="size-3" /> New
+          </div>
+        )
+      )}
       <div className="flex items-center gap-1.5 flex-wrap mb-3">
         {isSold && !isPurchased && (
           <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-600 dark:text-red-400">
