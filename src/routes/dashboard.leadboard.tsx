@@ -570,11 +570,7 @@ function LeadCard({
             {lead.product_subtype.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
           </span>
         )}
-        {isFresh && !isPurchased && (
-          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
-            <Zap className="size-2.5" /> Fresh
-          </span>
-        )}
+
         {type?.high_demand && !isPurchased && !isFresh && (
           <span className="inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-orange-500/15 text-orange-600 dark:text-orange-400">
             <Sparkles className="size-2.5" /> Hot
