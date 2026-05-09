@@ -531,7 +531,7 @@ function LeadCard({
               : "border-border hover:border-accent/50"
       }`}
     >
-    {isSold ? (
+  {isSold ? (
   <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-500 text-white shadow-md">
     SOLD
   </div>
