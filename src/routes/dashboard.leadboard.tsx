@@ -632,9 +632,7 @@ function LeadCard({
         <div className="font-display text-xl font-bold">₹{lead.price}</div>
       </div>
 
-      {isSold ? (
-        <div className="px-4 py-2 rounded-full bg-red-500 text-white font-semibold text-sm">SOLD</div>
-      ) : isPurchased ? (
+      {isPurchased ? (
         <Link
           to="/dashboard/my-leads"
           className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500 text-white font-semibold text-sm hover:opacity-90 transition-smooth"
