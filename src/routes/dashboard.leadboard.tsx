@@ -139,9 +139,10 @@ function Leadboard() {
   updated_at
 `,
       )
-      .eq("status", "available")
-      .eq("sale_available", true)
-      .eq("is_marketplace", true);
+      .eq("is_marketplace", true)
+      .or(
+        `status.eq.available,and(status.eq.sold,sold_at.gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()})`,
+      );
     if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
     else if (sort === "newest") q = q.order("created_at", { ascending: false });
     else if (sort === "oldest") q = q.order("created_at", { ascending: true });
