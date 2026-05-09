@@ -27,6 +27,18 @@ import {
   IndianRupee,
   FileText,
   Sparkles,
+  Mail,
+  Send,
+  Upload,
+  User as UserIcon,
+  Briefcase,
+  CreditCard,
+  Activity,
+  FolderOpen,
+  Target,
+  Download,
+  Trash2,
+  AlertCircle,
 } from "lucide-react";
 import { CATEGORY_META, calcCommission, type Pipeline, type ProductCategory, type ProductType } from "@/lib/products";
 import type { Database, Json } from "@/integrations/supabase/types";
