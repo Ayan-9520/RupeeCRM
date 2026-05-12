@@ -829,7 +829,7 @@ function LeadDetailDrawer({
   }, []);
 
   const loadAux = async () => {
-    const [d, l] = await Promise.all([
+    const [d, l, c, ds] = await Promise.all([
       supabase
         .from("case_documents")
         .select("id,doc_type,file_name,file_url,file_size,mime_type,uploaded_by,created_at")
@@ -840,9 +840,21 @@ function LeadDetailDrawer({
         .select("id,from_stage,to_stage,notes,created_at,changed_by")
         .eq("lead_purchase_id", purchase.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("commissions")
+        .select("id,amount,percentage,base_amount,status,created_at,credited_at")
+        .eq("lead_purchase_id", purchase.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("disbursals")
+        .select("id,lender_name,loan_account_no,disbursed_amount,commission_amount,status,disbursed_at,created_at")
+        .eq("lead_purchase_id", purchase.id)
+        .order("created_at", { ascending: false }),
     ]);
     setDocs((d.data as CaseDoc[]) ?? []);
     setLogs((l.data as StatusLog[]) ?? []);
+    setCommissions((c.data as typeof commissions) ?? []);
+    setDisbursals((ds.data as typeof disbursals) ?? []);
   };
 
   useEffect(() => {
