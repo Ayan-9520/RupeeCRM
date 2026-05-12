@@ -809,7 +809,9 @@ function LeadDetailDrawer({
 }) {
   const { user } = useAuth();
   const lead = purchase.leads;
-  const [tab, setTab] = useState<"overview" | "pipeline" | "documents" | "notes">("overview");
+  const [tab, setTab] = useState<"overview" | "pipeline" | "documents" | "notes" | "commission">("overview");
+  const [commissions, setCommissions] = useState<{ id: string; amount: number; percentage: number; base_amount: number; status: string; created_at: string; credited_at: string | null }[]>([]);
+  const [disbursals, setDisbursals] = useState<{ id: string; lender_name: string | null; loan_account_no: string | null; disbursed_amount: number; commission_amount: number; status: string; disbursed_at: string | null; created_at: string }[]>([]);
   const [noteText, setNoteText] = useState("");
   const [followup, setFollowup] = useState(purchase.next_followup_at?.slice(0, 10) ?? "");
   const [dealValue, setDealValue] = useState<string>(String(purchase.deal_value || lead?.loan_amount || 0));
@@ -827,7 +829,7 @@ function LeadDetailDrawer({
   }, []);
 
   const loadAux = async () => {
-    const [d, l] = await Promise.all([
+    const [d, l, c, ds] = await Promise.all([
       supabase
         .from("case_documents")
         .select("id,doc_type,file_name,file_url,file_size,mime_type,uploaded_by,created_at")
@@ -838,9 +840,21 @@ function LeadDetailDrawer({
         .select("id,from_stage,to_stage,notes,created_at,changed_by")
         .eq("lead_purchase_id", purchase.id)
         .order("created_at", { ascending: false }),
+      supabase
+        .from("commissions")
+        .select("id,amount,percentage,base_amount,status,created_at,credited_at")
+        .eq("lead_purchase_id", purchase.id)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("disbursals")
+        .select("id,lender_name,loan_account_no,disbursed_amount,commission_amount,status,disbursed_at,created_at")
+        .eq("lead_purchase_id", purchase.id)
+        .order("created_at", { ascending: false }),
     ]);
     setDocs((d.data as CaseDoc[]) ?? []);
     setLogs((l.data as StatusLog[]) ?? []);
+    setCommissions((c.data as typeof commissions) ?? []);
+    setDisbursals((ds.data as typeof disbursals) ?? []);
   };
 
   useEffect(() => {
@@ -907,6 +921,95 @@ function LeadDetailDrawer({
   const copyText = async (text: string, label: string) => {
     await navigator.clipboard.writeText(text);
     toast.success(`${label} copied`);
+  };
+
+  const downloadPdf = async () => {
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const W = doc.internal.pageSize.getWidth();
+      let y = 14;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Lead Summary", 14, y);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(new Date().toLocaleString("en-IN"), W - 14, y, { align: "right" });
+      y += 8;
+      doc.setDrawColor(200);
+      doc.line(14, y, W - 14, y);
+      y += 6;
+
+      const section = (title: string) => {
+        if (y > 270) { doc.addPage(); y = 14; }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(title, 14, y);
+        y += 5;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+      };
+      const row = (k: string, v: string | number | null | undefined) => {
+        if (v === null || v === undefined || v === "") return;
+        if (y > 280) { doc.addPage(); y = 14; }
+        doc.setTextColor(120);
+        doc.text(`${k}:`, 16, y);
+        doc.setTextColor(20);
+        const lines = doc.splitTextToSize(String(v), W - 70);
+        doc.text(lines, 70, y);
+        y += 5 * lines.length;
+      };
+
+      section("Applicant");
+      row("Name", lead.applicant_name);
+      row("Phone", lead.full_phone);
+      row("Alternate", lead.alternate_phone);
+      row("Email", lead.email);
+      row("Age / Gender", [lead.age, lead.gender].filter(Boolean).join(" / "));
+      row("City / State", [lead.city, lead.state].filter(Boolean).join(", "));
+      y += 2;
+
+      section("Employment & Credit");
+      row("Employment", lead.employment_type);
+      row("Company", lead.company_name);
+      row("Monthly income", lead.monthly_income ? `Rs. ${lead.monthly_income.toLocaleString("en-IN")}` : null);
+      row("CIBIL", lead.cibil_score);
+      y += 2;
+
+      section("Product Requirement");
+      row("Category", meta.label);
+      row("Subtype", lead.product_subtype);
+      row("Ticket size", `Rs. ${lead.loan_amount.toLocaleString("en-IN")}`);
+      row("Source", lead.source);
+      Object.entries(lead.product_details ?? {}).forEach(([k, v]) => row(k.replace(/_/g, " "), String(v)));
+      y += 2;
+
+      section("Processing");
+      row("Stage", purchase.pipeline_stage);
+      row("Purchased", new Date(purchase.created_at).toLocaleString("en-IN"));
+      row("Price paid", `Rs. ${purchase.price_paid}`);
+      row("Deal value", purchase.deal_value ? `Rs. ${purchase.deal_value.toLocaleString("en-IN")}` : null);
+      row("Converted", purchase.converted ? "Yes" : "No");
+      row("Next follow-up", purchase.next_followup_at ? new Date(purchase.next_followup_at).toLocaleDateString("en-IN") : null);
+      y += 2;
+
+      if (docs.length) {
+        section("Documents");
+        docs.forEach((d) => row(DOC_TYPES.find((x) => x.value === d.doc_type)?.label ?? d.doc_type, d.file_name));
+        y += 2;
+      }
+
+      const visible = purchase.notes.filter((n) => !(n as { kind?: string }).kind);
+      if (visible.length) {
+        section("Notes");
+        visible.slice(-15).forEach((n) => row(new Date(n.at).toLocaleDateString("en-IN"), n.text));
+      }
+
+      doc.save(`Lead-${lead.applicant_name.replace(/\s+/g, "_")}-${purchase.id.slice(0, 6)}.pdf`);
+      toast.success("PDF downloaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "PDF failed");
+    }
   };
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -982,7 +1085,7 @@ function LeadDetailDrawer({
       onClick={onClose}
     >
       <div
-        className={`bg-card border border-border shadow-elevated w-full sm:max-w-5xl h-full sm:h-[92vh] sm:rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${
+        className={`bg-card border border-border shadow-elevated w-full sm:max-w-[1400px] h-full sm:h-[94vh] sm:rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${
           mounted ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -1063,7 +1166,7 @@ function LeadDetailDrawer({
           </div>
 
           {/* QUICK ACTIONS */}
-          <div className="mt-4 grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div className="mt-4 grid grid-cols-3 sm:grid-cols-7 gap-2">
             <ActionBtn href={callLink} icon={Phone} label="Call" tone="accent" />
             <ActionBtn href={waLink} target="_blank" icon={MessageSquare} label="WhatsApp" tone="emerald" />
             <ActionBtn href={smsLink} icon={Send} label="SMS" tone="default" />
@@ -1075,6 +1178,7 @@ function LeadDetailDrawer({
               disabled={!emailLink}
             />
             <ActionBtn onClick={() => copyText(lead.full_phone, "Phone")} icon={Copy} label="Copy #" tone="default" />
+            <ActionBtn onClick={downloadPdf} icon={Download} label="PDF" tone="default" />
             <Link
               to="/dashboard/my-leads/$id/apply"
               params={{ id: purchase.id }}
@@ -1093,6 +1197,7 @@ function LeadDetailDrawer({
             { id: "pipeline", label: "Pipeline & Activity", icon: Activity },
             { id: "documents", label: `Documents (${docs.length})`, icon: FolderOpen },
             { id: "notes", label: `Notes (${visibleNotes.length})`, icon: StickyNote },
+            { id: "commission", label: "Commission", icon: IndianRupee },
           ].map((t) => {
             const Icon = t.icon;
             const active = tab === t.id;
@@ -1426,6 +1531,65 @@ function LeadDetailDrawer({
                   ))}
                 </ul>
               )}
+            </div>
+          )}
+
+          {tab === "commission" && (
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="grid sm:grid-cols-3 gap-3">
+                <MetaCard label="Loan / ticket size" value={`₹${lead.loan_amount.toLocaleString("en-IN")}`} />
+                <MetaCard label="Final deal value" value={purchase.deal_value ? `₹${purchase.deal_value.toLocaleString("en-IN")}` : "—"} />
+                <MetaCard label="Est. commission" value={`₹${commission.toLocaleString("en-IN")}`} />
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <Banknote className="size-4 text-accent" />
+                  <h3 className="font-display font-bold text-base">Disbursals</h3>
+                </div>
+                {disbursals.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-3">No disbursal recorded yet.</div>
+                ) : (
+                  <ul className="space-y-2">
+                    {disbursals.map((d) => (
+                      <li key={d.id} className="rounded-xl border border-border p-3 text-sm">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="font-semibold">{d.lender_name ?? "Lender"}</div>
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-secondary border border-border">{d.status}</span>
+                        </div>
+                        <div className="grid sm:grid-cols-4 gap-2 text-xs mt-2 text-muted-foreground">
+                          <div><span className="block text-[10px] uppercase">Loan A/C</span><span className="text-foreground">{d.loan_account_no ?? "—"}</span></div>
+                          <div><span className="block text-[10px] uppercase">Disbursed</span><span className="text-foreground">₹{Number(d.disbursed_amount).toLocaleString("en-IN")}</span></div>
+                          <div><span className="block text-[10px] uppercase">Commission</span><span className="text-foreground">₹{Number(d.commission_amount).toLocaleString("en-IN")}</span></div>
+                          <div><span className="block text-[10px] uppercase">Date</span><span className="text-foreground">{d.disbursed_at ? new Date(d.disbursed_at).toLocaleDateString("en-IN") : "—"}</span></div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <IndianRupee className="size-4 text-accent" />
+                  <h3 className="font-display font-bold text-base">Commission ledger</h3>
+                </div>
+                {commissions.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-3">No commission entries yet.</div>
+                ) : (
+                  <ul className="space-y-2">
+                    {commissions.map((c) => (
+                      <li key={c.id} className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
+                        <div>
+                          <div className="font-semibold">₹{Number(c.amount).toLocaleString("en-IN")} <span className="text-xs text-muted-foreground">({c.percentage}% of ₹{Number(c.base_amount).toLocaleString("en-IN")})</span></div>
+                          <div className="text-[11px] text-muted-foreground">{new Date(c.created_at).toLocaleString("en-IN")}{c.credited_at ? ` · credited ${new Date(c.credited_at).toLocaleDateString("en-IN")}` : ""}</div>
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${c.status === "credited" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}>{c.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
           )}
         </div>
