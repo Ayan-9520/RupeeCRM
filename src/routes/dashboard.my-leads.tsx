@@ -1533,11 +1533,65 @@ function LeadDetailDrawer({
               )}
             </div>
           )}
-        </div>
-      </div>
-    </div>
-  );
-}
+
+          {tab === "commission" && (
+            <div className="p-5 sm:p-6 space-y-4">
+              <div className="grid sm:grid-cols-3 gap-3">
+                <MetaCard label="Loan / ticket size" value={`₹${lead.loan_amount.toLocaleString("en-IN")}`} />
+                <MetaCard label="Final deal value" value={purchase.deal_value ? `₹${purchase.deal_value.toLocaleString("en-IN")}` : "—"} />
+                <MetaCard label="Est. commission" value={`₹${commission.toLocaleString("en-IN")}`} />
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <Banknote className="size-4 text-accent" />
+                  <h3 className="font-display font-bold text-base">Disbursals</h3>
+                </div>
+                {disbursals.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-3">No disbursal recorded yet.</div>
+                ) : (
+                  <ul className="space-y-2">
+                    {disbursals.map((d) => (
+                      <li key={d.id} className="rounded-xl border border-border p-3 text-sm">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="font-semibold">{d.lender_name ?? "Lender"}</div>
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-secondary border border-border">{d.status}</span>
+                        </div>
+                        <div className="grid sm:grid-cols-4 gap-2 text-xs mt-2 text-muted-foreground">
+                          <div><span className="block text-[10px] uppercase">Loan A/C</span><span className="text-foreground">{d.loan_account_no ?? "—"}</span></div>
+                          <div><span className="block text-[10px] uppercase">Disbursed</span><span className="text-foreground">₹{Number(d.disbursed_amount).toLocaleString("en-IN")}</span></div>
+                          <div><span className="block text-[10px] uppercase">Commission</span><span className="text-foreground">₹{Number(d.commission_amount).toLocaleString("en-IN")}</span></div>
+                          <div><span className="block text-[10px] uppercase">Date</span><span className="text-foreground">{d.disbursed_at ? new Date(d.disbursed_at).toLocaleDateString("en-IN") : "—"}</span></div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+                <div className="flex items-center gap-2 mb-3">
+                  <IndianRupee className="size-4 text-accent" />
+                  <h3 className="font-display font-bold text-base">Commission ledger</h3>
+                </div>
+                {commissions.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-3">No commission entries yet.</div>
+                ) : (
+                  <ul className="space-y-2">
+                    {commissions.map((c) => (
+                      <li key={c.id} className="flex items-center justify-between rounded-xl border border-border p-3 text-sm">
+                        <div>
+                          <div className="font-semibold">₹{Number(c.amount).toLocaleString("en-IN")} <span className="text-xs text-muted-foreground">({c.percentage}% of ₹{Number(c.base_amount).toLocaleString("en-IN")})</span></div>
+                          <div className="text-[11px] text-muted-foreground">{new Date(c.created_at).toLocaleString("en-IN")}{c.credited_at ? ` · credited ${new Date(c.credited_at).toLocaleDateString("en-IN")}` : ""}</div>
+                        </div>
+                        <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${c.status === "credited" ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" : "bg-amber-500/15 text-amber-700 dark:text-amber-300"}`}>{c.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
 
 function ActionBtn({
   icon: Icon,
