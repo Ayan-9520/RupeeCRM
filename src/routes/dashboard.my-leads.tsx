@@ -809,7 +809,9 @@ function LeadDetailDrawer({
 }) {
   const { user } = useAuth();
   const lead = purchase.leads;
-  const [tab, setTab] = useState<"overview" | "pipeline" | "documents" | "notes">("overview");
+  const [tab, setTab] = useState<"overview" | "pipeline" | "documents" | "notes" | "commission">("overview");
+  const [commissions, setCommissions] = useState<{ id: string; amount: number; percentage: number; base_amount: number; status: string; created_at: string; credited_at: string | null }[]>([]);
+  const [disbursals, setDisbursals] = useState<{ id: string; lender_name: string | null; loan_account_no: string | null; disbursed_amount: number; commission_amount: number; status: string; disbursed_at: string | null; created_at: string }[]>([]);
   const [noteText, setNoteText] = useState("");
   const [followup, setFollowup] = useState(purchase.next_followup_at?.slice(0, 10) ?? "");
   const [dealValue, setDealValue] = useState<string>(String(purchase.deal_value || lead?.loan_amount || 0));
