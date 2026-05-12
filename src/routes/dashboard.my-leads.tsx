@@ -1592,6 +1592,11 @@ function LeadDetailDrawer({
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ActionBtn({
   icon: Icon,
