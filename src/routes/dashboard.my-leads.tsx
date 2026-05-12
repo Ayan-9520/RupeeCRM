@@ -1178,6 +1178,7 @@ function LeadDetailDrawer({
               disabled={!emailLink}
             />
             <ActionBtn onClick={() => copyText(lead.full_phone, "Phone")} icon={Copy} label="Copy #" tone="default" />
+            <ActionBtn onClick={downloadPdf} icon={Download} label="PDF" tone="default" />
             <Link
               to="/dashboard/my-leads/$id/apply"
               params={{ id: purchase.id }}
