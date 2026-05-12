@@ -996,7 +996,7 @@ function LeadDetailDrawer({
       onClick={onClose}
     >
       <div
-        className={`bg-card border border-border shadow-elevated w-full sm:max-w-5xl h-full sm:h-[92vh] sm:rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${
+        className={`bg-card border border-border shadow-elevated w-full sm:max-w-[1400px] h-full sm:h-[94vh] sm:rounded-2xl overflow-hidden flex flex-col transition-all duration-200 ${
           mounted ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
         onClick={(e) => e.stopPropagation()}
