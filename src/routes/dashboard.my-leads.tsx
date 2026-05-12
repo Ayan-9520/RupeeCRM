@@ -923,6 +923,95 @@ function LeadDetailDrawer({
     toast.success(`${label} copied`);
   };
 
+  const downloadPdf = async () => {
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      const W = doc.internal.pageSize.getWidth();
+      let y = 14;
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(16);
+      doc.text("Lead Summary", 14, y);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.text(new Date().toLocaleString("en-IN"), W - 14, y, { align: "right" });
+      y += 8;
+      doc.setDrawColor(200);
+      doc.line(14, y, W - 14, y);
+      y += 6;
+
+      const section = (title: string) => {
+        if (y > 270) { doc.addPage(); y = 14; }
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.text(title, 14, y);
+        y += 5;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+      };
+      const row = (k: string, v: string | number | null | undefined) => {
+        if (v === null || v === undefined || v === "") return;
+        if (y > 280) { doc.addPage(); y = 14; }
+        doc.setTextColor(120);
+        doc.text(`${k}:`, 16, y);
+        doc.setTextColor(20);
+        const lines = doc.splitTextToSize(String(v), W - 70);
+        doc.text(lines, 70, y);
+        y += 5 * lines.length;
+      };
+
+      section("Applicant");
+      row("Name", lead.applicant_name);
+      row("Phone", lead.full_phone);
+      row("Alternate", lead.alternate_phone);
+      row("Email", lead.email);
+      row("Age / Gender", [lead.age, lead.gender].filter(Boolean).join(" / "));
+      row("City / State", [lead.city, lead.state].filter(Boolean).join(", "));
+      y += 2;
+
+      section("Employment & Credit");
+      row("Employment", lead.employment_type);
+      row("Company", lead.company_name);
+      row("Monthly income", lead.monthly_income ? `Rs. ${lead.monthly_income.toLocaleString("en-IN")}` : null);
+      row("CIBIL", lead.cibil_score);
+      y += 2;
+
+      section("Product Requirement");
+      row("Category", meta.label);
+      row("Subtype", lead.product_subtype);
+      row("Ticket size", `Rs. ${lead.loan_amount.toLocaleString("en-IN")}`);
+      row("Source", lead.source);
+      Object.entries(lead.product_details ?? {}).forEach(([k, v]) => row(k.replace(/_/g, " "), String(v)));
+      y += 2;
+
+      section("Processing");
+      row("Stage", purchase.pipeline_stage);
+      row("Purchased", new Date(purchase.created_at).toLocaleString("en-IN"));
+      row("Price paid", `Rs. ${purchase.price_paid}`);
+      row("Deal value", purchase.deal_value ? `Rs. ${purchase.deal_value.toLocaleString("en-IN")}` : null);
+      row("Converted", purchase.converted ? "Yes" : "No");
+      row("Next follow-up", purchase.next_followup_at ? new Date(purchase.next_followup_at).toLocaleDateString("en-IN") : null);
+      y += 2;
+
+      if (docs.length) {
+        section("Documents");
+        docs.forEach((d) => row(DOC_TYPES.find((x) => x.value === d.doc_type)?.label ?? d.doc_type, d.file_name));
+        y += 2;
+      }
+
+      const visible = purchase.notes.filter((n) => !(n as { kind?: string }).kind);
+      if (visible.length) {
+        section("Notes");
+        visible.slice(-15).forEach((n) => row(new Date(n.at).toLocaleDateString("en-IN"), n.text));
+      }
+
+      doc.save(`Lead-${lead.applicant_name.replace(/\s+/g, "_")}-${purchase.id.slice(0, 6)}.pdf`);
+      toast.success("PDF downloaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "PDF failed");
+    }
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user || !purchase.lead_id) return;
