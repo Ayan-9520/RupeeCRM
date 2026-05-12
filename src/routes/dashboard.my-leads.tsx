@@ -1166,7 +1166,7 @@ function LeadDetailDrawer({
           </div>
 
           {/* QUICK ACTIONS */}
-          <div className="mt-4 grid grid-cols-3 sm:grid-cols-6 gap-2">
+          <div className="mt-4 grid grid-cols-3 sm:grid-cols-7 gap-2">
             <ActionBtn href={callLink} icon={Phone} label="Call" tone="accent" />
             <ActionBtn href={waLink} target="_blank" icon={MessageSquare} label="WhatsApp" tone="emerald" />
             <ActionBtn href={smsLink} icon={Send} label="SMS" tone="default" />
