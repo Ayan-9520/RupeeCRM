@@ -1197,6 +1197,7 @@ function LeadDetailDrawer({
             { id: "pipeline", label: "Pipeline & Activity", icon: Activity },
             { id: "documents", label: `Documents (${docs.length})`, icon: FolderOpen },
             { id: "notes", label: `Notes (${visibleNotes.length})`, icon: StickyNote },
+            { id: "commission", label: "Commission", icon: IndianRupee },
           ].map((t) => {
             const Icon = t.icon;
             const active = tab === t.id;
