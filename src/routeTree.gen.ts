@@ -52,6 +52,7 @@ import { Route as DashboardHrmsMeRouteImport } from './routes/dashboard.hrms.me'
 import { Route as DashboardHrmsLeavesRouteImport } from './routes/dashboard.hrms.leaves'
 import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
 import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.hrms.attendance'
+import { Route as DashboardCustomerIdRouteImport } from './routes/dashboard.customer.$id'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
 import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
 import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
@@ -284,6 +285,11 @@ const DashboardHrmsAttendanceRoute = DashboardHrmsAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => DashboardHrmsRoute,
 } as any)
+const DashboardCustomerIdRoute = DashboardCustomerIdRouteImport.update({
+  id: '/customer/$id',
+  path: '/customer/$id',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
   id: '/admin/users',
   path: '/admin/users',
@@ -394,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
@@ -449,6 +456,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
@@ -508,6 +516,7 @@ export interface FileRoutesById {
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
   '/dashboard/hrms/leaves': typeof DashboardHrmsLeavesRoute
@@ -568,6 +577,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
+    | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/leaves'
@@ -623,6 +633,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
+    | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/leaves'
@@ -681,6 +692,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/users'
+    | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
     | '/dashboard/hrms/leaves'
@@ -1016,6 +1028,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardHrmsAttendanceRouteImport
       parentRoute: typeof DashboardHrmsRoute
     }
+    '/dashboard/customer/$id': {
+      id: '/dashboard/customer/$id'
+      path: '/customer/$id'
+      fullPath: '/dashboard/customer/$id'
+      preLoaderRoute: typeof DashboardCustomerIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/admin/users': {
       id: '/dashboard/admin/users'
       path: '/admin/users'
@@ -1202,6 +1221,7 @@ interface DashboardRouteChildren {
   DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute
   DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
+  DashboardCustomerIdRoute: typeof DashboardCustomerIdRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -1234,6 +1254,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminPayoutsRoute: DashboardAdminPayoutsRoute,
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
+  DashboardCustomerIdRoute: DashboardCustomerIdRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
