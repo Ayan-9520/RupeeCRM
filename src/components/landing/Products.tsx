@@ -43,10 +43,10 @@ export function Products() {
 
   return (
     <section id="products" className="py-24 lg:py-32 bg-background border-t border-border relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 opacity-[0.04] [background-image:radial-gradient(oklch(0.55_0.16_165)_1px,transparent_1px)] [background-size:24px_24px]" />
+      <div className="absolute inset-0 -z-10 wa-pattern opacity-30" />
       <div className="max-w-7xl mx-auto px-5 lg:px-8">
         <div className="max-w-2xl">
-          <div className="text-xs uppercase tracking-[0.2em] text-[oklch(0.5_0.16_165)] font-semibold">Products</div>
+          <div className="text-xs uppercase tracking-[0.2em] text-[var(--wa-green)] font-bold">Products</div>
           <h2 className="mt-3 text-3xl lg:text-5xl font-bold tracking-tight">
             One platform. <span className="text-gradient">Every financial product.</span>
           </h2>
@@ -67,7 +67,7 @@ export function Products() {
         </div>
 
         <div className="mt-10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span className="size-1.5 rounded-full bg-[oklch(0.6_0.18_165)] animate-pulse" />
+          <span className="size-1.5 rounded-full bg-[var(--wa-green)] animate-pulse" />
           New product types ship every quarter — admin can add categories anytime.
         </div>
       </div>
@@ -87,7 +87,7 @@ function ProductCard({ card, expanded, onToggle }: { card: CardData; expanded: b
     "from-violet-500/20 to-violet-500/5 text-violet-600 dark:text-violet-400";
 
   return (
-    <div className="group relative rounded-2xl bg-card border border-border p-6 hover:shadow-elevated transition-smooth flex flex-col">
+    <div className="group relative rounded-2xl bg-card border border-border p-6 hover:shadow-elevated hover:border-[var(--wa-green)]/30 transition-smooth flex flex-col">
       <div className={`size-12 rounded-xl bg-gradient-to-br ${accentClass} grid place-items-center group-hover:scale-110 transition-smooth`}>
         <Icon className="size-6" strokeWidth={2.2} />
       </div>

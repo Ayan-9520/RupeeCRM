@@ -6,6 +6,7 @@ import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 import { useAuth } from "@/lib/auth-context";
 import { useDailyLogin } from "@/hooks/use-daily-login";
 import { Loader2 } from "lucide-react";
+import { NotificationCenter } from "@/components/dashboard/NotificationCenter";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — LeadMines" }] }),
@@ -37,6 +38,7 @@ function DashboardLayout() {
           <header className="h-14 flex items-center gap-3 border-b border-border bg-background px-4 sticky top-0 z-30">
             <SidebarTrigger />
             <WorkspaceSwitcher />
+            <NotificationCenter />
             <div className="flex-1" />
           </header>
           <main className="flex-1 p-4 lg:p-6 overflow-auto">

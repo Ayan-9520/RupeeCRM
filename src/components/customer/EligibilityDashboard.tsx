@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { SectionShell } from "./shared/SectionShell";
 import type { EligibilityEngineResult, EligibilityBadge, WorkflowStage } from "@/lib/customer-crm/eligibility-types";
+import { runEnhancedEligibility } from "@/lib/customer-crm/eligibility-v2";
+import type { CustomerWorkspaceData } from "@/lib/customer-crm/types";
 import { WORKFLOW_STAGES } from "@/lib/customer-crm/eligibility-types";
 import {
   ResponsiveContainer,
@@ -88,14 +90,20 @@ export function EligibilityDashboard({
   workflowStage,
   onWorkflowChange,
   phase2MigrationHint,
+  workspace,
 }: {
   result: EligibilityEngineResult;
   cibilFromLead: number | null;
   workflowStage: WorkflowStage;
   onWorkflowChange: (stage: WorkflowStage) => void;
   phase2MigrationHint?: boolean;
+  workspace?: CustomerWorkspaceData;
 }) {
   const { financial: fin, metrics: m, risk, lenders, products, validations } = result;
+  const enhanced = useMemo(
+    () => (workspace ? runEnhancedEligibility({ ...workspace, leadCibil: cibilFromLead }) : null),
+    [workspace, cibilFromLead, result.computedAt],
+  );
 
   const incomeChart = useMemo(
     () => [
@@ -165,6 +173,14 @@ export function EligibilityDashboard({
         </div>
         <Progress value={m.approvalProbability ?? 0} className="h-2.5" />
       </div>
+
+      {enhanced && (
+        <div className="grid sm:grid-cols-3 gap-3 mb-6">
+          <MetricCard label="Risk-adjusted eligible" value={fmt(enhanced.riskAdjustedEligibleAmount)} highlight />
+          <MetricCard label="Rejection risk" value={`${enhanced.rejectionProbability}%`} sub="Model estimate" />
+          <MetricCard label="Income multiplier" value={`${enhanced.incomeMultiplier}x`} sub={enhanced.bestLender?.lenderName ?? "Best lender"} />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-2 gap-6 mb-8">
         <div className="rounded-xl border border-border p-4">
@@ -372,3 +388,4 @@ export function EligibilityDashboard({
     </SectionShell>
   );
 }
+

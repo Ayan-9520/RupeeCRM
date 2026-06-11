@@ -4,27 +4,34 @@ import { persistEligibilitySnapshot, updateWorkflowStage } from "@/lib/customer-
 import type { WorkflowStage } from "@/lib/customer-crm/eligibility-types";
 import { Link } from "@tanstack/react-router";
 import { useDebouncedCallback } from "@/hooks/useDebouncedCallback";
+import { useSectionObserver } from "@/hooks/useSectionObserver";
 import { useCustomerWorkspace } from "@/hooks/useCustomerWorkspace";
 import { NAV_SECTIONS } from "@/lib/customer-crm/constants";
+import { normalizeProfilePatch, toNumberOrNull } from "@/lib/customer-crm/normalize";
+import { computeCustomerRisk } from "@/lib/customer-crm/risk-scoring";
+import { buildAssistantReply } from "@/lib/customer-crm/ai-intelligence";
 import type { BankAccount, CoApplicant, CustomerProfile, LoanRequirement, Obligation } from "@/lib/customer-crm/types";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { toast } from "sonner";
-import {
-  ArrowLeft,
-  Loader2,
-  Phone,
-  MessageSquare,
-  FileText,
-  Save,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
+import { ArrowLeft, Loader2, Save, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Progress } from "@/components/ui/progress";
 import { CustomerRightPanel } from "./CustomerRightPanel";
-import { EligibilityDashboard, EligibilityStickySummary } from "./EligibilityDashboard";
+import { CustomerWorkspaceHeader } from "./CustomerWorkspaceHeader";
+import { EligibilityDashboard } from "./EligibilityDashboard";
+import { WorkspaceSidebar } from "./WorkspaceSidebar";
+import { DocumentsCenter } from "./DocumentsCenter";
+import { BankLoginsSection } from "./BankLoginsSection";
+import { LosOperationsHub } from "./los/LosOperationsHub";
+import { CaseSummaryPanel } from "./phase5/CaseSummaryPanel";
+import { Phase5Hub } from "./phase5/Phase5Hub";
+import { Phase6Hub } from "./phase6/Phase6Hub";
+import { CrmAssistant } from "./phase6/CrmAssistant";
+import { loadLosDashboardStats, ensureLosPipeline, loadLenderCases, type LosDashboardStats } from "@/lib/customer-crm/phase4-api";
+import { loadDisbursals, loadPayouts } from "@/lib/customer-crm/phase5-api";
+import { loadFollowups } from "@/lib/customer-crm/phase3-api";
+import { runAutomationForCase } from "@/lib/customer-crm/automation-engine";
+import { loadCustomerDocuments } from "@/lib/customer-crm/phase3-api";
+import type { CustomerDocument } from "@/lib/customer-crm/phase3-api";
 import {
   PersonalSection,
   EmploymentSection,
@@ -32,20 +39,25 @@ import {
   ObligationsSection,
   CoApplicantsSection,
   LoanRequirementsSection,
-  DocumentsSection,
-  ProcessingSection,
 } from "./CustomerSections";
-import type { Json } from "@/integrations/supabase/types";
 
 export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   const { user } = useAuth();
   const ws = useCustomerWorkspace(purchaseId);
-  const [active, setActive] = useState("personal");
-  const [crmProcessing, setCrmProcessing] = useState<Record<string, unknown>>({});
-  const [docs, setDocs] = useState<{ id: string; file_name: string; file_url: string; doc_type: string }[]>([]);
+  const [navOverride, setNavOverride] = useState<string | null>(null);
+  const [focusNote, setFocusNote] = useState(false);
+  const [pendingDocs, setPendingDocs] = useState(0);
+  const [activeBankLogins, setActiveBankLogins] = useState(0);
+  const [losStats, setLosStats] = useState<LosDashboardStats | null>(null);
+  const [pipelineStage, setPipelineStage] = useState<string>("lead_purchased");
   const [workflowStage, setWorkflowStage] = useState<WorkflowStage>("profile_completed");
   const [phase2MigrationHint, setPhase2MigrationHint] = useState(false);
+  const [documents, setDocuments] = useState<CustomerDocument[]>([]);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+  const sectionIds = useMemo(() => NAV_SECTIONS.map((s) => s.id), []);
+  const observedSection = useSectionObserver(sectionIds, sectionRefs, mainScrollRef);
+  const active = navOverride ?? observedSection;
   const workflowInitialized = useRef(false);
 
   useEffect(() => {
@@ -53,8 +65,9 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   }, [purchaseId]);
 
   const scrollTo = (id: string) => {
-    setActive(id);
+    setNavOverride(id);
     sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+    window.setTimeout(() => setNavOverride(null), 800);
   };
 
   const debouncedProfileSave = useDebouncedCallback((patch: Partial<CustomerProfile>) => {
@@ -63,8 +76,9 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
 
   const onProfileField = useCallback(
     (key: string, value: unknown) => {
-      ws.setProfile({ [key]: value } as Partial<CustomerProfile>);
-      debouncedProfileSave({ [key]: value } as Partial<CustomerProfile>);
+      const patch = normalizeProfilePatch({ [key]: value }) as Partial<CustomerProfile>;
+      ws.setProfile(patch);
+      debouncedProfileSave(patch);
     },
     [ws, debouncedProfileSave],
   );
@@ -120,47 +134,82 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
     [ws.data],
   );
 
-  const loadDocs = useCallback(async () => {
-    const { data } = await supabase
-      .from("case_documents")
-      .select("id,file_name,file_url,doc_type")
-      .eq("lead_purchase_id", purchaseId)
-      .order("created_at", { ascending: false });
-    setDocs((data as typeof docs) ?? []);
-  }, [purchaseId]);
-
-  const loadProcessing = useCallback(async () => {
-    const { data } = await supabase.from("lead_purchases").select("crm_profile").eq("id", purchaseId).maybeSingle();
-    if (data?.crm_profile && typeof data.crm_profile === "object" && !Array.isArray(data.crm_profile)) {
-      setCrmProcessing(data.crm_profile as Record<string, unknown>);
-    }
-  }, [purchaseId]);
+  useEffect(() => {
+    if (!user || !ws.data) return;
+    (async () => {
+      const stats = await loadLosDashboardStats(user.id);
+      setLosStats(stats);
+      const pipe = await ensureLosPipeline(ws.data!.profile.id, purchaseId, user.id);
+      if (pipe.pipeline) setPipelineStage(pipe.pipeline.current_stage);
+      const docs = await loadCustomerDocuments(purchaseId);
+      setDocuments(docs.docs);
+    })();
+  }, [user, ws.data, purchaseId]);
 
   useEffect(() => {
-    if (ws.data) {
-      loadDocs();
-      loadProcessing();
-    }
-  }, [ws.data, loadDocs, loadProcessing]);
+    if (!user || !ws.data || !eligibility) return;
+    (async () => {
+      const [lenders, disb, payouts, fu] = await Promise.all([
+        loadLenderCases(purchaseId),
+        loadDisbursals(purchaseId),
+        loadPayouts(purchaseId),
+        loadFollowups(purchaseId),
+      ]);
+      const hasSanction = lenders.rows.some((l) => Number(l.sanctioned_amount) > 0);
+      const rejected = lenders.rows.filter((l) => l.login_status === "rejected").length;
+      const unreachable = fu.rows.some((f) => /unreachable|no response/i.test(f.discussion_notes ?? ""));
+      const payoutPending = payouts.rows.filter((p) => !["received", "rejected"].includes(p.payout_status));
+      const oldestPayout = payoutPending[0]?.created_at;
+      const payoutDays = oldestPayout
+        ? Math.floor((Date.now() - new Date(oldestPayout).getTime()) / 86400_000)
+        : 0;
+      await runAutomationForCase({
+        workspace: ws.data!,
+        userId: user.id,
+        pipelineStage,
+        pendingDocsCount: pendingDocs,
+        pendingDocsDays: pendingDocs > 0 ? 3 : 0,
+        payoutPendingDays: payoutDays,
+        hasSanction,
+        rejectedLenderCount: rejected,
+        unreachableFollowup: unreachable,
+      });
+    })();
+  }, [user, ws.data?.profile.id, pipelineStage, pendingDocs, purchaseId]);
 
-  const saveProcessing = useDebouncedCallback(async (key: string, value: unknown) => {
-    const next = { ...crmProcessing, [key]: value };
-    setCrmProcessing(next);
-    const { error } = await supabase.from("lead_purchases").update({ crm_profile: next as Json }).eq("id", purchaseId);
-    if (error) toast.error(error.message);
-  }, 600);
+  const pendingFollowups = useMemo(() => {
+    if (!ws.data?.purchase.next_followup_at) return false;
+    return ws.data.purchase.next_followup_at.slice(0, 10) <= new Date().toISOString().slice(0, 10);
+  }, [ws.data?.purchase.next_followup_at]);
+
+  const risk = useMemo(() => {
+    if (!ws.data) return { level: "medium" as const };
+    return computeCustomerRisk(ws.data, eligibility);
+  }, [ws.data, eligibility]);
+
+  const aiSuggestion = useMemo(() => {
+    if (!ws.data) return undefined;
+    const reply = buildAssistantReply({
+      workspace: ws.data,
+      eligibility,
+      pipelineStage,
+      pendingDocs,
+      lenderCases: [],
+      documents,
+    });
+    return reply.nextActions[0] ?? reply.summary;
+  }, [ws.data, eligibility, pipelineStage, pendingDocs, documents]);
 
   const onBankField = (row: BankAccount, key: string, value: unknown) => {
     const patch: Partial<BankAccount> = { [key]: value } as Partial<BankAccount>;
-    if (key === "average_balance") patch.average_balance = value === "" ? null : Number(value);
+    if (key === "average_balance") patch.average_balance = toNumberOrNull(value);
     ws.upsertBank(row, patch);
   };
 
   const onObligationField = (row: Obligation, key: string, value: unknown) => {
     const patch: Partial<Obligation> = { [key]: value } as Partial<Obligation>;
     if (["emi", "outstanding_amount", "sanction_amount", "remaining_tenure"].includes(key)) {
-      const n = value === "" ? null : Number(value);
-      (patch as Record<string, unknown>)[key] = Number.isFinite(n) ? n : null;
+      (patch as Record<string, unknown>)[key] = toNumberOrNull(value);
     }
     ws.upsertObligation(row, patch);
   };
@@ -168,10 +217,13 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   const onCoField = (row: CoApplicant, key: string, value: unknown) => {
     const patch: Partial<CoApplicant> = { [key]: value } as Partial<CoApplicant>;
     if (key === "income" || key === "cibil_score") {
-      const n = value === "" ? null : Number(value);
-      (patch as Record<string, unknown>)[key] = Number.isFinite(n) ? n : null;
+      patch[key] = toNumberOrNull(value) as never;
     }
     ws.upsertCoApp(row, patch);
+  };
+
+  const onLoanChange = (row: LoanRequirement, patch: Partial<LoanRequirement>) => {
+    ws.upsertLoan(row, patch);
   };
 
   if (ws.loading) return <WorkspaceSkeleton />;
@@ -205,82 +257,48 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   const { purchase, profile } = ws.data;
   const lead = purchase.lead;
   const phone = lead?.full_phone ?? profile.mobile ?? "";
-  const name = profile.full_name || lead?.applicant_name || "Customer";
-
   return (
     <div className="-m-4 lg:-m-6 min-h-[calc(100vh-3.5rem)] flex flex-col bg-background">
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="px-4 lg:px-6 py-3 flex flex-wrap items-center gap-3">
-          <Link to="/dashboard/my-leads" className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="size-4" /> My Leads
-          </Link>
-          <div className="h-4 w-px bg-border hidden sm:block" />
-          <div className="min-w-0 flex-1">
-            <h1 className="font-display text-lg font-bold truncate">{name}</h1>
-            <p className="text-xs text-muted-foreground capitalize">
-              {purchase.pipeline_stage.replace(/_/g, " ")} · ₹{purchase.price_paid} paid
-            </p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <a href={`tel:${phone}`} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent text-accent-foreground text-xs font-semibold">
-              <Phone className="size-3.5" /> Call
-            </a>
-            <a
-              href={`https://wa.me/${phone.replace(/\D/g, "")}`}
-              target="_blank"
-              rel="noopener"
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-secondary"
-            >
-              <MessageSquare className="size-3.5" /> WhatsApp
-            </a>
-            <Link
-              to="/dashboard/my-leads/$id/apply"
-              params={{ id: purchaseId }}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-secondary"
-            >
-              <FileText className="size-3.5" /> Apply
-            </Link>
-          </div>
-        </div>
-      </header>
-
+      <CustomerWorkspaceHeader
+        purchaseId={purchaseId}
+        workspace={ws.data}
+        pipelineStage={pipelineStage}
+        eligibility={eligibility}
+        pendingDocs={pendingDocs}
+        activeLenders={activeBankLogins}
+        pendingFollowups={pendingFollowups}
+        riskLevel={risk.level}
+        onAddNote={() => setFocusNote(true)}
+      />
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
-        <aside className="lg:w-56 xl:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card/40 p-4 space-y-4 overflow-y-auto">
-          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Profile completion</span>
-              <span className="font-bold text-accent">{ws.completion.overall}%</span>
-            </div>
-            <Progress value={ws.completion.overall} className="h-2" />
-          </div>
-          <nav className="space-y-1">
-            {NAV_SECTIONS.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                onClick={() => scrollTo(s.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 ${
-                  active === s.id ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary"
-                }`}
-              >
-                <s.icon className="size-3.5 shrink-0" />
-                <span className="flex-1">{s.label}</span>
-                {ws.completion.sections[s.id] != null && (
-                  <span className="text-[10px] opacity-80">{ws.completion.sections[s.id]}%</span>
-                )}
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <WorkspaceSidebar
+          completionOverall={ws.completion.overall}
+          sectionCompletion={ws.completion.sections}
+          navSections={NAV_SECTIONS}
+          active={active}
+          onNavigate={scrollTo}
+          eligibility={eligibility}
+          pendingDocs={pendingDocs}
+          activeBankLogins={activeBankLogins}
+          pendingFollowups={pendingFollowups}
+          losStats={losStats}
+          pipelineStage={pipelineStage}
+        />
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-6 min-w-0">
-          <section ref={(el) => { sectionRefs.current.personal = el; }} id="personal">
+        <main
+          ref={mainScrollRef}
+          className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5 min-w-0 scroll-smooth"
+        >
+          <div className="sticky top-0 z-10 -mx-1 px-1 pb-2 bg-gradient-to-b from-background via-background/95 to-transparent">
+            <CaseSummaryPanel workspace={ws.data} eligibility={eligibility} pipelineStage={pipelineStage} />
+          </div>
+          <section ref={(el) => { sectionRefs.current.personal = el; }} id="personal" className="scroll-mt-28">
             <PersonalSection profile={profile} onFieldChange={onProfileField} completion={ws.completion.sections.personal ?? 0} />
           </section>
-          <section ref={(el) => { sectionRefs.current.employment = el; }} id="employment">
+          <section ref={(el) => { sectionRefs.current.employment = el; }} id="employment" className="scroll-mt-28">
             <EmploymentSection profile={profile} onFieldChange={onProfileField} completion={ws.completion.sections.employment ?? 0} />
           </section>
-          <section ref={(el) => { sectionRefs.current.banking = el; }} id="banking">
+          <section ref={(el) => { sectionRefs.current.banking = el; }} id="banking" className="scroll-mt-28">
             <BankingSection
               accounts={ws.data.bankAccounts}
               onChange={onBankField}
@@ -289,7 +307,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
               completion={ws.completion.sections.banking ?? 0}
             />
           </section>
-          <section ref={(el) => { sectionRefs.current.obligations = el; }} id="obligations">
+          <section ref={(el) => { sectionRefs.current.obligations = el; }} id="obligations" className="scroll-mt-28">
             <ObligationsSection
               rows={ws.data.obligations}
               onChange={onObligationField}
@@ -299,7 +317,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
               summary={obligationSummary}
             />
           </section>
-          <section ref={(el) => { sectionRefs.current["co-applicants"] = el; }} id="co-applicants">
+          <section ref={(el) => { sectionRefs.current["co-applicants"] = el; }} id="co-applicants" className="scroll-mt-28">
             <CoApplicantsSection
               rows={ws.data.coApplicants}
               onChange={onCoField}
@@ -308,19 +326,20 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
               completion={ws.completion.sections["co-applicants"] ?? 0}
             />
           </section>
-          <section ref={(el) => { sectionRefs.current["loan-requirements"] = el; }} id="loan-requirements">
+          <section ref={(el) => { sectionRefs.current["loan-requirements"] = el; }} id="loan-requirements" className="scroll-mt-28">
             <LoanRequirementsSection
               rows={ws.data.loanRequirements}
-              onChange={ws.upsertLoan}
+              onChange={onLoanChange}
               onAdd={ws.addLoan}
               onRemove={ws.removeLoan}
               completion={ws.completion.sections["loan-requirements"] ?? 0}
             />
           </section>
-          <section ref={(el) => { sectionRefs.current.eligibility = el; }} id="eligibility">
+          <section ref={(el) => { sectionRefs.current.eligibility = el; }} id="eligibility" className="scroll-mt-28">
             {eligibility && (
               <EligibilityDashboard
                 result={eligibility}
+                workspace={ws.data}
                 cibilFromLead={ws.data.purchase.lead?.cibil_score ?? null}
                 workflowStage={workflowStage}
                 onWorkflowChange={onWorkflowChange}
@@ -328,36 +347,74 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
               />
             )}
           </section>
-          <section ref={(el) => { sectionRefs.current.documents = el; }} id="documents">
-            <DocumentsSection>
-              {docs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No documents uploaded. Use the legacy CRM documents tab or upload via case documents API.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {docs.map((d) => (
-                    <li key={d.id} className="flex justify-between items-center rounded-lg border p-3 text-sm">
-                      <span className="truncate">{d.file_name}</span>
-                      <a href={d.file_url} target="_blank" rel="noopener" className="text-accent text-xs font-semibold">
-                        Open
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </DocumentsSection>
+          <section ref={(el) => { sectionRefs.current.documents = el; }} id="documents" className="scroll-mt-28">
+            <DocumentsCenter
+              profile={profile}
+              leadId={ws.data.purchase.lead_id}
+              onDocsChange={setPendingDocs}
+            />
           </section>
-          <section ref={(el) => { sectionRefs.current.processing = el; }} id="processing">
-            <ProcessingSection values={crmProcessing} onChange={saveProcessing} />
+          <section ref={(el) => { sectionRefs.current["los-ops"] = el; }} id="los-ops" className="scroll-mt-28">
+            {user && (
+              <LosOperationsHub
+                profile={profile}
+                dsaId={user.id}
+                onPipelineStage={setPipelineStage}
+                onLenderCount={setActiveBankLogins}
+              />
+            )}
+          </section>
+          <section ref={(el) => { sectionRefs.current.finance = el; }} id="finance" className="scroll-mt-28">
+            {user && (
+              <Phase5Hub
+                profile={profile}
+                userId={user.id}
+                workspace={ws.data}
+                eligibility={eligibility}
+                pipelineStage={pipelineStage}
+              />
+            )}
+          </section>
+          <section ref={(el) => { sectionRefs.current.intelligence = el; }} id="intelligence" className="scroll-mt-28">
+            {user && (
+              <Phase6Hub
+                profile={profile}
+                workspace={ws.data}
+                eligibility={eligibility}
+                pipelineStage={pipelineStage}
+                pendingDocs={pendingDocs}
+                phone={phone}
+                documents={documents}
+              />
+            )}
+          </section>
+          <section ref={(el) => { sectionRefs.current.processing = el; }} id="processing" className="scroll-mt-28">
+            {user && (
+              <BankLoginsSection profile={profile} dsaId={user.id} onCountChange={setActiveBankLogins} />
+            )}
           </section>
         </main>
 
         <CustomerRightPanel
           purchaseId={purchaseId}
+          profile={profile}
           pipelineStage={purchase.pipeline_stage}
           nextFollowup={purchase.next_followup_at}
           onFollowupSaved={ws.reload}
+          focusNote={focusNote}
+          aiSuggestion={aiSuggestion}
         />
       </div>
+
+      {eligibility && (
+        <CrmAssistant
+          workspace={ws.data}
+          eligibility={eligibility}
+          pipelineStage={pipelineStage}
+          pendingDocs={pendingDocs}
+          documents={documents}
+        />
+      )}
 
       <footer className="sticky bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 py-2 flex items-center justify-between gap-3">
         <div className="text-xs text-muted-foreground flex items-center gap-2">
@@ -394,3 +451,4 @@ function WorkspaceSkeleton() {
     </div>
   );
 }
+

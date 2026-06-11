@@ -19,6 +19,13 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" />
   </head>
   <body>
+    <script>
+      (function () {
+        var t = localStorage.getItem("theme");
+        var d = t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches);
+        if (d) document.documentElement.classList.add("dark");
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

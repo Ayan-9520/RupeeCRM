@@ -1,11 +1,21 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
+import {
+  MessageCircle,
+  Loader2,
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  CheckCheck,
+  ArrowRight,
+  Sparkles,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import type { AppRole } from "@/lib/auth-context";
+import { ThemeToggle } from "@/components/landing/ThemeToggle";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -82,19 +92,17 @@ function AuthPage() {
   };
 
   useEffect(() => {
-    console.log("Auth state:", { user, loading });
     if (!loading && user) {
       navigate({ to: "/dashboard" });
     }
   }, [user, loading, navigate]);
 
-  // While restoring session, show a centered spinner so the form doesn't flash
   if (loading || (!loading && user)) {
     return (
-      <div className="min-h-screen grid place-items-center bg-background">
-        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-          <Loader2 className="size-8 animate-spin text-accent" />
-          <p className="text-sm">Restoring your session…</p>
+      <div className="min-h-screen grid place-items-center bg-background wa-pattern p-6">
+        <div className="auth-card flex flex-col items-center gap-3 text-muted-foreground px-10 py-12">
+          <Loader2 className="size-8 animate-spin text-[var(--wa-green)]" />
+          <p className="text-sm font-medium">Restoring your session…</p>
         </div>
       </div>
     );
@@ -128,9 +136,7 @@ function AuthPage() {
           toast.error(error.message);
         } else {
           toast.success("Account created! Welcome to LeadMines 🎉");
-          setTimeout(() => {
-            navigate({ to: "/dashboard" });
-          }, 500);
+          setTimeout(() => navigate({ to: "/dashboard" }), 500);
         }
       } else {
         const parsed = signinSchema.safeParse({ email, password });
@@ -139,22 +145,15 @@ function AuthPage() {
           setSubmitting(false);
           return;
         }
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email: parsed.data.email,
           password: parsed.data.password,
         });
-
         if (error) {
           toast.error(error.message);
         } else {
-          console.log("LOGIN SUCCESS:", data);
-
           toast.success("Welcome back!");
-
-          // 🔥 delay add करो (important)
-          setTimeout(() => {
-            navigate({ to: "/dashboard" });
-          }, 500);
+          setTimeout(() => navigate({ to: "/dashboard" }), 500);
         }
       }
     } finally {
@@ -163,212 +162,273 @@ function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      {/* Left brand panel */}
-      <div className="hidden lg:flex relative bg-hero-gradient text-white p-12 flex-col justify-between overflow-hidden">
-        <div className="absolute inset-0 grid-bg opacity-20" />
-        <div className="absolute -top-32 -right-32 size-96 rounded-full bg-[oklch(0.78_0.16_165_/_0.3)] blur-3xl" />
-
-        <Link to="/" className="relative flex items-center gap-2.5">
-          <div className="size-9 rounded-xl bg-mint-gradient grid place-items-center shadow-mint">
-            <Sparkles className="size-5 text-primary" strokeWidth={2.5} />
+    <div className="min-h-screen wa-pattern p-4 sm:p-5 md:p-6 lg:p-8">
+      {/* Top bar */}
+      <div className="max-w-[1280px] mx-auto flex items-center justify-between mb-4 sm:mb-5">
+        <Link to="/" className="flex items-center gap-2 group">
+          <div className="size-8 sm:size-9 rounded-full bg-[var(--wa-green)] grid place-items-center shadow-mint group-hover:scale-105 transition-smooth">
+            <MessageCircle className="size-4 sm:size-5 text-white" fill="white" fillOpacity={0.15} />
           </div>
-          <div className="leading-tight">
-            <div className="font-display font-bold tracking-tight">LeadMines</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-white/60 -mt-0.5">by MoneyMines</div>
-          </div>
+          <span className="font-display font-bold text-sm sm:text-base">LeadMines</span>
         </Link>
-
-        <div className="relative">
-          <h2 className="font-display text-4xl font-bold leading-tight">
-            Mine your next <span className="text-gradient">₹1 Cr</span> with AI-verified leads.
-          </h2>
-          <p className="mt-4 text-white/75 max-w-md">
-            12,400+ DSAs, 60+ lenders, ₹420 Cr+ disbursed. Join the platform serious DSAs use every day.
-          </p>
-          <div className="mt-8 flex items-center gap-6 text-sm">
-            <div>
-              <div className="text-2xl font-bold">₹500</div>
-              <div className="text-white/60">Welcome wallet bonus</div>
-            </div>
-            <div className="h-10 w-px bg-white/20" />
-            <div>
-              <div className="text-2xl font-bold">14d</div>
-              <div className="text-white/60">Free trial</div>
-            </div>
-          </div>
-        </div>
-
-        <p className="relative text-xs text-white/50">© 2026 MoneyMines Pvt Ltd. All rights reserved.</p>
+        <ThemeToggle />
       </div>
 
-      {/* Right form */}
-      <div className="flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md">
-          <Link to="/" className="lg:hidden mb-8 flex items-center gap-2.5 justify-center">
-            <div className="size-9 rounded-xl bg-mint-gradient grid place-items-center shadow-mint">
-              <Sparkles className="size-5 text-primary" strokeWidth={2.5} />
+      {/* Main shell — margins on all sides */}
+      <div className="max-w-[1280px] mx-auto auth-shell grid lg:grid-cols-[1fr_1.05fr] min-h-[calc(100vh-5.5rem)] max-h-[920px]">
+        {/* Left brand panel */}
+        <div className="hidden lg:flex relative wa-header-bar text-white p-10 xl:p-12 flex-col justify-between overflow-hidden">
+          <div className="absolute inset-0 wa-pattern opacity-[0.07]" />
+          <div className="absolute -top-24 -right-24 size-80 rounded-full bg-[var(--wa-green)]/25 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-black/20 to-transparent" />
+
+          <div className="relative">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15 text-[11px] font-semibold">
+              <ShieldCheck className="size-3.5 text-[var(--wa-green)]" />
+              Bank-grade secure · RBI-ready CRM
             </div>
-            <span className="font-display font-bold text-lg">LeadMines</span>
-          </Link>
+          </div>
 
-          <h1 className="font-display text-3xl font-bold tracking-tight">
-            {mode === "signin" ? "Welcome back" : "Create your account"}
-          </h1>
-          <p className="mt-2 text-muted-foreground">
-            {mode === "signin" ? "Sign in to your dashboard" : "Get ₹500 free wallet credit. No card required."}
-          </p>
+          <div className="relative space-y-8">
+            <div>
+              <h2 className="font-display text-3xl xl:text-4xl font-bold leading-[1.15] tracking-tight">
+                Mine your next{" "}
+                <span className="text-[var(--wa-green)]">₹1 Cr</span> with AI-verified leads.
+              </h2>
+              <p className="mt-4 text-white/75 text-sm xl:text-base max-w-md leading-relaxed">
+                12,400+ DSAs, 60+ lenders, ₹420 Cr+ disbursed. Join the platform serious DSAs use every day.
+              </p>
+            </div>
 
-          <form onSubmit={onSubmit} className="mt-8 space-y-4">
-            {mode === "signup" && (
-              <>
-                <Field label="Full name">
-                  <input
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="input-base"
-                    placeholder="Rahul Sharma"
-                  />
-                </Field>
-                <Field label="Phone">
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="input-base"
-                    placeholder="+91 98765 43210"
-                  />
-                </Field>
-              </>
-            )}
-
-            <Field label="Email">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-base"
-                placeholder="you@company.com"
-                required
-              />
-            </Field>
-
-            <Field label="Password">
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="input-base pr-10"
-                  placeholder="••••••••"
-                  required
-                  autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-smooth"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                  tabIndex={-1}
-                >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </button>
-              </div>
-              {mode === "signup" && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Use 8+ characters with a mix of letters, numbers & symbols.
-                </p>
-              )}
-              {mode === "signin" && (
-                <div className="mt-1.5 text-right">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForgotEmail(email);
-                      setForgotOpen((v) => !v);
-                    }}
-                    className="text-xs text-accent font-medium hover:underline"
-                  >
-                    Forgot password?
-                  </button>
+            {/* Mini chat preview */}
+            <div className="space-y-2.5 max-w-sm">
+              <div className="wa-bubble-in px-4 py-3 text-[13px] text-foreground/90 !rounded-2xl !rounded-tl-sm">
+                🔥 Hot lead: Personal Loan · ₹8L · Mumbai
+                <div className="flex justify-end items-center gap-1 mt-1 text-[10px] text-[var(--wa-muted)]">
+                  10:24 <CheckCheck className="size-3 text-[var(--wa-tick)]" />
                 </div>
-              )}
-            </Field>
+              </div>
+              <div className="wa-bubble-out px-4 py-2.5 text-[13px] ml-auto max-w-[85%] !rounded-2xl !rounded-tr-sm">
+                Purchased! CRM profile created ✓
+              </div>
+            </div>
 
-            {mode === "signin" && forgotOpen && (
-              <div className="rounded-xl border border-border bg-muted/30 p-3 space-y-2">
-                <div className="text-sm font-medium">Reset your password</div>
-                <p className="text-xs text-muted-foreground">We'll email you a secure link to set a new password.</p>
-                <div className="flex gap-2">
+            <div className="flex items-center gap-8">
+              <div>
+                <div className="text-2xl xl:text-3xl font-display font-bold">₹500</div>
+                <div className="text-white/55 text-xs mt-0.5">Welcome wallet bonus</div>
+              </div>
+              <div className="h-10 w-px bg-white/15" />
+              <div>
+                <div className="text-2xl xl:text-3xl font-display font-bold">14d</div>
+                <div className="text-white/55 text-xs mt-0.5">Free trial</div>
+              </div>
+              <div className="h-10 w-px bg-white/15" />
+              <div>
+                <div className="text-2xl xl:text-3xl font-display font-bold">98%</div>
+                <div className="text-white/55 text-xs mt-0.5">Lead verification</div>
+              </div>
+            </div>
+          </div>
+
+          <p className="relative text-[11px] text-white/40">© 2026 MoneyMines Pvt Ltd. All rights reserved.</p>
+        </div>
+
+        {/* Right form panel */}
+        <div className="flex flex-col bg-card overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 xl:p-12">
+            <div className="w-full max-w-[420px] mx-auto">
+              {/* Mode toggle */}
+              <div className="flex p-1 rounded-2xl bg-secondary border border-border mb-8">
+                {(["signin", "signup"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMode(m)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-smooth ${
+                      mode === m
+                        ? "bg-[var(--wa-green)] text-white shadow-mint"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {m === "signin" ? "Sign in" : "Create account"}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mb-7">
+                <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight">
+                  {mode === "signin" ? "Welcome back" : "Create your account"}
+                </h1>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {mode === "signin"
+                    ? "Sign in to your DSA dashboard"
+                    : "Get ₹500 free wallet credit. No card required."}
+                </p>
+              </div>
+
+              <form onSubmit={onSubmit} className="space-y-4">
+                {mode === "signup" && (
+                  <>
+                    <Field label="Full name">
+                      <input
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="auth-input"
+                        placeholder="Rahul Sharma"
+                      />
+                    </Field>
+                    <Field label="Phone">
+                      <input
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="auth-input"
+                        placeholder="+91 98765 43210"
+                      />
+                    </Field>
+                  </>
+                )}
+
+                <Field label="Email">
                   <input
                     type="email"
-                    value={forgotEmail}
-                    onChange={(e) => setForgotEmail(e.target.value)}
-                    className="input-base flex-1"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="auth-input"
                     placeholder="you@company.com"
+                    required
                   />
-                  <button
-                    type="button"
-                    onClick={onForgot}
-                    disabled={forgotSubmitting}
-                    className="h-10 px-4 rounded-full bg-foreground text-background text-sm font-semibold hover:opacity-90 transition-smooth disabled:opacity-60 inline-flex items-center gap-2"
-                  >
-                    {forgotSubmitting && <Loader2 className="size-3.5 animate-spin" />}
-                    Send link
-                  </button>
-                </div>
-              </div>
-            )}
+                </Field>
 
-            {mode === "signup" && (
-              <Field label="I am a">
-                <div className="grid grid-cols-2 gap-2">
-                  {ROLES.map((r) => (
+                <Field label="Password">
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="auth-input pr-11"
+                      placeholder="••••••••"
+                      required
+                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                    />
                     <button
                       type="button"
-                      key={r.value}
-                      onClick={() => setRole(r.value)}
-                      className={`text-left p-3 rounded-xl border-2 transition-smooth ${
-                        role === r.value ? "border-accent bg-accent/10" : "border-border hover:border-accent/50"
-                      }`}
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[var(--wa-green)] transition-smooth"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      tabIndex={-1}
                     >
-                      <div className="text-sm font-semibold">{r.label}</div>
-                      <div className="text-xs text-muted-foreground mt-0.5">{r.desc}</div>
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
-                  ))}
-                </div>
-              </Field>
-            )}
+                  </div>
+                  {mode === "signup" && (
+                    <p className="mt-1.5 text-[11px] text-muted-foreground">
+                      Use 8+ characters with a mix of letters, numbers & symbols.
+                    </p>
+                  )}
+                  {mode === "signin" && (
+                    <div className="mt-2 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotEmail(email);
+                          setForgotOpen((v) => !v);
+                        }}
+                        className="text-xs text-[var(--wa-green)] font-semibold hover:underline"
+                      >
+                        Forgot password?
+                      </button>
+                    </div>
+                  )}
+                </Field>
 
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full h-11 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-smooth shadow-card disabled:opacity-60 inline-flex items-center justify-center gap-2"
-            >
-              {submitting && <Loader2 className="size-4 animate-spin" />}
-              {mode === "signin" ? "Sign in" : "Create account"}
-            </button>
-          </form>
+                {mode === "signin" && forgotOpen && (
+                  <div className="rounded-2xl border border-[var(--wa-green)]/25 bg-[var(--wa-green)]/5 p-4 space-y-3">
+                    <div className="text-sm font-semibold">Reset your password</div>
+                    <p className="text-xs text-muted-foreground">We'll email you a secure link.</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        className="auth-input flex-1 h-10"
+                        placeholder="you@company.com"
+                      />
+                      <button
+                        type="button"
+                        onClick={onForgot}
+                        disabled={forgotSubmitting}
+                        className="h-10 px-4 rounded-xl bg-[var(--wa-green)] text-white text-sm font-semibold hover:bg-[var(--wa-green-dark)] transition-smooth disabled:opacity-60 inline-flex items-center gap-2 shrink-0"
+                      >
+                        {forgotSubmitting && <Loader2 className="size-3.5 animate-spin" />}
+                        Send
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-          <p className="mt-6 text-sm text-center text-muted-foreground">
-            {mode === "signin" ? "New to LeadMines?" : "Already have an account?"}{" "}
-            <button
-              onClick={() => setMode(mode === "signin" ? "signup" : "signin")}
-              className="text-accent font-semibold hover:underline"
-            >
-              {mode === "signin" ? "Create account" : "Sign in"}
-            </button>
-          </p>
+                {mode === "signup" && (
+                  <Field label="I am a">
+                    <div className="grid grid-cols-2 gap-2">
+                      {ROLES.map((r) => (
+                        <button
+                          type="button"
+                          key={r.value}
+                          onClick={() => setRole(r.value)}
+                          className={`text-left p-3 rounded-xl border-2 transition-smooth ${
+                            role === r.value
+                              ? "border-[var(--wa-green)] bg-[var(--wa-green)]/8 shadow-sm"
+                              : "border-border hover:border-[var(--wa-green)]/40 bg-card"
+                          }`}
+                        >
+                          <div className="text-xs sm:text-sm font-semibold leading-tight">{r.label}</div>
+                          <div className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 leading-snug">{r.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                )}
 
-          <div className="mt-6 pt-6 border-t border-border">
-            <Link
-              to="/become-partner"
-              className="block w-full py-3 text-center rounded-full border-2 border-accent text-accent text-sm font-semibold hover:bg-accent/10 transition-smooth"
-            >
-              Apply as DSA Partner — Get your own DSA ID
-            </Link>
-            <p className="mt-2 text-xs text-center text-muted-foreground">
-              Public KYC application · Auto-approval in 24h · No upfront fees
-            </p>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full h-12 rounded-2xl bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white font-semibold transition-smooth shadow-mint disabled:opacity-60 inline-flex items-center justify-center gap-2 mt-2 group"
+                >
+                  {submitting ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <>
+                      {mode === "signin" ? "Sign in" : "Create account"}
+                      <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-smooth" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-8 pt-6 border-t border-border">
+                <Link
+                  to="/become-partner"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl border-2 border-[var(--wa-green)]/40 text-[var(--wa-teal)] dark:text-[var(--wa-green)] text-sm font-semibold hover:bg-[var(--wa-green)]/8 transition-smooth"
+                >
+                  <Sparkles className="size-4" />
+                  Apply as DSA Partner — Get your DSA ID
+                </Link>
+                <p className="mt-2.5 text-[11px] text-center text-muted-foreground">
+                  Public KYC · Auto-approval in 24h · No upfront fees
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Trust footer strip */}
+          <div className="shrink-0 px-6 sm:px-8 py-3 border-t border-border bg-secondary/40 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-[10px] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="size-3 text-[var(--wa-green)]" /> 256-bit SSL
+            </span>
+            <span className="flex items-center gap-1.5">
+              <CheckCheck className="size-3 text-[var(--wa-tick)]" /> WhatsApp alerts
+            </span>
+            <span>Made in India 🇮🇳</span>
           </div>
         </div>
       </div>
@@ -379,8 +439,8 @@ function AuthPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="text-sm font-medium text-foreground">{label}</span>
-      <div className="mt-1.5">{children}</div>
+      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</span>
+      <div className="mt-2">{children}</div>
     </label>
   );
 }

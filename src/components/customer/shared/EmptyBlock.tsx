@@ -6,3 +6,4 @@ export function EmptyBlock({ message, hint }: { message: string; hint?: string }
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { Check, Sparkles } from "lucide-react";
+import { Check, MessageCircle } from "lucide-react";
 
 const plans = [
   {
@@ -21,10 +21,12 @@ const plans = [
 
 export function Pricing() {
   return (
-    <section id="pricing" className="py-24 lg:py-32 bg-secondary/40">
-      <div className="max-w-7xl mx-auto px-5 lg:px-8">
+    <section id="pricing" className="py-24 lg:py-32 relative">
+      <div className="absolute inset-0 wa-pattern opacity-25" />
+      <div className="absolute inset-0 bg-secondary/50" />
+      <div className="relative max-w-7xl mx-auto px-5 lg:px-8">
         <div className="max-w-2xl mx-auto text-center">
-          <div className="text-xs uppercase tracking-[0.2em] text-[oklch(0.5_0.16_165)] font-semibold">Pricing</div>
+          <div className="text-xs uppercase tracking-[0.2em] text-[var(--wa-green)] font-bold">Pricing</div>
           <h2 className="mt-3 text-3xl lg:text-5xl font-bold tracking-tight">
             Plans that scale with your <span className="text-gradient">disbursal book</span>.
           </h2>
@@ -37,13 +39,13 @@ export function Pricing() {
               key={p.name}
               className={`relative rounded-3xl p-7 flex flex-col transition-smooth ${
                 p.featured
-                  ? "bg-hero-gradient text-white shadow-elevated lg:-translate-y-2 border border-white/10"
-                  : "bg-card border border-border hover:shadow-card"
+                  ? "wa-header-bar text-white shadow-elevated lg:-translate-y-2 border border-[var(--wa-green)]/30"
+                  : "bg-card border border-border hover:shadow-card hover:border-[var(--wa-green)]/25"
               }`}
             >
               {p.featured && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-mint-gradient text-primary text-[11px] font-bold shadow-mint">
-                  <Sparkles className="size-3" /> {p.tag}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[var(--wa-green)] text-white text-[11px] font-bold shadow-mint">
+                  <MessageCircle className="size-3" fill="currentColor" fillOpacity={0.3} /> {p.tag}
                 </div>
               )}
               {!p.featured && (
@@ -60,7 +62,10 @@ export function Pricing() {
               <ul className={`mt-6 space-y-3 flex-1 ${p.featured ? "text-white/85" : ""}`}>
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2.5 text-sm">
-                    <Check className={`size-4 mt-0.5 shrink-0 ${p.featured ? "text-[oklch(0.85_0.18_160)]" : "text-[oklch(0.5_0.16_165)]"}`} strokeWidth={3} />
+                    <Check
+                      className={`size-4 mt-0.5 shrink-0 ${p.featured ? "text-[var(--wa-green)]" : "text-[var(--wa-green)]"}`}
+                      strokeWidth={3}
+                    />
                     {f}
                   </li>
                 ))}
@@ -70,8 +75,8 @@ export function Pricing() {
                 href="#cta"
                 className={`mt-7 text-center py-3 rounded-full font-semibold text-sm transition-smooth ${
                   p.featured
-                    ? "bg-mint-gradient text-primary shadow-mint hover:scale-[1.02]"
-                    : "bg-foreground text-background hover:bg-foreground/90"
+                    ? "bg-[var(--wa-green)] text-white shadow-mint hover:scale-[1.02] hover:bg-[var(--wa-green-dark)]"
+                    : "bg-[var(--wa-green)] text-white hover:bg-[var(--wa-green-dark)]"
                 }`}
               >
                 {p.name === "Enterprise" ? "Talk to sales" : "Start free trial"}

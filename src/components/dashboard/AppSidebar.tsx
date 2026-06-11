@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, Sparkles, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent,
+  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent, Cog,
 } from "lucide-react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 
@@ -29,6 +29,9 @@ const NAV: NavItem[] = [
   { title: "HRMS & Payroll", url: "/dashboard/hrms", icon: BriefcaseBusiness, roles: ["ceo", "super_admin", "admin", "dsa", "lender", "coordinator"] },
   { title: "Leadboard", url: "/dashboard/leadboard", icon: Store, roles: ["ceo", "super_admin", "admin", "dsa"] },
   { title: "My Leads", url: "/dashboard/my-leads", icon: KanbanSquare, roles: ["ceo", "super_admin", "dsa", "admin"] },
+  { title: "LOS Analytics", url: "/dashboard/los-analytics", icon: BarChart3, roles: ["ceo", "super_admin", "dsa", "admin"] },
+  { title: "Executive Analytics", url: "/dashboard/los-executive", icon: BarChart3, roles: ["ceo", "super_admin", "admin"] },
+  { title: "Automation", url: "/dashboard/automation", icon: Cog, roles: ["ceo", "super_admin", "dsa", "admin"] },
   { title: "Wallet", url: "/dashboard/wallet", icon: Wallet, roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"] },
   { title: "Call Queue", url: "/dashboard/calls", icon: Phone, roles: ["ceo", "super_admin", "caller", "admin"] },
   { title: "Submissions", url: "/dashboard/submissions", icon: FileText, roles: ["ceo", "super_admin", "coordinator", "admin"] },

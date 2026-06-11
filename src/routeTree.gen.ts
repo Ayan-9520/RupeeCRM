@@ -27,6 +27,8 @@ import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settin
 import { Route as DashboardRewardsRouteImport } from './routes/dashboard.rewards'
 import { Route as DashboardMyLeadsRouteImport } from './routes/dashboard.my-leads'
 import { Route as DashboardMarketingRouteImport } from './routes/dashboard.marketing'
+import { Route as DashboardLosExecutiveRouteImport } from './routes/dashboard.los-executive'
+import { Route as DashboardLosAnalyticsRouteImport } from './routes/dashboard.los-analytics'
 import { Route as DashboardLearnRouteImport } from './routes/dashboard.learn'
 import { Route as DashboardLeaderboardRouteImport } from './routes/dashboard.leaderboard'
 import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadboard'
@@ -38,6 +40,7 @@ import { Route as DashboardCertificatesRouteImport } from './routes/dashboard.ce
 import { Route as DashboardCasesRouteImport } from './routes/dashboard.cases'
 import { Route as DashboardCallsRouteImport } from './routes/dashboard.calls'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard.billing'
+import { Route as DashboardAutomationRouteImport } from './routes/dashboard.automation'
 import { Route as ApplySlugRouteImport } from './routes/apply.$slug'
 import { Route as DashboardMarketingIndexRouteImport } from './routes/dashboard.marketing.index'
 import { Route as DashboardHrmsIndexRouteImport } from './routes/dashboard.hrms.index'
@@ -157,6 +160,16 @@ const DashboardMarketingRoute = DashboardMarketingRouteImport.update({
   path: '/marketing',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardLosExecutiveRoute = DashboardLosExecutiveRouteImport.update({
+  id: '/los-executive',
+  path: '/los-executive',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardLosAnalyticsRoute = DashboardLosAnalyticsRouteImport.update({
+  id: '/los-analytics',
+  path: '/los-analytics',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardLearnRoute = DashboardLearnRouteImport.update({
   id: '/learn',
   path: '/learn',
@@ -210,6 +223,11 @@ const DashboardCallsRoute = DashboardCallsRouteImport.update({
 const DashboardBillingRoute = DashboardBillingRouteImport.update({
   id: '/billing',
   path: '/billing',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAutomationRoute = DashboardAutomationRouteImport.update({
+  id: '/automation',
+  path: '/automation',
   getParentRoute: () => DashboardRoute,
 } as any)
 const ApplySlugRoute = ApplySlugRouteImport.update({
@@ -367,6 +385,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/apply/$slug': typeof ApplySlugRoute
+  '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
@@ -378,6 +397,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
   '/dashboard/learn': typeof DashboardLearnRoute
+  '/dashboard/los-analytics': typeof DashboardLosAnalyticsRoute
+  '/dashboard/los-executive': typeof DashboardLosExecutiveRoute
   '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/rewards': typeof DashboardRewardsRoute
@@ -425,6 +446,7 @@ export interface FileRoutesByTo {
   '/become-partner': typeof BecomePartnerRoute
   '/reset-password': typeof ResetPasswordRoute
   '/apply/$slug': typeof ApplySlugRoute
+  '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
@@ -435,6 +457,8 @@ export interface FileRoutesByTo {
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
   '/dashboard/learn': typeof DashboardLearnRoute
+  '/dashboard/los-analytics': typeof DashboardLosAnalyticsRoute
+  '/dashboard/los-executive': typeof DashboardLosExecutiveRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/rewards': typeof DashboardRewardsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
@@ -483,6 +507,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/reset-password': typeof ResetPasswordRoute
   '/apply/$slug': typeof ApplySlugRoute
+  '/dashboard/automation': typeof DashboardAutomationRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/calls': typeof DashboardCallsRoute
   '/dashboard/cases': typeof DashboardCasesRoute
@@ -494,6 +519,8 @@ export interface FileRoutesById {
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
   '/dashboard/learn': typeof DashboardLearnRoute
+  '/dashboard/los-analytics': typeof DashboardLosAnalyticsRoute
+  '/dashboard/los-executive': typeof DashboardLosExecutiveRoute
   '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
   '/dashboard/rewards': typeof DashboardRewardsRoute
@@ -544,6 +571,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/reset-password'
     | '/apply/$slug'
+    | '/dashboard/automation'
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
@@ -555,6 +583,8 @@ export interface FileRouteTypes {
     | '/dashboard/leadboard'
     | '/dashboard/leaderboard'
     | '/dashboard/learn'
+    | '/dashboard/los-analytics'
+    | '/dashboard/los-executive'
     | '/dashboard/marketing'
     | '/dashboard/my-leads'
     | '/dashboard/rewards'
@@ -602,6 +632,7 @@ export interface FileRouteTypes {
     | '/become-partner'
     | '/reset-password'
     | '/apply/$slug'
+    | '/dashboard/automation'
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
@@ -612,6 +643,8 @@ export interface FileRouteTypes {
     | '/dashboard/leadboard'
     | '/dashboard/leaderboard'
     | '/dashboard/learn'
+    | '/dashboard/los-analytics'
+    | '/dashboard/los-executive'
     | '/dashboard/my-leads'
     | '/dashboard/rewards'
     | '/dashboard/settings'
@@ -659,6 +692,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/reset-password'
     | '/apply/$slug'
+    | '/dashboard/automation'
     | '/dashboard/billing'
     | '/dashboard/calls'
     | '/dashboard/cases'
@@ -670,6 +704,8 @@ export interface FileRouteTypes {
     | '/dashboard/leadboard'
     | '/dashboard/leaderboard'
     | '/dashboard/learn'
+    | '/dashboard/los-analytics'
+    | '/dashboard/los-executive'
     | '/dashboard/marketing'
     | '/dashboard/my-leads'
     | '/dashboard/rewards'
@@ -853,6 +889,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardMarketingRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/los-executive': {
+      id: '/dashboard/los-executive'
+      path: '/los-executive'
+      fullPath: '/dashboard/los-executive'
+      preLoaderRoute: typeof DashboardLosExecutiveRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/los-analytics': {
+      id: '/dashboard/los-analytics'
+      path: '/los-analytics'
+      fullPath: '/dashboard/los-analytics'
+      preLoaderRoute: typeof DashboardLosAnalyticsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/learn': {
       id: '/dashboard/learn'
       path: '/learn'
@@ -928,6 +978,13 @@ declare module '@tanstack/react-router' {
       path: '/billing'
       fullPath: '/dashboard/billing'
       preLoaderRoute: typeof DashboardBillingRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/automation': {
+      id: '/dashboard/automation'
+      path: '/automation'
+      fullPath: '/dashboard/automation'
+      preLoaderRoute: typeof DashboardAutomationRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/apply/$slug': {
@@ -1192,6 +1249,7 @@ const DashboardMyLeadsRouteWithChildren =
   DashboardMyLeadsRoute._addFileChildren(DashboardMyLeadsRouteChildren)
 
 interface DashboardRouteChildren {
+  DashboardAutomationRoute: typeof DashboardAutomationRoute
   DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardCallsRoute: typeof DashboardCallsRoute
   DashboardCasesRoute: typeof DashboardCasesRoute
@@ -1203,6 +1261,8 @@ interface DashboardRouteChildren {
   DashboardLeadboardRoute: typeof DashboardLeadboardRoute
   DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
   DashboardLearnRoute: typeof DashboardLearnRoute
+  DashboardLosAnalyticsRoute: typeof DashboardLosAnalyticsRoute
+  DashboardLosExecutiveRoute: typeof DashboardLosExecutiveRoute
   DashboardMarketingRoute: typeof DashboardMarketingRouteWithChildren
   DashboardMyLeadsRoute: typeof DashboardMyLeadsRouteWithChildren
   DashboardRewardsRoute: typeof DashboardRewardsRoute
@@ -1225,6 +1285,7 @@ interface DashboardRouteChildren {
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAutomationRoute: DashboardAutomationRoute,
   DashboardBillingRoute: DashboardBillingRoute,
   DashboardCallsRoute: DashboardCallsRoute,
   DashboardCasesRoute: DashboardCasesRoute,
@@ -1236,6 +1297,8 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLeadboardRoute: DashboardLeadboardRoute,
   DashboardLeaderboardRoute: DashboardLeaderboardRoute,
   DashboardLearnRoute: DashboardLearnRoute,
+  DashboardLosAnalyticsRoute: DashboardLosAnalyticsRoute,
+  DashboardLosExecutiveRoute: DashboardLosExecutiveRoute,
   DashboardMarketingRoute: DashboardMarketingRouteWithChildren,
   DashboardMyLeadsRoute: DashboardMyLeadsRouteWithChildren,
   DashboardRewardsRoute: DashboardRewardsRoute,

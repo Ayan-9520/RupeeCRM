@@ -21,10 +21,12 @@ const modules = [
 
 export function Modules() {
   return (
-    <section id="modules" className="py-24 lg:py-32 bg-secondary/40 relative">
-      <div className="max-w-7xl mx-auto px-5 lg:px-8">
+    <section id="modules" className="py-24 lg:py-32 relative">
+      <div className="absolute inset-0 wa-pattern opacity-30" />
+      <div className="absolute inset-0 bg-secondary/60" />
+      <div className="relative max-w-7xl mx-auto px-5 lg:px-8">
         <div className="max-w-2xl">
-          <div className="text-xs uppercase tracking-[0.2em] text-[oklch(0.5_0.16_165)] font-semibold">13 Modules</div>
+          <div className="text-xs uppercase tracking-[0.2em] text-[var(--wa-green)] font-bold">13 Modules</div>
           <h2 className="mt-3 text-3xl lg:text-5xl font-bold tracking-tight">
             Everything a DSA partner network needs.
           </h2>
@@ -37,11 +39,11 @@ export function Modules() {
           {modules.map((m, i) => (
             <div
               key={m.title}
-              className="group relative rounded-2xl bg-card border border-border p-6 hover:shadow-elevated hover:-translate-y-1 transition-smooth"
+              className="group relative rounded-2xl bg-card border border-border p-6 hover:shadow-elevated hover:-translate-y-1 hover:border-[var(--wa-green)]/30 transition-smooth"
             >
               <div className="flex items-start justify-between">
-                <div className="size-11 rounded-xl bg-mint-gradient grid place-items-center shadow-mint group-hover:scale-110 transition-smooth">
-                  <m.icon className="size-5 text-primary" strokeWidth={2.2} />
+                <div className="size-11 rounded-xl bg-[var(--wa-green)] grid place-items-center shadow-mint group-hover:scale-110 transition-smooth">
+                  <m.icon className="size-5 text-white" strokeWidth={2.2} />
                 </div>
                 <span className="text-[10px] font-mono text-muted-foreground/60">M{String(i + 1).padStart(2, "0")}</span>
               </div>
