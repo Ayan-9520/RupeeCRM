@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AppRole } from "@/lib/auth-context";
+import { isPlatformAdmin } from "@/lib/role-access";
 import { toast } from "sonner";
 import { Users, Loader2, Search, ShieldCheck, ShieldOff, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -93,7 +94,7 @@ function AdminUsersPage() {
     });
   }, [users, search, roleFilter]);
 
-  if (role !== "admin") {
+  if (!isPlatformAdmin(role)) {
     return (
       <div className="max-w-md mx-auto mt-20 text-center">
         <ShieldOff className="size-12 mx-auto text-muted-foreground mb-3" />

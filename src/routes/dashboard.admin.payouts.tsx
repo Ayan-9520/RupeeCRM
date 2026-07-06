@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { isPlatformAdmin } from "@/lib/role-access";
 import { toast } from "sonner";
 import {
   Loader2, IndianRupee, Clock, CheckCircle2, XCircle, BadgeCheck, Banknote, Smartphone,
@@ -77,7 +78,7 @@ function AdminPayouts() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (role !== "admin") { setLoading(false); return; }
+    if (!isPlatformAdmin(role)) { setLoading(false); return; }
     fetchAll();
   }, [role, authLoading]);
 
@@ -112,7 +113,7 @@ function AdminPayouts() {
     return <div className="grid place-items-center py-20"><Loader2 className="size-6 animate-spin text-accent" /></div>;
   }
 
-  if (role !== "admin") {
+  if (!isPlatformAdmin(role)) {
     return (
       <div className="max-w-xl mx-auto rounded-2xl bg-card border border-dashed border-border p-12 text-center">
         <ShieldCheck className="size-10 mx-auto text-muted-foreground" />

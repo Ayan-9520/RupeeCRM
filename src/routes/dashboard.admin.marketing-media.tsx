@@ -1,4 +1,5 @@
-import { createFileRoute, Navigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
+import { isPlatformAdmin } from "@/lib/role-access";
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -70,7 +71,14 @@ function AdminMarketingMedia() {
   }, []);
 
   if (authLoading) return null;
-  if (role !== "admin") return <Navigate to="/dashboard" />;
+  if (!isPlatformAdmin(role)) {
+    return (
+      <div className="max-w-md mx-auto mt-16 rounded-2xl border border-border bg-card p-8 text-center">
+        <h2 className="font-display text-xl font-bold">Admin access required</h2>
+        <p className="text-sm text-muted-foreground mt-2">This page is for platform administrators only.</p>
+      </div>
+    );
+  }
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;

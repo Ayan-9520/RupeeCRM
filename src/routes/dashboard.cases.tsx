@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { isPlatformAdmin } from "@/lib/role-access";
 import { toast } from "sonner";
 import {
   Building2, Loader2, Phone, MapPin, IndianRupee, FileText, Upload,
@@ -59,7 +60,7 @@ interface CaseRow {
     masked_phone: string;
     city: string;
     state: string | null;
-    loan_type: string;
+    product_subtype: string | null;
     loan_amount: number;
     product_category: string;
     email: string | null;
@@ -97,11 +98,11 @@ function CasesPage() {
     let query = supabase
       .from("lead_purchases")
       .select(`id, lead_id, pipeline_stage, price_paid, deal_value, converted, created_at, updated_at, dsa_id,
-               leads:lead_id(applicant_name, full_phone, masked_phone, city, state, loan_type, loan_amount, product_category, email)`)
+               leads:lead_id(applicant_name, full_phone, masked_phone, city, state, product_subtype, loan_amount, product_category, email)`)
       .order("updated_at", { ascending: false });
 
-    // Non-admins/lenders see only their own
-    if (role !== "admin" && role !== "lender") {
+    // Platform admins & lenders see all; others see own purchases
+    if (!isPlatformAdmin(role) && role !== "lender") {
       query = query.eq("dsa_id", user.id);
     }
 
@@ -151,7 +152,7 @@ function CasesPage() {
             <Building2 className="size-6 text-accent" /> Lender Cases
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {role === "admin" ? "All cases across the platform" : role === "lender" ? "Cases assigned to you" : "Your active cases"}
+            {isPlatformAdmin(role) ? "All cases across the platform" : role === "lender" ? "Cases assigned to you" : "Your active cases"}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -211,9 +212,9 @@ function CasesPage() {
                 {filtered.map((c) => (
                   <tr key={c.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => setActive(c)}>
                     <td className="px-4 py-3 font-medium">{c.leads?.applicant_name}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{role === "admin" || role === "lender" ? c.leads?.full_phone : c.leads?.masked_phone}</td>
+                    <td className="px-4 py-3 font-mono text-xs">{isPlatformAdmin(role) || role === "lender" ? c.leads?.full_phone : c.leads?.masked_phone}</td>
                     <td className="px-4 py-3">{c.leads?.city}</td>
-                    <td className="px-4 py-3 capitalize">{c.leads?.loan_type}</td>
+                    <td className="px-4 py-3 capitalize">{c.leads?.product_subtype?.replace(/_/g, " ") || c.leads?.product_category}</td>
                     <td className="px-4 py-3">₹{Number(c.leads?.loan_amount || 0).toLocaleString("en-IN")}</td>
                     <td className="px-4 py-3">
                       <Badge className={`${STAGE_BADGE[c.pipeline_stage] || "bg-muted"} capitalize`}>{c.pipeline_stage}</Badge>
@@ -228,7 +229,7 @@ function CasesPage() {
         )}
       </div>
 
-      {active && <CaseDetail caseRow={active} onClose={() => { setActive(null); refresh(); }} canManage={role === "admin" || role === "lender" || active.dsa_id === user?.id} />}
+      {active && <CaseDetail caseRow={active} onClose={() => { setActive(null); refresh(); }} canManage={isPlatformAdmin(role) || role === "lender" || active.dsa_id === user?.id} />}
     </div>
   );
 }
@@ -321,7 +322,7 @@ function CaseDetail({ caseRow, onClose, canManage }: { caseRow: CaseRow; onClose
           {/* Loan summary */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Stat icon={IndianRupee} label="Loan Amount" value={`₹${Number(lead?.loan_amount || 0).toLocaleString("en-IN")}`} />
-            <Stat icon={FileText} label="Product" value={lead?.loan_type || "—"} cap />
+            <Stat icon={FileText} label="Product" value={lead?.product_subtype?.replace(/_/g, " ") || lead?.product_category || "—"} cap />
             <Stat icon={Clock} label="Current Stage" value={caseRow.pipeline_stage} cap />
             <Stat icon={IndianRupee} label="Lead Cost" value={`₹${caseRow.price_paid}`} />
           </div>

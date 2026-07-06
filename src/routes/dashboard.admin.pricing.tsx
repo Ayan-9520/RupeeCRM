@@ -18,7 +18,7 @@ function Admin() {
   const [filter, setFilter] = useState<"all" | ProductCategory>("all");
   const [saving, setSaving] = useState<string | null>(null);
 
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "ceo" || role === "super_admin";
 
   const load = async () => {
     setLoading(true);

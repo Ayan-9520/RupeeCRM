@@ -162,11 +162,6 @@ export function BulkUploadLeadsDialog({
     for (const r of valid) {
       const pt = codeMap[r.product_type_code];
       const cat = pt.category as ProductCategory;
-      const loanType =
-        cat === "loan" ? (pt.code.includes("home") ? "home" : pt.code.includes("business") ? "business" : "personal")
-        : cat === "credit_card" ? "credit_card"
-        : cat === "insurance" ? "insurance"
-        : "mutual_fund";
       const productDetails: Record<string, unknown> = {};
       if (r.monthly_income) productDetails.monthly_income = r.monthly_income;
       const insertRow = {
@@ -180,7 +175,6 @@ export function BulkUploadLeadsDialog({
         product_type_id: pt.id,
         product_subtype: pt.name,
         product_details: productDetails as Json,
-        loan_type: loanType as "personal" | "home" | "business" | "credit_card" | "insurance" | "mutual_fund",
         loan_amount: r.loan_amount,
         monthly_income: r.monthly_income ?? null,
         source: r.source ?? "Bulk import",

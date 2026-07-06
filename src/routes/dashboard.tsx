@@ -7,6 +7,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useDailyLogin } from "@/hooks/use-daily-login";
 import { Loader2 } from "lucide-react";
 import { NotificationCenter } from "@/components/dashboard/NotificationCenter";
+import { RoleGuard } from "@/components/dashboard/RoleGuard";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — LeadMines" }] }),
@@ -42,7 +43,9 @@ function DashboardLayout() {
             <div className="flex-1" />
           </header>
           <main className="flex-1 p-4 lg:p-6 overflow-auto">
-            <Outlet />
+            <RoleGuard>
+              <Outlet />
+            </RoleGuard>
           </main>
         </div>
       </div>

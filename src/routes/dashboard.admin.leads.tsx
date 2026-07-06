@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { isPlatformAdmin } from "@/lib/role-access";
 import { toast } from "sonner";
 import {
   Loader2, Plus, Search, ShieldAlert, User, Phone, Mail, MapPin,
@@ -73,7 +74,7 @@ function AdminLeadsPage() {
     });
   }, [leads, filterCat, search]);
 
-  if (role && role !== "admin") {
+  if (role && !isPlatformAdmin(role)) {
     return (
       <div className="max-w-md mx-auto mt-20 rounded-2xl border border-border bg-card p-8 text-center">
         <ShieldAlert className="size-10 text-amber-500 mx-auto mb-3" />
@@ -341,11 +342,6 @@ function NewLeadDrawer({
     const masked = phone.length > 4 ? phone.slice(0, 2) + "XXXX" + phone.slice(-2) : phone;
     const pt = filteredTypes.find((t) => t.id === form.product_type_id);
 
-    const loan_type = form.product_category === "loan" ? "personal"
-      : form.product_category === "insurance" ? "insurance"
-      : form.product_category === "credit_card" ? "credit_card"
-      : "mutual_fund";
-
     const amount = form.product_category === "insurance"
       ? Number(form.sum_insured || 0)
       : Number(form.loan_amount || 0);
@@ -367,7 +363,6 @@ function NewLeadDrawer({
       product_type_id: form.product_type_id,
       product_subtype: pt?.name ?? null,
       product_details: product_details as Json,
-      loan_type: loan_type as "personal" | "home" | "business" | "credit_card" | "insurance" | "mutual_fund",
       loan_amount: amount,
       sum_insured: form.sum_insured ? Number(form.sum_insured) : null,
       monthly_income: form.monthly_income ? Number(form.monthly_income) : null,

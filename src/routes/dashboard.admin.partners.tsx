@@ -171,9 +171,9 @@ function AdminPartnersPage() {
 
       {/* Detail drawer */}
       {active && (
-        <div className="fixed inset-0 z-50 bg-foreground/40 backdrop-blur-sm grid place-items-end md:place-items-center p-0 md:p-6" onClick={() => setActive(null)}>
-          <div className="bg-card border border-border rounded-t-3xl md:rounded-3xl shadow-elegant max-w-2xl w-full max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="p-6 md:p-8 space-y-5">
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm grid place-items-center p-4" onClick={() => setActive(null)}>
+          <div className="bg-card border border-border rounded-2xl shadow-xl max-w-2xl w-full max-h-[min(90dvh,720px)] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 md:p-6 space-y-4">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="font-display text-xl font-bold">{active.full_name}</h2>
@@ -212,14 +212,29 @@ function AdminPartnersPage() {
                   <Detail label="IFSC" value={active.ifsc || "—"} mono />
                 </div>
                 <div className="flex flex-wrap gap-2 pt-2">
-                  {(["pan", "aadhaar", "bank", "selfie"] as const).map((k) =>
-                    docUrls[k] ? (
-                      <a key={k} href={docUrls[k]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-accent/15 text-accent text-xs font-bold hover:bg-accent/25 transition-smooth">
-                        <FileText className="size-3.5" /> {k.toUpperCase()} <ExternalLink className="size-3" />
-                      </a>
-                    ) : null
-                  )}
-                  {!docUrls.pan && !docUrls.aadhaar && !docUrls.bank && (
+                  {([
+                    { key: "pan" as const, path: active.pan_doc_url },
+                    { key: "aadhaar" as const, path: active.aadhaar_doc_url },
+                    { key: "bank" as const, path: active.bank_proof_url },
+                    { key: "selfie" as const, path: active.selfie_url },
+                  ]).map(({ key: k, path }) => {
+                    if (docUrls[k]) {
+                      return (
+                        <a key={k} href={docUrls[k]} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-smooth" style={{ background: "color-mix(in oklab, var(--wa-green) 15%, transparent)", color: "var(--wa-green)" }}>
+                          <FileText className="size-3.5" /> {k.toUpperCase()} <ExternalLink className="size-3" />
+                        </a>
+                      );
+                    }
+                    if (path) {
+                      return (
+                        <span key={k} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 text-xs font-medium">
+                          <FileText className="size-3.5" /> {k.toUpperCase()} on file
+                        </span>
+                      );
+                    }
+                    return null;
+                  })}
+                  {!active.pan_doc_url && !active.aadhaar_doc_url && !active.bank_proof_url && !active.selfie_url && (
                     <span className="text-xs text-muted-foreground">No documents uploaded</span>
                   )}
                 </div>
@@ -238,7 +253,7 @@ function AdminPartnersPage() {
                       {acting ? <Loader2 className="size-4 animate-spin" /> : <XCircle className="size-4" />} Reject
                     </button>
                   </details>
-                  <button onClick={onApprove} disabled={acting} className="w-full py-3 rounded-xl bg-mint-gradient text-foreground font-bold shadow-mint hover:opacity-90 transition-smooth flex items-center justify-center gap-2 disabled:opacity-50">
+                  <button onClick={onApprove} disabled={acting} className="w-full py-3 rounded-xl font-bold text-white transition-smooth flex items-center justify-center gap-2 disabled:opacity-50 hover:opacity-90" style={{ background: "linear-gradient(135deg, var(--wa-green) 0%, var(--wa-teal-mid) 100%)" }}>
                     {acting ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />} Approve & Generate DSA ID
                   </button>
                 </div>
