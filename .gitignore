@@ -27,6 +27,7 @@ __pycache__/
 *.sql
 *.dump
 backups/
+deploy-out/
 .FullName
 
 # Wrangler / Cloudflare
