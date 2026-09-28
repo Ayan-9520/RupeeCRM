@@ -37,6 +37,7 @@ class MarketplaceLeadOut(BaseModel):
 class MarketplaceListOut(BaseModel):
     items: list[MarketplaceLeadOut]
     total: int
+    recent_sold: list[MarketplaceLeadOut] = Field(default_factory=list)
     category_prices: dict[str, float] = Field(default_factory=dict)
 
 
@@ -105,9 +106,19 @@ def list_marketplace_leads(
         )
     total = query.with_entities(func.count(Lead.id)).scalar() or 0
     rows = query.order_by(Lead.created_at.desc()).offset(offset).limit(limit).all()
+    sold_rows = (
+        db.query(Lead)
+        .filter(Lead.is_marketplace.is_(True), Lead.status == "sold")
+        .order_by(Lead.updated_at.desc())
+        .limit(12)
+        .all()
+        if offset == 0
+        else []
+    )
     return MarketplaceListOut(
         items=[_to_marketplace(r) for r in rows],
         total=total,
+        recent_sold=[_to_marketplace(r) for r in sold_rows],
         category_prices=dict(CATEGORY_LEAD_PRICES),
     )
 
