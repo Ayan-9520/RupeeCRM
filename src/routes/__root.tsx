@@ -27,9 +27,9 @@ function NotFoundComponent() {
 }
 
 const META = {
-  title: "Rupeedial CRM",
+  title: "RupeeDial One",
   description:
-    "India's premium fintech lead marketplace. AI-verified loan, credit card & insurance leads, DSA CRM pipeline, partner community & affiliate earnings — all in one platform.",
+    "RupeeDial One CRM — buy website leads, edit full form details, and run New → Disbursed for every loan product.",
 };
 
 function useDocumentMeta() {
@@ -56,6 +56,11 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   useDocumentMeta();
+  useEffect(() => {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.colorScheme = "light";
+    localStorage.setItem("theme", "light");
+  }, []);
   return (
     <AuthProvider>
       <WorkspaceProvider>

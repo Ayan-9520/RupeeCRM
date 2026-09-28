@@ -1,49 +1,38 @@
-import { Megaphone, Filter, ShoppingCart, Phone, FileText, Building2, CheckCircle2 } from "lucide-react";
-
 const steps = [
-  { icon: Megaphone, title: "Marketing", desc: "Run ads on Meta, Google, WhatsApp" },
-  { icon: Filter, title: "AI Verify", desc: "OTP + dedup + cold/warm/hot scoring" },
-  { icon: ShoppingCart, title: "Leadboard", desc: "DSAs filter & buy from wallet" },
-  { icon: Phone, title: "Call Center", desc: "Telecallers qualify & schedule" },
-  { icon: FileText, title: "Documents", desc: "Sales coordinator collects & uploads" },
-  { icon: Building2, title: "Lender Portal", desc: "Banks/NBFCs review & decide" },
-  { icon: CheckCircle2, title: "Disbursal", desc: "Track approval, payout & commission" },
+  { n: "01", title: "Lead arrives", desc: "Form saves to DB, emails the team, and syncs into One." },
+  { n: "02", title: "Buy on Leadboard", desc: "Filter by product and city, purchase with wallet." },
+  { n: "03", title: "Work in My Leads", desc: "Auto-filled fields, notes, follow-ups, stage moves." },
+  { n: "04", title: "Disburse", desc: "New → Contacted → Docs → Bank → Sanctioned → Disbursed." },
 ];
 
 export function Flow() {
   return (
-    <section id="flow" className="py-24 lg:py-32 bg-background relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-[var(--wa-green)]/5 to-transparent pointer-events-none" />
-      <div className="relative max-w-7xl mx-auto px-5 lg:px-8">
-        <div className="max-w-2xl">
-          <div className="text-xs uppercase tracking-[0.2em] text-[var(--wa-green)] font-bold">The Flow</div>
-          <h2 className="mt-3 text-3xl lg:text-5xl font-bold tracking-tight">
-            One pipeline, <span className="text-gradient">ad click to disbursal</span>.
+    <section id="flow" className="py-16 sm:py-20 lg:py-24 bg-white">
+      <div className="max-w-6xl mx-auto px-5">
+        <div className="max-w-xl">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#10662A]">
+            How One works
+          </p>
+          <h2 className="mt-2 font-display text-2xl sm:text-3xl font-extrabold tracking-tight text-[#390A5D]">
+            Four steps. Zero clutter.
           </h2>
-          <p className="mt-4 text-muted-foreground text-lg">
-            Every lead moves through seven calibrated stages — visible to every role, in real time.
+          <p className="mt-2 text-sm sm:text-base text-[#5c4d72]">
+            Same flow for Personal Loan, CGTMSE, Subsidy, and Trade Finance.
           </p>
         </div>
 
-        <div className="mt-14 relative">
-          <div className="hidden lg:block absolute top-7 left-[6%] right-[6%] h-0.5 bg-gradient-to-r from-transparent via-[var(--wa-green)]/30 to-transparent" />
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-5 lg:gap-3">
-            {steps.map((s, i) => (
-              <div key={s.title} className="relative">
-                <div className="relative size-14 mx-auto rounded-2xl bg-card border border-border shadow-card grid place-items-center hover:border-[var(--wa-green)]/40 transition-smooth">
-                  <s.icon className="size-6 text-[var(--wa-teal)] dark:text-[var(--wa-green)]" strokeWidth={2} />
-                  <div className="absolute -top-2 -right-2 size-5 rounded-full bg-[var(--wa-green)] grid place-items-center text-[10px] font-bold text-white">
-                    {i + 1}
-                  </div>
-                </div>
-                <div className="mt-4 text-center">
-                  <div className="font-display font-semibold text-sm">{s.title}</div>
-                  <div className="text-xs text-muted-foreground mt-1 leading-snug">{s.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <ol className="mt-10 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+          {steps.map((s) => (
+            <li
+              key={s.n}
+              className="rounded-2xl border border-[#d8ecdd] bg-[#E8F7EC]/40 p-5"
+            >
+              <div className="font-display text-sm font-bold text-[#10662A] tracking-wide">{s.n}</div>
+              <h3 className="mt-2 font-bold text-[#390A5D] text-lg">{s.title}</h3>
+              <p className="mt-1.5 text-sm text-[#5c4d72] leading-relaxed">{s.desc}</p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

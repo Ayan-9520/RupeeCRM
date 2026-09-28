@@ -2,28 +2,25 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import {
-  MessageCircle,
   Loader2,
   Eye,
   EyeOff,
   ShieldCheck,
-  CheckCheck,
   ArrowRight,
   Sparkles,
+  Lock,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import type { AppRole } from "@/lib/auth-context";
-import { ThemeToggle } from "@/components/landing/ThemeToggle";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
-      { title: "Sign in or create account — LeadMines" },
+      { title: "Sign in — RupeeDial One" },
       {
         name: "description",
-        content: "Access your LeadMines dashboard. DSA partners, lenders, callers and admins log in here.",
+        content: "Sign in to RupeeDial One CRM. Buy leads, run My Leads pipeline, and disburse cases.",
       },
     ],
   }),
@@ -31,33 +28,13 @@ export const Route = createFileRoute("/auth")({
 });
 
 const ROLES: { value: AppRole; label: string; hint: string }[] = [
-  { value: "dsa", label: "DSA Partner", hint: "Buy leads & run your pipeline. KYC via Become a Partner for verified DSA ID." },
-  { value: "caller", label: "Telecaller", hint: "Call queue, scripts & lead qualification." },
-  { value: "coordinator", label: "Sales Coordinator", hint: "Documents, submissions & lender routing." },
-  { value: "lender", label: "Lender (Bank/NBFC)", hint: "Review cases & update disbursal status." },
-  { value: "affiliate", label: "Affiliate / Influencer", hint: "Referral links & commission tracking." },
-  { value: "customer", label: "Customer", hint: "Track your loan application & upload docs." },
+  { value: "dsa", label: "DSA Partner", hint: "Buy leads & run your pipeline." },
+  { value: "caller", label: "Telecaller", hint: "Call queue & lead qualification." },
+  { value: "coordinator", label: "Sales Coordinator", hint: "Documents & lender routing." },
+  { value: "lender", label: "Lender (Bank/NBFC)", hint: "Review cases & disbursal." },
+  { value: "affiliate", label: "Affiliate / Influencer", hint: "Referral links & commission." },
+  { value: "customer", label: "Customer", hint: "Track your application." },
 ];
-
-const signupSchema = z.object({
-  full_name: z.string().trim().min(2, "Enter your full name").max(80),
-  email: z.string().trim().email("Enter a valid email").max(255),
-  phone: z
-    .string()
-    .trim()
-    .transform((v) => v.replace(/\D/g, ""))
-    .pipe(z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number")),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(72, "Password is too long"),
-  role: z.enum(["dsa", "caller", "coordinator", "lender", "affiliate", "customer"]),
-});
-
-function formatSignupError(err: z.ZodError): string {
-  const issue = err.issues[0];
-  return issue?.message ?? "Please check the form and try again.";
-}
 
 const signinSchema = z.object({
   email: z.string().trim().email("Invalid email").max(255),
@@ -66,11 +43,11 @@ const signinSchema = z.object({
 
 function AuthPage() {
   const navigate = useNavigate();
-  const { user, loading, refreshRole } = useAuth();
+  const { user, loading, signIn } = useAuth();
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [submitting, setSubmitting] = useState(false);
 
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState("admin@rupeedial.com");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -78,39 +55,22 @@ function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotSubmitting, setForgotSubmitting] = useState(false);
 
   const onForgot = async (e: React.FormEvent) => {
     e.preventDefault();
-    const target = forgotEmail.trim() || email.trim();
-    if (!target || !/^\S+@\S+\.\S+$/.test(target)) {
-      toast.error("Enter a valid email");
-      return;
-    }
-    setForgotSubmitting(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(target, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) toast.error(error.message);
-      else {
-        toast.success("Reset link sent. Check your email.");
-        setForgotOpen(false);
-      }
-    } finally {
-      setForgotSubmitting(false);
-    }
+    toast.info("Password reset is managed by admin. Contact support.");
+    setForgotOpen(false);
   };
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: "/dashboard/website-leads" });
   }, [user, loading, navigate]);
 
   if (loading || (!loading && user)) {
     return (
-      <div className="auth-page grid place-items-center wa-pattern p-4">
-        <div className="auth-card flex flex-col items-center gap-2 text-muted-foreground px-8 py-8">
-          <Loader2 className="size-7 animate-spin text-[var(--wa-green)]" />
+      <div className="auth-page grid place-items-center bg-[#f5fcf7] p-4">
+        <div className="rounded-2xl border border-[#d8ecdd] bg-white flex flex-col items-center gap-2 text-[#5c4d72] px-8 py-8 shadow-[0_8px_30px_rgba(16,102,42,0.06)]">
+          <Loader2 className="size-7 animate-spin text-[#10662A]" />
           <p className="text-sm font-medium">Restoring session…</p>
         </div>
       </div>
@@ -122,193 +82,155 @@ function AuthPage() {
     setSubmitting(true);
     try {
       if (mode === "signup") {
-        const parsed = signupSchema.safeParse({ full_name: fullName, email, phone, password, role });
-        if (!parsed.success) {
-          toast.error(formatSignupError(parsed.error));
-          return;
-        }
-        const { data, error } = await supabase.auth.signUp({
-          email: parsed.data.email.trim().toLowerCase(),
-          password: parsed.data.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/dashboard`,
-            data: {
-              full_name: parsed.data.full_name,
-              phone: parsed.data.phone,
-              role: parsed.data.role,
-            },
-          },
-        });
-        if (error) {
-          toast.error(error.message);
-          return;
-        }
-        if (data.session) {
-          await refreshRole();
-          toast.success(`Welcome! Your ${ROLES.find((r) => r.value === parsed.data.role)?.label ?? "account"} dashboard is ready.`);
-          setTimeout(() => navigate({ to: "/dashboard" }), 400);
-        } else {
-          toast.success("Account created! Check your email to confirm, then sign in.");
-          setMode("signin");
-        }
-      } else {
-        const parsed = signinSchema.safeParse({ email, password });
-        if (!parsed.success) {
-          toast.error(parsed.error.issues[0].message);
-          return;
-        }
-        const { error } = await supabase.auth.signInWithPassword({
-          email: parsed.data.email.trim().toLowerCase(),
-          password: parsed.data.password,
-        });
-        if (error) toast.error(error.message);
-        else {
-          await refreshRole();
-          toast.success("Welcome back!");
-          setTimeout(() => navigate({ to: "/dashboard" }), 400);
-        }
+        toast.error("Signup closed. After partner approval, admin shares CRM email + password.");
+        setMode("signin");
+        return;
       }
+      const parsed = signinSchema.safeParse({ email, password });
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0].message);
+        return;
+      }
+      await signIn(parsed.data.email.trim().toLowerCase(), parsed.data.password);
+      toast.success("Welcome to RupeeDial One");
+      setTimeout(() => navigate({ to: "/dashboard" }), 300);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invalid login credentials");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="auth-page wa-pattern p-3 sm:p-4 lg:p-5 flex flex-col">
-      <div className="flex-1 min-h-0 max-w-[1200px] w-full mx-auto auth-shell grid grid-cols-1 lg:grid-cols-[0.95fr_1.05fr]">
-        {/* Left — compact brand */}
-        <div className="hidden lg:flex relative wa-header-bar text-white p-6 xl:p-8 flex-col justify-between overflow-hidden min-h-0">
-          <div className="absolute inset-0 wa-pattern opacity-[0.06]" />
-          <div className="absolute -top-20 -right-20 size-64 rounded-full bg-[var(--wa-green)]/20 blur-3xl" />
+    <div className="auth-page min-h-svh bg-[#f5fcf7] p-3 sm:p-4 lg:p-6 flex flex-col">
+      <div className="flex-1 min-h-0 max-w-[1100px] w-full mx-auto grid grid-cols-1 lg:grid-cols-[0.92fr_1.08fr] rounded-2xl overflow-hidden border border-[#d8ecdd] bg-white shadow-[0_16px_50px_rgba(16,102,42,0.08)]">
+        {/* Left — RupeeDial brand panel */}
+        <div
+          className="hidden lg:flex relative text-white p-8 xl:p-10 flex-col justify-between overflow-hidden"
+          style={{
+            background: "linear-gradient(160deg, #0D4F20 0%, #10662A 45%, #0d5a26 100%)",
+          }}
+        >
+          <div
+            className="absolute inset-0 opacity-30"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+              backgroundSize: "40px 40px",
+            }}
+          />
+          <div className="absolute -right-16 -bottom-16 size-56 rounded-full bg-white/10 blur-3xl" />
 
           <div className="relative flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="size-8 rounded-full bg-white/15 grid place-items-center group-hover:scale-105 transition-smooth">
-                <MessageCircle className="size-4 text-white" fill="white" fillOpacity={0.15} />
-              </div>
-              <span className="font-display font-bold text-sm">LeadMines</span>
+            <Link to="/" className="flex items-center gap-2.5 group">
+              <span className="size-9 rounded-full bg-white grid place-items-center text-[#10662A] font-display font-bold text-sm group-hover:scale-105 transition-transform">
+                R
+              </span>
+              <span className="font-display font-bold text-base lowercase tracking-tight">
+                rupeedial <span className="normal-case font-semibold text-white/90">One</span>
+              </span>
             </Link>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 text-[10px] font-semibold">
-              <ShieldCheck className="size-3 text-[var(--wa-green)]" />
-              RBI-ready CRM
-            </div>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 text-[10px] font-semibold">
+              <ShieldCheck className="size-3 text-[#E8F7EC]" />
+              Secure CRM
+            </span>
           </div>
 
-          <div className="relative space-y-4">
+          <div className="relative space-y-6">
             <div>
-              <h2 className="font-display text-2xl xl:text-[1.75rem] font-bold leading-tight tracking-tight">
-                Mine your next <span className="text-[var(--wa-green)]">₹1 Cr</span>
+              <h2 className="font-display text-3xl xl:text-[2rem] font-extrabold leading-tight tracking-tight">
+                Loan leads to
                 <br />
-                with AI-verified leads.
+                <span className="text-[#E8F7EC]">disbursal</span> — in One.
               </h2>
-              <p className="mt-2 text-white/70 text-xs xl:text-sm max-w-sm leading-relaxed">
-                12,400+ DSAs · 60+ lenders · ₹420 Cr+ disbursed.
+              <p className="mt-3 text-white/70 text-sm max-w-sm leading-relaxed">
+                Marketplace buy · full form auto-fill · live pipeline for every RupeeDial product.
               </p>
             </div>
 
-            <div className="space-y-1.5 max-w-[280px]">
-              <div className="wa-bubble-in px-3 py-2 text-[11px] text-foreground/90 !rounded-xl !rounded-tl-sm">
-                🔥 Hot lead: PL · ₹8L · Mumbai
-                <span className="float-right text-[9px] text-[var(--wa-muted)] ml-2">
-                  10:24 <CheckCheck className="size-2.5 inline text-[var(--wa-tick)]" />
-                </span>
-              </div>
-              <div className="wa-bubble-out px-3 py-1.5 text-[11px] ml-auto max-w-[78%] !rounded-xl !rounded-tr-sm">
-                Purchased! CRM created ✓
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              {[
-                { v: "₹500", l: "Welcome bonus" },
-                { v: "14d", l: "Free trial" },
-                { v: "98%", l: "Verified" },
-              ].map((s, i) => (
-                <div key={s.l} className="contents">
-                  {i > 0 && <div className="h-7 w-px bg-white/15" />}
-                  <div>
-                    <div className="text-lg xl:text-xl font-display font-bold">{s.v}</div>
-                    <div className="text-white/50 text-[10px]">{s.l}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
+            <ul className="space-y-2 max-w-xs">
+              {["New → Disbursed pipeline", "Website leads with full details", "Retail · MSME · Trade finance"].map(
+                (t) => (
+                  <li
+                    key={t}
+                    className="flex items-center gap-2.5 rounded-xl bg-white/10 border border-white/10 px-3 py-2.5 text-xs font-medium text-white/90"
+                  >
+                    <span className="size-1.5 rounded-full bg-[#E8F7EC] shrink-0" />
+                    {t}
+                  </li>
+                ),
+              )}
+            </ul>
           </div>
 
-          <p className="relative text-[10px] text-white/35">© 2026 MoneyMines Pvt Ltd.</p>
+          <p className="relative text-[10px] text-white/40">© {new Date().getFullYear()} RupeeDial One</p>
         </div>
 
-        {/* Right — form, no scroll */}
-        <div className="flex flex-col bg-card min-h-0 flex-1 lg:flex-none">
-          {/* Mobile header */}
-          <div className="lg:hidden shrink-0 flex items-center justify-between px-4 py-2.5 border-b border-border">
+        {/* Right — form */}
+        <div className="flex flex-col bg-white min-h-0">
+          <div className="lg:hidden shrink-0 flex items-center justify-between px-5 py-3 border-b border-[#d8ecdd]">
             <Link to="/" className="flex items-center gap-2">
-              <div className="size-7 rounded-full bg-[var(--wa-green)] grid place-items-center">
-                <MessageCircle className="size-3.5 text-white" fill="white" fillOpacity={0.15} />
-              </div>
-              <span className="font-display font-bold text-sm">LeadMines</span>
+              <span className="size-8 rounded-full bg-[#10662A] grid place-items-center text-white font-display font-bold text-xs">
+                R
+              </span>
+              <span className="font-display font-bold text-sm text-[#10662A] lowercase">
+                rupeedial <span className="normal-case text-[#390A5D]">One</span>
+              </span>
             </Link>
-            <ThemeToggle />
           </div>
 
-          <div className="flex-1 min-h-0 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-3 sm:py-4">
-            <div className="w-full max-w-[400px] mx-auto flex flex-col gap-3 sm:gap-3.5">
-              {/* Top row: toggle + theme (desktop) */}
-              <div className="flex items-center gap-3">
-                <div className="flex-1 flex p-0.5 rounded-xl bg-secondary border border-border">
-                  {(["signin", "signup"] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => {
-                        setMode(m);
-                        setForgotOpen(false);
-                      }}
-                      className={`flex-1 py-2 rounded-[0.65rem] text-xs font-semibold transition-smooth ${
-                        mode === m
-                          ? "bg-[var(--wa-green)] text-white shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      {m === "signin" ? "Sign in" : "Create account"}
-                    </button>
-                  ))}
-                </div>
-                <div className="hidden lg:block shrink-0">
-                  <ThemeToggle />
-                </div>
+          <div className="flex-1 min-h-0 flex flex-col justify-center px-5 sm:px-8 lg:px-10 py-6 sm:py-8">
+            <div className="w-full max-w-[400px] mx-auto flex flex-col gap-4">
+              <div className="flex p-1 rounded-xl bg-[#E8F7EC] border border-[#d8ecdd]">
+                {(["signin", "signup"] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => {
+                      setMode(m);
+                      setForgotOpen(false);
+                    }}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-bold transition-all ${
+                      mode === m
+                        ? "bg-[#10662A] text-white shadow-sm"
+                        : "text-[#10662A]/70 hover:text-[#10662A]"
+                    }`}
+                  >
+                    {m === "signin" ? "Sign in" : "Create account"}
+                  </button>
+                ))}
               </div>
 
               <div>
-                <h1 className="font-display text-xl sm:text-2xl font-bold tracking-tight leading-tight">
+                <h1 className="font-display text-2xl sm:text-[1.65rem] font-extrabold tracking-tight text-[#390A5D]">
                   {mode === "signin" ? "Welcome back" : "Create your account"}
                 </h1>
-                <p className="mt-0.5 text-xs text-muted-foreground">
+                <p className="mt-1 text-sm text-[#5c4d72]">
                   {mode === "signin"
-                    ? "Sign in to your DSA dashboard"
-                    : "₹500 free wallet credit · No card required"}
+                    ? "Sign in to RupeeDial One CRM"
+                    : "Admin-managed accounts on Docker CRM"}
                 </p>
               </div>
 
-              <form onSubmit={onSubmit} className="space-y-2.5">
+              <form onSubmit={onSubmit} className="space-y-3">
                 {mode === "signup" && (
-                  <div className="grid grid-cols-2 gap-2">
-                    <Field label="Name" compact>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <Field label="Name">
                       <input
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="auth-input"
+                        className="rd-auth-input"
                         placeholder="Rahul Sharma"
                       />
                     </Field>
-                    <Field label="Phone" compact>
+                    <Field label="Phone">
                       <input
                         type="tel"
                         inputMode="numeric"
                         autoComplete="tel"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value.replace(/[^\d+\s-]/g, ""))}
-                        className="auth-input"
+                        className="rd-auth-input"
                         placeholder="9876543210"
                         maxLength={14}
                       />
@@ -316,24 +238,24 @@ function AuthPage() {
                   </div>
                 )}
 
-                <Field label="Email" compact>
+                <Field label="Email">
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="auth-input"
+                    className="rd-auth-input"
                     placeholder="you@company.com"
                     required
                   />
                 </Field>
 
-                <Field label="Password" compact>
+                <Field label="Password">
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="auth-input pr-9"
+                      className="rd-auth-input pr-10"
                       placeholder="••••••••"
                       required
                       autoComplete={mode === "signin" ? "current-password" : "new-password"}
@@ -341,57 +263,56 @@ function AuthPage() {
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-[var(--wa-green)]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#5c4d72] hover:text-[#10662A]"
                       aria-label={showPassword ? "Hide" : "Show"}
                       tabIndex={-1}
                     >
-                      {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+                      {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </button>
                   </div>
                   {mode === "signin" ? (
-                    <div className="mt-1 flex justify-end">
+                    <div className="mt-1.5 flex justify-end">
                       <button
                         type="button"
                         onClick={() => {
                           setForgotEmail(email);
                           setForgotOpen((v) => !v);
                         }}
-                        className="text-[10px] text-[var(--wa-green)] font-semibold hover:underline"
+                        className="text-[11px] text-[#10662A] font-bold hover:underline"
                       >
                         Forgot password?
                       </button>
                     </div>
                   ) : (
-                    <p className="mt-0.5 text-[10px] text-muted-foreground">8+ chars · letters, numbers & symbols</p>
+                    <p className="mt-1 text-[11px] text-[#5c4d72]">8+ characters required</p>
                   )}
                 </Field>
 
                 {mode === "signin" && forgotOpen && (
-                  <div className="flex gap-1.5">
+                  <div className="flex gap-2">
                     <input
                       type="email"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      className="auth-input flex-1"
-                      placeholder="Email for reset link"
+                      className="rd-auth-input flex-1"
+                      placeholder="Email for reset"
                     />
                     <button
                       type="button"
                       onClick={onForgot}
-                      disabled={forgotSubmitting}
-                      className="h-10 px-3 rounded-lg bg-[var(--wa-green)] text-white text-xs font-semibold shrink-0 disabled:opacity-60 inline-flex items-center gap-1"
+                      className="h-11 px-4 rounded-xl bg-[#10662A] text-white text-xs font-bold shrink-0"
                     >
-                      {forgotSubmitting ? <Loader2 className="size-3 animate-spin" /> : "Send"}
+                      Send
                     </button>
                   </div>
                 )}
 
                 {mode === "signup" && (
-                  <Field label="I am a" compact>
+                  <Field label="I am a">
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value as AppRole)}
-                      className="auth-select"
+                      className="rd-auth-input"
                     >
                       {ROLES.map((r) => (
                         <option key={r.value} value={r.value}>
@@ -399,7 +320,7 @@ function AuthPage() {
                         </option>
                       ))}
                     </select>
-                    <p className="mt-1 text-[10px] text-muted-foreground leading-snug">
+                    <p className="mt-1 text-[11px] text-[#5c4d72] leading-snug">
                       {ROLES.find((r) => r.value === role)?.hint}
                     </p>
                   </Field>
@@ -408,14 +329,14 @@ function AuthPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full h-10 rounded-xl bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white text-sm font-semibold shadow-mint disabled:opacity-60 inline-flex items-center justify-center gap-1.5 group"
+                  className="w-full h-11 rounded-xl bg-gradient-to-r from-[#10662A] via-[#0d5a26] to-[#0D4F20] hover:from-[#0D4F20] hover:to-[#0D4F20] text-white text-sm font-bold shadow-[0_8px_24px_rgba(16,102,42,0.28)] disabled:opacity-60 inline-flex items-center justify-center gap-2 group transition-all"
                 >
                   {submitting ? (
                     <Loader2 className="size-4 animate-spin" />
                   ) : (
                     <>
-                      {mode === "signin" ? "Sign in" : "Create account"}
-                      <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-smooth" />
+                      {mode === "signin" ? "Sign in to One" : "Create account"}
+                      <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
                     </>
                   )}
                 </button>
@@ -423,21 +344,20 @@ function AuthPage() {
 
               <Link
                 to="/become-partner"
-                className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-[var(--wa-green)]/35 text-[var(--wa-teal)] dark:text-[var(--wa-green)] text-xs font-semibold hover:bg-[var(--wa-green)]/6 transition-smooth"
+                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border-2 border-[#10662A]/40 text-[#10662A] text-xs font-bold hover:bg-[#E8F7EC] transition-colors"
               >
                 <Sparkles className="size-3.5" />
                 Apply as DSA Partner
               </Link>
 
-              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-0.5 text-[9px] text-muted-foreground pt-0.5">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="size-2.5 text-[var(--wa-green)]" /> SSL
+              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] text-[#5c4d72] pt-1">
+                <span className="inline-flex items-center gap-1 font-medium">
+                  <Lock className="size-3 text-[#10662A]" /> SSL secure
                 </span>
-                <span className="flex items-center gap-1">
-                  <CheckCheck className="size-2.5 text-[var(--wa-tick)]" /> WhatsApp
-                </span>
-                <span>KYC · 24h approval</span>
-                <span>🇮🇳 India</span>
+                <span className="font-medium">KYC · India</span>
+                <Link to="/" className="font-bold text-[#10662A] hover:underline">
+                  ← Back to home
+                </Link>
               </div>
             </div>
           </div>
@@ -447,25 +367,11 @@ function AuthPage() {
   );
 }
 
-function Field({
-  label,
-  children,
-  compact,
-}: {
-  label: string;
-  children: React.ReactNode;
-  compact?: boolean;
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span
-        className={`font-semibold uppercase tracking-wide text-muted-foreground ${
-          compact ? "text-[10px]" : "text-xs"
-        }`}
-      >
-        {label}
-      </span>
-      <div className={compact ? "mt-1" : "mt-1.5"}>{children}</div>
+      <span className="text-[10px] font-bold uppercase tracking-wide text-[#5c4d72]">{label}</span>
+      <div className="mt-1.5">{children}</div>
     </label>
   );
 }

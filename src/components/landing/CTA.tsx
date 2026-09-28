@@ -1,42 +1,36 @@
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export function CTA() {
   return (
-    <section id="cta" className="py-24 lg:py-32 bg-background relative">
-      <div className="max-w-5xl mx-auto px-5 lg:px-8">
-        <div className="relative rounded-3xl wa-header-bar text-white px-8 py-16 lg:px-16 lg:py-20 overflow-hidden shadow-elevated">
-          <div className="absolute inset-0 wa-pattern opacity-10" />
-          <div className="absolute -top-24 -right-24 size-80 rounded-full bg-[var(--wa-green)]/25 blur-3xl" />
-          <div className="absolute -bottom-16 -left-16 size-64 rounded-full bg-white/5 blur-2xl" />
-
-          <div className="relative max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-medium mb-6">
-              <MessageCircle className="size-3.5" />
-              WhatsApp-ready CRM · Instant alerts
-            </div>
-            <h2 className="text-3xl lg:text-5xl font-bold tracking-tight">
-              Ready to mine your next <span className="text-[var(--wa-green)]">₹1 Cr</span>?
-            </h2>
-            <p className="mt-5 text-white/80 text-lg">
-              Join 12,400+ DSAs already closing more loans with LeadMines. ₹500 free wallet credit. No card required.
-            </p>
-
-            <div className="mt-8 flex flex-col sm:flex-row gap-3">
-              <Link
-                to="/auth"
-                className="group inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-full bg-[var(--wa-green)] hover:bg-[var(--wa-green-dark)] text-white font-semibold shadow-mint hover:scale-[1.02] transition-smooth"
-              >
-                Create your free account
-                <ArrowRight className="size-4 group-hover:translate-x-1 transition-smooth" />
-              </Link>
-              <Link
-                to="/auth"
-                className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-white/10 border border-white/25 backdrop-blur-md text-white font-semibold hover:bg-white/15 transition-smooth"
-              >
-                Sign in
-              </Link>
-            </div>
+    <section className="py-16 sm:py-20 bg-[#f5fcf7]">
+      <div className="max-w-6xl mx-auto px-5">
+        <div className="rounded-2xl border border-[#d8ecdd] bg-white px-6 py-12 sm:px-12 sm:py-14 shadow-[0_4px_24px_rgba(16,102,42,0.06)]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#10662A]">
+            RupeeDial One
+          </p>
+          <h2 className="mt-3 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#390A5D] max-w-lg">
+            Ready to run your desk?
+          </h2>
+          <p className="mt-3 text-[#5c4d72] text-sm sm:text-base max-w-md leading-relaxed">
+            Sign in to buy leads, edit full form data, and move cases to disbursal.
+          </p>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <Link
+              to="/auth"
+              className="rd-btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
+            >
+              Open RupeeDial One
+              <ArrowRight className="size-4" />
+            </Link>
+            <a
+              href="https://rupeedial.com"
+              target="_blank"
+              rel="noreferrer"
+              className="rd-btn-outline inline-flex items-center rounded-xl px-5 py-2.5 text-sm font-semibold transition-all"
+            >
+              Visit rupeedial.com
+            </a>
           </div>
         </div>
       </div>

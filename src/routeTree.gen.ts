@@ -20,11 +20,13 @@ import { Route as CeoIndexRouteImport } from './routes/ceo.index'
 import { Route as LearnQuizSlugRouteImport } from './routes/learn-quiz.$slug'
 import { Route as LearnEarnSlugRouteImport } from './routes/learn-earn.$slug'
 import { Route as DashboardWorkspaceRouteImport } from './routes/dashboard.workspace'
+import { Route as DashboardWebsiteLeadsRouteImport } from './routes/dashboard.website-leads'
 import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
 import { Route as DashboardTrainingRouteImport } from './routes/dashboard.training'
 import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.submissions'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
 import { Route as DashboardRewardsRouteImport } from './routes/dashboard.rewards'
+import { Route as DashboardProfileRouteImport } from './routes/dashboard.profile'
 import { Route as DashboardMyLeadsRouteImport } from './routes/dashboard.my-leads'
 import { Route as DashboardMarketingRouteImport } from './routes/dashboard.marketing'
 import { Route as DashboardLosExecutiveRouteImport } from './routes/dashboard.los-executive'
@@ -57,6 +59,7 @@ import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrm
 import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.hrms.attendance'
 import { Route as DashboardCustomerIdRouteImport } from './routes/dashboard.customer.$id'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
+import { Route as DashboardAdminTrustRouteImport } from './routes/dashboard.admin.trust'
 import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
 import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
 import { Route as DashboardAdminPartnersRouteImport } from './routes/dashboard.admin.partners'
@@ -125,6 +128,11 @@ const DashboardWorkspaceRoute = DashboardWorkspaceRouteImport.update({
   path: '/workspace',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardWebsiteLeadsRoute = DashboardWebsiteLeadsRouteImport.update({
+  id: '/website-leads',
+  path: '/website-leads',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardWalletRoute = DashboardWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -148,6 +156,11 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
 const DashboardRewardsRoute = DashboardRewardsRouteImport.update({
   id: '/rewards',
   path: '/rewards',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardProfileRoute = DashboardProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardMyLeadsRoute = DashboardMyLeadsRouteImport.update({
@@ -313,6 +326,11 @@ const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAdminTrustRoute = DashboardAdminTrustRouteImport.update({
+  id: '/admin/trust',
+  path: '/admin/trust',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardAdminPricingRoute = DashboardAdminPricingRouteImport.update({
   id: '/admin/pricing',
   path: '/admin/pricing',
@@ -401,11 +419,13 @@ export interface FileRoutesByFullPath {
   '/dashboard/los-executive': typeof DashboardLosExecutiveRoute
   '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/rewards': typeof DashboardRewardsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/website-leads': typeof DashboardWebsiteLeadsRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
@@ -420,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/trust': typeof DashboardAdminTrustRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
@@ -460,11 +481,13 @@ export interface FileRoutesByTo {
   '/dashboard/los-analytics': typeof DashboardLosAnalyticsRoute
   '/dashboard/los-executive': typeof DashboardLosExecutiveRoute
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/rewards': typeof DashboardRewardsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/website-leads': typeof DashboardWebsiteLeadsRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
@@ -479,6 +502,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/trust': typeof DashboardAdminTrustRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
@@ -523,11 +547,13 @@ export interface FileRoutesById {
   '/dashboard/los-executive': typeof DashboardLosExecutiveRoute
   '/dashboard/marketing': typeof DashboardMarketingRouteWithChildren
   '/dashboard/my-leads': typeof DashboardMyLeadsRouteWithChildren
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/dashboard/rewards': typeof DashboardRewardsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
+  '/dashboard/website-leads': typeof DashboardWebsiteLeadsRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
   '/learn-earn/$slug': typeof LearnEarnSlugRoute
   '/learn-quiz/$slug': typeof LearnQuizSlugRoute
@@ -542,6 +568,7 @@ export interface FileRoutesById {
   '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
+  '/dashboard/admin/trust': typeof DashboardAdminTrustRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
   '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
@@ -587,11 +614,13 @@ export interface FileRouteTypes {
     | '/dashboard/los-executive'
     | '/dashboard/marketing'
     | '/dashboard/my-leads'
+    | '/dashboard/profile'
     | '/dashboard/rewards'
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
     | '/dashboard/wallet'
+    | '/dashboard/website-leads'
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
@@ -606,6 +635,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/partners'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
+    | '/dashboard/admin/trust'
     | '/dashboard/admin/users'
     | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
@@ -646,11 +676,13 @@ export interface FileRouteTypes {
     | '/dashboard/los-analytics'
     | '/dashboard/los-executive'
     | '/dashboard/my-leads'
+    | '/dashboard/profile'
     | '/dashboard/rewards'
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
     | '/dashboard/wallet'
+    | '/dashboard/website-leads'
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
@@ -665,6 +697,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/partners'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
+    | '/dashboard/admin/trust'
     | '/dashboard/admin/users'
     | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
@@ -708,11 +741,13 @@ export interface FileRouteTypes {
     | '/dashboard/los-executive'
     | '/dashboard/marketing'
     | '/dashboard/my-leads'
+    | '/dashboard/profile'
     | '/dashboard/rewards'
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
     | '/dashboard/wallet'
+    | '/dashboard/website-leads'
     | '/dashboard/workspace'
     | '/learn-earn/$slug'
     | '/learn-quiz/$slug'
@@ -727,6 +762,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/partners'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pricing'
+    | '/dashboard/admin/trust'
     | '/dashboard/admin/users'
     | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
@@ -840,6 +876,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardWorkspaceRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/website-leads': {
+      id: '/dashboard/website-leads'
+      path: '/website-leads'
+      fullPath: '/dashboard/website-leads'
+      preLoaderRoute: typeof DashboardWebsiteLeadsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/wallet': {
       id: '/dashboard/wallet'
       path: '/wallet'
@@ -873,6 +916,13 @@ declare module '@tanstack/react-router' {
       path: '/rewards'
       fullPath: '/dashboard/rewards'
       preLoaderRoute: typeof DashboardRewardsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/profile': {
+      id: '/dashboard/profile'
+      path: '/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardProfileRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/my-leads': {
@@ -1099,6 +1149,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminUsersRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin/trust': {
+      id: '/dashboard/admin/trust'
+      path: '/admin/trust'
+      fullPath: '/dashboard/admin/trust'
+      preLoaderRoute: typeof DashboardAdminTrustRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/admin/pricing': {
       id: '/dashboard/admin/pricing'
       path: '/admin/pricing'
@@ -1265,11 +1322,13 @@ interface DashboardRouteChildren {
   DashboardLosExecutiveRoute: typeof DashboardLosExecutiveRoute
   DashboardMarketingRoute: typeof DashboardMarketingRouteWithChildren
   DashboardMyLeadsRoute: typeof DashboardMyLeadsRouteWithChildren
+  DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardRewardsRoute: typeof DashboardRewardsRoute
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
   DashboardTrainingRoute: typeof DashboardTrainingRoute
   DashboardWalletRoute: typeof DashboardWalletRoute
+  DashboardWebsiteLeadsRoute: typeof DashboardWebsiteLeadsRoute
   DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
   DashboardAdminBillingRoute: typeof DashboardAdminBillingRoute
@@ -1280,6 +1339,7 @@ interface DashboardRouteChildren {
   DashboardAdminPartnersRoute: typeof DashboardAdminPartnersRoute
   DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute
   DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
+  DashboardAdminTrustRoute: typeof DashboardAdminTrustRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
   DashboardCustomerIdRoute: typeof DashboardCustomerIdRoute
 }
@@ -1301,11 +1361,13 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardLosExecutiveRoute: DashboardLosExecutiveRoute,
   DashboardMarketingRoute: DashboardMarketingRouteWithChildren,
   DashboardMyLeadsRoute: DashboardMyLeadsRouteWithChildren,
+  DashboardProfileRoute: DashboardProfileRoute,
   DashboardRewardsRoute: DashboardRewardsRoute,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSubmissionsRoute: DashboardSubmissionsRoute,
   DashboardTrainingRoute: DashboardTrainingRoute,
   DashboardWalletRoute: DashboardWalletRoute,
+  DashboardWebsiteLeadsRoute: DashboardWebsiteLeadsRoute,
   DashboardWorkspaceRoute: DashboardWorkspaceRoute,
   DashboardIndexRoute: DashboardIndexRoute,
   DashboardAdminBillingRoute: DashboardAdminBillingRoute,
@@ -1316,6 +1378,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminPartnersRoute: DashboardAdminPartnersRoute,
   DashboardAdminPayoutsRoute: DashboardAdminPayoutsRoute,
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,
+  DashboardAdminTrustRoute: DashboardAdminTrustRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
   DashboardCustomerIdRoute: DashboardCustomerIdRoute,
 }

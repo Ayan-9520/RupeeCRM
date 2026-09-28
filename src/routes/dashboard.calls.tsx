@@ -1,12 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Phone, MapPin, Banknote, Loader2, Search, MessageSquare, ArrowRight, ShoppingBag, CheckCircle2 } from "lucide-react";
+import { Phone, MapPin, Banknote, Loader2, Search, MessageSquare, ArrowRight, ShoppingBag } from "lucide-react";
+import { listMyLeads, patchMyLead } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/calls")({
-  head: () => ({ meta: [{ title: "Call Queue — LeadMines" }] }),
+  head: () => ({ meta: [{ title: "Call Queue — RupeeDial One" }] }),
   component: CallQueue,
 });
 
@@ -27,54 +26,81 @@ type Row = {
   } | null;
 };
 
-const CALL_STAGES = ["new", "contacted"]; // "Call Queue" = leads not yet in docs/submitted
+const CALL_STAGES = ["new", "contacted"];
 
 function CallQueue() {
-  const { user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [stage, setStage] = useState<"all" | "new" | "contacted">("all");
 
   const load = async () => {
-    if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("lead_purchases")
-      .select("id,pipeline_stage,next_followup_at,notes,leads:leads(id,applicant_name,full_phone,city,loan_amount,monthly_income,score,product_subtype)")
-      .eq("dsa_id", user.id)
-      .in("pipeline_stage", CALL_STAGES)
-      .order("created_at", { ascending: false });
-    if (error) toast.error(error.message);
-    else setRows((data ?? []) as unknown as Row[]);
-    setLoading(false);
+    try {
+      const data = await listMyLeads();
+      const mapped: Row[] = (data.items ?? [])
+        .filter((p) => CALL_STAGES.includes(p.pipeline_stage))
+        .map((p) => ({
+          id: p.id,
+          pipeline_stage: p.pipeline_stage,
+          next_followup_at: p.next_followup_at,
+          notes: (p.notes ?? []).map((n) => ({ at: n.at, text: n.text })),
+          leads: p.lead
+            ? {
+                id: p.lead.id,
+                applicant_name: p.lead.applicant_name,
+                full_phone: p.lead.full_phone,
+                city: p.lead.city,
+                loan_amount: p.lead.loan_amount,
+                monthly_income: p.lead.monthly_income,
+                score: (["hot", "warm", "cold"].includes(p.lead.score) ? p.lead.score : "cold") as "cold" | "warm" | "hot",
+                product_subtype: p.lead.product_subtype,
+              }
+            : null,
+        }));
+      setRows(mapped);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load call queue");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => {
+    load();
+  }, []);
 
   const filtered = rows.filter((r) => {
     if (stage !== "all" && r.pipeline_stage !== stage) return false;
     if (search.trim()) {
       const q = search.toLowerCase();
-      return (r.leads?.applicant_name.toLowerCase().includes(q) || r.leads?.city.toLowerCase().includes(q) || r.leads?.full_phone.includes(q));
+      return (
+        r.leads?.applicant_name.toLowerCase().includes(q) ||
+        r.leads?.city.toLowerCase().includes(q) ||
+        r.leads?.full_phone.includes(q)
+      );
     }
     return true;
   });
 
   const advance = async (row: Row, next: string) => {
-    const { error } = await supabase.from("lead_purchases").update({ pipeline_stage: next, updated_at: new Date().toISOString() }).eq("id", row.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Moved to ${next}`);
-    load();
+    try {
+      await patchMyLead(row.id, { pipeline_stage: next });
+      toast.success(`Moved to ${next}`);
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
   };
 
   const addNote = async (row: Row, text: string) => {
-    const note = { at: new Date().toISOString(), text };
-    const updated = [...(row.notes ?? []), note];
-    const { error } = await supabase.from("lead_purchases").update({ notes: updated as never }).eq("id", row.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Note added");
-    load();
+    try {
+      await patchMyLead(row.id, { notes_text: text });
+      toast.success("Note added");
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to add note");
+    }
   };
 
   return (
@@ -141,7 +167,7 @@ function CallCard({ row, onAdvance, onNote }: { row: Row; onAdvance: (r: Row, ne
         <div className="flex gap-2">
           <button onClick={() => { if (noteText.trim()) { onNote(row, noteText.trim()); setNoteText(""); } }} className="flex-1 text-xs font-semibold px-3 py-1.5 rounded-md border border-border hover:bg-secondary">Save note</button>
           {row.pipeline_stage === "new" && <button onClick={() => onAdvance(row, "contacted")} className="text-xs font-bold px-3 py-1.5 rounded-md bg-amber-500 text-white">Mark contacted →</button>}
-          {row.pipeline_stage === "contacted" && <button onClick={() => onAdvance(row, "docs")} className="text-xs font-bold px-3 py-1.5 rounded-md bg-emerald-500 text-white">Move to docs →</button>}
+          {row.pipeline_stage === "contacted" && <button onClick={() => onAdvance(row, "docs_collected")} className="text-xs font-bold px-3 py-1.5 rounded-md bg-emerald-500 text-white">Move to docs →</button>}
         </div>
         {row.notes?.length > 0 && (
           <div className="text-[11px] text-muted-foreground line-clamp-2">📝 {row.notes[row.notes.length - 1].text}</div>

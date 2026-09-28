@@ -1,21 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { FileText, Loader2, MapPin, Banknote, Building2, ArrowRight, ShoppingBag } from "lucide-react";
+import { FileText, Loader2, MapPin, Building2, ArrowRight, ShoppingBag } from "lucide-react";
+import { listMyLeads, patchMyLead } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/submissions")({
-  head: () => ({ meta: [{ title: "Submissions — LeadMines" }] }),
+  head: () => ({ meta: [{ title: "Submissions — RupeeDial One" }] }),
   component: Submissions,
 });
 
 type Row = {
   id: string;
   pipeline_stage: string;
-  deal_value: number;
-  notes: { at: string; text: string; lender?: string }[];
-  updated_at: string;
+  deal_value: number | null;
+  notes: { at: string; text: string }[];
   leads: {
     applicant_name: string;
     full_phone: string;
@@ -25,30 +23,53 @@ type Row = {
   } | null;
 };
 
-const SUBMISSION_STAGES = ["docs", "submitted", "approved", "disbursed"];
+/** Backend stages for docs → disbursal (UI labels below) */
+const SUBMISSION_STAGES = ["docs_collected", "bank_submitted", "sanctioned", "disbursed"] as const;
+const STAGE_LABEL: Record<string, string> = {
+  docs_collected: "docs",
+  bank_submitted: "submitted",
+  sanctioned: "approved",
+  disbursed: "disbursed",
+};
 const LENDERS = ["HDFC Bank", "ICICI Bank", "Axis Bank", "Bajaj Finserv", "Tata Capital", "IDFC First", "Kotak Mahindra"];
 
 function Submissions() {
-  const { user } = useAuth();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [stage, setStage] = useState<"all" | string>("all");
 
   const load = async () => {
-    if (!user) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from("lead_purchases")
-      .select("id,pipeline_stage,deal_value,notes,updated_at,leads:leads(applicant_name,full_phone,city,loan_amount,product_subtype)")
-      .eq("dsa_id", user.id)
-      .in("pipeline_stage", SUBMISSION_STAGES)
-      .order("updated_at", { ascending: false });
-    if (error) toast.error(error.message);
-    else setRows((data ?? []) as unknown as Row[]);
-    setLoading(false);
+    try {
+      const data = await listMyLeads();
+      const mapped: Row[] = (data.items ?? [])
+        .filter((p) => (SUBMISSION_STAGES as readonly string[]).includes(p.pipeline_stage))
+        .map((p) => ({
+          id: p.id,
+          pipeline_stage: p.pipeline_stage,
+          deal_value: p.deal_value,
+          notes: (p.notes ?? []).map((n) => ({ at: n.at, text: n.text })),
+          leads: p.lead
+            ? {
+                applicant_name: p.lead.applicant_name,
+                full_phone: p.lead.full_phone,
+                city: p.lead.city,
+                loan_amount: p.lead.loan_amount,
+                product_subtype: p.lead.product_subtype,
+              }
+            : null,
+        }));
+      setRows(mapped);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load submissions");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => {
+    load();
+  }, []);
 
   const filtered = stage === "all" ? rows : rows.filter((r) => r.pipeline_stage === stage);
 
@@ -58,16 +79,16 @@ function Submissions() {
   }, {});
 
   const advance = async (row: Row, next: string, lender?: string) => {
-    const newNote = lender ? { at: new Date().toISOString(), text: `Assigned to ${lender}`, lender } : null;
-    const updates: { pipeline_stage: string; updated_at: string; notes?: unknown } = {
-      pipeline_stage: next,
-      updated_at: new Date().toISOString(),
-    };
-    if (newNote) updates.notes = [...(row.notes ?? []), newNote];
-    const { error } = await supabase.from("lead_purchases").update(updates as never).eq("id", row.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Updated → ${next}`);
-    load();
+    try {
+      await patchMyLead(row.id, {
+        pipeline_stage: next,
+        ...(lender ? { notes_text: `Assigned to ${lender}` } : {}),
+      });
+      toast.success(`Updated → ${STAGE_LABEL[next] ?? next}`);
+      load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Update failed");
+    }
   };
 
   return (
@@ -83,7 +104,7 @@ function Submissions() {
         {SUBMISSION_STAGES.map((s) => (
           <button key={s} onClick={() => setStage(stage === s ? "all" : s)}
             className={`rounded-xl bg-card border p-3 text-left transition-smooth ${stage === s ? "border-accent ring-1 ring-accent/30" : "border-border hover:border-accent/50"}`}>
-            <div className="text-xs text-muted-foreground uppercase tracking-wide">{s}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">{STAGE_LABEL[s]}</div>
             <div className="text-2xl font-display font-bold mt-1">{counts[s] ?? 0}</div>
           </button>
         ))}
@@ -123,14 +144,18 @@ function Submissions() {
 function SubmissionRow({ row, onAdvance }: { row: Row; onAdvance: (r: Row, next: string, lender?: string) => void }) {
   if (!row.leads) return null;
   const lead = row.leads;
-  const lastLender = [...(row.notes ?? [])].reverse().find((n) => n.lender)?.lender;
+  const lastLender = [...(row.notes ?? [])]
+    .reverse()
+    .find((n) => n.text?.startsWith("Assigned to "))
+    ?.text?.replace(/^Assigned to /, "");
+  const displayStage = STAGE_LABEL[row.pipeline_stage] ?? row.pipeline_stage;
   const stageColor = row.pipeline_stage === "disbursed" ? "bg-emerald-500/15 text-emerald-600"
-    : row.pipeline_stage === "approved" ? "bg-blue-500/15 text-blue-600"
-    : row.pipeline_stage === "submitted" ? "bg-amber-500/15 text-amber-600"
+    : row.pipeline_stage === "sanctioned" ? "bg-blue-500/15 text-blue-600"
+    : row.pipeline_stage === "bank_submitted" ? "bg-amber-500/15 text-amber-600"
     : "bg-secondary text-muted-foreground";
-  const next = row.pipeline_stage === "docs" ? "submitted"
-    : row.pipeline_stage === "submitted" ? "approved"
-    : row.pipeline_stage === "approved" ? "disbursed" : null;
+  const next = row.pipeline_stage === "docs_collected" ? "bank_submitted"
+    : row.pipeline_stage === "bank_submitted" ? "sanctioned"
+    : row.pipeline_stage === "sanctioned" ? "disbursed" : null;
 
   return (
     <tr className="border-t border-border hover:bg-secondary/30">
@@ -140,12 +165,19 @@ function SubmissionRow({ row, onAdvance }: { row: Row; onAdvance: (r: Row, next:
       </td>
       <td className="px-4 py-3 hidden md:table-cell">{lead.product_subtype ?? "—"}</td>
       <td className="px-4 py-3 hidden lg:table-cell font-semibold">₹{Number(lead.loan_amount).toLocaleString("en-IN")}</td>
-      <td className="px-4 py-3"><span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${stageColor}`}>{row.pipeline_stage}</span></td>
+      <td className="px-4 py-3"><span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${stageColor}`}>{displayStage}</span></td>
       <td className="px-4 py-3">
         {lastLender ? (
           <span className="text-xs inline-flex items-center gap-1"><Building2 className="size-3" />{lastLender}</span>
         ) : (
-          <select onChange={(e) => { if (e.target.value) onAdvance(row, row.pipeline_stage === "docs" ? "submitted" : row.pipeline_stage, e.target.value); }} className="input-base !h-8 !py-0 text-xs">
+          <select
+            onChange={(e) => {
+              if (e.target.value) {
+                onAdvance(row, row.pipeline_stage === "docs_collected" ? "bank_submitted" : row.pipeline_stage, e.target.value);
+              }
+            }}
+            className="input-base !h-8 !py-0 text-xs"
+          >
             <option value="">Assign…</option>
             {LENDERS.map((l) => <option key={l} value={l}>{l}</option>)}
           </select>
@@ -154,7 +186,7 @@ function SubmissionRow({ row, onAdvance }: { row: Row; onAdvance: (r: Row, next:
       <td className="px-4 py-3">
         {next ? (
           <button onClick={() => onAdvance(row, next)} className="text-xs font-bold px-2.5 py-1 rounded-md bg-accent text-accent-foreground hover:opacity-90">
-            → {next}
+            → {STAGE_LABEL[next] ?? next}
           </button>
         ) : (
           <span className="text-xs text-muted-foreground">Done ✓</span>

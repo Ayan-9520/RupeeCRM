@@ -1,53 +1,41 @@
-import { MessageCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { RUPEEDIAL_PRODUCT_MENUS, RUPEEDIAL_SITE } from "@/lib/rupeedial-products";
 
 export function Footer() {
   return (
-    <footer className="py-14 bg-card border-t border-border relative">
-      <div className="absolute inset-0 wa-pattern opacity-20 pointer-events-none" />
-      <div className="relative max-w-7xl mx-auto px-5 lg:px-8 grid md:grid-cols-4 gap-10">
-        <div className="md:col-span-2">
-          <div className="flex items-center gap-2.5">
-            <div className="size-9 rounded-full bg-[var(--wa-green)] grid place-items-center shadow-mint">
-              <MessageCircle className="size-5 text-white" strokeWidth={2.5} fill="white" fillOpacity={0.2} />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display font-bold tracking-tight">LeadMines</div>
-              <div className="text-[10px] uppercase tracking-[0.18em] text-[var(--wa-green)] font-semibold -mt-0.5">
-                by MoneyMines
-              </div>
-            </div>
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground max-w-sm">
-            India's premium lead marketplace and DSA growth platform for financial products.
-            Built for WhatsApp-first sales teams.
+    <footer className="border-t border-[#d8ecdd] py-12 bg-white">
+      <div className="max-w-6xl mx-auto px-5 grid sm:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="lg:col-span-2">
+          <Link to="/" className="inline-flex items-center gap-2">
+            <span className="size-8 rounded-full bg-[#10662A] grid place-items-center text-white font-display font-bold text-sm">
+              R
+            </span>
+            <span className="font-display font-bold text-lg text-[#10662A] lowercase">
+              rupeedial <span className="normal-case text-[#390A5D]">One</span>
+            </span>
+          </Link>
+          <p className="mt-3 text-sm text-[#5c4d72] max-w-xs leading-relaxed">
+            Official RupeeDial CRM — marketplace, pipeline, and disbursal in one place.
           </p>
         </div>
 
-        <div>
-          <div className="text-xs uppercase tracking-wider font-semibold text-foreground/80">Platform</div>
-          <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
-            <li><a href="#modules" className="hover:text-[var(--wa-green)] transition-smooth">Modules</a></li>
-            <li><a href="#pricing" className="hover:text-[var(--wa-green)] transition-smooth">Pricing</a></li>
-            <li><a href="#community" className="hover:text-[var(--wa-green)] transition-smooth">Community</a></li>
-          </ul>
-        </div>
-
-        <div>
-          <div className="text-xs uppercase tracking-wider font-semibold text-foreground/80">Company</div>
-          <ul className="mt-4 space-y-2.5 text-sm text-muted-foreground">
-            <li><a href="#" className="hover:text-[var(--wa-green)] transition-smooth">About MoneyMines</a></li>
-            <li><a href="#" className="hover:text-[var(--wa-green)] transition-smooth">Contact</a></li>
-            <li><a href="#" className="hover:text-[var(--wa-green)] transition-smooth">Privacy & Refund</a></li>
-          </ul>
-        </div>
+        {RUPEEDIAL_PRODUCT_MENUS.slice(0, 3).map((menu) => (
+          <div key={menu.title}>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#10662A]">{menu.title}</div>
+            <ul className="mt-3 space-y-1.5 text-sm text-[#5c4d72]">
+              {menu.items.slice(0, 5).map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
       </div>
 
-      <div className="relative max-w-7xl mx-auto px-5 lg:px-8 mt-12 pt-6 border-t border-border flex flex-col sm:flex-row justify-between gap-3 text-xs text-muted-foreground">
-        <div>© {new Date().getFullYear()} MoneyMines Technologies Pvt Ltd. All rights reserved.</div>
-        <div className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-[var(--wa-green)]" />
-          Made in India 🇮🇳
-        </div>
+      <div className="max-w-6xl mx-auto px-5 mt-10 pt-6 border-t border-[#d8ecdd] flex flex-col sm:flex-row justify-between gap-3 text-xs text-[#5c4d72]">
+        <div>© {new Date().getFullYear()} RupeeDial One. All rights reserved.</div>
+        <a href={RUPEEDIAL_SITE} target="_blank" rel="noreferrer" className="hover:text-[#10662A] font-semibold">
+          rupeedial.com
+        </a>
       </div>
     </footer>
   );

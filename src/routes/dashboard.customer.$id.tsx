@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { CustomerWorkspacePage } from "@/components/customer/CustomerWorkspacePage";
 
 export const Route = createFileRoute("/dashboard/customer/$id")({
-  head: () => ({ meta: [{ title: "Customer CRM — LeadMines" }] }),
+  head: () => ({ meta: [{ title: "Customer CRM — RupeeDial One" }] }),
   component: CustomerRoute,
 });
 

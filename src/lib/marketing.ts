@@ -47,7 +47,7 @@ export const PRODUCT_LABEL: Record<MarketingProduct, string> = {
   generic: "All Products",
 };
 
-// Fallback hardcoded templates if DB hasn't loaded yet.
+// Fallback hardcoded templates when CRM/DB is unavailable.
 export const FALLBACK_TEMPLATES: MarketingTemplate[] = [
   {
     id: "fallback-pl", kind: "post", product: "personal_loan",
@@ -57,7 +57,67 @@ export const FALLBACK_TEMPLATES: MarketingTemplate[] = [
     cta: "Apply Now", enabled: true, display_order: 1,
     theme: { bg: "#0c2340", accent: "#2dd4a8", text: "#ffffff", pattern: "diagonal" },
   },
+  {
+    id: "fallback-hl", kind: "post", product: "home_loan",
+    name: "Home Loan — Dream Home", headline: "Home Loan from 8.4%*",
+    subheadline: "Lowest EMI · Doorstep KYC",
+    body: "Get pre-approved in minutes. Talk to {{name}} at {{phone}}.",
+    cta: "Check Eligibility", enabled: true, display_order: 2,
+    theme: { bg: "#10662A", accent: "#E8F7EC", text: "#ffffff", pattern: "waves" },
+  },
+  {
+    id: "fallback-cc", kind: "post", product: "credit_card",
+    name: "Card — Lifetime Free", headline: "Lifetime Free Credit Cards",
+    subheadline: "Rewards on every spend",
+    body: "Compare top issuers with {{company}}. Apply via {{link}}",
+    cta: "Apply Free", enabled: true, display_order: 3,
+    theme: { bg: "#390A5D", accent: "#f59e0b", text: "#ffffff", pattern: "grid" },
+  },
+  {
+    id: "fallback-wa-pl", kind: "whatsapp", product: "personal_loan",
+    name: "WA — PL pitch", headline: "Hi! Need a personal loan?",
+    subheadline: null,
+    body: "Namaste {{name}} here from {{company}} 👋\nNeed funds urgently? Personal loans up to ₹10L with minimal docs.\nCall/WhatsApp: {{phone}}\nApply: {{link}}",
+    cta: "Apply", enabled: true, display_order: 1,
+    theme: { bg: "#075E54", accent: "#25D366", text: "#ffffff" },
+  },
+  {
+    id: "fallback-wa-ins", kind: "whatsapp", product: "insurance",
+    name: "WA — Health cover", headline: "Family health cover",
+    subheadline: null,
+    body: "Hi, {{name}} from {{company}}.\nProtect your family with health insurance starting ₹15/day.\nReply YES or call {{phone}}.\n{{link}}",
+    cta: "Get Quote", enabled: true, display_order: 2,
+    theme: { bg: "#075E54", accent: "#25D366", text: "#ffffff" },
+  },
+  {
+    id: "fallback-wa-cc", kind: "whatsapp", product: "credit_card",
+    name: "WA — Card offer", headline: "Credit card offer",
+    subheadline: null,
+    body: "{{name}} · {{company}}\nLifetime-free credit cards with lounge & fuel benefits.\nShare income + PAN to check eligibility.\n{{phone}} | {{link}}",
+    cta: "Check", enabled: true, display_order: 3,
+    theme: { bg: "#075E54", accent: "#25D366", text: "#ffffff" },
+  },
+  {
+    id: "fallback-reel-1", kind: "reel", product: "personal_loan",
+    name: "Reel — 15s PL hook", headline: "Need cash in 24 hrs?",
+    subheadline: "Hook → Problem → Offer → CTA",
+    body: "Scene 1: Hook. Scene 2: Show EMI. Scene 3: {{name}} CTA + {{link}}",
+    cta: "Apply Now", enabled: true, display_order: 1,
+    theme: { bg: "#111827", accent: "#2dd4a8", text: "#ffffff", pattern: "diagonal" },
+  },
+  {
+    id: "fallback-reel-2", kind: "reel", product: "generic",
+    name: "Reel — Partner intro", headline: "Meet your DSA",
+    subheadline: "Face to camera intro",
+    body: "Hi I'm {{name}} from {{company}}. I help with loans, cards & insurance. DM or call {{phone}}.",
+    cta: "Follow", enabled: true, display_order: 2,
+    theme: { bg: "#390A5D", accent: "#10662A", text: "#ffffff", pattern: "dots" },
+  },
 ];
+
+export function templatesByKind(kind: TemplateKind): MarketingTemplate[] {
+  return FALLBACK_TEMPLATES.filter((t) => t.kind === kind);
+}
 
 // === Personalization ===
 export function personalize(text: string, branding: PartnerBranding): string {
@@ -98,14 +158,38 @@ export function shareTelegram(text: string, url: string) {
 }
 
 export function buildReferralLink(code: string, baseUrl?: string): string {
-  const base = baseUrl ?? (typeof window !== "undefined" ? window.location.origin : "https://leadmines.app");
-  return `${base}/r/${code}`;
+  const base =
+    baseUrl ??
+    (typeof window !== "undefined"
+      ? (import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined)?.replace(/\/$/, "") ||
+        "https://rupeedial.com"
+      : "https://rupeedial.com");
+  return `${base}/check-eligibility?ref=${encodeURIComponent(code)}`;
 }
 
 export function generateReferralCode(name: string, userId: string): string {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "").slice(0, 6) || "user";
   const tail = userId.replace(/-/g, "").slice(0, 5);
   return `${slug}${tail}`;
+}
+
+/** Branding for canvases — CRM user + optional public profile. */
+export function partnerBrandingFrom(
+  user: { full_name?: string; phone?: string | null; email?: string; dsa_id?: string | null } | null,
+  profile?: { firm_name?: string; slug?: string; public_url?: string | null; logo_url?: string | null } | null,
+): PartnerBranding {
+  const code = user?.dsa_id || profile?.slug || "partner";
+  const link =
+    profile?.public_url ||
+    (profile?.slug ? `https://rupeedial.com/p/${profile.slug}` : buildReferralLink(code));
+  return {
+    name: user?.full_name || "Partner",
+    phone: user?.phone || "+91",
+    company: profile?.firm_name || "RupeeDial Partner",
+    referralLink: link,
+    email: user?.email,
+    logo: profile?.logo_url,
+  };
 }
 
 // === Pattern SVG backgrounds ===

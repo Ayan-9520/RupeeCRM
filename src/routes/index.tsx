@@ -1,16 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Nav } from "@/components/landing/Nav";
 import { Hero } from "@/components/landing/Hero";
-import { Roles } from "@/components/landing/Roles";
-import { Flow } from "@/components/landing/Flow";
-import { Modules } from "@/components/landing/Modules";
 import { Products } from "@/components/landing/Products";
-import { Community } from "@/components/landing/Community";
-import { Pricing } from "@/components/landing/Pricing";
+import { Flow } from "@/components/landing/Flow";
 import { CTA } from "@/components/landing/CTA";
 import { Footer } from "@/components/landing/Footer";
 
 export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "RupeeDial One — Loan CRM for DSAs" },
+      {
+        name: "description",
+        content:
+          "RupeeDial One: buy website leads, edit full form details, and run New → Disbursed for every loan product.",
+      },
+    ],
+  }),
   component: Index,
 });
 
@@ -20,12 +26,8 @@ function Index() {
       <Nav />
       <main>
         <Hero />
-        <Roles />
-        <Flow />
-        <Modules />
         <Products />
-        <Community />
-        <Pricing />
+        <Flow />
         <CTA />
       </main>
       <Footer />

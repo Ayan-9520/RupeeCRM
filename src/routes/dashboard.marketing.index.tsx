@@ -1,52 +1,112 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Card, CardContent } from "@/components/ui/card";
-import { Image as ImageIcon, MessageCircle, IdCard, Film, Link2, Sparkles, Zap } from "lucide-react";
+import { Image as ImageIcon, MessageCircle, IdCard, Film, Link2, Sparkles, Zap, Lock } from "lucide-react";
+import { useBillingEntitlements } from "@/hooks/use-billing-entitlements";
 
 export const Route = createFileRoute("/dashboard/marketing/")({
   component: MarketingHome,
 });
 
 const TILES = [
-  { to: "/dashboard/marketing/oneclick", icon: Zap, title: "One Click Post ⚡", desc: "Instant branded post — trending, daily, or festival. Generate, share, done.", color: "from-primary/15 to-accent/10" },
-  { to: "/dashboard/marketing/posts", icon: ImageIcon, title: "Social Media Posts", desc: "Pre-designed templates for PL, BL, HL, Credit Cards, Insurance — auto-personalized.", color: "from-emerald-500/10 to-emerald-500/5" },
-  { to: "/dashboard/marketing/whatsapp", icon: MessageCircle, title: "WhatsApp Campaign", desc: "Click-to-chat links, message templates, and bulk-ready scripts.", color: "from-green-500/10 to-green-500/5" },
-  { to: "/dashboard/marketing/card", icon: IdCard, title: "Visiting Card Generator", desc: "Digital business card with QR code, photo, and shareable image.", color: "from-blue-500/10 to-blue-500/5" },
-  { to: "/dashboard/marketing/reels", icon: Film, title: "Reel / Video Builder", desc: "Short reel templates for offers, festivals, and product pitches.", color: "from-purple-500/10 to-purple-500/5" },
-  { to: "/dashboard/marketing/referral", icon: Link2, title: "Referral Link", desc: "Your personal lead-capture link to share anywhere.", color: "from-amber-500/10 to-amber-500/5" },
+  {
+    to: "/dashboard/marketing/oneclick",
+    icon: Zap,
+    title: "One Click Post",
+    desc: "Instant branded post — generate, share, done.",
+    needFull: true,
+  },
+  {
+    to: "/dashboard/marketing/posts",
+    icon: ImageIcon,
+    title: "Social Media Posts",
+    desc: "Templates for PL, HL, cards — auto-personalized PNG.",
+    needFull: false,
+  },
+  {
+    to: "/dashboard/marketing/whatsapp",
+    icon: MessageCircle,
+    title: "WhatsApp Campaign",
+    desc: "Click-to-chat templates with your name & link.",
+    needFull: false,
+  },
+  {
+    to: "/dashboard/marketing/card",
+    icon: IdCard,
+    title: "Visiting Card",
+    desc: "Digital card with QR to your public profile.",
+    needFull: false,
+  },
+  {
+    to: "/dashboard/marketing/reels",
+    icon: Film,
+    title: "Reel scripts",
+    desc: "Short-form scripts for offers & intros.",
+    needFull: true,
+  },
+  {
+    to: "/dashboard/marketing/referral",
+    icon: Link2,
+    title: "Referral Link",
+    desc: "Personal lead-capture & product links.",
+    needFull: false,
+  },
 ] as const;
 
 function MarketingHome() {
+  const { marketingFull, entitlements } = useBillingEntitlements();
+
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border bg-gradient-to-br from-primary/10 via-accent/5 to-transparent p-6 md:p-8">
+      <div className="rounded-2xl border border-[#d8ecdd] bg-gradient-to-br from-[#E8F7EC] via-white to-transparent p-6 md:p-8">
         <div className="flex items-start gap-4">
-          <div className="size-12 rounded-xl bg-primary/15 grid place-items-center">
-            <Sparkles className="size-6 text-primary" />
+          <div className="size-12 rounded-xl bg-[#10662A]/15 grid place-items-center">
+            <Sparkles className="size-6 text-[#10662A]" />
           </div>
           <div>
-            <h2 className="text-2xl font-display font-bold">Turn every share into a lead.</h2>
-            <p className="text-muted-foreground mt-1 max-w-2xl">
-              Auto-personalized creatives with your name, phone, and referral link baked in.
-              Pick a template, tweak the copy, share to WhatsApp / Facebook / LinkedIn — done.
+            <h2 className="text-2xl font-display font-bold text-[#390A5D]">
+              Turn every share into a lead
+            </h2>
+            <p className="text-[#5c4d72] mt-1 max-w-2xl text-sm">
+              Starter: WhatsApp, basic posts, visiting card. Growth+: full post pack, reels &
+              one-click.
+              {!entitlements.has_active_plan && (
+                <>
+                  {" "}
+                  <Link to="/dashboard/billing" className="font-semibold text-[#10662A] underline">
+                    Activate a plan
+                  </Link>
+                </>
+              )}
             </p>
           </div>
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {TILES.map((t) => (
-          <Link key={t.to} to={t.to}>
-            <Card className={`bg-gradient-to-br ${t.color} hover:shadow-lg transition-shadow h-full`}>
-              <CardContent className="p-6">
-                <div className="size-10 rounded-lg bg-background/80 grid place-items-center mb-4 shadow-sm">
-                  <t.icon className="size-5 text-primary" />
-                </div>
-                <div className="font-semibold text-lg mb-1">{t.title}</div>
-                <div className="text-sm text-muted-foreground">{t.desc}</div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+        {TILES.map((t) => {
+          const locked = t.needFull && !marketingFull;
+          return (
+            <Link key={t.to} to={t.to}>
+              <Card className="hover:shadow-md transition-shadow h-full border-[#d8ecdd]">
+                <CardContent className="p-6">
+                  <div className="size-10 rounded-lg bg-[#E8F7EC] grid place-items-center mb-4 relative">
+                    <t.icon className="size-5 text-[#10662A]" />
+                    {locked && (
+                      <Lock className="size-3 absolute -top-1 -right-1 text-amber-600" />
+                    )}
+                  </div>
+                  <div className="font-semibold text-lg mb-1 text-[#390A5D]">
+                    {t.title}
+                    {locked && (
+                      <span className="ml-2 text-[10px] uppercase text-amber-700">Growth+</span>
+                    )}
+                  </div>
+                  <div className="text-sm text-[#5c4d72]">{t.desc}</div>
+                </CardContent>
+              </Card>
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ import { NotificationCenter } from "@/components/dashboard/NotificationCenter";
 import { RoleGuard } from "@/components/dashboard/RoleGuard";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — LeadMines" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — RupeeDial One" }] }),
   component: DashboardLayout,
 });
 
@@ -25,19 +25,19 @@ function DashboardLayout() {
 
   if (loading || !user) {
     return (
-      <div className="min-h-screen grid place-items-center bg-background">
-        <Loader2 className="size-6 animate-spin text-accent" />
+      <div className="min-h-screen grid place-items-center bg-[#f5fcf7]">
+        <Loader2 className="size-6 animate-spin text-[#10662A]" />
       </div>
     );
   }
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-secondary/40">
+      <div className="min-h-screen flex w-full bg-[#f5fcf7]">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center gap-3 border-b border-border bg-background px-4 sticky top-0 z-30">
-            <SidebarTrigger />
+          <header className="h-14 flex items-center gap-3 border-b border-[#d8ecdd] bg-white px-4 sticky top-0 z-30 shadow-[0_1px_0_rgba(16,102,42,0.04)]">
+            <SidebarTrigger className="text-[#10662A]" />
             <WorkspaceSwitcher />
             <NotificationCenter />
             <div className="flex-1" />

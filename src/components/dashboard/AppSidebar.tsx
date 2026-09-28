@@ -6,9 +6,9 @@ import {
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
-  Settings, LogOut, MessageCircle, BarChart3, GraduationCap, Megaphone,
+  Settings, LogOut, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent, Cog,
+  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent, Cog, Globe,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getNavForRole, type NavItem } from "@/lib/role-access";
@@ -39,6 +39,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "/dashboard/rewards": Gift,
   "/dashboard/admin/users": Users,
   "/dashboard/admin/leads": ListPlus,
+  "/dashboard/website-leads": Globe,
   "/dashboard/admin/pricing": UserCog,
   "/dashboard/admin/commissions": Percent,
   "/dashboard/admin/payouts": Banknote,
@@ -85,14 +86,14 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <Link to="/dashboard" className="flex items-center gap-2.5 px-2 py-1.5">
-          <div className="size-8 rounded-full bg-[var(--wa-green)] grid place-items-center shadow-mint shrink-0">
-            <MessageCircle className="size-4 text-white" strokeWidth={2.5} fill="white" fillOpacity={0.15} />
+          <div className="size-8 rounded-full bg-[#10662A] grid place-items-center shrink-0 text-white font-display font-bold text-sm">
+            R
           </div>
           {!collapsed && (
             <div className="leading-tight">
-              <div className="font-display font-bold text-sidebar-foreground text-sm">LeadMines</div>
-              <div className="text-[9px] uppercase tracking-[0.16em] text-[var(--wa-green)] font-semibold -mt-0.5">
-                by MoneyMines
+              <div className="font-display font-bold text-[#390A5D] text-sm">RupeeDial One</div>
+              <div className="text-[9px] uppercase tracking-[0.16em] text-[#10662A] font-semibold -mt-0.5">
+                CRM workspace
               </div>
             </div>
           )}
@@ -135,12 +136,15 @@ export function AppSidebar() {
           </SidebarMenuItem>
         </SidebarMenu>
         {!collapsed && user && (
-          <div className="px-2 py-2 text-xs text-sidebar-foreground/60 truncate">
+          <div className="px-2 py-2 text-xs text-[#5c4d72] truncate">
             {user.email}
             {role && (
-              <div className="mt-0.5 inline-block px-1.5 py-0.5 rounded bg-[var(--wa-green)]/15 text-[10px] uppercase tracking-wide font-semibold text-[var(--wa-green)]">
+              <button
+                type="button"
+                className="mt-0.5 inline-block px-1.5 py-0.5 rounded-full bg-[#E8F7EC] border border-[#d8ecdd] text-[10px] uppercase tracking-wide font-bold text-[#10662A] cursor-pointer hover:bg-[#d8ecdd] transition-colors"
+              >
                 {role}
-              </div>
+              </button>
             )}
           </div>
         )}

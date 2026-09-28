@@ -1,146 +1,118 @@
-import { useEffect, useState } from "react";
-import { Banknote, ShieldCheck, CreditCard, LineChart, ArrowUpRight, ChevronDown } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { CATEGORIES, type ProductCategory, type ProductType, payoutLabel } from "@/lib/products";
+import { Building2, Landmark, Shield, Wallet } from "lucide-react";
+import { RUPEEDIAL_PRODUCT_MENUS, RUPEEDIAL_SITE } from "@/lib/rupeedial-products";
 
-const CATEGORY_ICONS = { Banknote, ShieldCheck, CreditCard, LineChart } as const;
-
-const VISIBLE_TAGS = 6;
-
-type CardData = {
-  category: ProductCategory;
-  label: string;
-  tagline: string;
-  iconKey: keyof typeof CATEGORY_ICONS;
-  color: string;
-  items: ProductType[];
+const SLUG: Record<string, string> = {
+  "Home Loan": "home-loan",
+  "Personal Loan": "personal-loan",
+  "Auto Loan": "auto-loan",
+  "Education Loan": "education-loan",
+  "Credit Cards": "credit-cards",
+  "Loan Against Property": "lap-loan",
+  Insurance: "insurance",
+  "MSME Loan": "msme-loan",
+  "Mudra Loan": "mudra-loan",
+  "Machinery Loan": "machinery-loan",
+  "Working Capital Loan": "working-capital-loan",
+  "Business Loan": "business-loan",
+  "Startup Business Loan": "startup-business-loan",
+  "CGTMSE Loan": "cgtmse-loan",
+  "PMEGP Loan": "pmegp-loan",
+  "Stand-Up India": "standup-india",
+  "Subsidy Linked MSME": "subsidy-linked-msme",
+  "Export Finance": "export-finance",
+  "Import Finance": "import-finance",
+  "LC / BG": "lc-bg",
+  "Invoice Financing": "invoice-financing",
+  "Cash Credit (CC)": "cash-credit",
+  "Overdraft (OD)": "overdraft",
 };
 
+const ICONS = [Wallet, Building2, Shield, Landmark] as const;
+
 export function Products() {
-  const [cards, setCards] = useState<CardData[]>([]);
-  const [expanded, setExpanded] = useState<ProductCategory | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("product_types")
-        .select("*")
-        .eq("enabled", true)
-        .order("display_order", { ascending: true });
-      const items = (data ?? []) as ProductType[];
-      setCards(
-        CATEGORIES.map((c) => ({
-          category: c.key,
-          label: c.label,
-          tagline: c.tagline,
-          iconKey: c.icon as keyof typeof CATEGORY_ICONS,
-          color: c.color,
-          items: items.filter((i) => i.category === c.key),
-        })),
-      );
-    })();
-  }, []);
-
   return (
-    <section id="products" className="py-24 lg:py-32 bg-background border-t border-border relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 wa-pattern opacity-30" />
-      <div className="max-w-7xl mx-auto px-5 lg:px-8">
-        <div className="max-w-2xl">
-          <div className="text-xs uppercase tracking-[0.2em] text-[var(--wa-green)] font-bold">Products</div>
-          <h2 className="mt-3 text-3xl lg:text-5xl font-bold tracking-tight">
-            One platform. <span className="text-gradient">Every financial product.</span>
+    <section id="products" className="relative py-16 sm:py-20 lg:py-24 overflow-hidden">
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          background:
+            "radial-gradient(70% 50% at 50% -10%, rgba(16,102,42,0.07), transparent 60%), linear-gradient(180deg, #f5fcf7 0%, #ffffff 55%, #f5fcf7 100%)",
+        }}
+      />
+
+      <div className="max-w-6xl mx-auto px-5">
+        <div className="text-center max-w-2xl mx-auto">
+          <p className="inline-flex items-center rounded-full bg-[#E8F7EC] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[#10662A] ring-1 ring-[#10662A]/15">
+            Products
+          </p>
+          <h2 className="mt-4 font-display text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#390A5D]">
+            Every RupeeDial product in{" "}
+            <span className="bg-gradient-to-r from-[#10662A] to-[#0D4F20] bg-clip-text text-transparent">
+              One
+            </span>
           </h2>
-          <p className="mt-4 text-muted-foreground text-lg">
-            38+ sub-products across loans, insurance, credit cards & investments. Distribute, track, and earn from a single CRM.
+          <p className="mt-3 text-sm sm:text-base text-[#5c4d72] leading-relaxed">
+            Retail · MSME · Government schemes · Trade finance — full names, one CRM desk.
           </p>
         </div>
 
-        <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
-          {cards.map((c) => (
-            <ProductCard
-              key={c.category}
-              card={c}
-              expanded={expanded === c.category}
-              onToggle={() => setExpanded(expanded === c.category ? null : c.category)}
-            />
-          ))}
-        </div>
+        <div className="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-5">
+          {RUPEEDIAL_PRODUCT_MENUS.map((menu, idx) => {
+            const Icon = ICONS[idx] ?? Wallet;
+            return (
+              <article
+                key={menu.title}
+                className="group relative flex flex-col rounded-2xl border border-[#d8ecdd] bg-white p-5 sm:p-6 shadow-[0_8px_30px_rgba(16,102,42,0.06)] transition-all duration-300 hover:-translate-y-1 hover:border-[#10662A]/35 hover:shadow-[0_16px_40px_rgba(16,102,42,0.12)]"
+              >
+                <div className="absolute inset-x-0 top-0 h-1 rounded-t-2xl bg-gradient-to-r from-[#10662A] via-[#3cb371] to-[#10662A] opacity-80" />
 
-        <div className="mt-10 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <span className="size-1.5 rounded-full bg-[var(--wa-green)] animate-pulse" />
-          New product types ship every quarter — admin can add categories anytime.
+                <div className="flex items-start gap-3">
+                  <span className="size-10 shrink-0 rounded-xl bg-gradient-to-br from-[#E8F7EC] to-[#d8ecdd] grid place-items-center text-[#10662A] ring-1 ring-[#10662A]/10 group-hover:scale-105 transition-transform">
+                    <Icon className="size-5" strokeWidth={2.2} />
+                  </span>
+                  <div className="min-w-0 pt-0.5">
+                    <h3 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A]">
+                      {menu.title}
+                    </h3>
+                    <p className="mt-0.5 text-[11px] text-[#5c4d72]">
+                      {menu.items.length} products
+                    </p>
+                  </div>
+                </div>
+
+                <ul className="mt-5 flex-1 space-y-0 divide-y divide-[#eef6f0]">
+                  {menu.items.map((name) => {
+                    const slug = SLUG[name];
+                    const href = slug ? `${RUPEEDIAL_SITE}/${slug}` : RUPEEDIAL_SITE;
+                    return (
+                      <li key={name}>
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-2.5 py-2.5 text-[13px] sm:text-sm font-semibold text-[#390A5D] hover:text-[#10662A] transition-colors"
+                        >
+                          <span className="size-1.5 rounded-full bg-[#10662A]/70 shrink-0" />
+                          <span className="leading-snug">{name}</span>
+                        </a>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <a
+                  href={RUPEEDIAL_SITE}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 pt-3 border-t border-[#d8ecdd] text-xs font-bold text-[#10662A] opacity-80 group-hover:opacity-100 transition-opacity"
+                >
+                  Apply on rupeedial.com →
+                </a>
+              </article>
+            );
+          })}
         </div>
       </div>
     </section>
-  );
-}
-
-function ProductCard({ card, expanded, onToggle }: { card: CardData; expanded: boolean; onToggle: () => void }) {
-  const Icon = CATEGORY_ICONS[card.iconKey];
-  const items = card.items;
-  const visible = expanded ? items : items.slice(0, VISIBLE_TAGS);
-  const hidden = items.length - VISIBLE_TAGS;
-  const accentClass =
-    card.color === "blue" ? "from-blue-500/20 to-blue-500/5 text-blue-600 dark:text-blue-400" :
-    card.color === "green" ? "from-emerald-500/20 to-emerald-500/5 text-emerald-600 dark:text-emerald-400" :
-    card.color === "orange" ? "from-orange-500/20 to-orange-500/5 text-orange-600 dark:text-orange-400" :
-    "from-violet-500/20 to-violet-500/5 text-violet-600 dark:text-violet-400";
-
-  return (
-    <div className="group relative rounded-2xl bg-card border border-border p-6 hover:shadow-elevated hover:border-[var(--wa-green)]/30 transition-smooth flex flex-col">
-      <div className={`size-12 rounded-xl bg-gradient-to-br ${accentClass} grid place-items-center group-hover:scale-110 transition-smooth`}>
-        <Icon className="size-6" strokeWidth={2.2} />
-      </div>
-      <h3 className="mt-5 font-display font-semibold text-xl">{card.label}</h3>
-      <p className="mt-1 text-sm text-muted-foreground">{card.tagline}</p>
-      <div className="mt-2 text-[10px] font-mono text-muted-foreground">{items.length} sub-products</div>
-
-      <ul className="mt-4 flex flex-wrap gap-1.5">
-        {visible.map((it) => (
-          <li
-            key={it.id}
-            title={it.description ?? it.name}
-            className="group/tag relative text-[11px] font-medium px-2 py-0.5 rounded-md bg-secondary text-foreground/75 border border-border hover:bg-accent/15 hover:border-accent/40 transition-smooth cursor-help"
-          >
-            {it.name}
-            {it.high_demand && <span className="ml-1 text-[8px] text-orange-500">●</span>}
-          </li>
-        ))}
-        {!expanded && hidden > 0 && (
-          <li>
-            <button
-              onClick={onToggle}
-              className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-smooth"
-            >
-              +{hidden} more
-            </button>
-          </li>
-        )}
-      </ul>
-
-      {expanded && items.some((i) => i.description) && (
-        <div className="mt-3 text-[11px] text-muted-foreground space-y-1 max-h-32 overflow-y-auto pr-1">
-          {items.slice(0, 4).map((i) => i.description && (
-            <div key={i.id}><span className="font-semibold text-foreground/80">{i.name}:</span> {i.description}</div>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-5 pt-4 border-t border-dashed border-border flex items-center justify-between">
-        <div>
-          <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">Payout range</div>
-          <div className="font-mono text-sm font-semibold mt-0.5">
-            {items.length > 0 ? payoutLabel(items[0]) : "—"}
-          </div>
-        </div>
-        <button
-          onClick={onToggle}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-foreground hover:text-accent transition-smooth"
-        >
-          {expanded ? "Less" : "View all"}
-          {expanded ? <ChevronDown className="size-3 rotate-180 transition-transform" /> : <ArrowUpRight className="size-3" />}
-        </button>
-      </div>
-    </div>
   );
 }

@@ -60,8 +60,8 @@ export const PostCanvas = forwardRef<HTMLDivElement, Props>(
             {branding.company.charAt(0) || "L"}
           </div>
           <div className="leading-tight">
-            <div className="text-xl font-bold">{branding.company || "LeadMines"}</div>
-            <div className="text-sm opacity-70">by MoneyMines</div>
+            <div className="text-xl font-bold">{branding.company || "RupeeDial"}</div>
+            <div className="text-sm opacity-70">RupeeDial Partner</div>
           </div>
         </div>
 

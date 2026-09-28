@@ -1,147 +1,140 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useWorkspace } from "@/lib/workspace-context";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Play, FileText, CheckCircle2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { getBillingMe, getCrmUser } from "@/lib/python-api";
+import { useBillingEntitlements } from "@/hooks/use-billing-entitlements";
+import { MarketingUpgradeGate } from "@/components/marketing/MarketingUpgradeGate";
+import { loadPayslips, savePayslips, monthKey, type PayslipRow } from "@/lib/hrms-local";
 
 export const Route = createFileRoute("/dashboard/hrms/payroll")({
+  head: () => ({ meta: [{ title: "Payroll — RupeeDial One" }] }),
   component: PayrollPage,
 });
 
-const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-
 function PayrollPage() {
-  const { current, canManage } = useWorkspace();
-  const now = new Date();
-  const [month, setMonth] = useState(now.getMonth() + 1);
-  const [year, setYear] = useState(now.getFullYear());
-  const [running, setRunning] = useState(false);
-  const [slips, setSlips] = useState<any[]>([]);
+  const { hrmsFull, loading: entLoading } = useBillingEntitlements();
+  const [scope, setScope] = useState("default");
+  const [members, setMembers] = useState<{ id: string; full_name: string }[]>([]);
+  const [month, setMonth] = useState(monthKey());
+  const [basic, setBasic] = useState(25000);
+  const [allowances, setAllowances] = useState(5000);
+  const [deductions, setDeductions] = useState(2000);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    if (!current) return;
-    setLoading(true);
-    const { data } = await supabase
-      .from("payslips")
-      .select("id, employee_id, gross, total_deductions, net_pay, status, paid_days, working_days, employee:employees(full_name, employee_code)")
-      .eq("workspace_id", current.id).eq("period_month", month).eq("period_year", year)
-      .order("net_pay", { ascending: false });
-    setSlips(data ?? []);
-    setLoading(false);
+  useEffect(() => {
+    if (!hrmsFull) {
+      setLoading(false);
+      return;
+    }
+    (async () => {
+      try {
+        const me = await getBillingMe();
+        const owner = me.team.find((t) => t.is_owner)?.id || getCrmUser()?.id || "default";
+        setScope(owner);
+        setMembers(me.team.filter((t) => t.is_active).map((t) => ({ id: t.id, full_name: t.full_name })));
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Load failed");
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [hrmsFull]);
+
+  const runPayroll = () => {
+    const existing = loadPayslips(scope).filter((p) => p.month !== month);
+    const net = Math.max(0, basic + allowances - deductions);
+    const generated: PayslipRow[] = members.map((m) => ({
+      id: crypto.randomUUID(),
+      user_id: m.id,
+      name: m.full_name,
+      month,
+      basic,
+      allowances,
+      deductions,
+      net,
+      created_at: new Date().toISOString(),
+    }));
+    savePayslips(scope, [...generated, ...existing]);
+    toast.success(`Generated ${generated.length} payslips for ${month}`);
   };
 
-  useEffect(() => { load(); }, [current?.id, month, year]);
+  if (entLoading || loading) {
+    return (
+      <div className="py-16 grid place-items-center">
+        <Loader2 className="size-5 animate-spin text-[#10662A]" />
+      </div>
+    );
+  }
 
-  const run = async () => {
-    if (!current) return;
-    setRunning(true);
-    const { data, error } = await supabase.rpc("process_payroll", { _workspace_id: current.id, _month: month, _year: year });
-    setRunning(false);
-    if (error) { toast.error(error.message); return; }
-    const result = data as any;
-    toast.success(`Processed ${result.count} payslips for ${MONTHS[month-1]} ${year}`);
-    load();
-  };
-
-  const markPaid = async (id: string) => {
-    const { error } = await supabase.from("payslips").update({ status: "paid", paid_at: new Date().toISOString() }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Marked as paid");
-    load();
-  };
-
-  const totalNet = slips.reduce((s, p) => s + Number(p.net_pay), 0);
-  const totalGross = slips.reduce((s, p) => s + Number(p.gross), 0);
+  if (!hrmsFull) {
+    return (
+      <MarketingUpgradeGate
+        title="Payroll light"
+        description="Manual payroll run & payslips unlock on Pro. No statutory engine yet — edit amounts and generate slips."
+      />
+    );
+  }
 
   return (
-    <div className="space-y-4">
-      {/* Period selector + run */}
-      <div className="rounded-2xl bg-gradient-to-br from-accent/10 to-card border border-border p-5 flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Select value={String(month)} onValueChange={(v) => setMonth(Number(v))}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {MONTHS.map((mo, i) => <SelectItem key={i} value={String(i+1)}>{mo}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {[year-1, year, year+1].map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <div className="text-sm text-muted-foreground">
-            <span className="font-semibold text-foreground">{slips.length}</span> payslips · Gross <span className="font-mono font-semibold text-foreground">₹{totalGross.toLocaleString("en-IN")}</span> · Net <span className="font-mono font-semibold text-accent">₹{totalNet.toLocaleString("en-IN")}</span>
-          </div>
-        </div>
-        {canManage && (
-          <Button onClick={run} disabled={running} className="gap-2">
-            {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-            Run Payroll
-          </Button>
-        )}
+    <div className="space-y-6 max-w-xl">
+      <div>
+        <h2 className="font-display text-lg font-bold text-[#390A5D]">Payroll light</h2>
+        <p className="text-xs text-[#5c4d72]">
+          Same CTC template applied to all active seats for the month. Statutory automation later.
+        </p>
       </div>
-
-      <div className="rounded-2xl bg-card border border-border overflow-hidden">
-        {loading ? (
-          <div className="py-16 grid place-items-center"><Loader2 className="size-6 animate-spin text-accent" /></div>
-        ) : slips.length === 0 ? (
-          <div className="py-16 text-center">
-            <FileText className="size-10 mx-auto text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">No payroll run yet for {MONTHS[month-1]} {year}. Click <strong>Run Payroll</strong> to generate payslips.</p>
-          </div>
-        ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-secondary/50 text-xs">
-              <tr>
-                <th className="text-left p-3">Employee</th>
-                <th className="text-center p-3">Days (Paid/Total)</th>
-                <th className="text-right p-3">Gross</th>
-                <th className="text-right p-3">Deductions</th>
-                <th className="text-right p-3">Net Pay</th>
-                <th className="text-center p-3">Status</th>
-                <th className="text-right p-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {slips.map((s) => (
-                <tr key={s.id} className="border-t border-border hover:bg-secondary/30">
-                  <td className="p-3">
-                    <div className="font-medium">{s.employee?.full_name}</div>
-                    <div className="text-xs text-muted-foreground font-mono">{s.employee?.employee_code}</div>
-                  </td>
-                  <td className="p-3 text-center text-xs text-muted-foreground">{s.paid_days}/{s.working_days}</td>
-                  <td className="p-3 text-right font-mono">₹{Number(s.gross).toLocaleString("en-IN")}</td>
-                  <td className="p-3 text-right font-mono text-destructive">−₹{Number(s.total_deductions).toLocaleString("en-IN")}</td>
-                  <td className="p-3 text-right font-mono font-semibold">₹{Number(s.net_pay).toLocaleString("en-IN")}</td>
-                  <td className="p-3 text-center">
-                    <span className={`text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded ${
-                      s.status === "paid" ? "bg-accent/15 text-accent" :
-                      s.status === "processed" ? "bg-blue-500/15 text-blue-600" :
-                      "bg-muted text-muted-foreground"
-                    }`}>{s.status}</span>
-                  </td>
-                  <td className="p-3 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Link to="/dashboard/hrms/payslips/$id" params={{ id: s.id }}>
-                        <Button variant="ghost" size="sm">View</Button>
-                      </Link>
-                      {canManage && s.status === "processed" && (
-                        <Button size="sm" variant="outline" onClick={() => markPaid(s.id)} className="gap-1">
-                          <CheckCircle2 className="size-3.5" /> Mark Paid
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+      <div className="rounded-2xl border border-[#d8ecdd] bg-white p-5 space-y-3">
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Month</span>
+          <input
+            type="month"
+            value={month}
+            onChange={(e) => setMonth(e.target.value)}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Basic</span>
+          <input
+            type="number"
+            value={basic}
+            onChange={(e) => setBasic(Number(e.target.value))}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Allowances</span>
+          <input
+            type="number"
+            value={allowances}
+            onChange={(e) => setAllowances(Number(e.target.value))}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Deductions</span>
+          <input
+            type="number"
+            value={deductions}
+            onChange={(e) => setDeductions(Number(e.target.value))}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+          />
+        </label>
+        <div className="text-sm font-semibold text-[#10662A]">
+          Net / person: ₹{(basic + allowances - deductions).toLocaleString("en-IN")} · {members.length}{" "}
+          seats
+        </div>
+        <button
+          type="button"
+          onClick={runPayroll}
+          className="w-full rounded-xl bg-[#10662A] text-white py-2.5 text-sm font-semibold"
+        >
+          Generate payslips
+        </button>
+        <Link to="/dashboard/hrms/payslips" className="block text-center text-sm font-semibold text-[#10662A]">
+          View payslips →
+        </Link>
       </div>
     </div>
   );

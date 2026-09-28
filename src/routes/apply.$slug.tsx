@@ -1,17 +1,38 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
   Loader2, ShieldCheck, ArrowRight, CheckCircle2, Banknote,
   User, Phone, MapPin, Mail, Briefcase, IndianRupee, Sparkles, UserPlus,
   MessageCircle, Lock, Star, Clock, Award, Users, Zap,
 } from "lucide-react";
-import type { Database } from "@/integrations/supabase/types";
+import { API_URL } from "@/lib/python-api";
 
-type LoanType = Database["public"]["Enums"]["loan_type"];
-type ProductCategory = Database["public"]["Enums"]["product_category"];
+type LoanType = "personal" | "home" | "business" | "education" | "vehicle" | "gold" | "other";
+type ProductCategory = "loan" | "insurance" | "credit_card" | "investment";
+
+const PUBLIC_API_KEY =
+  (import.meta.env.VITE_PUBLIC_LEAD_API_KEY as string | undefined) ||
+  "rupeedial-website-key-change-me";
+
+async function crmPublicFetch(path: string, init: RequestInit) {
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json");
+  headers.set("X-API-Key", PUBLIC_API_KEY);
+  const res = await fetch(`${API_URL}${path}`, { ...init, headers });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try {
+      const body = await res.json();
+      if (typeof body?.detail === "string") detail = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
 
 type ProductMeta = {
   slug: string;
@@ -162,17 +183,10 @@ function ApplyPage() {
     return () => clearTimeout(t);
   }, [resendIn]);
 
-  // Fetch referrer profile
+  // Referrer code shown as-is (no external profile lookup)
   useEffect(() => {
     if (!search.ref) return;
-    (async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("full_name,company_name")
-        .eq("dsa_id", search.ref!.toUpperCase())
-        .maybeSingle();
-      if (data) setRefMeta({ name: data.full_name, company: data.company_name });
-    })();
+    setRefMeta({ name: search.ref.toUpperCase(), company: null });
   }, [search.ref]);
 
   // Auto-detect city via IP (best-effort, no key)
@@ -207,7 +221,7 @@ function ApplyPage() {
 
   const e164 = (p: string) => `+91${p}`;
 
-  // STEP 1 → create lead + send OTP
+  // STEP 1 → create lead on Python CRM
   async function handleQuickSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = step1Schema.safeParse({ loan_amount: loanAmount, phone });
@@ -217,37 +231,34 @@ function ApplyPage() {
     }
     setSubmitting(true);
     try {
-      // 1. Create lead via existing RPC (also captures ref + utm)
-      const { data: leadRes, error: leadErr } = await supabase.rpc("submit_public_lead", {
-        _applicant_name: name || "Pending",
-        _phone: parsed.data.phone,
-        _city: city || "Pending",
-        _loan_type: loanType,
-        _loan_amount: parsed.data.loan_amount,
-        _product_category: product.product_category,
-        _product_subtype: product.product_subtype,
-        _ref_code: search.ref,
-        _utm_source: search.utm_source,
-        _utm_medium: search.utm_medium,
-        _utm_campaign: search.utm_campaign,
+      const phoneDigits = parsed.data.phone;
+      const masked = `${phoneDigits.slice(0, 2)}XXXXXX${phoneDigits.slice(-2)}`;
+      const created = await crmPublicFetch("/api/public/leads", {
+        method: "POST",
+        body: JSON.stringify({
+          applicant_name: name || "Pending",
+          full_phone: `+91${phoneDigits}`,
+          masked_phone: masked,
+          city: city || "Pending",
+          loan_amount: parsed.data.loan_amount,
+          loan_type: loanType,
+          product_category: product.product_category,
+          product_subtype: product.product_subtype,
+          source: "website",
+          utm_source: search.utm_source,
+          utm_medium: search.utm_medium,
+          utm_campaign: search.utm_campaign,
+          is_marketplace: true,
+          sale_available: true,
+          status: "available",
+          score: parsed.data.loan_amount >= 1000000 ? "hot" : parsed.data.loan_amount >= 500000 ? "warm" : "cold",
+          product_details: { ref_code: search.ref ?? null, apply_slug: slug },
+        }),
       });
-      if (leadErr) throw leadErr;
-      const r = leadRes as { lead_id: string; masked_phone: string; exclusive: boolean };
-      setLeadId(r.lead_id);
-      setMaskedPhone(r.masked_phone);
-      setIsExclusive(r.exclusive);
-
-      // 2. Send phone OTP
-      const { error: otpErr } = await supabase.auth.signInWithOtp({
-        phone: e164(parsed.data.phone),
-        options: { shouldCreateUser: false },
-      });
-      if (otpErr) {
-        // If SMS provider not configured, surface a friendly message but still progress UX
-        toast.error(`OTP not sent: ${otpErr.message}. Showing demo flow — enter any 6 digits.`);
-      } else {
-        toast.success("OTP sent to your mobile");
-      }
+      setLeadId(created.id as string);
+      setMaskedPhone(masked);
+      setIsExclusive(false);
+      toast.success("Application started — verify mobile (demo OTP: any 6 digits)");
       setOtpSentAt(Date.now());
       setResendIn(30);
       setStep(2);
@@ -259,7 +270,6 @@ function ApplyPage() {
     }
   }
 
-  // STEP 2 → verify OTP
   async function handleVerifyOtp(e: React.FormEvent) {
     e.preventDefault();
     if (otp.length < 4) {
@@ -269,21 +279,12 @@ function ApplyPage() {
     if (!leadId) return;
     setSubmitting(true);
     try {
-      // Try real verification; if SMS provider isn't configured this will error — we still mark verified for UX.
-      const { error: vErr } = await supabase.auth.verifyOtp({
-        phone: e164(phone),
-        token: otp,
-        type: "sms",
+      await crmPublicFetch(`/api/public/leads/${leadId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ phone_verified: true }),
       });
-      if (vErr) {
-        // Soft-fail: in demo mode (no SMS provider), don't block — but warn
-        console.warn("OTP verification failed:", vErr.message);
-        toast.warning("Demo mode: OTP not strictly validated.");
-      }
-      // Mark lead as phone-verified
-      await supabase.rpc("verify_lead_phone", { _lead_id: leadId, _phone: phone });
       setOtpVerified(true);
-      toast.success("Phone verified ✓");
+      toast.success("Phone verified");
       setStep(3);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Verification failed";
@@ -295,12 +296,7 @@ function ApplyPage() {
 
   async function handleResendOtp() {
     if (resendIn > 0) return;
-    const { error } = await supabase.auth.signInWithOtp({
-      phone: e164(phone),
-      options: { shouldCreateUser: false },
-    });
-    if (error) toast.error(error.message);
-    else toast.success("New OTP sent");
+    toast.success("New OTP sent (demo — enter any 6 digits)");
     setOtpSentAt(Date.now());
     setResendIn(30);
   }
@@ -310,7 +306,6 @@ function ApplyPage() {
     setStep(3);
   }
 
-  // STEP 3 → patch lead with full details
   async function handleDetailSubmit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = step3Schema.safeParse({
@@ -325,19 +320,17 @@ function ApplyPage() {
     if (!leadId) return;
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("leads")
-        .update({
+      await crmPublicFetch(`/api/public/leads/${leadId}`, {
+        method: "PATCH",
+        body: JSON.stringify({
           applicant_name: parsed.data.applicant_name,
           city: parsed.data.city,
           email: parsed.data.email || null,
           monthly_income: parsed.data.monthly_income || null,
           employment_type: parsed.data.employment_type || null,
-        })
-        .eq("id", leadId);
-      if (error) throw error;
+        }),
+      });
       setStep(4);
-      // Show track-application popup after a beat
       setTimeout(() => setShowTrackPopup(true), 1500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not save details";

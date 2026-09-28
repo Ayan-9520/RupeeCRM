@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/ceo/")({
-  head: () => ({ meta: [{ title: "CEO Overview — LeadMines" }] }),
+  head: () => ({ meta: [{ title: "CEO Overview — RupeeDial One" }] }),
   component: CeoOverview,
   beforeLoad: async () => {
     const { data: { session } } = await supabase.auth.getSession();

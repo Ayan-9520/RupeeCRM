@@ -1,23 +1,23 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { toast } from "sonner";
-import { Users, Loader2, Search, ShieldCheck, ShieldOff, Plus, X } from "lucide-react";
+import { Users, Loader2, Search, ShieldOff, UserCheck, Copy, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { listCrmUsers, resetCrmUserPassword } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/admin/users")({
-  head: () => ({ meta: [{ title: "Manage Users — LeadMines Admin" }] }),
+  head: () => ({ meta: [{ title: "Manage Users — RupeeDial One" }] }),
   component: AdminUsersPage,
 });
 
 const ROLES: AppRole[] = ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate", "customer"];
 
-const ROLE_BADGE: Record<AppRole, string> = {
+const ROLE_BADGE: Record<string, string> = {
   ceo: "bg-accent/20 text-accent",
   super_admin: "bg-orange-500/15 text-orange-600",
   admin: "bg-red-500/15 text-red-600",
@@ -29,62 +29,52 @@ const ROLE_BADGE: Record<AppRole, string> = {
   customer: "bg-muted text-muted-foreground",
 };
 
-interface ProfileRow {
+type UserRow = {
   id: string;
-  full_name: string | null;
+  email: string;
+  full_name: string;
+  role: string;
   phone: string | null;
-  city: string | null;
-  company_name: string | null;
   dsa_id: string | null;
-  dsa_tier: string;
-  kyc_status: string;
-  kyc_approved_at: string | null;
-  reputation_score: number;
-  total_leads_purchased: number;
-  total_conversions: number;
-  created_at: string;
-  roles: AppRole[];
-}
+  is_active: boolean;
+  created_at: string | null;
+};
 
 function AdminUsersPage() {
   const { role } = useAuth();
-  const [users, setUsers] = useState<ProfileRow[]>([]);
+  const [users, setUsers] = useState<UserRow[]>([]);
+  const [pendingPartners, setPendingPartners] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
-  const [active, setActive] = useState<ProfileRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
 
   const refresh = async () => {
     setLoading(true);
-    // Fetch profiles + their roles
-    const [{ data: profs, error: pErr }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: false }).limit(500),
-      supabase.from("user_roles").select("user_id, role"),
-    ]);
-    if (pErr) { toast.error(pErr.message); setLoading(false); return; }
-    const roleMap = new Map<string, AppRole[]>();
-    (roles || []).forEach((r: any) => {
-      const arr = roleMap.get(r.user_id) || [];
-      arr.push(r.role);
-      roleMap.set(r.user_id, arr);
-    });
-    const merged: ProfileRow[] = (profs || []).map((p: any) => ({
-      ...p,
-      roles: roleMap.get(p.id) || [],
-    }));
-    setUsers(merged);
-    setLoading(false);
+    try {
+      const data = await listCrmUsers();
+      setUsers(data.items);
+      setPendingPartners(data.pending_partners);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to load users");
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    void refresh();
+  }, []);
 
   const filtered = useMemo(() => {
     return users.filter((u) => {
-      if (roleFilter !== "all" && !u.roles.includes(roleFilter)) return false;
+      if (roleFilter !== "all" && u.role !== roleFilter) return false;
       if (search) {
         const q = search.toLowerCase();
         return (
           u.full_name?.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q) ||
           u.phone?.includes(q) ||
           u.dsa_id?.toLowerCase().includes(q) ||
           u.id.includes(q)
@@ -93,6 +83,19 @@ function AdminUsersPage() {
       return true;
     });
   }, [users, search, roleFilter]);
+
+  const onResetPassword = async (u: UserRow) => {
+    setBusyId(u.id);
+    try {
+      const res = await resetCrmUserPassword(u.id);
+      await navigator.clipboard.writeText(`Email: ${res.email}\nPassword: ${res.temporary_password}`);
+      toast.success(`New password copied for ${res.email}`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Reset failed");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   if (!isPlatformAdmin(role)) {
     return (
@@ -105,69 +108,127 @@ function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-2xl font-bold flex items-center gap-2">
-            <Users className="size-6 text-accent" /> Manage Users
+          <h1 className="font-display text-2xl font-extrabold text-[#390A5D] flex items-center gap-2">
+            <Users className="size-6 text-[#10662A]" /> Manage Users
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">{users.length} total users · approve KYC, assign roles</p>
+          <p className="text-[#5c4d72] text-sm mt-1">
+            {users.length} CRM logins · DSA appears here <strong>after</strong> Partner Approve
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search name, phone, DSA ID…" value={search} onChange={(e) => setSearch(e.target.value)} className="w-64 pl-9" />
+            <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#5c4d72]" />
+            <Input
+              placeholder="Search name, email, DSA ID…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-64 pl-9 border-[#d8ecdd]"
+            />
           </div>
-          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as any)}>
-            <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+          <Select value={roleFilter} onValueChange={(v) => setRoleFilter(v as AppRole | "all")}>
+            <SelectTrigger className="w-36 border-[#d8ecdd]">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All roles</SelectItem>
-              {ROLES.map((r) => <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>)}
+              {ROLES.map((r) => (
+                <SelectItem key={r} value={r} className="capitalize">
+                  {r}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+      {pendingPartners > 0 && (
+        <Link
+          to="/dashboard/admin/partners"
+          className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 hover:bg-amber-100/80 transition-colors"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="size-10 rounded-xl bg-amber-500/20 grid place-items-center shrink-0">
+              <UserCheck className="size-5 text-amber-700" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-bold text-amber-900 text-sm">
+                {pendingPartners} partner application{pendingPartners === 1 ? "" : "s"} waiting for approval
+              </div>
+              <div className="text-xs text-amber-800/80">
+                Website partners are NOT users yet — open Partner Applications → Approve → login is created
+              </div>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1 text-sm font-bold text-amber-900 shrink-0">
+            Approve now <ArrowRight className="size-4" />
+          </span>
+        </Link>
+      )}
+
+      <div className="rounded-2xl border border-[#d8ecdd] bg-white overflow-hidden shadow-[0_4px_20px_rgba(16,102,42,0.06)]">
         {loading ? (
-          <div className="p-12 text-center"><Loader2 className="size-6 animate-spin mx-auto text-muted-foreground" /></div>
+          <div className="p-12 text-center">
+            <Loader2 className="size-6 animate-spin mx-auto text-[#10662A]" />
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="p-12 text-center text-muted-foreground">
-            <Users className="size-10 mx-auto mb-3 opacity-40" />
-            <p>No users match your filters.</p>
+          <div className="p-12 text-center text-[#5c4d72]">
+            <Users className="size-10 mx-auto mb-3 opacity-40 text-[#10662A]" />
+            <p className="font-medium">No CRM users yet</p>
+            <p className="text-sm mt-1">
+              Approve a partner first →{" "}
+              <Link to="/dashboard/admin/partners" className="text-[#10662A] font-bold hover:underline">
+                Partner Applications
+              </Link>
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-muted-foreground">
+              <thead className="bg-[#E8F7EC]/70 text-left text-xs uppercase tracking-wide text-[#5c4d72]">
                 <tr>
                   <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">City</th>
+                  <th className="px-4 py-3">Role</th>
                   <th className="px-4 py-3">DSA ID</th>
-                  <th className="px-4 py-3">Roles</th>
-                  <th className="px-4 py-3">KYC</th>
-                  <th className="px-4 py-3">Tier</th>
+                  <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-[#d8ecdd]">
                 {filtered.map((u) => (
-                  <tr key={u.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => setActive(u)}>
-                    <td className="px-4 py-3 font-medium">{u.full_name || "—"}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{u.phone || "—"}</td>
-                    <td className="px-4 py-3">{u.city || "—"}</td>
-                    <td className="px-4 py-3 font-mono text-xs">{u.dsa_id || "—"}</td>
+                  <tr key={u.id} className="hover:bg-[#f5fcf7]">
+                    <td className="px-4 py-3 font-medium text-[#390A5D]">{u.full_name || "—"}</td>
+                    <td className="px-4 py-3 text-[#5c4d72]">{u.email}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
                     <td className="px-4 py-3">
-                      <div className="flex gap-1 flex-wrap">
-                        {u.roles.map((r) => <Badge key={r} className={`${ROLE_BADGE[r]} capitalize text-[10px]`}>{r}</Badge>)}
-                      </div>
+                      <Badge className={`${ROLE_BADGE[u.role] || ""} capitalize text-[10px]`}>{u.role}</Badge>
                     </td>
+                    <td className="px-4 py-3 font-mono text-xs text-[#10662A]">{u.dsa_id || "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge variant={u.kyc_status === "approved" ? "default" : "outline"} className="capitalize">{u.kyc_status}</Badge>
+                      <Badge variant={u.is_active ? "default" : "outline"}>
+                        {u.is_active ? "active" : "disabled"}
+                      </Badge>
                     </td>
-                    <td className="px-4 py-3 capitalize text-xs">{u.dsa_tier}</td>
-                    <td className="px-4 py-3 text-right"><Button size="sm" variant="ghost">Manage</Button></td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-[#10662A]"
+                        disabled={busyId === u.id}
+                        onClick={() => void onResetPassword(u)}
+                      >
+                        {busyId === u.id ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <Copy className="size-3.5 mr-1" />
+                        )}
+                        Reset password
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -175,135 +236,6 @@ function AdminUsersPage() {
           </div>
         )}
       </div>
-
-      {active && <UserDetail user={active} onClose={() => { setActive(null); refresh(); }} />}
-    </div>
-  );
-}
-
-function UserDetail({ user, onClose }: { user: ProfileRow; onClose: () => void }) {
-  const [busy, setBusy] = useState(false);
-  const [newRole, setNewRole] = useState<AppRole>("dsa");
-
-  const addRole = async () => {
-    if (user.roles.includes(newRole)) { toast.info("User already has this role"); return; }
-    setBusy(true);
-    const { error } = await supabase.from("user_roles").insert({ user_id: user.id, role: newRole });
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Granted ${newRole} role`);
-    onClose();
-  };
-
-  const removeRole = async (r: AppRole) => {
-    if (user.roles.length <= 1) { toast.error("User must have at least one role"); return; }
-    setBusy(true);
-    const { error } = await supabase.from("user_roles").delete().eq("user_id", user.id).eq("role", r);
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Removed ${r} role`);
-    onClose();
-  };
-
-  const approveKyc = async () => {
-    setBusy(true);
-    const { error } = await supabase.from("profiles").update({
-      kyc_status: "approved",
-      kyc_approved_at: new Date().toISOString(),
-    }).eq("id", user.id);
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("KYC approved");
-    onClose();
-  };
-
-  const rejectKyc = async () => {
-    setBusy(true);
-    const { error } = await supabase.from("profiles").update({ kyc_status: "rejected" }).eq("id", user.id);
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    toast.success("KYC marked rejected");
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 grid place-items-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="bg-background rounded-3xl border border-border max-w-xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="sticky top-0 bg-background border-b border-border p-5 flex items-start justify-between">
-          <div>
-            <h2 className="font-display text-xl font-bold">{user.full_name || "Unnamed user"}</h2>
-            <div className="text-xs text-muted-foreground font-mono mt-1">{user.id}</div>
-          </div>
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg"><X className="size-5" /></button>
-        </div>
-
-        <div className="p-5 space-y-5">
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <Field label="Phone" value={user.phone || "—"} />
-            <Field label="City" value={user.city || "—"} />
-            <Field label="Company" value={user.company_name || "—"} />
-            <Field label="DSA ID" value={user.dsa_id || "—"} />
-            <Field label="Tier" value={user.dsa_tier} cap />
-            <Field label="Reputation" value={String(user.reputation_score)} />
-            <Field label="Leads Purchased" value={String(user.total_leads_purchased)} />
-            <Field label="Conversions" value={String(user.total_conversions)} />
-          </div>
-
-          {/* KYC */}
-          <div className="rounded-2xl bg-muted/50 p-4">
-            <h3 className="font-semibold text-sm mb-2">KYC Status</h3>
-            <div className="flex items-center gap-3">
-              <Badge variant={user.kyc_status === "approved" ? "default" : "outline"} className="capitalize">{user.kyc_status}</Badge>
-              {user.kyc_status !== "approved" && (
-                <Button size="sm" onClick={approveKyc} disabled={busy}>
-                  <ShieldCheck className="size-4 mr-1" /> Approve
-                </Button>
-              )}
-              {user.kyc_status !== "rejected" && (
-                <Button size="sm" variant="outline" onClick={rejectKyc} disabled={busy}>
-                  Reject
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Roles */}
-          <div className="rounded-2xl bg-muted/50 p-4 space-y-3">
-            <h3 className="font-semibold text-sm">Roles</h3>
-            <div className="flex flex-wrap gap-2">
-              {user.roles.map((r) => (
-                <button key={r} onClick={() => removeRole(r)} disabled={busy} className="group">
-                  <Badge className={`${ROLE_BADGE[r]} capitalize cursor-pointer group-hover:opacity-70`}>
-                    {r} <X className="size-3 ml-1" />
-                  </Badge>
-                </button>
-              ))}
-              {user.roles.length === 0 && <span className="text-xs text-muted-foreground">No roles assigned</span>}
-            </div>
-            <div className="flex items-center gap-2 pt-2 border-t border-border">
-              <Select value={newRole} onValueChange={(v) => setNewRole(v as AppRole)}>
-                <SelectTrigger className="w-40 h-9"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ROLES.filter((r) => !user.roles.includes(r)).map((r) => <SelectItem key={r} value={r} className="capitalize">{r}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Button size="sm" onClick={addRole} disabled={busy}>
-                <Plus className="size-4 mr-1" /> Grant
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">Click a role badge to remove it. Each user must have at least one role.</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, value, cap }: { label: string; value: string; cap?: boolean }) {
-  return (
-    <div>
-      <div className="text-xs text-muted-foreground">{label}</div>
-      <div className={`font-medium ${cap ? "capitalize" : ""}`}>{value}</div>
     </div>
   );
 }

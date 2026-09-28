@@ -33,11 +33,19 @@ export const NAV_ITEMS: NavItem[] = [
     group: "main",
   },
   {
+    title: "Public profile",
+    url: "/dashboard/profile",
+    roles: ["ceo", "super_admin", "admin", "dsa", "coordinator", "affiliate"],
+    group: "main",
+  },
+  {
     title: "HRMS & Payroll",
     url: "/dashboard/hrms",
     roles: ["ceo", "super_admin", "admin", "dsa", "lender", "coordinator"],
     group: "main",
   },
+  { title: "Website Leads", url: "/dashboard/website-leads", roles: ADMIN_ROLES, group: "main" },
+  { title: "Partner Applications", url: "/dashboard/admin/partners", roles: ADMIN_ROLES, group: "main" },
   { title: "Leadboard", url: "/dashboard/leadboard", roles: ["ceo", "super_admin", "admin", "dsa"], group: "main" },
   {
     title: "My Leads",
@@ -71,7 +79,7 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ceo", "super_admin", "admin", "coordinator"],
     group: "main",
   },
-  { title: "Cases", url: "/dashboard/cases", roles: ["ceo", "super_admin", "admin", "lender", "dsa"], group: "main" },
+  { title: "Cases", url: "/dashboard/cases", roles: ["ceo", "super_admin", "admin", "lender", "dsa", "coordinator"], group: "main" },
   {
     title: "Earnings",
     url: "/dashboard/earnings",
@@ -131,8 +139,8 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", roles: ADMIN_ROLES, group: "admin" },
   { title: "Commission Rules", url: "/dashboard/admin/commissions", roles: ADMIN_ROLES, group: "admin" },
   { title: "Payouts", url: "/dashboard/admin/payouts", roles: ADMIN_ROLES, group: "admin" },
+  { title: "Trust & Audit", url: "/dashboard/admin/trust", roles: ADMIN_ROLES, group: "admin" },
   { title: "Billing Overview", url: "/dashboard/admin/billing", roles: ADMIN_ROLES, group: "admin" },
-  { title: "Partner Applications", url: "/dashboard/admin/partners", roles: ADMIN_ROLES, group: "admin" },
   { title: "MKT Templates", url: "/dashboard/admin/marketing", roles: ADMIN_ROLES, group: "admin" },
   { title: "MKT Media", url: "/dashboard/admin/marketing-media", roles: ADMIN_ROLES, group: "admin" },
 ];
@@ -142,6 +150,7 @@ const EXTRA_ROUTE_RULES: { prefix: string; roles: AppRole[] }[] = [
   { prefix: "/dashboard/customer", roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator"] },
   { prefix: "/dashboard/my-leads/", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"] },
   { prefix: "/dashboard/settings", roles: ALL_ROLES },
+  { prefix: "/dashboard/profile", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator", "affiliate"] },
   { prefix: "/dashboard/marketing/", roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
   { prefix: "/dashboard/hrms/", roles: ["ceo", "super_admin", "admin", "dsa", "lender", "coordinator"] },
 ];
@@ -226,12 +235,15 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
     case "admin":
       return {
         title: "Platform overview",
-        subtitle: "Leads · DSAs · Revenue · Operations across LeadMines.",
+        subtitle: "Leads · DSAs · Revenue · Operations across RupeeDial One.",
         stats: ["wallet", "leads_available", "leads_purchased", "spent"],
         quickLinks: [
+          { title: "Website Leads", desc: "rupeedial.com form leads from CRM API.", url: "/dashboard/website-leads", roles: ADMIN_ROLES },
           { title: "CEO Overview", desc: "Workspaces, revenue & top performers.", url: "/ceo", roles: ADMIN_ROLES },
-          { title: "Admin — Users", desc: "Manage roles, KYC & partner access.", url: "/dashboard/admin/users", roles: ADMIN_ROLES },
+          { title: "Partner Applications", desc: "Approve website partners → DSA login.", url: "/dashboard/admin/partners", roles: ADMIN_ROLES },
+          { title: "Admin — Users", desc: "CRM logins after partner approve.", url: "/dashboard/admin/users", roles: ADMIN_ROLES },
           { title: "Leadboard", desc: "Marketplace inventory & pricing.", url: "/dashboard/leadboard", roles: ["ceo", "super_admin", "admin", "dsa"] },
+          { title: "My Leads", desc: "Pipeline CRM · New → Disbursed.", url: "/dashboard/my-leads", roles: ["ceo", "super_admin", "admin", "dsa"] },
           { title: "Executive Analytics", desc: "LOS funnel, TAT & conversion.", url: "/dashboard/los-executive", roles: ADMIN_ROLES },
         ],
       };
@@ -288,7 +300,7 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
           { title: "Earnings", desc: "Referral income & pending payouts.", url: "/dashboard/earnings", roles: ["affiliate"] },
           { title: "Commissions", desc: "Per-product commission breakdown.", url: "/dashboard/commissions", roles: ["affiliate"] },
           { title: "Marketing Kit", desc: "Posts, cards & WhatsApp creatives.", url: "/dashboard/marketing", roles: ["affiliate"] },
-          { title: "Wallet", desc: "Withdraw or reinvest earnings.", url: "/dashboard/wallet", roles: ["affiliate"] },
+          { title: "Wallet", desc: "Lead credits (not withdrawable).", url: "/dashboard/wallet", roles: ["affiliate"] },
         ],
       };
     case "customer":
@@ -305,7 +317,7 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
     default:
       return {
         title: "Welcome",
-        subtitle: "Your LeadMines workspace.",
+        subtitle: "Your RupeeDial One workspace.",
         stats: [],
         quickLinks: [{ title: "Settings", desc: "Profile & preferences.", url: "/dashboard/settings", roles: ALL_ROLES }],
       };

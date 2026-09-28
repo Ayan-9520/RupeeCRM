@@ -1,527 +1,316 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { useWorkspace } from "@/lib/workspace-context";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  PLAN_DISPLAY, CYCLE_LABEL, CYCLE_DISCOUNT,
-  priceForCycle, monthlyEquivalent, inr,
-  type PlanCode, type BillingCycle,
-} from "@/lib/subscription";
-import { useSubscription } from "@/hooks/use-subscription";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Crown, Check, Zap, Receipt, ArrowRight, Loader2, CreditCard,
-  ShieldCheck, Download, Sparkles, Users, Star, X, Calendar,
-} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import {
+  Building2,
+  Sparkles,
+  ArrowRight,
+  Loader2,
+  Users,
+  Wallet,
+  Check,
+  X,
+} from "lucide-react";
+import {
+  getBillingMe,
+  activateBillingPlan,
+  cancelBillingPlan,
+  inviteBillingSeat,
+  getCrmUser,
+  type BillingMe,
+} from "@/lib/python-api";
+import { isPlatformAdmin } from "@/lib/role-access";
+import type { AppRole } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/dashboard/billing")({
-  head: () => ({ meta: [{ title: "Billing & Subscription — LeadMines" }] }),
+  head: () => ({ meta: [{ title: "Billing — RupeeDial One" }] }),
   component: BillingPage,
 });
 
-interface PlanRow {
-  id: string;
-  code: PlanCode;
-  name: string;
-  tagline: string | null;
-  description: string | null;
-  price_monthly: number;
-  price_quarterly: number;
-  price_yearly: number;
-  gst_percent: number;
-  seat_limit: number;
-  leads_per_day: number;
-  marketing_posts_per_month: number;
-  hrms_user_limit: number;
-  withdrawal_enabled: boolean;
-  whatsapp_enabled: boolean;
-  affiliate_enabled: boolean;
-  api_access: boolean;
-  custom_branding: boolean;
-  priority_leads: boolean;
-  recharge_bonus_max_pct: number;
-  features: string[];
-  is_popular: boolean;
-  display_order: number;
-}
-
-interface InvoiceRow {
-  id: string;
-  invoice_number: string;
-  plan_code: PlanCode;
-  cycle: BillingCycle;
-  subtotal: number;
-  gst_amount: number;
-  total_amount: number;
-  status: string;
-  paid_at: string | null;
-  created_at: string;
-  billing_name: string | null;
-  gstin: string | null;
-}
+type Cycle = "monthly" | "quarterly" | "yearly";
 
 function BillingPage() {
-  const { current, canManage, refresh } = useWorkspace();
-  const { subscription, loading: subLoading, refresh: refreshSub } = useSubscription();
-  const [plans, setPlans] = useState<PlanRow[]>([]);
-  const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
-  const [cycle, setCycle] = useState<BillingCycle>("monthly");
-  const [checkout, setCheckout] = useState<PlanRow | null>(null);
+  const [data, setData] = useState<BillingMe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cycle, setCycle] = useState<Cycle>("monthly");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [invite, setInvite] = useState({ email: "", full_name: "", role: "dsa" });
 
-  const loadAll = async () => {
-    if (!current) return;
-    setLoading(true);
-    const [plansRes, invRes] = await Promise.all([
-      supabase.from("subscription_plans").select("*").eq("is_active", true).order("display_order"),
-      supabase.from("invoices").select("id,invoice_number,plan_code,cycle,subtotal,gst_amount,total_amount,status,paid_at,created_at,billing_name,gstin")
-        .eq("workspace_id", current.id).order("created_at", { ascending: false }).limit(20),
-    ]);
-    setPlans((plansRes.data ?? []) as PlanRow[]);
-    setInvoices((invRes.data ?? []) as InvoiceRow[]);
-    setLoading(false);
+  const load = useCallback(async () => {
+    try {
+      const me = await getBillingMe();
+      setData(me);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not load billing");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const onActivate = async (planId: string) => {
+    setBusy(`activate-${planId}`);
+    try {
+      const res = await activateBillingPlan(planId, cycle);
+      toast.success(res.message);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Activate failed");
+    } finally {
+      setBusy(null);
+    }
   };
 
-  useEffect(() => { loadAll(); /* eslint-disable-next-line */ }, [current?.id]);
+  const onCancel = async () => {
+    if (!confirm("Cancel plan? Credits stay; modules lock after end date.")) return;
+    setBusy("cancel");
+    try {
+      const res = await cancelBillingPlan();
+      toast.success(res.message);
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Cancel failed");
+    } finally {
+      setBusy(null);
+    }
+  };
 
-  if (!current || loading || subLoading) {
-    return <div className="py-16 grid place-items-center"><Loader2 className="size-6 animate-spin text-accent" /></div>;
+  const onInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setBusy("invite");
+    try {
+      const res = await inviteBillingSeat(invite);
+      toast.success(`${res.message}: ${res.temporary_password}`);
+      setInvite({ email: "", full_name: "", role: "dsa" });
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Invite failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="grid place-items-center py-20">
+        <Loader2 className="size-6 animate-spin text-[#10662A]" />
+      </div>
+    );
   }
 
-  const currentPlanCode = subscription?.plan_code ?? "free";
-  const periodEnd = subscription?.current_period_end
-    ? new Date(subscription.current_period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
-    : null;
+  const ent = data?.entitlements;
+  const planLabel = ent?.plan_name
+    ? `${ent.plan_name} · ${ent.plan_cycle ?? "—"} · ${ent.plan_status}`
+    : "No plan";
+  const meEmail = typeof window !== "undefined" ? (JSON.parse(localStorage.getItem("rd_crm_user") || "{}") as { email?: string }).email : undefined;
+  const isOwner =
+    !data?.team?.length ||
+    data.team.some((m) => m.is_owner && (!meEmail || m.email.toLowerCase() === meEmail.toLowerCase()));
+  const isAdmin = isPlatformAdmin((getCrmUser()?.role as AppRole) || null);
 
   return (
-    <div className="space-y-6 max-w-7xl">
-      <div className="flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold">Billing &amp; Subscription</h1>
-          <p className="text-muted-foreground text-sm mt-1">
-            Manage <span className="font-semibold text-foreground">{current.name}</span>'s plan, invoices and add-ons.
-          </p>
-        </div>
-        <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
-          <ShieldCheck className="size-3.5" /> Test mode · Razorpay mock
-        </Badge>
+    <div className="max-w-4xl space-y-6">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-[#390A5D]">Billing</h1>
+        <p className="text-sm text-[#5c4d72] mt-1">
+          Plans, lead credits wallet, and team seats. Razorpay checkout comes next — activate is manual for now.
+        </p>
       </div>
 
-      {/* Current subscription summary */}
-      {subscription && (
-        <div className="rounded-2xl border border-accent/40 bg-gradient-to-br from-accent/10 via-card to-card p-5 lg:p-6">
-          <div className="grid lg:grid-cols-4 gap-4 lg:gap-6 items-center">
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground font-semibold">
-                <Crown className="size-3.5 text-accent" /> Current plan
-              </div>
-              <div className="font-display text-3xl font-bold mt-1">
-                {subscription.plan_name}
-                <span className="text-muted-foreground text-base font-normal ml-2 capitalize">{subscription.cycle ?? ""}</span>
-              </div>
-              <div className="text-xs text-muted-foreground mt-1.5 flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className="capitalize">{subscription.status}</Badge>
-                {periodEnd && (
-                  <span className="inline-flex items-center gap-1">
-                    <Calendar className="size-3" /> Renews {periodEnd}
-                  </span>
-                )}
-              </div>
-            </div>
-            <UsageStat
-              label="Daily leads"
-              value={subscription.leads_per_day < 0 ? "Unlimited" : `${subscription.leads_per_day} / day`}
-              icon={Sparkles}
-            />
-            <UsageStat
-              label="Team seats"
-              value={subscription.seat_limit < 0 ? "Unlimited" : `${subscription.seat_limit} seats`}
-              icon={Users}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Plan picker */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h2 className="font-display text-xl font-bold">Choose a plan</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Switch anytime · GST inclusive on checkout</p>
-          </div>
-          <CycleToggle value={cycle} onChange={setCycle} />
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {plans.map((p) => (
-            <PlanCard
-              key={p.id}
-              plan={p}
-              cycle={cycle}
-              isCurrent={p.code === currentPlanCode}
-              disabled={!canManage}
-              onSelect={() => setCheckout(p)}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Invoices */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="font-display text-xl font-bold flex items-center gap-2">
-            <Receipt className="size-5 text-accent" /> Invoices
-          </h2>
-          <span className="text-xs text-muted-foreground">{invoices.length} record{invoices.length === 1 ? "" : "s"}</span>
-        </div>
-        {invoices.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border p-10 text-center text-muted-foreground text-sm">
-            No invoices yet. Upgrade to a paid plan to generate your first GST invoice.
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-secondary/50 text-xs uppercase tracking-wide text-muted-foreground">
-                  <tr>
-                    <th className="text-left px-4 py-3">Invoice #</th>
-                    <th className="text-left px-4 py-3">Plan</th>
-                    <th className="text-left px-4 py-3">Cycle</th>
-                    <th className="text-right px-4 py-3">Subtotal</th>
-                    <th className="text-right px-4 py-3">GST</th>
-                    <th className="text-right px-4 py-3">Total</th>
-                    <th className="text-left px-4 py-3">Status</th>
-                    <th className="text-left px-4 py-3">Date</th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.map((inv) => (
-                    <tr key={inv.id} className="border-t border-border hover:bg-secondary/30">
-                      <td className="px-4 py-3 font-mono text-xs">{inv.invoice_number}</td>
-                      <td className="px-4 py-3 capitalize">{PLAN_DISPLAY[inv.plan_code].name}</td>
-                      <td className="px-4 py-3 capitalize text-muted-foreground">{inv.cycle}</td>
-                      <td className="px-4 py-3 text-right font-mono">{inr(Number(inv.subtotal))}</td>
-                      <td className="px-4 py-3 text-right font-mono text-muted-foreground">{inr(Number(inv.gst_amount))}</td>
-                      <td className="px-4 py-3 text-right font-mono font-semibold">{inr(Number(inv.total_amount))}</td>
-                      <td className="px-4 py-3">
-                        <Badge variant={inv.status === "paid" ? "default" : "secondary"} className="capitalize">
-                          {inv.status}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">
-                        {new Date(inv.paid_at ?? inv.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Button
-                          variant="ghost" size="sm"
-                          onClick={() => downloadInvoice(inv, current.name)}
-                          className="gap-1.5 h-8"
-                        >
-                          <Download className="size-3.5" /> PDF
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <CheckoutDialog
-        plan={checkout}
-        cycle={cycle}
-        open={!!checkout}
-        currentPlan={currentPlanCode}
-        workspaceId={current.id}
-        onOpenChange={(o) => !o && setCheckout(null)}
-        onSuccess={() => {
-          setCheckout(null);
-          refresh();
-          refreshSub();
-          loadAll();
-        }}
-      />
-    </div>
-  );
-}
-
-function CycleToggle({ value, onChange }: { value: BillingCycle; onChange: (c: BillingCycle) => void }) {
-  const cycles: BillingCycle[] = ["monthly", "quarterly", "yearly"];
-  return (
-    <div className="inline-flex items-center gap-1 p-1 rounded-full bg-secondary border border-border">
-      {cycles.map((c) => (
-        <button
-          key={c}
-          onClick={() => onChange(c)}
-          className={cn(
-            "px-3 py-1.5 rounded-full text-xs font-semibold transition-smooth flex items-center gap-1.5",
-            value === c ? "bg-foreground text-background shadow-sm" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {CYCLE_LABEL[c]}
-          {CYCLE_DISCOUNT[c] && (
-            <span className={cn(
-              "text-[9px] px-1.5 py-0.5 rounded-full font-bold uppercase",
-              value === c ? "bg-accent/30 text-accent" : "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400",
-            )}>
-              {CYCLE_DISCOUNT[c]}
-            </span>
-          )}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function UsageStat({ label, value, icon: Icon }: { label: string; value: string; icon: React.ComponentType<{ className?: string }> }) {
-  return (
-    <div className="rounded-xl bg-background/60 border border-border p-3">
-      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-        <Icon className="size-3" /> {label}
-      </div>
-      <div className="font-display text-lg font-bold mt-0.5">{value}</div>
-    </div>
-  );
-}
-
-function PlanCard({ plan, cycle, isCurrent, disabled, onSelect }: {
-  plan: PlanRow; cycle: BillingCycle; isCurrent: boolean; disabled: boolean; onSelect: () => void;
-}) {
-  const total = priceForCycle(plan, cycle);
-  const monthly = monthlyEquivalent(plan, cycle);
-  const isFree = plan.code === "free";
-  const display = PLAN_DISPLAY[plan.code];
-
-  return (
-    <div className={cn(
-      "rounded-2xl border p-5 relative flex flex-col bg-card transition-smooth",
-      isCurrent ? "border-accent ring-1 ring-accent/40" :
-        plan.is_popular ? "border-accent/50 shadow-mint" : "border-border hover:border-accent/30",
-    )}>
-      {plan.is_popular && !isCurrent && (
-        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-accent text-accent-foreground text-[10px] font-bold uppercase tracking-wide flex items-center gap-1">
-          <Star className="size-2.5 fill-current" /> Most popular
-        </div>
-      )}
-      {isCurrent && (
-        <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-foreground text-background text-[10px] font-bold uppercase tracking-wide">
-          Current plan
-        </div>
-      )}
-
-      <div className="font-display text-lg font-bold">{plan.name}</div>
-      <div className="text-[11px] text-muted-foreground min-h-[28px] mt-0.5">{plan.tagline ?? display.tagline}</div>
-
-      <div className="mt-4">
-        {isFree ? (
-          <div className="font-display text-3xl font-bold">Free</div>
-        ) : (
-          <>
-            <div className="font-display text-3xl font-bold">{inr(monthly)}<span className="text-sm font-normal text-muted-foreground">/mo</span></div>
-            <div className="text-[11px] text-muted-foreground mt-0.5">
-              {cycle === "monthly" ? "Billed monthly" : `${inr(total)} billed ${cycle}`}
-            </div>
-          </>
-        )}
-      </div>
-
-      <ul className="mt-5 space-y-2 flex-1 text-xs">
-        <PlanFeature label={plan.seat_limit < 0 ? "Unlimited seats" : `${plan.seat_limit} team seat${plan.seat_limit > 1 ? "s" : ""}`} />
-        <PlanFeature label={plan.leads_per_day < 0 ? "Unlimited daily leads" : `${plan.leads_per_day} leads / day`} />
-        <PlanFeature label={plan.marketing_posts_per_month < 0 ? "Unlimited marketing posts" : `${plan.marketing_posts_per_month} marketing posts / mo`} />
-        {plan.hrms_user_limit > 0 && <PlanFeature label={`HRMS for ${plan.hrms_user_limit < 0 ? "unlimited" : plan.hrms_user_limit} employees`} />}
-        {plan.withdrawal_enabled && <PlanFeature label="Wallet withdrawals enabled" />}
-        {plan.recharge_bonus_max_pct > 0 && <PlanFeature label={`Up to ${plan.recharge_bonus_max_pct}% recharge bonus`} highlight />}
-        {plan.priority_leads && <PlanFeature label="Priority access to hot leads" highlight />}
-        {plan.whatsapp_enabled && <PlanFeature label="WhatsApp automation" />}
-        {plan.api_access && <PlanFeature label="API access" />}
-        {plan.custom_branding && <PlanFeature label="Custom branding" />}
-        {plan.affiliate_enabled && <PlanFeature label="Affiliate program" />}
-      </ul>
-
-      <Button
-        variant={isCurrent ? "secondary" : plan.is_popular ? "default" : "outline"}
-        className="mt-5 w-full gap-2"
-        onClick={onSelect}
-        disabled={disabled || isCurrent}
-      >
-        {isCurrent ? "Active" : isFree ? <>Switch to Free</> : <>Choose {plan.name} <ArrowRight className="size-4" /></>}
-      </Button>
-    </div>
-  );
-}
-
-function PlanFeature({ label, highlight }: { label: string; highlight?: boolean }) {
-  return (
-    <li className={cn("flex items-start gap-2", highlight && "font-semibold")}>
-      <Check className={cn("size-3.5 mt-0.5 shrink-0", highlight ? "text-accent" : "text-muted-foreground")} /> {label}
-    </li>
-  );
-}
-
-function CheckoutDialog({
-  plan, cycle, open, currentPlan, workspaceId, onOpenChange, onSuccess,
-}: {
-  plan: PlanRow | null;
-  cycle: BillingCycle;
-  open: boolean;
-  currentPlan: PlanCode;
-  workspaceId: string;
-  onOpenChange: (o: boolean) => void;
-  onSuccess: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [billingName, setBillingName] = useState("");
-  const [billingEmail, setBillingEmail] = useState("");
-  const [billingPhone, setBillingPhone] = useState("");
-  const [gstin, setGstin] = useState("");
-
-  if (!plan) return null;
-
-  const subtotal = priceForCycle(plan, cycle);
-  const gst = Math.round((subtotal * Number(plan.gst_percent)) / 100);
-  const total = subtotal + gst;
-  const isSwitch = plan.code !== currentPlan;
-  const isFree = plan.code === "free";
-
-  const pay = async () => {
-    setBusy(true);
-    const { data, error } = await supabase.rpc("subscribe_workspace", {
-      _workspace_id: workspaceId,
-      _plan_code: plan.code,
-      _cycle: cycle,
-      _billing_name: billingName || undefined,
-      _billing_email: billingEmail || undefined,
-      _billing_phone: billingPhone || undefined,
-      _gstin: gstin || undefined,
-    });
-    setBusy(false);
-    if (error) { toast.error(error.message); return; }
-    const result = data as { success: boolean; invoice_number?: string };
-    toast.success(
-      isFree ? `Switched to ${plan.name} plan`
-        : isSwitch ? `Upgraded to ${plan.name}! Invoice ${result.invoice_number ?? ""}`
-          : `Renewed ${plan.name} successfully`,
-    );
-    onSuccess();
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <section className="rounded-2xl border border-[#d8ecdd] bg-gradient-to-br from-[#E8F7EC] to-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-gradient-to-br from-accent/30 to-accent/10 grid place-items-center shrink-0">
-              <Zap className="size-5 text-accent" />
+            <div className="size-10 rounded-xl bg-[#10662A]/15 grid place-items-center">
+              <Sparkles className="size-5 text-[#10662A]" />
             </div>
-            <div className="min-w-0">
-              <DialogTitle className="truncate">{isFree ? `Switch to ${plan.name}` : `Subscribe to ${plan.name}`}</DialogTitle>
-              <DialogDescription>
-                {isFree ? "No payment required" : `Test-mode checkout · ${CYCLE_LABEL[cycle]} billing`}
-              </DialogDescription>
+            <div>
+              <div className="text-xs uppercase text-[#5c4d72]">Current plan</div>
+              <div className="font-display text-xl font-bold text-[#390A5D]">{planLabel}</div>
+              {ent?.plan_ends_at && (
+                <div className="text-xs text-[#5c4d72] mt-0.5">
+                  Ends {new Date(ent.plan_ends_at).toLocaleDateString("en-IN")}
+                </div>
+              )}
             </div>
           </div>
-        </DialogHeader>
-
-        {!isFree && (
-          <div className="space-y-3 pt-1">
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="col-span-2">
-                <Label className="text-xs">Billing name</Label>
-                <Input value={billingName} onChange={(e) => setBillingName(e.target.value)} placeholder="Your company / your name" className="mt-1 h-9" />
+          <div className="flex items-center gap-4 text-sm">
+            <div className="rounded-xl bg-white border border-[#d8ecdd] px-4 py-2">
+              <div className="text-[10px] uppercase text-[#5c4d72] flex items-center gap-1">
+                <Wallet className="size-3" /> Wallet
               </div>
-              <div>
-                <Label className="text-xs">Email</Label>
-                <Input type="email" value={billingEmail} onChange={(e) => setBillingEmail(e.target.value)} placeholder="billing@…" className="mt-1 h-9" />
+              <div className="font-bold text-[#390A5D]">
+                ₹{Number(ent?.wallet_balance ?? 0).toLocaleString("en-IN")}
               </div>
-              <div>
-                <Label className="text-xs">Phone</Label>
-                <Input value={billingPhone} onChange={(e) => setBillingPhone(e.target.value)} placeholder="+91…" className="mt-1 h-9" />
+            </div>
+            <div className="rounded-xl bg-white border border-[#d8ecdd] px-4 py-2">
+              <div className="text-[10px] uppercase text-[#5c4d72] flex items-center gap-1">
+                <Users className="size-3" /> Seats
               </div>
-              <div className="col-span-2">
-                <Label className="text-xs">GSTIN <span className="text-muted-foreground">(optional)</span></Label>
-                <Input value={gstin} onChange={(e) => setGstin(e.target.value.toUpperCase())} placeholder="29ABCDE1234F1Z5" className="mt-1 h-9 font-mono" />
+              <div className="font-bold text-[#390A5D]">
+                {data?.seats_used ?? 0} / {ent?.seat_limit ?? 1}
               </div>
             </div>
           </div>
-        )}
-
-        <div className="rounded-xl border border-border bg-secondary/30 p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span>{plan.name} ({cycle})</span>
-            <span className="font-mono">{inr(subtotal)}</span>
-          </div>
-          {!isFree && (
-            <>
-              <div className="flex justify-between text-xs text-muted-foreground border-t border-dashed border-border pt-2">
-                <span>GST ({plan.gst_percent}%)</span>
-                <span className="font-mono">{inr(gst)}</span>
-              </div>
-              <div className="flex justify-between font-bold pt-1 border-t border-border">
-                <span>Total</span>
-                <span className="font-mono text-base">{inr(total)}</span>
-              </div>
-            </>
-          )}
         </div>
-
-        {!isFree && (
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-            <ShieldCheck className="size-3.5 text-accent" />
-            Test mode · No real charge · GST invoice generated instantly
-          </div>
+        {ent?.plan_status === "active" && (
+          <button
+            type="button"
+            onClick={() => void onCancel()}
+            disabled={busy === "cancel"}
+            className="mt-4 text-xs font-semibold text-red-700 hover:underline disabled:opacity-50"
+          >
+            {busy === "cancel" ? "Cancelling…" : "Cancel plan"}
+          </button>
         )}
+      </section>
 
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={busy}>Cancel</Button>
-          <Button onClick={pay} disabled={busy} className="gap-2">
-            {busy ? <Loader2 className="size-4 animate-spin" /> : isFree ? <Check className="size-4" /> : <CreditCard className="size-4" />}
-            {isFree ? "Confirm switch" : `Pay ${inr(total)}`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <div className="flex flex-wrap gap-2">
+        {(["monthly", "quarterly", "yearly"] as Cycle[]).map((c) => (
+          <button
+            key={c}
+            type="button"
+            onClick={() => setCycle(c)}
+            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${
+              cycle === c
+                ? "bg-[#10662A] text-white"
+                : "bg-white border border-[#d8ecdd] text-[#390A5D]"
+            }`}
+          >
+            {c}
+            {c === "quarterly" ? " (−10%)" : c === "yearly" ? " (−20%)" : ""}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid md:grid-cols-3 gap-3">
+        {(data?.available_plans ?? []).map((p) => {
+          const price = p.price[cycle];
+          const active = ent?.plan_id === p.id && ent?.plan_status === "active";
+          return (
+            <div
+              key={p.id}
+              className={`rounded-2xl border p-5 bg-white ${
+                active ? "border-[#10662A] ring-1 ring-[#10662A]/30" : "border-[#d8ecdd]"
+              }`}
+            >
+              <div className="font-display text-lg font-bold text-[#390A5D]">{p.name}</div>
+              <div className="mt-1 text-2xl font-extrabold text-[#10662A]">
+                ₹{price.toLocaleString("en-IN")}
+                <span className="text-xs font-medium text-[#5c4d72]"> / {cycle}</span>
+              </div>
+              <ul className="mt-3 space-y-1 text-xs text-[#5c4d72]">
+                <li>{p.seats} seat{p.seats > 1 ? "s" : ""}</li>
+                <li>₹{p.lead_credits_monthly.toLocaleString("en-IN")} lead credits / mo</li>
+                {Object.entries(p.modules)
+                  .filter(([, v]) => v)
+                  .slice(0, 4)
+                  .map(([k]) => (
+                    <li key={k} className="flex items-center gap-1">
+                      <Check className="size-3 text-[#10662A]" /> {k.replace(/_/g, " ")}
+                    </li>
+                  ))}
+              </ul>
+              <button
+                type="button"
+                disabled={!!busy || active}
+                onClick={() => void onActivate(p.id)}
+                className="mt-4 w-full rounded-xl bg-[#10662A] text-white text-sm font-semibold py-2 disabled:opacity-50 hover:bg-[#0d5222]"
+              >
+                {busy === `activate-${p.id}`
+                  ? "Activating…"
+                  : active
+                    ? "Active"
+                    : "Activate (manual)"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 space-y-4">
+        <div className="font-semibold text-[#390A5D] flex items-center gap-2">
+          <Users className="size-4 text-[#10662A]" /> Team seats
+        </div>
+        <ul className="divide-y divide-[#d8ecdd] text-sm">
+          {(data?.team ?? []).map((m) => (
+            <li key={m.id} className="py-2 flex items-center justify-between gap-2">
+              <div>
+                <div className="font-medium text-[#390A5D]">
+                  {m.full_name} {m.is_owner && <span className="text-[10px] uppercase text-[#10662A]">Owner</span>}
+                </div>
+                <div className="text-xs text-[#5c4d72]">
+                  {m.email} · {m.role}
+                </div>
+              </div>
+              {!m.is_active && <X className="size-4 text-red-500" />}
+            </li>
+          ))}
+        </ul>
+        {isOwner && (ent?.seat_limit ?? 1) > 1 && (
+          <form onSubmit={(e) => void onInvite(e)} className="grid sm:grid-cols-4 gap-2 pt-2">
+            <input
+              required
+              placeholder="Full name"
+              value={invite.full_name}
+              onChange={(e) => setInvite((s) => ({ ...s, full_name: e.target.value }))}
+              className="rounded-lg border border-[#d8ecdd] px-3 py-2 text-sm"
+            />
+            <input
+              required
+              type="email"
+              placeholder="Email"
+              value={invite.email}
+              onChange={(e) => setInvite((s) => ({ ...s, email: e.target.value }))}
+              className="rounded-lg border border-[#d8ecdd] px-3 py-2 text-sm"
+            />
+            <select
+              value={invite.role}
+              onChange={(e) => setInvite((s) => ({ ...s, role: e.target.value }))}
+              className="rounded-lg border border-[#d8ecdd] px-3 py-2 text-sm"
+            >
+              <option value="dsa">DSA</option>
+              <option value="caller">Caller</option>
+              <option value="coordinator">Coordinator</option>
+            </select>
+            <button
+              type="submit"
+              disabled={busy === "invite"}
+              className="rounded-lg bg-[#390A5D] text-white text-sm font-semibold py-2 disabled:opacity-50"
+            >
+              {busy === "invite" ? "…" : "Invite seat"}
+            </button>
+          </form>
+        )}
+      </section>
+
+      <div className="grid sm:grid-cols-2 gap-3">
+        {[
+          { to: "/dashboard/wallet", label: "Wallet", desc: "Lead credit balance", adminOnly: false },
+          { to: "/dashboard/leadboard", label: "Leadboard", desc: "Buy with credits", adminOnly: false },
+          { to: "/dashboard/profile", label: "Public profile", desc: "Firm page & slug", adminOnly: false },
+          { to: "/dashboard/earnings", label: "Earnings", desc: "Payouts from deals", adminOnly: false },
+          { to: "/dashboard/admin/partners", label: "Partner Applications", desc: "Approve DSA", adminOnly: true },
+          { to: "/dashboard/admin/users", label: "Users", desc: "CRM logins", adminOnly: true },
+        ]
+          .filter((l) => !l.adminOnly || isAdmin)
+          .map((l) => (
+          <Link
+            key={l.to}
+            to={l.to}
+            className="rounded-xl border border-[#d8ecdd] bg-white p-4 hover:bg-[#E8F7EC]/60 transition-colors group"
+          >
+            <div className="font-semibold text-sm text-[#390A5D] flex items-center gap-2">
+              <Building2 className="size-4 text-[#10662A]" />
+              {l.label}
+              <ArrowRight className="size-3.5 ml-auto opacity-0 group-hover:opacity-100" />
+            </div>
+            <p className="text-xs text-[#5c4d72] mt-1">{l.desc}</p>
+          </Link>
+        ))}
+      </div>
+    </div>
   );
-}
-
-function downloadInvoice(inv: InvoiceRow, workspaceName: string) {
-  const lines = [
-    `INVOICE`,
-    `${inv.invoice_number}`,
-    ``,
-    `Workspace: ${workspaceName}`,
-    `Billed to: ${inv.billing_name ?? "—"}`,
-    `GSTIN: ${inv.gstin ?? "—"}`,
-    `Date: ${new Date(inv.paid_at ?? inv.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })}`,
-    ``,
-    `Plan:        ${PLAN_DISPLAY[inv.plan_code].name} (${inv.cycle})`,
-    `Subtotal:    ${inr(Number(inv.subtotal))}`,
-    `GST:         ${inr(Number(inv.gst_amount))}`,
-    `Total:       ${inr(Number(inv.total_amount))}`,
-    ``,
-    `Status:      ${inv.status.toUpperCase()}`,
-    ``,
-    `Thank you for choosing LeadMines by MoneyMines.`,
-    `For support: support@leadmines.in`,
-  ].join("\n");
-  const blob = new Blob([lines], { type: "text/plain" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${inv.invoice_number}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-  toast.success("Invoice downloaded");
 }

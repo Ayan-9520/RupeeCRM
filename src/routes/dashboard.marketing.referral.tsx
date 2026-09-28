@@ -1,106 +1,148 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Copy, Loader2, MessageCircle, Facebook, Linkedin, Twitter } from "lucide-react";
-import {
-  buildReferralLink, generateReferralCode,
-  shareWhatsApp, shareFacebook, shareLinkedIn, shareTwitter,
-} from "@/lib/marketing";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { Copy, Check, Loader2, ExternalLink } from "lucide-react";
+import { MarketingUpgradeGate } from "@/components/marketing/MarketingUpgradeGate";
+import { useBillingEntitlements } from "@/hooks/use-billing-entitlements";
+import { buildReferralLink, partnerBrandingFrom, shareWhatsApp } from "@/lib/marketing";
+import { getCrmUser, getPartnerProfile } from "@/lib/python-api";
+import { APPLY_PRODUCTS } from "@/lib/referrals";
 
 export const Route = createFileRoute("/dashboard/marketing/referral")({
+  head: () => ({ meta: [{ title: "Referral Link — RupeeDial One" }] }),
   component: ReferralPage,
 });
 
+const SITE = "https://rupeedial.com";
+
 function ReferralPage() {
-  const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [code, setCode] = useState("");
-  const [name, setName] = useState("");
+  const { entitlements, loading, marketingBasic } = useBillingEntitlements();
+  const user = getCrmUser();
+  const [profileUrl, setProfileUrl] = useState<string | null>(null);
+  const [firm, setFirm] = useState("RupeeDial Partner");
+  const [copied, setCopied] = useState<string | null>(null);
+
+  const code = user?.dsa_id || user?.email?.split("@")[0] || "partner";
+  const primary = buildReferralLink(code, SITE);
 
   useEffect(() => {
-    if (!user) return;
     (async () => {
-      const { data: profile } = await supabase
-        .from("profiles").select("full_name").eq("id", user.id).maybeSingle();
-      setName(profile?.full_name ?? user.email?.split("@")[0] ?? "Partner");
-      setCode(generateReferralCode(profile?.full_name ?? user.email ?? "user", user.id));
-      setLoading(false);
+      const profile = await getPartnerProfile().catch(() => null);
+      if (profile?.public_url) setProfileUrl(profile.public_url);
+      else if (profile?.slug) setProfileUrl(`${SITE}/p/${profile.slug}`);
+      if (profile?.firm_name) setFirm(profile.firm_name);
     })();
-  }, [user]);
+  }, []);
 
-  const link = useMemo(() => buildReferralLink(code), [code]);
-  const shareText = `Hi! Apply for instant Loans, Credit Cards & Insurance through me. Quick approval, best rates. Get started: ${link}`;
+  if (loading) {
+    return (
+      <div className="grid place-items-center py-16">
+        <Loader2 className="size-5 animate-spin text-[#10662A]" />
+      </div>
+    );
+  }
 
-  const copy = async () => {
-    try { await navigator.clipboard.writeText(link); toast.success("Link copied"); }
-    catch { toast.error("Copy failed"); }
+  if (!entitlements.has_active_plan || !marketingBasic) {
+    return (
+      <MarketingUpgradeGate
+        title="Referral links"
+        description="Activate any plan to get your personal lead-capture links."
+      />
+    );
+  }
+
+  const invite = `Hi, I'm ${user?.full_name || "your RupeeDial partner"} from ${firm}. Check loan eligibility here: ${profileUrl || primary}`;
+
+  const copy = async (id: string, text: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopied(id);
+    toast.success("Copied");
+    setTimeout(() => setCopied(null), 2000);
   };
 
-  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
-
   return (
-    <div className="grid md:grid-cols-2 gap-6 max-w-4xl">
-      <Card>
-        <CardContent className="p-6 space-y-4">
+    <div className="space-y-6 max-w-3xl">
+      <div>
+        <h2 className="font-display text-xl font-bold text-[#390A5D]">Referral links</h2>
+        <p className="text-sm text-[#5c4d72] mt-1">
+          Share your profile or product links. Ref code:{" "}
+          <span className="font-mono text-[#10662A]">{code}</span>
+        </p>
+      </div>
+
+      <div className="rounded-2xl border border-[#d8ecdd] bg-white p-5 space-y-3">
+        <div className="text-xs uppercase font-semibold text-[#5c4d72]">Primary</div>
+        <div className="font-mono text-sm break-all text-[#390A5D]">{primary}</div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => void copy("primary", primary)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-xs font-semibold"
+          >
+            {copied === "primary" ? <Check className="size-3.5 text-[#10662A]" /> : <Copy className="size-3.5" />}
+            Copy
+          </button>
+          <button
+            type="button"
+            onClick={() => shareWhatsApp(invite)}
+            className="rounded-lg bg-[#25D366] text-white px-3 py-1.5 text-xs font-semibold"
+          >
+            WhatsApp invite
+          </button>
+        </div>
+      </div>
+
+      {profileUrl && (
+        <div className="rounded-2xl border border-[#d8ecdd] bg-[#E8F7EC]/50 p-5 space-y-2">
+          <div className="text-xs uppercase font-semibold text-[#5c4d72]">Public profile</div>
+          <a
+            href={profileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="font-mono text-sm text-[#10662A] break-all inline-flex items-center gap-1"
+          >
+            {profileUrl} <ExternalLink className="size-3" />
+          </a>
           <div>
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">Your referral link</div>
-            <div className="text-xl font-display font-bold mt-1">{name}</div>
+            <button
+              type="button"
+              onClick={() => void copy("profile", profileUrl)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-xs font-semibold bg-white"
+            >
+              {copied === "profile" ? <Check className="size-3.5 text-[#10662A]" /> : <Copy className="size-3.5" />}
+              Copy profile URL
+            </button>
+            <Link to="/dashboard/profile" className="ml-3 text-xs font-semibold text-[#10662A] underline">
+              Edit profile
+            </Link>
           </div>
+        </div>
+      )}
 
-          <div>
-            <Label className="text-xs">Custom code (optional)</Label>
-            <div className="flex gap-2">
-              <Input value={code} onChange={(e) => setCode(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""))} maxLength={20} />
-            </div>
-            <div className="text-xs text-muted-foreground mt-1">Letters & numbers only.</div>
-          </div>
-
-          <div className="rounded-lg border bg-muted/40 p-3 flex items-center gap-2">
-            <span className="font-mono text-sm flex-1 truncate">{link}</span>
-            <Button size="icon" variant="ghost" onClick={copy}><Copy className="size-4" /></Button>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs">Quick share</Label>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => shareWhatsApp(shareText)} className="gap-2 text-emerald-600">
-                <MessageCircle className="size-4" /> WhatsApp
-              </Button>
-              <Button variant="outline" onClick={() => shareFacebook(link, shareText)} className="gap-2 text-blue-600">
-                <Facebook className="size-4" /> Facebook
-              </Button>
-              <Button variant="outline" onClick={() => shareLinkedIn(link)} className="gap-2 text-sky-700">
-                <Linkedin className="size-4" /> LinkedIn
-              </Button>
-              <Button variant="outline" onClick={() => shareTwitter(shareText, link)} className="gap-2">
-                <Twitter className="size-4" /> X
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-          <div className="text-xs uppercase tracking-widest text-muted-foreground">Scan to apply</div>
-          <div className="bg-white p-4 rounded-2xl border shadow-sm">
-            <QRCodeSVG value={link} size={220} level="M" />
-          </div>
-          <div className="text-sm text-muted-foreground max-w-xs">
-            Print this QR on your visiting card, posters, or storefront. Scans land directly on your branded apply page.
-          </div>
-          <div className="text-xs text-muted-foreground italic">
-            Click & conversion tracking arrives with the public landing page.
-          </div>
-        </CardContent>
-      </Card>
+      <div>
+        <div className="text-sm font-semibold text-[#390A5D] mb-2">Product links</div>
+        <ul className="space-y-2">
+          {APPLY_PRODUCTS.map((p) => {
+            const url = `${SITE}/check-eligibility?ref=${encodeURIComponent(code)}&product=${p.slug}`;
+            return (
+              <li
+                key={p.slug}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#d8ecdd] bg-white px-4 py-3 text-sm"
+              >
+                <span className="font-medium text-[#390A5D]">{p.label}</span>
+                <button
+                  type="button"
+                  onClick={() => void copy(p.slug, url)}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-[#10662A]"
+                >
+                  {copied === p.slug ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+                  Copy
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     </div>
   );
 }

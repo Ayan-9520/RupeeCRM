@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import {
@@ -8,12 +7,10 @@ import {
   Loader2,
   Phone,
   MapPin,
-  Banknote,
   Flame,
   Snowflake,
   Sun,
   ShoppingCart,
-  Sparkles,
   Wallet,
   Layers,
   ShoppingBag,
@@ -30,6 +27,7 @@ import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/pro
 import { Link } from "@tanstack/react-router";
 import { useQuota } from "@/hooks/use-subscription";
 import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
+import { listCrmLeads, purchaseCrmLead, type CrmLead } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
   head: () => ({ meta: [{ title: "RupeeDial Lead - Marketplace" }] }),
@@ -40,6 +38,7 @@ type Lead = {
   id: string;
   applicant_name: string;
   masked_phone: string;
+  full_phone?: string;
   city: string;
   loan_amount: number;
   monthly_income: number | null;
@@ -52,6 +51,30 @@ type Lead = {
   created_at: string;
   updated_at: string;
 };
+
+function mapCrmLead(l: CrmLead): Lead {
+  const score = (["hot", "warm", "cold"].includes(l.score) ? l.score : "cold") as Lead["score"];
+  const cat = (["loan", "insurance", "credit_card", "investment"].includes(l.product_category)
+    ? l.product_category
+    : "loan") as ProductCategory;
+  return {
+    id: l.id,
+    applicant_name: l.applicant_name,
+    masked_phone: l.masked_phone || l.full_phone,
+    full_phone: l.full_phone,
+    city: l.city,
+    loan_amount: Number(l.loan_amount || 0),
+    monthly_income: l.monthly_income,
+    score,
+    price: Number(l.price || 0),
+    status: l.status || "available",
+    product_category: cat,
+    product_subtype: l.product_subtype,
+    product_type_id: null,
+    created_at: l.created_at,
+    updated_at: l.created_at,
+  };
+}
 
 const SCORES = ["all", "hot", "warm", "cold"];
 const SORTS = [
@@ -76,11 +99,10 @@ const QUICK_RECHARGE = [500, 1000, 2500, 5000];
 const LOW_BALANCE_THRESHOLD = 300;
 
 function Leadboard() {
-  console.log("PAGE LOADED");
   const { user } = useAuth();
-  const { quota: leadQuota, refresh: refreshQuota } = useQuota("leads");
+  const { quota: leadQuota } = useQuota("leads");
   const [leads, setLeads] = useState<Lead[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductType[]>([]);
+  const [productTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
   const [city, setCity] = useState("");
   const [category, setCategory] = useState<"all" | ProductCategory>("all");
@@ -91,25 +113,14 @@ function Leadboard() {
   const [timeRange, setTimeRange] = useState<TimeRangeKey>("all");
   const [buying, setBuying] = useState<string | null>(null);
   const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
-  // re-render every 30s so relative timestamps stay live
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(t);
   }, []);
 
-  // purchased leads in this session: id -> { full_phone }
   const [purchased, setPurchased] = useState<Record<string, { full_phone: string }>>({});
-
-  // insufficient balance modal
   const [shortfallLead, setShortfallLead] = useState<Lead | null>(null);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("product_types").select("*").eq("enabled", true).order("display_order");
-      setProductTypes((data ?? []) as ProductType[]);
-    })();
-  }, []);
 
   const filteredTypes = useMemo(
     () => (category === "all" ? productTypes : productTypes.filter((p) => p.category === category)),
@@ -118,135 +129,81 @@ function Leadboard() {
 
   const load = async () => {
     setLoading(true);
-    console.log("LOAD RUNNING");
-    let q = supabase
-      .from("leads")
-      .select(
-        `
-  id,
-  applicant_name,
-  masked_phone,
-  city,
-  loan_amount,
-  monthly_income,
-  score,
-  price,
-  status,
-  product_category,
-  product_subtype,
-  product_type_id,
-  created_at,
-  updated_at
-`,
-      )
-      .eq("is_marketplace", true)
-      .or(
-        `status.eq.available,and(status.eq.sold,sold_at.gte.${new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()})`,
-      );
-    if (sort === "score") q = q.order("score", { ascending: false }).order("created_at", { ascending: false });
-    else if (sort === "newest") q = q.order("created_at", { ascending: false });
-    else if (sort === "oldest") q = q.order("created_at", { ascending: true });
-    else if (sort === "price_asc") q = q.order("price", { ascending: true });
-    else if (sort === "price_desc") q = q.order("price", { ascending: false });
-    if (city.trim()) q = q.ilike("city", `%${city.trim()}%`);
-    if (category !== "all") q = q.eq("product_category", category);
-    if (productTypeId !== "all") q = q.eq("product_type_id", productTypeId);
-    if (score !== "all") q = q.eq("score", score as "cold" | "warm" | "hot");
-    if (maxBudget && Number(maxBudget) > 0) q = q.lte("price", Number(maxBudget));
-    const tr = TIME_RANGES.find((r) => r.key === timeRange);
-    if (tr && tr.hours > 0) {
-      const since = new Date(Date.now() - tr.hours * 3600_000).toISOString();
-      q = q.gte("created_at", since);
-    }
-    const { data, error } = await q;
+    try {
+      const data = await listCrmLeads({ limit: 200 });
+      let rows = data.items.map(mapCrmLead);
 
-    console.log("DATA:", data);
-    console.log("ERROR:", error);
-    if (error) toast.error(error.message);
-    else setLeads((data ?? []) as Lead[]);
-    setLoading(false);
+      if (city.trim()) {
+        const c = city.trim().toLowerCase();
+        rows = rows.filter((l) => l.city.toLowerCase().includes(c));
+      }
+      if (category !== "all") rows = rows.filter((l) => l.product_category === category);
+      if (score !== "all") rows = rows.filter((l) => l.score === score);
+      if (maxBudget && Number(maxBudget) > 0) {
+        rows = rows.filter((l) => l.price <= Number(maxBudget));
+      }
+      const tr = TIME_RANGES.find((r) => r.key === timeRange);
+      if (tr && tr.hours > 0) {
+        const since = Date.now() - tr.hours * 3600_000;
+        rows = rows.filter((l) => new Date(l.created_at).getTime() >= since);
+      }
+
+      const scoreRank = { hot: 3, warm: 2, cold: 1 } as const;
+      rows = [...rows].sort((a, b) => {
+        if (sort === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        if (sort === "score") return scoreRank[b.score] - scoreRank[a.score];
+        if (sort === "price_asc") return a.price - b.price;
+        if (sort === "price_desc") return b.price - a.price;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      setLeads(rows);
+      setStats({
+        total: data.total,
+        hot: data.items.filter((l) => l.score === "hot").length,
+        purchases: Object.keys(purchased).length,
+        balance: 0,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load CRM leads");
+      setLeads([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    load(); /* eslint-disable-next-line */
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
 
-  const refreshStats = async () => {
-    if (!user) return;
-    const [totalRes, hotRes, purchRes, walletRes] = await Promise.all([
-      supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "available"),
-      supabase.from("leads").select("id", { count: "exact", head: true }).eq("status", "available").eq("score", "hot"),
-      supabase.from("lead_purchases").select("id", { count: "exact", head: true }).eq("dsa_id", user.id),
-      supabase.from("wallets").select("balance").eq("user_id", user.id).maybeSingle(),
-    ]);
-    setStats({
-      total: totalRes.count ?? 0,
-      hot: hotRes.count ?? 0,
-      purchases: purchRes.count ?? 0,
-      balance: Number(walletRes.data?.balance ?? 0),
-    });
-  };
-
-  useEffect(() => {
-    refreshStats(); /* eslint-disable-next-line */
-  }, [user, leads.length]);
-
-  // reset sub-type when category changes
   useEffect(() => {
     setProductTypeId("all");
   }, [category]);
 
   const buy = async (lead: Lead) => {
     if (!user) return;
-    if (purchased[lead.id]) return; // already bought in this session
-    // Plan-gating: daily quota
-    if (leadQuota && !leadQuota.unlimited && !leadQuota.allowed) {
-      toast.error(`Daily lead limit reached (${leadQuota.used}/${leadQuota.limit}). Upgrade your plan to buy more.`);
-      return;
-    }
-    // Pre-flight balance check for nicer UX
-    if (stats.balance < lead.price) {
-      setShortfallLead(lead);
-      return;
-    }
+    if (purchased[lead.id]) return;
     setBuying(lead.id);
-    const { data, error } = await supabase.rpc("purchase_lead", { _lead_id: lead.id });
-    setBuying(null);
-    if (error) {
-      // Server-side guard: balance changed under us
-      if (/insufficient/i.test(error.message)) {
-        setShortfallLead(lead);
-      } else if (/no longer available/i.test(error.message)) {
-        toast.error("This lead was just sold. Refreshing list.");
-        load();
-      } else if (/daily lead limit/i.test(error.message) || /limit reached/i.test(error.message)) {
-        toast.error(error.message);
-        refreshQuota();
-      } else {
-        toast.error(error.message);
-      }
-      return;
+    try {
+      const res = await purchaseCrmLead(lead.id);
+      setPurchased((prev) => ({
+        ...prev,
+        [lead.id]: { full_phone: res.full_phone },
+      }));
+      setLeads((prev) =>
+        prev.map((l) => (l.id === lead.id ? { ...l, status: "sold", full_phone: res.full_phone } : l)),
+      );
+      toast.success("Lead purchased — open My Leads for pipeline");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Purchase failed");
+    } finally {
+      setBuying(null);
     }
-    const result = data as { success: boolean; full_phone: string; new_balance: number };
-    setPurchased((prev) => ({ ...prev, [lead.id]: { full_phone: result.full_phone } }));
-    // setLeads((prev) => prev.filter((l) => l.id !== lead.id));
-    setStats((s) => ({ ...s, balance: result.new_balance, purchases: s.purchases + 1 }));
-    refreshQuota();
-    toast.success(`Lead unlocked! ₹${lead.price} debited. New balance ₹${result.new_balance.toLocaleString("en-IN")}`);
   };
 
-  const recharge = async (amount: number) => {
-    if (amount <= 0) return;
-    const { data, error } = await supabase.rpc("recharge_wallet", { _amount: amount });
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-    const res = data as { success: boolean; new_balance: number };
-    setStats((s) => ({ ...s, balance: Number(res.new_balance) }));
-    toast.success(
-      `₹${amount.toLocaleString("en-IN")} added. Balance ₹${Number(res.new_balance).toLocaleString("en-IN")}`,
-    );
+  const recharge = async (_amount: number) => {
+    toast.info("Wallet recharge will move to Python CRM next.");
   };
 
   const typeMap = useMemo(
@@ -257,48 +214,48 @@ function Leadboard() {
   const lowBalance = stats.balance < LOW_BALANCE_THRESHOLD;
 
   return (
-    <div className="space-y-6 max-w-7xl">
+    <div className="space-y-5 max-w-7xl">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-display text-2xl lg:text-3xl font-bold">Leadboard Marketplace</h1>
-          <p className="text-muted-foreground mt-1">
-            Loans · Insurance · Credit Cards · Investments — all in one feed.
+          <h1 className="font-display text-2xl font-extrabold text-[#390A5D] tracking-tight">Leadboard</h1>
+          <p className="text-[#5c4d72] mt-0.5 text-sm">
+            Loans · Insurance · Credit Cards · Investments
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-full bg-card border border-border shadow-card">
-            <Wallet className="size-4 text-accent" />
-            <span className="text-xs text-muted-foreground">Balance</span>
-            <span className="font-display font-bold">₹{stats.balance.toLocaleString("en-IN")}</span>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#d8ecdd] shadow-[0_2px_8px_rgba(16,102,42,0.04)]">
+            <Wallet className="size-3.5 text-[#10662A]" />
+            <span className="text-[11px] text-[#5c4d72]">Balance</span>
+            <span className="font-display font-bold text-sm text-[#390A5D]">₹{stats.balance.toLocaleString("en-IN")}</span>
           </div>
           <Link
             to="/dashboard/wallet"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-[#10662A] text-white font-semibold text-sm hover:bg-[#0D4F20] transition-colors"
           >
-            <Wallet className="size-4" /> Add money
+            <Wallet className="size-3.5" /> Add money
           </Link>
         </div>
       </div>
 
       {lowBalance && (
-        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300 px-4 py-3 flex items-center gap-3 flex-wrap">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 px-3.5 py-2.5 flex items-center gap-3 flex-wrap text-sm">
           <AlertTriangle className="size-4 shrink-0" />
-          <p className="text-sm flex-1 min-w-[200px]">
-            <strong>Low wallet balance.</strong> Add funds to keep buying premium leads without interruption.
+          <p className="flex-1 min-w-[180px]">
+            <strong>Low wallet balance.</strong> Add funds to buy leads.
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {[500, 1000].map((a) => (
               <button
                 key={a}
                 onClick={() => recharge(a)}
-                className="text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500 text-white hover:opacity-90"
+                className="text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-500 text-white hover:opacity-90 cursor-pointer"
               >
                 +₹{a}
               </button>
             ))}
             <Link
               to="/dashboard/wallet"
-              className="text-xs font-bold px-3 py-1.5 rounded-full border border-amber-500/50 hover:bg-amber-500/20"
+              className="text-xs font-bold px-2.5 py-1 rounded-lg border border-amber-300 hover:bg-amber-100"
             >
               Wallet →
             </Link>
@@ -306,8 +263,7 @@ function Leadboard() {
         </div>
       )}
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         <StatCard icon={Layers} label="Total leads" value={stats.total.toLocaleString("en-IN")} tone="default" />
         <StatCard icon={Flame} label="Hot leads" value={stats.hot.toLocaleString("en-IN")} tone="hot" />
         <StatCard
@@ -326,28 +282,25 @@ function Leadboard() {
 
       <PlanQuotaBanner quota={leadQuota} kind="leads" />
 
-      <div className="rounded-2xl bg-card border border-border p-4 shadow-card sticky top-2 z-10">
-        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
-          <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-            <Filter className="size-4 text-accent" /> Filters
+      <div className="rounded-xl bg-white border border-[#d8ecdd] p-3 shadow-[0_2px_12px_rgba(16,102,42,0.04)] sticky top-2 z-10">
+        <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#390A5D] uppercase tracking-wide">
+            <Filter className="size-3.5 text-[#10662A]" /> Filters
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {
-                load();
-                refreshStats();
-              }}
+              onClick={() => void load()}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 h-8 rounded-md border border-border bg-card hover:bg-secondary text-xs font-semibold transition-smooth disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-[#d8ecdd] bg-white hover:bg-[#E8F7EC] text-xs font-semibold text-[#390A5D] transition-colors disabled:opacity-50 cursor-pointer"
               title="Refresh leads"
             >
               <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
             </button>
-            <ArrowUpDown className="size-4 text-muted-foreground" />
+            <ArrowUpDown className="size-3.5 text-[#5c4d72]" />
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="input-base !h-8 !py-0 text-xs"
+              className="input-base !h-8 !py-0 text-xs !rounded-lg"
             >
               {SORTS.map((s) => (
                 <option key={s.key} value={s.key}>
@@ -357,11 +310,11 @@ function Leadboard() {
             </select>
           </div>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-2">
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as typeof category)}
-            className="input-base"
+            className="input-base !h-9 !rounded-lg text-sm"
           >
             <option value="all">All categories</option>
             <option value="loan">Loans</option>
@@ -369,7 +322,7 @@ function Leadboard() {
             <option value="credit_card">Credit Cards</option>
             <option value="investment">Investments</option>
           </select>
-          <select value={productTypeId} onChange={(e) => setProductTypeId(e.target.value)} className="input-base">
+          <select value={productTypeId} onChange={(e) => setProductTypeId(e.target.value)} className="input-base !h-9 !rounded-lg text-sm">
             <option value="all">All sub-types</option>
             {filteredTypes.map((t) => (
               <option key={t.id} value={t.id}>
@@ -377,15 +330,15 @@ function Leadboard() {
               </option>
             ))}
           </select>
-          <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City…" className="input-base" />
+          <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City…" className="input-base !h-9 !rounded-lg text-sm" />
           <input
             value={maxBudget}
             onChange={(e) => setMaxBudget(e.target.value)}
             type="number"
             placeholder="Max ₹ price"
-            className="input-base"
+            className="input-base !h-9 !rounded-lg text-sm"
           />
-          <select value={score} onChange={(e) => setScore(e.target.value)} className="input-base">
+          <select value={score} onChange={(e) => setScore(e.target.value)} className="input-base !h-9 !rounded-lg text-sm">
             {SCORES.map((s) => (
               <option key={s} value={s}>
                 {s === "all" ? "All scores" : s.toUpperCase()}
@@ -395,7 +348,7 @@ function Leadboard() {
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value as TimeRangeKey)}
-            className="input-base"
+            className="input-base !h-9 !rounded-lg text-sm"
           >
             {TIME_RANGES.map((r) => (
               <option key={r.key} value={r.key}>
@@ -407,44 +360,34 @@ function Leadboard() {
       </div>
 
       {loading ? (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {Array.from({ length: 8 }).map((_, i) => (
             <LeadCardSkeleton key={i} />
           ))}
         </div>
       ) : leads.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border p-12 text-center text-muted-foreground space-y-3">
-          <p>No leads match your filters. Try clearing them or refresh to fetch the latest.</p>
+        <div className="rounded-xl border border-dashed border-[#d8ecdd] bg-white p-10 text-center text-[#5c4d72] space-y-3">
+          <p className="text-sm">No leads match your filters.</p>
           <button
-            onClick={() => {
-              load();
-              refreshStats();
-            }}
-            className="inline-flex items-center gap-2 px-4 h-9 rounded-full bg-accent text-accent-foreground text-sm font-semibold hover:opacity-90 transition-smooth"
+            onClick={() => void load()}
+            className="inline-flex items-center gap-2 px-4 h-9 rounded-xl bg-[#10662A] text-white text-sm font-semibold hover:bg-[#0D4F20] cursor-pointer"
           >
             <RefreshCw className="size-4" /> Refresh now
           </button>
         </div>
       ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {leads.map((lead) => {
-            try {
-              return (
-                <LeadCard
-                  key={lead.id}
-                  lead={lead}
-                  type={lead.product_type_id ? typeMap[lead.product_type_id] : undefined}
-                  onBuy={buy}
-                  buying={buying === lead.id}
-                  purchased={purchased[lead.id]}
-                  now={now}
-                />
-              );
-            } catch (e) {
-              console.log("❌ ERROR IN LEAD:", lead, e);
-              return null;
-            }
-          })}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {leads.map((lead) => (
+            <LeadCard
+              key={lead.id}
+              lead={lead}
+              type={lead.product_type_id ? typeMap[lead.product_type_id] : undefined}
+              onBuy={buy}
+              buying={buying === lead.id}
+              purchased={purchased[lead.id]}
+              now={now}
+            />
+          ))}
         </div>
       )}
 
@@ -498,14 +441,13 @@ function LeadCard({
   purchased?: { full_phone: string };
   now: number;
 }) {
-  console.log("LEAD DATA:", lead);
   const ScoreIcon = lead.score === "hot" ? Flame : lead.score === "warm" ? Sun : Snowflake;
   const scoreColor =
     lead.score === "hot"
-      ? "bg-orange-500/15 text-orange-600 dark:text-orange-400"
+      ? "bg-red-50 text-red-600 border-red-200"
       : lead.score === "warm"
-        ? "bg-amber-500/15 text-amber-600 dark:text-amber-400"
-        : "bg-blue-500/15 text-blue-600 dark:text-blue-400";
+        ? "bg-amber-50 text-amber-700 border-amber-200"
+        : "bg-sky-50 text-sky-700 border-sky-200";
 
   const meta = CATEGORY_META[lead.product_category as keyof typeof CATEGORY_META] || {
     label: "Other",
@@ -515,116 +457,122 @@ function LeadCard({
   const isPurchased = !!purchased;
   const isSold = lead.status === "sold";
   const ageHours = (now - new Date(lead.created_at).getTime()) / 36e5;
-  const isVeryNew = ageHours < 1; // <1 hour → "New" badge
-  const isFresh = ageHours < 12; // <12 hours → "Fresh" badge
-  const showCornerBadge = ageHours < 24;
+  const isFresh = ageHours < 12;
 
   return (
-    <div
-      className={`relative rounded-2xl bg-card border p-5 shadow-card transition-smooth flex flex-col ${
+    <article
+      className={`relative rounded-xl bg-white border p-3.5 flex flex-col gap-2.5 transition-all hover:-translate-y-0.5 hover:shadow-[0_10px_24px_rgba(16,102,42,0.1)] ${
         isPurchased
-          ? "border-emerald-500/60 ring-1 ring-emerald-500/30"
+          ? "border-emerald-300 shadow-[0_2px_10px_rgba(16,185,129,0.12)]"
           : lead.score === "hot"
-            ? "border-orange-500/60 ring-1 ring-orange-500/30 hover:ring-orange-500/60"
+            ? "border-red-200 shadow-[0_2px_10px_rgba(239,68,68,0.08)]"
             : isFresh
-              ? "border-emerald-400/50 ring-1 ring-emerald-400/20 hover:border-accent/50"
-              : "border-border hover:border-accent/50"
+              ? "border-[#10662A]/25 shadow-[0_2px_10px_rgba(16,102,42,0.06)]"
+              : "border-[#d8ecdd] shadow-[0_2px_8px_rgba(16,102,42,0.04)]"
       }`}
     >
-      {isSold ? (
-        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-red-500 text-white shadow-md">
-          SOLD
-        </div>
-      ) : isPurchased ? (
-        <div className="absolute -top-2 -right-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-emerald-500 text-white shadow-md">
-          <Check className="size-3" /> Purchased
-        </div>
-      ) : null}
-      <div className="flex items-center gap-1.5 flex-wrap mb-3">
+      {(isSold || isPurchased) && (
         <span
-          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${meta.chipBg} ${meta.chipText}`}
+          className={`absolute top-2 right-2 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase text-white ${
+            isSold ? "bg-red-500" : "bg-emerald-500"
+          }`}
         >
-          {meta.label}
+          {isPurchased && !isSold ? <Check className="size-2.5" /> : null}
+          {isSold ? "Sold" : "Bought"}
         </span>
-        {type && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-secondary text-foreground/70 border border-border">
-            {type.name}
+      )}
+
+      <div className="flex items-center justify-between gap-2 pr-10">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+          <span
+            className={`inline-flex px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wide ${meta.chipBg} ${meta.chipText}`}
+          >
+            {meta.label}
           </span>
-        )}
-      </div>
-
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="font-semibold truncate">{lead.applicant_name}</h3>
-          <div className="flex items-center gap-1 text-xs mt-0.5">
-            <Phone className="size-3 text-muted-foreground" />
-            {isPurchased ? (
-              <span className="font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                {purchased.full_phone}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">{lead.masked_phone}</span>
-            )}
-          </div>
-        </div>
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-bold uppercase ${scoreColor}`}
-        >
-          <ScoreIcon className="size-3" /> {lead.score}
-        </span>
-      </div>
-
-      <div className="mt-4 space-y-1.5 text-sm min-h-[120px]">
-        <Row icon={MapPin} text={lead.city} />
-        <div
-          className="flex items-center gap-2 text-[11px] text-muted-foreground"
-          title={new Date(lead.created_at).toLocaleString("en-IN", { timeZone: "Asia/Kolkata" })}
-        >
-          <Clock className="size-3 shrink-0" />
-          <span>Added {formatRelative(lead.created_at, now)}</span>
-          {lead.updated_at && new Date(lead.updated_at).getTime() - new Date(lead.created_at).getTime() > 60000 && (
-            <span className="opacity-70">· Updated {formatRelative(lead.updated_at, now)}</span>
+          {(lead.product_subtype || type?.name) && (
+            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-[#f5fcf7] text-[#5c4d72] border border-[#d8ecdd] truncate max-w-[110px]">
+              {type?.name || lead.product_subtype}
+            </span>
+          )}
+          {ageHours < 1 && (
+            <span className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase text-[#10662A] bg-[#E8F7EC] px-1.5 py-0.5 rounded-md">
+              <Zap className="size-2.5" /> New
+            </span>
           )}
         </div>
-        <Row icon={Banknote} text={`Ticket: ₹${lead.loan_amount.toLocaleString("en-IN")}`} />
-        {lead.monthly_income && (
-          <Row icon={Banknote} text={`Income: ₹${lead.monthly_income.toLocaleString("en-IN")}/mo`} />
+        <span
+          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase border shrink-0 ${scoreColor}`}
+        >
+          <ScoreIcon className="size-2.5" /> {lead.score}
+        </span>
+      </div>
+
+      <div className="min-w-0">
+        <h3 className="font-display font-bold text-[15px] text-[#390A5D] truncate leading-tight">
+          {lead.applicant_name}
+        </h3>
+        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#5c4d72]">
+          <span className="inline-flex items-center gap-1 truncate">
+            <Phone className="size-3 shrink-0" />
+            {isPurchased ? (
+              <span className="font-mono font-semibold text-emerald-600">{purchased.full_phone}</span>
+            ) : (
+              lead.masked_phone
+            )}
+          </span>
+          <span className="text-[#d8ecdd]">·</span>
+          <span className="inline-flex items-center gap-1 truncate">
+            <MapPin className="size-3 shrink-0" />
+            {lead.city || "—"}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="rounded-lg bg-[#f5fcf7] border border-[#d8ecdd] px-2 py-1.5">
+          <div className="text-[9px] uppercase tracking-wide font-semibold text-[#5c4d72]">Ticket</div>
+          <div className="text-xs font-bold text-[#390A5D] truncate">
+            ₹{lead.loan_amount.toLocaleString("en-IN")}
+          </div>
+        </div>
+        <div className="rounded-lg bg-[#f5fcf7] border border-[#d8ecdd] px-2 py-1.5">
+          <div className="text-[9px] uppercase tracking-wide font-semibold text-[#5c4d72]">Income</div>
+          <div className="text-xs font-bold text-[#390A5D] truncate">
+            {lead.monthly_income ? `₹${lead.monthly_income.toLocaleString("en-IN")}` : "—"}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 pt-0.5 mt-auto">
+        <div className="min-w-0">
+          <div className="text-[10px] text-[#5c4d72] flex items-center gap-1">
+            <Clock className="size-3" />
+            {formatRelative(lead.created_at, now)}
+          </div>
+          <div className="font-display text-lg font-extrabold text-[#390A5D] leading-none mt-0.5">
+            ₹{lead.price}
+          </div>
+        </div>
+        {isPurchased ? (
+          <Link
+            to="/dashboard/my-leads"
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-500 text-white font-semibold text-xs hover:bg-emerald-600 shrink-0"
+          >
+            My Leads <ArrowRight className="size-3" />
+          </Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => onBuy(lead)}
+            disabled={buying || isSold}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#10662A] text-white font-semibold text-xs hover:bg-[#0D4F20] disabled:opacity-50 cursor-pointer shrink-0"
+          >
+            {buying ? <Loader2 className="size-3.5 animate-spin" /> : <ShoppingCart className="size-3.5" />}
+            Buy
+          </button>
         )}
       </div>
-
-      <div>
-        <div className="text-xs text-muted-foreground">{isSold ? "Sold" : isPurchased ? "Paid" : "Lead price"}</div>
-
-        <div className="font-display text-xl font-bold">₹{lead.price}</div>
-      </div>
-
-      {isPurchased ? (
-        <Link
-          to="/dashboard/my-leads"
-          className="inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full bg-emerald-500 text-white font-semibold text-sm hover:opacity-90 transition-smooth"
-        >
-          View in My Leads <ArrowRight className="size-4" />
-        </Link>
-      ) : (
-        <button
-          onClick={() => onBuy(lead)}
-          disabled={buying}
-          className="inline-flex justify-center items-center gap-1.5 px-4 py-2 rounded-full bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 transition-smooth disabled:opacity-60"
-        >
-          {buying ? <Loader2 className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />}
-          Buy
-        </button>
-      )}
-    </div>
-  );
-}
-
-function Row({ icon: Icon, text }: { icon: React.ComponentType<{ className?: string }>; text: string }) {
-  return (
-    <div className="flex items-center gap-2 text-foreground/80">
-      <Icon className="size-3.5 text-muted-foreground shrink-0" />
-      <span className="truncate">{text}</span>
-    </div>
+    </article>
   );
 }
 
@@ -641,18 +589,18 @@ function StatCard({
 }) {
   const toneClass =
     tone === "hot"
-      ? "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30"
+      ? "bg-red-50 text-red-600 border-red-200"
       : tone === "accent"
-        ? "bg-accent/10 text-accent border-accent/30"
-        : "bg-secondary text-foreground border-border";
+        ? "bg-[#E8F7EC] text-[#10662A] border-[#d8ecdd]"
+        : "bg-[#f5fcf7] text-[#390A5D] border-[#d8ecdd]";
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 shadow-card flex items-center gap-3">
-      <div className={`size-10 rounded-xl border grid place-items-center ${toneClass}`}>
-        <Icon className="size-5" />
+    <div className="rounded-xl bg-white border border-[#d8ecdd] px-3 py-2.5 shadow-[0_2px_8px_rgba(16,102,42,0.04)] flex items-center gap-2.5">
+      <div className={`size-8 rounded-lg border grid place-items-center shrink-0 ${toneClass}`}>
+        <Icon className="size-3.5" />
       </div>
       <div className="min-w-0">
-        <div className="text-xs text-muted-foreground truncate">{label}</div>
-        <div className="font-display text-lg font-bold leading-tight truncate">{value}</div>
+        <div className="text-[10px] text-[#5c4d72] font-semibold uppercase tracking-wide truncate">{label}</div>
+        <div className="font-display text-base font-bold text-[#390A5D] leading-tight truncate">{value}</div>
       </div>
     </div>
   );
@@ -683,39 +631,41 @@ function InsufficientBalanceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 backdrop-blur-sm p-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-3xl bg-card border border-border shadow-elevated overflow-hidden"
+        className="w-full max-w-md rounded-2xl bg-white border border-[#d8ecdd] shadow-[0_16px_40px_rgba(16,102,42,0.12)] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6 bg-gradient-to-br from-amber-500/15 to-orange-500/10 border-b border-border relative">
+        <div className="p-5 bg-amber-50 border-b border-amber-100 relative">
           <button
+            type="button"
             onClick={onClose}
-            className="absolute top-3 right-3 size-8 rounded-full grid place-items-center hover:bg-secondary"
+            className="absolute top-3 right-3 size-8 rounded-lg grid place-items-center hover:bg-amber-100 cursor-pointer"
           >
             <X className="size-4" />
           </button>
-          <div className="size-12 rounded-2xl bg-amber-500 text-white grid place-items-center mb-3">
-            <AlertTriangle className="size-6" />
+          <div className="size-10 rounded-xl bg-amber-500 text-white grid place-items-center mb-2.5">
+            <AlertTriangle className="size-5" />
           </div>
-          <h3 className="font-display text-xl font-bold">Insufficient balance</h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Lead costs <strong className="text-foreground">₹{lead.price}</strong> but your wallet has only{" "}
-            <strong className="text-foreground">₹{balance.toLocaleString("en-IN")}</strong>. You need{" "}
-            <strong className="text-foreground">₹{shortfall.toLocaleString("en-IN")}</strong> more.
+          <h3 className="font-display text-lg font-bold text-[#390A5D]">Insufficient balance</h3>
+          <p className="text-sm text-[#5c4d72] mt-1">
+            Lead costs <strong className="text-[#390A5D]">₹{lead.price}</strong> · wallet has{" "}
+            <strong className="text-[#390A5D]">₹{balance.toLocaleString("en-IN")}</strong> · need{" "}
+            <strong className="text-[#390A5D]">₹{shortfall.toLocaleString("en-IN")}</strong> more.
           </p>
         </div>
 
-        <div className="p-6 space-y-4">
+        <div className="p-5 space-y-4">
           <div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Quick recharge</div>
+            <div className="text-[10px] font-bold text-[#5c4d72] uppercase mb-2">Quick recharge</div>
             <div className="grid grid-cols-2 gap-2">
               {QUICK_RECHARGE.map((a) => (
                 <button
                   key={a}
+                  type="button"
                   onClick={() => doRecharge(a, a)}
                   disabled={busy !== null}
-                  className="px-4 py-2.5 rounded-xl border border-border hover:border-accent hover:bg-accent/5 transition-smooth font-semibold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-1.5"
+                  className="px-3 py-2 rounded-xl border border-[#d8ecdd] hover:border-[#10662A]/40 hover:bg-[#E8F7EC] font-semibold text-sm disabled:opacity-60 inline-flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {busy === a ? <Loader2 className="size-4 animate-spin" /> : null}₹{a.toLocaleString("en-IN")}
                 </button>
@@ -724,41 +674,41 @@ function InsufficientBalanceModal({
           </div>
 
           <div>
-            <div className="text-xs font-semibold text-muted-foreground uppercase mb-2">Custom amount</div>
+            <div className="text-[10px] font-bold text-[#5c4d72] uppercase mb-2">Custom amount</div>
             <div className="flex gap-2">
               <input
                 type="number"
                 min={1}
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
-                className="input-base flex-1"
+                className="input-base flex-1 !h-9 !rounded-lg"
                 placeholder="Enter amount"
               />
               <button
+                type="button"
                 onClick={() => doRecharge(Number(custom) || 0, "custom")}
                 disabled={busy !== null || !Number(custom)}
-                className="px-4 py-2 rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-60 inline-flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-[#10662A] text-white font-semibold text-sm hover:bg-[#0D4F20] disabled:opacity-60 inline-flex items-center gap-1.5 cursor-pointer"
               >
                 {busy === "custom" ? <Loader2 className="size-4 animate-spin" /> : null}
                 Add
               </button>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-1.5">
-              Razorpay integration coming soon — demo recharge instantly credits your wallet.
-            </p>
           </div>
 
-          <div className="flex items-center gap-2 pt-2 border-t border-border">
+          <div className="flex items-center gap-2 pt-2 border-t border-[#d8ecdd]">
             <button
+              type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-border font-medium text-sm hover:bg-secondary"
+              className="flex-1 px-4 py-2 rounded-xl border border-[#d8ecdd] font-medium text-sm hover:bg-[#f5fcf7] cursor-pointer"
             >
               Cancel
             </button>
             <button
+              type="button"
               onClick={onRetry}
               disabled={balance < lead.price || busy !== null}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-accent text-accent-foreground font-semibold text-sm hover:opacity-90 disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+              className="flex-1 px-4 py-2 rounded-xl bg-[#10662A] text-white font-semibold text-sm hover:bg-[#0D4F20] disabled:opacity-50 inline-flex items-center justify-center gap-1.5 cursor-pointer"
             >
               <ShoppingCart className="size-4" /> Retry buy
             </button>
@@ -771,17 +721,17 @@ function InsufficientBalanceModal({
 
 function LeadCardSkeleton() {
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-card animate-pulse space-y-3">
+    <div className="rounded-xl border border-[#d8ecdd] bg-white p-3.5 animate-pulse space-y-2.5">
       <div className="flex items-center justify-between">
-        <div className="h-5 w-32 rounded bg-muted" />
-        <div className="h-6 w-14 rounded-full bg-muted" />
+        <div className="h-4 w-20 rounded bg-[#E8F7EC]" />
+        <div className="h-4 w-12 rounded bg-[#E8F7EC]" />
       </div>
-      <div className="h-4 w-24 rounded bg-muted" />
-      <div className="grid grid-cols-2 gap-2 pt-2">
-        <div className="h-12 rounded-lg bg-muted" />
-        <div className="h-12 rounded-lg bg-muted" />
+      <div className="h-4 w-28 rounded bg-[#E8F7EC]" />
+      <div className="grid grid-cols-2 gap-1.5">
+        <div className="h-10 rounded-lg bg-[#f5fcf7]" />
+        <div className="h-10 rounded-lg bg-[#f5fcf7]" />
       </div>
-      <div className="h-10 rounded-xl bg-muted mt-2" />
+      <div className="h-8 rounded-lg bg-[#E8F7EC]" />
     </div>
   );
 }

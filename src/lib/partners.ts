@@ -1,57 +1,53 @@
-import { supabase } from "@/integrations/supabase/client";
+import {
+  approveCrmPartner,
+  importCrmPartner,
+  listCrmPartners,
+  rejectCrmPartner,
+  API_URL,
+  type CrmPartnerApplication,
+} from "@/lib/python-api";
 
-export type PartnerApplication = {
-  id: string;
-  user_id: string | null;
+export type PartnerApplication = CrmPartnerApplication;
+
+export async function listPartnerApplications(status?: PartnerApplication["status"] | "all") {
+  const data = await listCrmPartners(status === "all" ? undefined : status);
+  return data.items;
+}
+
+export async function approvePartnerApplication(id: string, notes?: string) {
+  return approveCrmPartner(id, notes);
+}
+
+export async function rejectPartnerApplication(id: string, reason: string) {
+  return rejectCrmPartner(id, reason);
+}
+
+/** One-time: pull a Hostinger MySQL row into CRM by pasting fields */
+export async function importWebsitePartner(input: {
+  website_lead_id: string;
   full_name: string;
-  email: string;
   phone: string;
-  date_of_birth: string | null;
-  gender: string | null;
+  email: string;
   city: string;
-  state: string | null;
-  pincode: string | null;
-  company_name: string | null;
-  experience_years: number;
-  products_of_interest: string[];
-  monthly_target: number | null;
-  pan: string;
-  aadhaar_last4: string | null;
-  bank_account: string | null;
-  ifsc: string | null;
-  account_holder: string | null;
-  pan_doc_url: string | null;
-  aadhaar_doc_url: string | null;
-  bank_proof_url: string | null;
-  selfie_url: string | null;
-  status: "pending" | "under_review" | "approved" | "rejected";
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  rejection_reason: string | null;
-  internal_notes: string | null;
-  generated_dsa_id: string | null;
-  source: string | null;
-  utm_source: string | null;
-  utm_medium: string | null;
-  utm_campaign: string | null;
-  created_at: string;
-  updated_at: string;
-};
+  ref_code?: string;
+  dsa_type?: string;
+}) {
+  return importCrmPartner(input);
+}
 
-export type SubmitPartnerInput = {
+/** CRM become-partner form → public partners API (docs stored as metadata URLs). */
+export async function submitPartnerApplication(input: {
   full_name: string;
   email: string;
   phone: string;
   city: string;
   state?: string;
   pincode?: string;
-  date_of_birth?: string;
-  gender?: string;
   company_name?: string;
   experience_years?: number;
   products?: string[];
   monthly_target?: number;
-  pan: string;
+  pan?: string;
   aadhaar_last4?: string;
   bank_account?: string;
   ifsc?: string;
@@ -59,90 +55,77 @@ export type SubmitPartnerInput = {
   pan_doc_url?: string;
   aadhaar_doc_url?: string;
   bank_proof_url?: string;
-  selfie_url?: string;
   utm_source?: string;
   utm_medium?: string;
   utm_campaign?: string;
-};
+  dsa_type?: string;
+}): Promise<{ application_id: string; website_lead_id: string }> {
+  const key =
+    (import.meta.env.VITE_PUBLIC_API_KEY as string | undefined) || "rupeedial-website-key-change-me";
+  const website_lead_id = `crm-apply-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const documents: Record<string, string> = {};
+  if (input.pan) documents.pan = input.pan;
+  if (input.aadhaar_last4) documents.aadhaar_last4 = input.aadhaar_last4;
+  if (input.bank_account) documents.bank_account = input.bank_account;
+  if (input.ifsc) documents.ifsc = input.ifsc;
+  if (input.account_holder) documents.account_holder = input.account_holder;
+  if (input.pan_doc_url) documents.pan_doc = input.pan_doc_url;
+  if (input.aadhaar_doc_url) documents.aadhaar_doc = input.aadhaar_doc_url;
+  if (input.bank_proof_url) documents.bank_proof = input.bank_proof_url;
+  if (input.company_name) documents.company_name = input.company_name;
+  if (input.pincode) documents.pincode = input.pincode;
+  if (input.experience_years != null) documents.experience_years = String(input.experience_years);
+  if (input.monthly_target != null) documents.monthly_target = String(input.monthly_target);
+  if (input.products?.length) documents.products = input.products.join(",");
 
-export async function submitPartnerApplication(input: SubmitPartnerInput) {
-  const payload: Record<string, unknown> = {
-    _full_name: input.full_name,
-    _email: input.email,
-    _phone: input.phone,
-    _city: input.city,
-    _state: input.state,
-    _pincode: input.pincode,
-    _date_of_birth: input.date_of_birth,
-    _gender: input.gender,
-    _company_name: input.company_name,
-    _experience_years: input.experience_years ?? 0,
-    _products: input.products ?? [],
-    _monthly_target: input.monthly_target,
-    _pan: input.pan,
-    _aadhaar_last4: input.aadhaar_last4,
-    _bank_account: input.bank_account,
-    _ifsc: input.ifsc,
-    _account_holder: input.account_holder,
-    _pan_doc_url: input.pan_doc_url,
-    _aadhaar_doc_url: input.aadhaar_doc_url,
-    _bank_proof_url: input.bank_proof_url,
-    _selfie_url: input.selfie_url,
-    _utm_source: input.utm_source,
-    _utm_medium: input.utm_medium,
-    _utm_campaign: input.utm_campaign,
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await supabase.rpc("submit_partner_application", payload as any);
-  if (error) throw error;
-  return data as unknown as { success: boolean; application_id: string; status: string };
-}
-
-export async function approvePartnerApplication(id: string, notes?: string) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error } = await supabase.rpc("approve_partner_application", {
-    _application_id: id,
-    _notes: notes,
-  } as any);
-  if (error) throw error;
-  return data as unknown as { success: boolean; dsa_id: string; lead_id: string | null; application_id: string };
-}
-
-export async function rejectPartnerApplication(id: string, reason: string) {
-  const { data, error } = await supabase.rpc("reject_partner_application", {
-    _application_id: id,
-    _reason: reason,
+  const res = await fetch(`${API_URL}/api/public/partners`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-API-Key": key,
+    },
+    body: JSON.stringify({
+      website_lead_id,
+      full_name: input.full_name,
+      phone: input.phone,
+      email: input.email,
+      city: input.city,
+      state: input.state || null,
+      dsa_type: input.dsa_type || "channel",
+      ref_code: input.utm_source || null,
+      documents,
+    }),
   });
-  if (error) throw error;
-  return data as { success: boolean };
+  if (!res.ok) {
+    let detail = `Submit failed (${res.status})`;
+    try {
+      const body = await res.json();
+      if (typeof body?.detail === "string") detail = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  const data = (await res.json()) as { id: string; website_lead_id: string };
+  return { application_id: data.id, website_lead_id: data.website_lead_id };
 }
 
-export async function listPartnerApplications(status?: PartnerApplication["status"]) {
-  let q = supabase.from("partner_applications").select("*").order("created_at", { ascending: false });
-  if (status) q = q.eq("status", status);
-  const { data, error } = await q;
-  if (error) throw error;
-  return (data ?? []) as PartnerApplication[];
-}
-
-/** Upload KYC doc for an unauthenticated public applicant — uses 'public/<random>/' folder. */
-export async function uploadKycDoc(file: File, label: string): Promise<string> {
-  const ext = file.name.split(".").pop() || "bin";
-  const folder = "public/" + crypto.randomUUID();
-  const path = `${folder}/${label}-${Date.now()}.${ext}`;
-  const { error } = await supabase.storage.from("kyc-documents").upload(path, file, {
-    cacheControl: "3600",
-    upsert: false,
+/**
+ * Local KYC placeholder — stores a data-URL so apply flow works without object storage.
+ * Replace with S3/R2 upload later.
+ */
+export async function uploadKycDoc(file: File, _label: string): Promise<string> {
+  if (file.size > 5 * 1024 * 1024) throw new Error("File too large (max 5MB)");
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
   });
-  if (error) throw error;
-  // Path-based reference (private bucket); admin can fetch a signed URL on review.
-  return path;
 }
 
-export async function getKycSignedUrl(path: string, expiresInSec = 3600) {
-  const { data, error } = await supabase.storage.from("kyc-documents").createSignedUrl(path, expiresInSec);
-  if (error) throw error;
-  return data.signedUrl;
+export async function getKycSignedUrl(_path: string, _expiresInSec = 3600) {
+  return "";
 }
 
 export const PRODUCT_OPTIONS = [
@@ -155,9 +138,9 @@ export const PRODUCT_OPTIONS = [
   { value: "investment", label: "Investments / MF" },
 ];
 
-export const STATUS_LABEL: Record<PartnerApplication["status"], { label: string; color: string }> = {
-  pending: { label: "Pending Review", color: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30" },
-  under_review: { label: "Under Review", color: "bg-blue-500/15 text-blue-700 dark:text-blue-300 border-blue-500/30" },
-  approved: { label: "Approved", color: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30" },
-  rejected: { label: "Rejected", color: "bg-destructive/15 text-destructive border-destructive/30" },
+export const STATUS_LABEL: Record<string, { label: string; color: string }> = {
+  pending: { label: "Pending Review", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  under_review: { label: "Under Review", color: "bg-sky-50 text-sky-700 border-sky-200" },
+  approved: { label: "Approved", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  rejected: { label: "Rejected", color: "bg-red-50 text-red-600 border-red-200" },
 };

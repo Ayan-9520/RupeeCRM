@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { AITrainerChat } from "@/components/learn/AITrainerChat";
 
 export const Route = createFileRoute("/dashboard/learn")({
-  head: () => ({ meta: [{ title: "Learn & Earn — LeadMines Academy" }] }),
+  head: () => ({ meta: [{ title: "Learn & Earn — RupeeDial One" }] }),
   component: LearnDashboard,
 });
 
@@ -36,18 +36,24 @@ function LearnDashboard() {
   return (
     <div className="space-y-8">
       {/* HERO */}
-      <div className="relative overflow-hidden rounded-3xl bg-hero-gradient p-7 lg:p-9 text-white">
-        <div className="absolute inset-0 grid-bg opacity-30" />
+      <div className="relative overflow-hidden rounded-2xl border border-[#d8ecdd] bg-white p-7 lg:p-9 shadow-[0_4px_24px_rgba(16,102,42,0.06)]">
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(80% 60% at 100% 0%, rgba(232,247,236,0.95), transparent 55%)",
+          }}
+        />
         <div className="relative grid lg:grid-cols-3 gap-6 items-center">
           <div className="lg:col-span-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-medium">
-              <Flame className="size-3.5 text-accent" /> {streak}-day learning streak
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F7EC] border border-[#d8ecdd] text-xs font-semibold text-[#10662A]">
+              <Flame className="size-3.5 text-[#10662A]" /> {streak}-day learning streak
             </div>
-            <h1 className="mt-4 font-display text-2xl lg:text-3xl font-bold">
+            <h1 className="mt-4 font-display text-2xl lg:text-3xl font-extrabold text-[#390A5D]">
               Welcome back, <span className="capitalize">{firstName}</span>.
             </h1>
-            <p className="mt-2 text-white/80 text-sm max-w-xl">
-              You're {nextLevelAt - earnedPoints} pts away from <span className="font-bold text-accent">Expert</span>. Finish one lesson today to keep your streak alive.
+            <p className="mt-2 text-[#5c4d72] text-sm max-w-xl">
+              You're {nextLevelAt - earnedPoints} pts away from <span className="font-bold text-[#10662A]">Expert</span>. Finish one lesson today to keep your streak alive.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-3">
@@ -56,10 +62,10 @@ function LearnDashboard() {
               { k: level, v: "Level", icon: Crown },
               { k: certificates, v: "Badges", icon: Award },
             ].map((s) => (
-              <div key={s.v} className="rounded-2xl bg-white/10 border border-white/15 backdrop-blur-md p-3">
-                <s.icon className="size-4 text-accent" />
-                <div className="font-display text-xl font-bold mt-1.5">{s.k}</div>
-                <div className="text-[10px] uppercase tracking-wider text-white/70">{s.v}</div>
+              <div key={s.v} className="rounded-2xl bg-[#E8F7EC]/80 border border-[#d8ecdd] p-3 cursor-default hover:border-[#10662A]/35 transition-all">
+                <s.icon className="size-4 text-[#10662A]" />
+                <div className="font-display text-xl font-bold mt-1.5 text-[#390A5D]">{s.k}</div>
+                <div className="text-[10px] uppercase tracking-wider text-[#5c4d72] font-semibold">{s.v}</div>
               </div>
             ))}
           </div>
