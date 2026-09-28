@@ -38,20 +38,20 @@ services:
         VITE_API_URL: ${VITE_API_URL:-https://crm.rupeedial.com}
         VITE_PUBLIC_SITE_URL: ${VITE_PUBLIC_SITE_URL:-https://rupeedial.com}
         VITE_PUBLIC_API_KEY: ${VITE_PUBLIC_API_KEY:?set VITE_PUBLIC_API_KEY in .env}
+    container_name: leadflowpro-web
     restart: unless-stopped
-    environment:
-      CRM_DOMAIN: ${CRM_DOMAIN:-crm.rupeedial.com}
     ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - caddy_data:/data
-      - caddy_config:/config
+      - "127.0.0.1:3090:80"
     depends_on:
       - api
+    networks:
+      - default
+      - edge
+
+networks:
+  edge:
+    external: true
+    name: ${EDGE_NETWORK:?set EDGE_NETWORK in .env (network of the main Caddy)}
 
 volumes:
   pgdata:
-  caddy_data:
-  caddy_config:
