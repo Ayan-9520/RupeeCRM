@@ -36,6 +36,7 @@ function BecomePartnerPage() {
   const [done, setDone] = useState<{ id: string } | null>(null);
 
   // form state
+  const [dsaType, setDsaType] = useState("dsa");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -123,6 +124,7 @@ function BecomePartnerPage() {
         utm_source: params.get("utm_source") || undefined,
         utm_medium: params.get("utm_medium") || undefined,
         utm_campaign: params.get("utm_campaign") || undefined,
+        dsa_type: dsaType,
       });
       setDone({ id: res.application_id });
     } catch (e: any) {
@@ -169,7 +171,7 @@ function BecomePartnerPage() {
               <Sparkles className="size-4 text-primary" strokeWidth={2.5} />
             </div>
             <div className="leading-tight">
-              <div className="font-display font-bold text-sm">LeadMines</div>
+              <div className="font-display font-bold text-sm">RupeeDial</div>
               <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground -mt-0.5">by MoneyMines</div>
             </div>
           </Link>
@@ -186,7 +188,7 @@ function BecomePartnerPage() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/15 border border-accent/30 text-xs font-bold text-accent uppercase tracking-wide">
               <ShieldCheck className="size-3.5" /> Verified DSA Network
             </span>
-            <h1 className="font-display text-3xl md:text-4xl font-bold mt-3 leading-tight">Become a <span className="text-accent">LeadMines</span> Partner</h1>
+            <h1 className="font-display text-3xl md:text-4xl font-bold mt-3 leading-tight">Become a <span className="text-accent">RupeeDial</span> Financial Partner</h1>
             <p className="text-muted-foreground mt-3">Join 10,000+ DSAs earning lakhs every month. Verified leads, daily payouts, AI tools.</p>
           </div>
 
@@ -226,6 +228,21 @@ function BecomePartnerPage() {
                 <h2 className="font-display text-xl font-bold">Tell us about you</h2>
                 <p className="text-xs text-muted-foreground mt-1">Step 1 of 3 · Personal details</p>
               </div>
+              <Field label="Partner type *">
+                <select className="input-base" value={dsaType} onChange={(e) => setDsaType(e.target.value)}>
+                  <option value="dsa">DSA</option>
+                  <option value="sub_dsa">Sub-DSA</option>
+                  <option value="loan_consultant">Loan Consultant</option>
+                  <option value="ca">CA</option>
+                  <option value="gst_consultant">GST Consultant</option>
+                  <option value="insurance_advisor">Insurance Advisor</option>
+                  <option value="property_consultant">Property Consultant</option>
+                  <option value="telecaller">Telecaller</option>
+                  <option value="telecalling_agency">Telecalling Agency</option>
+                  <option value="freelancer">Freelancer</option>
+                  <option value="referral">Referral Partner</option>
+                </select>
+              </Field>
               <Field label="Full name *">
                 <input className="input-base" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Rahul Sharma" required />
               </Field>

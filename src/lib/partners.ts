@@ -63,7 +63,7 @@ export async function submitPartnerApplication(input: {
   const key =
     (import.meta.env.VITE_PUBLIC_API_KEY as string | undefined) || "rupeedial-website-key-change-me";
   const website_lead_id = `crm-apply-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const documents: Record<string, string> = {};
+  const documents: Record<string, unknown> = {};
   if (input.pan) documents.pan = input.pan;
   if (input.aadhaar_last4) documents.aadhaar_last4 = input.aadhaar_last4;
   if (input.bank_account) documents.bank_account = input.bank_account;
@@ -77,6 +77,17 @@ export async function submitPartnerApplication(input: {
   if (input.experience_years != null) documents.experience_years = String(input.experience_years);
   if (input.monthly_target != null) documents.monthly_target = String(input.monthly_target);
   if (input.products?.length) documents.products = input.products.join(",");
+  documents.journey = {
+    kyc: input.pan ? "submitted" : "pending",
+    verification: "pending",
+    agreement: "accepted",
+    bank: input.bank_account ? "submitted" : "pending",
+    products: input.products?.length ? "selected" : "pending",
+    geography: "submitted",
+    experience: input.experience_years != null ? "submitted" : "pending",
+    training: "pending",
+    activation: "pending",
+  };
 
   const res = await fetch(`${API_URL}/api/public/partners`, {
     method: "POST",

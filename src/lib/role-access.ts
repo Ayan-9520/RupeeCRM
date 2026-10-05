@@ -72,7 +72,7 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
-  { title: "Call Queue", url: "/dashboard/calls", roles: ["ceo", "super_admin", "admin", "caller"], group: "main" },
+  { title: "TeleSales", url: "/dashboard/calls", roles: ["ceo", "super_admin", "admin", "caller"], group: "main" },
   {
     title: "Submissions",
     url: "/dashboard/submissions",
@@ -81,7 +81,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { title: "Cases", url: "/dashboard/cases", roles: ["ceo", "super_admin", "admin", "lender", "dsa", "coordinator"], group: "main" },
   {
-    title: "Earnings",
+    title: "Invoices",
     url: "/dashboard/earnings",
     roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
@@ -89,6 +89,12 @@ export const NAV_ITEMS: NavItem[] = [
   {
     title: "Commissions",
     url: "/dashboard/commissions",
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
+    group: "main",
+  },
+  {
+    title: "Network",
+    url: "/dashboard/network",
     roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
@@ -117,7 +123,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: "main",
   },
   {
-    title: "Training",
+    title: "Academy",
     url: "/dashboard/training",
     roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "affiliate"],
     group: "main",
@@ -134,6 +140,8 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "affiliate"],
     group: "main",
   },
+  { title: "Control Centre", url: "/dashboard/admin/control", roles: ADMIN_ROLES, group: "admin" },
+  { title: "Data Pipeline", url: "/dashboard/admin/pipeline", roles: ADMIN_ROLES, group: "admin" },
   { title: "Users", url: "/dashboard/admin/users", roles: ADMIN_ROLES, group: "admin" },
   { title: "Add Leads", url: "/dashboard/admin/leads", roles: ADMIN_ROLES, group: "admin" },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", roles: ADMIN_ROLES, group: "admin" },
@@ -143,6 +151,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Billing Overview", url: "/dashboard/admin/billing", roles: ADMIN_ROLES, group: "admin" },
   { title: "MKT Templates", url: "/dashboard/admin/marketing", roles: ADMIN_ROLES, group: "admin" },
   { title: "MKT Media", url: "/dashboard/admin/marketing-media", roles: ADMIN_ROLES, group: "admin" },
+  { title: "Network Rules", url: "/dashboard/admin/network", roles: ADMIN_ROLES, group: "admin" },
 ];
 
 /** Routes not listed in sidebar but need explicit access */
@@ -261,11 +270,11 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
       };
     case "caller":
       return {
-        title: "Call center",
-        subtitle: "Qualify leads, schedule follow-ups, update CRM notes.",
+        title: "TeleSales",
+        subtitle: "Call queue, follow-ups, scripts and dispositions.",
         stats: ["calls", "leads_purchased"],
         quickLinks: [
-          { title: "Call Queue", desc: "Today's assigned leads to call.", url: "/dashboard/calls", roles: ["caller"] },
+          { title: "TeleSales", desc: "Queue, callbacks, scripts and conversion.", url: "/dashboard/calls", roles: ["caller"] },
           { title: "Learn & Earn", desc: "Scripts, product training & quizzes.", url: "/dashboard/learn", roles: ["caller"] },
           { title: "Community", desc: "Tips from top-performing DSAs.", url: "/dashboard/community", roles: ["caller"] },
         ],
@@ -309,9 +318,8 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
         subtitle: "Track application status, upload docs & get updates.",
         stats: [],
         quickLinks: [
-          { title: "Learn & Earn", desc: "Understand loan products & eligibility.", url: "/dashboard/learn", roles: ["customer"] },
-          { title: "Apply for a loan", desc: "Start a new application with a DSA partner.", url: "/apply/personal-loan", roles: ["customer"] },
-          { title: "Workspace", desc: "Your profile & linked applications.", url: "/dashboard/workspace", roles: ["customer"] },
+          { title: "My applications", desc: "Eligibility, offers, documents and status.", url: "/dashboard", roles: ["customer"] },
+          { title: "Learn", desc: "Loan products and eligibility basics.", url: "/dashboard/learn", roles: ["customer"] },
         ],
       };
     default:

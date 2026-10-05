@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.models import PartnerApplication, User
 from app.services.leads import normalize_phone
+from app.services.network import attach_sponsor
 
 
 def _city_code(city: str) -> str:
@@ -21,6 +22,23 @@ def _city_code(city: str) -> str:
 
 def generate_dsa_id(city: str) -> str:
     return f"DSA-{_city_code(city)}-{secrets.randbelow(9000) + 1000}"
+
+
+def login_role_for_type(dsa_type: str | None) -> str:
+    if (dsa_type or "").lower() in {"telecaller", "telecalling_agency"}:
+        return "caller"
+    return "dsa"
+
+
+def mark_partner_activated(app: PartnerApplication) -> None:
+    docs = dict(app.documents or {})
+    journey = dict(docs.get("journey") or {})
+    journey["verification"] = "verified"
+    journey["training"] = "assigned"
+    journey["activation"] = "active"
+    docs["journey"] = journey
+    docs["login_role"] = login_role_for_type(app.dsa_type)
+    app.documents = docs
 
 
 def generate_temp_password(length: int = 10) -> str:
@@ -106,7 +124,9 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
             temp = generate_temp_password()
             user.password_hash = hash_password(temp)
             user.is_active = True
-            user.role = "dsa"
+            user.role = login_role_for_type(app.dsa_type)
+            mark_partner_activated(app)
+            _link_sponsor(db, app, user)
             db.commit()
             return app, user, temp
         raise ValueError("Approved but user missing")
@@ -121,7 +141,7 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
     if user:
         user.full_name = app.full_name
         user.password_hash = hash_password(temp)
-        user.role = "dsa"
+        user.role = login_role_for_type(app.dsa_type)
         user.phone = app.phone
         user.dsa_id = dsa_id
         user.is_active = True
@@ -130,7 +150,7 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
             email=app.email.lower(),
             full_name=app.full_name,
             password_hash=hash_password(temp),
-            role="dsa",
+            role=login_role_for_type(app.dsa_type),
             phone=app.phone,
             dsa_id=dsa_id,
             is_active=True,
@@ -145,11 +165,20 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
     app.reviewed_at = datetime.now(timezone.utc)
     if notes:
         app.internal_notes = notes
+    mark_partner_activated(app)
+    _link_sponsor(db, app, user)
 
     db.commit()
     db.refresh(app)
     db.refresh(user)
     return app, user, temp
+
+
+def _link_sponsor(db: Session, app: PartnerApplication, user: User) -> None:
+    documents = app.documents if isinstance(app.documents, dict) else {}
+    code = (app.ref_code or "").strip() or str(documents.get("sponsor_code") or "").strip()
+    if code:
+        attach_sponsor(db, user, code)
 
 
 def reject_partner(db: Session, app: PartnerApplication, admin: User, reason: str) -> PartnerApplication:

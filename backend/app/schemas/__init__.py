@@ -62,6 +62,8 @@ class LeadOut(BaseModel):
     phone_verified: bool
     product_details: dict[str, Any] = Field(default_factory=dict)
     quality_score: int | None = None
+    lead_grade: str = "L0"
+    listing_type: str = "shared"
     website_lead_id: str | None = None
     raw_payload: dict[str, Any] | None = None
     created_at: datetime

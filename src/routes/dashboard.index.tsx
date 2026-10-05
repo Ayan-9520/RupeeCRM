@@ -24,6 +24,9 @@ import {
   type CrmLead,
   type CrmPurchase,
 } from "@/lib/python-api";
+import { ConnectorCockpit } from "@/components/dashboard/ConnectorCockpit";
+import { TeleSalesCockpit } from "@/components/dashboard/TeleSalesCockpit";
+import { CustomerHome } from "@/components/dashboard/CustomerHome";
 
 export const Route = createFileRoute("/dashboard/")({
   component: DashboardHome,
@@ -172,6 +175,18 @@ function DashboardHome() {
   }, [webLeads]);
 
   const firstName = profileName ? profileName.split(" ")[0] : "";
+
+  if (role === "dsa") {
+    return <ConnectorCockpit firstName={firstName} />;
+  }
+
+  if (role === "caller") {
+    return <TeleSalesCockpit firstName={firstName} />;
+  }
+
+  if (role === "customer") {
+    return <CustomerHome firstName={firstName} />;
+  }
 
   return (
     <div className="space-y-5 max-w-7xl">

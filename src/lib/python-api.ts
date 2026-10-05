@@ -36,6 +36,8 @@ export type CrmLead = {
   phone_verified?: boolean;
   product_details: Record<string, unknown>;
   quality_score?: number | null;
+  lead_grade?: string;
+  listing_type?: string;
   website_lead_id: string | null;
   raw_payload?: Record<string, unknown> | null;
   created_at: string;
@@ -188,7 +190,7 @@ export type CrmPurchase = {
   lead_id: string;
   price_paid: number;
   pipeline_stage: string;
-  notes: { at: string; text: string; by?: string; kind?: string }[];
+  notes: { at: string; text: string; by?: string; kind?: string; code?: string }[];
   next_followup_at: string | null;
   converted: boolean;
   deal_value: number | null;
@@ -210,6 +212,7 @@ export async function patchMyLead(
   body: {
     pipeline_stage?: string;
     notes_text?: string;
+    disposition?: string;
     next_followup_at?: string | null;
     clear_followup?: boolean;
     converted?: boolean;
@@ -496,7 +499,7 @@ export type PayoutRequest = {
   user_id: string;
   amount: number;
   status: string;
-  bank_snapshot: Record<string, string>;
+  bank_snapshot: Record<string, unknown>;
   note?: string | null;
   rejection_reason?: string | null;
   utr?: string | null;
@@ -534,15 +537,124 @@ export async function listAdminPayoutRequests(status?: string): Promise<PayoutRe
   return request(`/api/payouts/admin/requests${qs}`);
 }
 
+export type InvoiceCase = {
+  purchase_id: string;
+  applicant_name: string;
+  product: string;
+  city: string;
+  disbursed: number;
+  commission: number;
+  invoiced: boolean;
+};
+
+export type InvoiceCentre = {
+  rate: number;
+  expected: number;
+  pending: number;
+  invoice_raised: number;
+  approved: number;
+  processing: number;
+  paid: number;
+  rejected: number;
+  cases: InvoiceCase[];
+  requests: PayoutRequest[];
+};
+
+export async function getInvoiceCentre(): Promise<InvoiceCentre> {
+  return request("/api/payouts/centre");
+}
+
+export async function raiseInvoice(): Promise<PayoutRequest> {
+  return request("/api/payouts/invoices", { method: "POST" });
+}
+
 export async function adminPayoutAction(
   id: string,
-  action: "approve" | "reject" | "paid",
+  action: "approve" | "reject" | "paid" | "processing" | "query",
   extra?: { utr?: string; rejection_reason?: string },
 ): Promise<PayoutRequest> {
   return request(`/api/payouts/admin/requests/${id}`, {
     method: "POST",
     body: JSON.stringify({ action, ...extra }),
   });
+}
+
+export type NetworkConnector = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  code: string;
+  status: string;
+  business: number;
+};
+
+export type NetworkReward = {
+  level: number;
+  label: string;
+  share_percent: number;
+  connectors: number;
+  business: number;
+  reward: number;
+};
+
+export type NetworkLevel = { level?: number; label: string; share_percent: number };
+
+export type NetworkMe = {
+  levels: NetworkLevel[];
+  connectors: NetworkConnector[];
+  connector_count: number;
+  active_count: number;
+  business: number;
+  revenue: number;
+  performance: number;
+  rewards: NetworkReward[];
+};
+
+export type CustomerApplication = {
+  id: string;
+  reference: string;
+  product: string;
+  city: string;
+  amount: number;
+  income: number;
+  lender: string;
+  rate: number | null;
+  emi: number | null;
+  status: string;
+  documents: string[];
+  sanction: number | null;
+  disbursement: number | null;
+  created_at: string | null;
+  recommended: string[];
+};
+
+export async function askRupeeDial(question: string): Promise<{ answer: string; note: string }> {
+  return request("/api/assistant/ask", { method: "POST", body: JSON.stringify({ question }) });
+}
+
+export async function getCustomerHome(): Promise<{ applications: CustomerApplication[]; advisor: string; support_path: string }> {
+  return request("/api/customer/home");
+}
+
+export async function getMyNetwork(): Promise<NetworkMe> {
+  return request("/api/network/me");
+}
+
+export async function inviteNetworkPartner(body: {
+  full_name: string;
+  phone?: string;
+  email?: string;
+}): Promise<{ id: string; code: string; name: string; status: string }> {
+  return request("/api/network/invites", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function getNetworkSettings(): Promise<{ levels: NetworkLevel[] }> {
+  return request("/api/network/settings");
+}
+
+export async function saveNetworkSettings(levels: NetworkLevel[]): Promise<{ levels: NetworkLevel[] }> {
+  return request("/api/network/settings", { method: "PUT", body: JSON.stringify({ levels }) });
 }
 
 export async function adminSetKyc(userId: string, verified = true): Promise<{ success: boolean }> {
@@ -588,6 +700,61 @@ export type AuditEvent = {
 export async function listAuditEvents(action?: string): Promise<AuditEvent[]> {
   const qs = action ? `?action=${encodeURIComponent(action)}` : "";
   return request(`/api/admin/trust/audit${qs}`);
+}
+
+export type PipelineRow = {
+  id: string;
+  name: string;
+  phone: string;
+  city: string;
+  product: string;
+  source: string | null;
+  source_label: string;
+  campaign: string;
+  stage: string;
+  consent: boolean;
+  allocated_to: string;
+  marketplace: boolean;
+};
+
+export type PipelineView = {
+  total: number;
+  sources: { key: string; label: string; count: number }[];
+  stages: { key: string; count: number }[];
+  oneflo: string;
+  rows: PipelineRow[];
+};
+
+export async function getPipeline(source?: string, stage?: string): Promise<PipelineView> {
+  const params = new URLSearchParams();
+  if (source) params.set("source", source);
+  if (stage) params.set("stage", stage);
+  const qs = params.toString();
+  return request(`/api/admin/pipeline${qs ? `?${qs}` : ""}`);
+}
+
+export async function importPipeline(body: {
+  source: string;
+  campaign: string;
+  consent: boolean;
+  rows: { name: string; phone: string; city: string; product: string }[];
+}): Promise<{ created: number; duplicates: number; results: { name: string; status: string; reason?: string }[] }> {
+  return request("/api/admin/pipeline/import", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function advancePipeline(
+  leadId: string,
+  body: { step: string; campaign?: string; assignee_email?: string; note?: string },
+): Promise<PipelineRow> {
+  return request(`/api/admin/pipeline/${leadId}`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function getCommissionRule(): Promise<{ rate_percent: number }> {
+  return request("/api/admin/commission");
+}
+
+export async function saveCommissionRule(ratePercent: number): Promise<{ rate_percent: number }> {
+  return request("/api/admin/commission", { method: "PUT", body: JSON.stringify({ rate_percent: ratePercent }) });
 }
 
 export { API_URL };

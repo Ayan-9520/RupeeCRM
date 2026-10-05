@@ -75,6 +75,18 @@ class Lead(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+    @property
+    def lead_grade(self) -> str:
+        from app.services.lead_grades import grade_code
+
+        return grade_code(self)
+
+    @property
+    def listing_type(self) -> str:
+        from app.services.lead_grades import listing_type
+
+        return listing_type(self)
+
 
 DEFAULT_PIPELINE_STAGES = [
     "new",
@@ -219,4 +231,38 @@ class AuditEvent(Base):
     entity_type: Mapped[str | None] = mapped_column(String(60), nullable=True, index=True)
     entity_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     detail: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class CommissionSettings(Base):
+    """Admin payout percent on disbursed cases. Default 1 until changed."""
+
+    __tablename__ = "commission_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    rate_percent: Mapped[float] = mapped_column(Float, nullable=False, default=1)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class NetworkSettings(Base):
+    """Admin-editable network levels and revenue share. Not hardcoded in payouts."""
+
+    __tablename__ = "network_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    levels: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class NetworkLink(Base):
+    __tablename__ = "network_links"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    parent_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    child_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    invite_name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    invite_phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    invite_email: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    invite_code: Mapped[str] = mapped_column(String(40), nullable=False, unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="invited", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

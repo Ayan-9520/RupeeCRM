@@ -58,11 +58,42 @@ class LeadUpdateIn(BaseModel):
 class PurchasePatch(BaseModel):
     pipeline_stage: str | None = None
     notes_text: str | None = None
+    disposition: str | None = None
     next_followup_at: datetime | None = None
     clear_followup: bool | None = None
     converted: bool | None = None
     deal_value: float | None = None
     lead: LeadUpdateIn | None = None
+
+
+# Call outcome → optional pipeline move. None keeps the current stage.
+DISPOSITIONS: dict[str, tuple[str, str | None]] = {
+    "connected": ("Connected", "contacted"),
+    "not_reachable": ("Not reachable", None),
+    "interested": ("Interested", "contacted"),
+    "not_interested": ("Not interested", "rejected"),
+    "callback": ("Callback scheduled", None),
+    "wrong_number": ("Wrong number", "rejected"),
+    "eligible": ("Eligible", None),
+    "converted": ("Converted to case", "docs_collected"),
+}
+
+_STAGE_RANK = {
+    "new": 0,
+    "contacted": 1,
+    "docs_collected": 2,
+    "bank_submitted": 3,
+    "sanctioned": 4,
+    "disbursed": 5,
+}
+
+
+def _can_advance(current: str, target: str) -> bool:
+    if target == "rejected":
+        return current != "disbursed"
+    if current not in _STAGE_RANK or target not in _STAGE_RANK:
+        return False
+    return _STAGE_RANK[target] > _STAGE_RANK[current]
 
 
 class BuyOut(BaseModel):
@@ -210,6 +241,37 @@ def patch_my_lead(
 
     notes = list(p.notes or [])
     lead = db.query(Lead).filter(Lead.id == p.lead_id).first()
+
+    if body.disposition:
+        code = body.disposition.strip().lower()
+        spec = DISPOSITIONS.get(code)
+        if spec is None:
+            raise HTTPException(status_code=400, detail="Invalid disposition")
+        label, target = spec
+        if code == "callback" and body.next_followup_at is None:
+            raise HTTPException(status_code=400, detail="Callback needs a follow-up time")
+        notes.append(
+            {
+                "at": datetime.now(timezone.utc).isoformat(),
+                "text": f"Disposition: {label}",
+                "by": user.email,
+                "kind": "disposition",
+                "code": code,
+            }
+        )
+        if target and _can_advance(p.pipeline_stage, target):
+            old = p.pipeline_stage
+            p.pipeline_stage = target
+            notes.append(
+                {
+                    "at": datetime.now(timezone.utc).isoformat(),
+                    "text": f"Stage: {old} → {target}",
+                    "by": user.email,
+                    "kind": "stage",
+                }
+            )
+            if target == "rejected":
+                p.converted = False
 
     if body.pipeline_stage is not None:
         if body.pipeline_stage not in DEFAULT_PIPELINE_STAGES:

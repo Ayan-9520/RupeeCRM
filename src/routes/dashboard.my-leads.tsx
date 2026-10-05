@@ -27,6 +27,7 @@ import {
   Activity,
 } from "lucide-react";
 import { listMyLeads, patchMyLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
+import { gradeCode, gradeFromPipeline, gradeText } from "@/lib/lead-grades";
 import {
   CRM_FORM_SECTIONS,
   getKnownDetailKeys,
@@ -522,6 +523,9 @@ function MyLeadsPage() {
                       {sm.label}
                     </span>
                     <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-[#E8F7EC] text-[#10662A] border border-[#d8ecdd]">
+                      {gradeText(gradeFromPipeline(p.pipeline_stage) || gradeCode({ ...lead, pipeline_stage: p.pipeline_stage, full_phone: lead?.full_phone }))}
+                    </span>
+                    <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-md bg-white text-[#5c4d72] border border-[#d8ecdd]">
                       {STAGE_LABELS[p.pipeline_stage] ?? p.pipeline_stage}
                     </span>
                   </div>

@@ -28,6 +28,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuota } from "@/hooks/use-subscription";
 import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
 import { listCrmLeads, purchaseCrmLead, type CrmLead } from "@/lib/python-api";
+import { ageLabel, gradeCode, gradeText, listingType } from "@/lib/lead-grades";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
   head: () => ({ meta: [{ title: "RupeeDial Lead - Marketplace" }] }),
@@ -48,6 +49,11 @@ type Lead = {
   product_category: ProductCategory;
   product_subtype: string | null;
   product_type_id: string | null;
+  employment_type: string | null;
+  phone_verified: boolean;
+  product_details: Record<string, unknown>;
+  lead_grade?: string;
+  listing_type?: string;
   created_at: string;
   updated_at: string;
 };
@@ -71,6 +77,11 @@ function mapCrmLead(l: CrmLead): Lead {
     product_category: cat,
     product_subtype: l.product_subtype,
     product_type_id: null,
+    employment_type: l.employment_type,
+    phone_verified: !!l.phone_verified,
+    product_details: l.product_details || {},
+    lead_grade: l.lead_grade,
+    listing_type: l.listing_type,
     created_at: l.created_at,
     updated_at: l.created_at,
   };
@@ -219,8 +230,31 @@ function Leadboard() {
         <div>
           <h1 className="font-display text-2xl font-extrabold text-[#390A5D] tracking-tight">Leadboard</h1>
           <p className="text-[#5c4d72] mt-0.5 text-sm">
-            Loans · Insurance · Credit Cards · Investments
+            Product, city, amount and grade. Name and phone unlock after purchase.
           </p>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {(
+              [
+                { to: "/dashboard/my-leads", label: "My Leads" },
+                { to: "/dashboard/leadboard", label: "Available" },
+                { to: "/dashboard/my-leads", label: "Purchased" },
+                { to: "/dashboard/wallet", label: "Lead Wallet" },
+                { to: "/dashboard/los-analytics", label: "Performance" },
+              ] as const
+            ).map(({ to, label }) => (
+              <Link
+                key={label}
+                to={to}
+                className={`rounded-full border px-3 py-1 text-[11px] font-semibold ${
+                  label === "Available"
+                    ? "border-[#10662A] bg-[#10662A] text-white"
+                    : "border-[#d8ecdd] bg-white text-[#390A5D]"
+                }`}
+              >
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#d8ecdd] shadow-[0_2px_8px_rgba(16,102,42,0.04)]">
@@ -508,24 +542,26 @@ function LeadCard({
       </div>
 
       <div className="min-w-0">
-        <h3 className="font-display font-bold text-[15px] text-[#390A5D] truncate leading-tight">
-          {lead.applicant_name}
+        <h3 className="font-display font-bold text-[15px] text-[#390A5D] truncate leading-tight capitalize">
+          {type?.name || lead.product_subtype || lead.product_category}
         </h3>
-        <div className="flex items-center gap-2 mt-0.5 text-[11px] text-[#5c4d72]">
-          <span className="inline-flex items-center gap-1 truncate">
-            <Phone className="size-3 shrink-0" />
-            {isPurchased ? (
-              <span className="font-mono font-semibold text-emerald-600">{purchased.full_phone}</span>
-            ) : (
-              lead.masked_phone
-            )}
+        <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-[#5c4d72]">
+          <span className="inline-flex items-center gap-1"><MapPin className="size-3" /> {lead.city || "—"}</span>
+          <span>₹{lead.loan_amount.toLocaleString("en-IN")}</span>
+          <span className="capitalize">{lead.employment_type || "Profile hidden"}</span>
+          <span>{String(lead.product_details.property_type || lead.product_details.property || "—")}</span>
+          <span className="font-semibold text-[#10662A]">
+            {gradeText(gradeCode(lead))}
           </span>
-          <span className="text-[#d8ecdd]">·</span>
-          <span className="inline-flex items-center gap-1 truncate">
-            <MapPin className="size-3 shrink-0" />
-            {lead.city || "—"}
-          </span>
+          <span className="capitalize">{listingType(lead.price, lead.product_details, lead.listing_type)} · {ageLabel(lead.created_at, now)}</span>
         </div>
+        {isPurchased ? (
+          <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-emerald-600">
+            <Phone className="size-3" /> {purchased.full_phone}
+          </p>
+        ) : (
+          <p className="mt-1 text-[11px] text-slate-400">Name and phone unlock after purchase</p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-1.5">

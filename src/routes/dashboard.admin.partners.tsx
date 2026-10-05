@@ -216,7 +216,7 @@ function AdminPartnersPage() {
                       <MapPin className="size-3" />
                       {app.city}
                     </span>
-                    {app.dsa_type && <span className="capitalize">{app.dsa_type}</span>}
+                    {app.dsa_type && <span>{partnerTypeLabel(app.dsa_type)}</span>}
                   </div>
                 </div>
                 <span
@@ -266,8 +266,15 @@ function AdminPartnersPage() {
                 <Detail icon={MapPin} label="City" value={active.city} />
                 <Detail label="Website ID" value={active.website_lead_id} mono />
                 <Detail label="Ref code" value={active.ref_code || "—"} mono />
-                <Detail label="DSA type" value={active.dsa_type || "—"} />
+                <Detail label="Partner type" value={partnerTypeLabel(active.dsa_type)} />
+                <Detail label="State" value={active.state || docText(active, "state") || "—"} />
+                <Detail label="Products" value={docText(active, "products") || "—"} />
+                <Detail label="Experience" value={docText(active, "experience_years") ? `${docText(active, "experience_years")} years` : "—"} />
+                <Detail label="PAN" value={docText(active, "pan") || "—"} mono />
+                <Detail label="Bank" value={docText(active, "bank_account") ? `${docText(active, "bank_account")} · ${docText(active, "ifsc")}` : "—"} mono />
               </div>
+
+              <Journey docs={active.documents} />
 
               {creds && (
                 <div className="rounded-xl bg-[#E8F7EC] border border-[#d8ecdd] p-4 space-y-2">
@@ -327,7 +334,7 @@ function AdminPartnersPage() {
                     className="w-full py-2.5 rounded-xl bg-[#10662A] text-white font-bold text-sm hover:bg-[#0D4F20] disabled:opacity-50 cursor-pointer"
                   >
                     {acting ? <Loader2 className="size-4 animate-spin inline mr-1" /> : <CheckCircle2 className="size-4 inline mr-1" />}
-                    Approve & create DSA login
+                    Verify, assign training & activate login
                   </button>
                 </div>
               ) : active.status === "rejected" ? (
@@ -430,6 +437,59 @@ function StatCard({
         <div className="text-[10px] uppercase tracking-wide text-[#5c4d72] font-semibold">{label}</div>
         <div className="font-display text-lg font-bold text-[#390A5D]">{value}</div>
       </div>
+    </div>
+  );
+}
+
+function partnerTypeLabel(value: string | null | undefined) {
+  const labels: Record<string, string> = {
+    dsa: "DSA",
+    sub_dsa: "Sub-DSA",
+    loan_consultant: "Loan Consultant",
+    ca: "CA",
+    gst_consultant: "GST Consultant",
+    insurance_advisor: "Insurance Advisor",
+    property_consultant: "Property Consultant",
+    telecaller: "Telecaller",
+    telecalling_agency: "Telecalling Agency",
+    freelancer: "Freelancer",
+    referral: "Referral Partner",
+    channel: "Channel Partner",
+    franchise: "Franchise Partner",
+  };
+  return (value && labels[value]) || value || "—";
+}
+
+function docText(app: PartnerApplication, key: string) {
+  const value = app.documents?.[key];
+  return value == null ? "" : String(value);
+}
+
+function Journey({ docs }: { docs: PartnerApplication["documents"] }) {
+  const raw = docs?.journey;
+  const journey = (raw && typeof raw === "object" ? raw : {}) as Record<string, string>;
+  const steps = [
+    ["kyc", "KYC"],
+    ["verification", "Verification"],
+    ["agreement", "Agreement"],
+    ["bank", "Bank"],
+    ["products", "Products"],
+    ["geography", "Geography"],
+    ["experience", "Experience"],
+    ["training", "Training"],
+    ["activation", "Activation"],
+  ] as const;
+  if (!Object.keys(journey).length) return null;
+  return (
+    <div className="rounded-xl border border-[#d8ecdd] p-3">
+      <div className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Onboarding</div>
+      <ul className="mt-2 grid grid-cols-2 gap-1.5 text-xs text-[#390A5D]">
+        {steps.map(([key, label]) => (
+          <li key={key}>
+            {label}: <span className="font-semibold">{journey[key] || "—"}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

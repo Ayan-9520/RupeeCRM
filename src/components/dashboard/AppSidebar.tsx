@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent, Cog, Globe,
+  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent, Cog, Globe, Network, Database, SlidersHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getNavForRole, type NavItem } from "@/lib/role-access";
@@ -47,6 +47,10 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "/dashboard/admin/partners": UserCheck,
   "/dashboard/admin/marketing": Palette,
   "/dashboard/admin/marketing-media": ImageIcon,
+  "/dashboard/network": Network,
+  "/dashboard/admin/network": Network,
+  "/dashboard/admin/pipeline": Database,
+  "/dashboard/admin/control": SlidersHorizontal,
 };
 
 function navIcon(item: NavItem) {

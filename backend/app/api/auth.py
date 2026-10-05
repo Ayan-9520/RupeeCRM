@@ -17,7 +17,17 @@ def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
-    allowed = {"admin", "ceo", "super_admin", "dsa"}
+    allowed = {
+        "admin",
+        "ceo",
+        "super_admin",
+        "dsa",
+        "caller",
+        "coordinator",
+        "affiliate",
+        "lender",
+        "customer",
+    }
     if user.role not in allowed:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Login not allowed for this role yet")
     token = create_access_token(str(user.id), {"role": user.role, "email": user.email})

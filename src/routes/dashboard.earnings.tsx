@@ -1,42 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { IndianRupee, Loader2, ArrowRight, Building2 } from "lucide-react";
-import {
-  getPayoutSummary,
-  listMyPayoutRequests,
-  createPayoutRequest,
-  listMyLeads,
-  type PayoutSummary,
-  type PayoutRequest,
-  type CrmPurchase,
-} from "@/lib/python-api";
+import { Building2, Loader2, Receipt } from "lucide-react";
+import { getInvoiceCentre, raiseInvoice, type InvoiceCentre } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/earnings")({
-  head: () => ({ meta: [{ title: "Earnings — RupeeDial One" }] }),
-  component: EarningsPage,
+  head: () => ({ meta: [{ title: "Invoices — RupeeDial One" }] }),
+  component: InvoiceCentrePage,
 });
 
-function EarningsPage() {
-  const [summary, setSummary] = useState<PayoutSummary | null>(null);
-  const [requests, setRequests] = useState<PayoutRequest[]>([]);
-  const [rows, setRows] = useState<CrmPurchase[]>([]);
+function inr(n: number) {
+  return `₹${Math.round(Number(n) || 0).toLocaleString("en-IN")}`;
+}
+
+function InvoiceCentrePage() {
+  const [centre, setCentre] = useState<InvoiceCentre | null>(null);
   const [loading, setLoading] = useState(true);
-  const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [sum, reqs, leads] = await Promise.all([
-        getPayoutSummary(),
-        listMyPayoutRequests(),
-        listMyLeads(),
-      ]);
-      setSummary(sum);
-      setRequests(reqs);
-      setRows((leads.items ?? []).filter((p) => p.converted));
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Failed to load earnings");
+      setCentre(await getInvoiceCentre());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not load invoices");
     } finally {
       setLoading(false);
     }
@@ -46,26 +32,20 @@ function EarningsPage() {
     void load();
   }, [load]);
 
-  const requestPayout = async () => {
-    const n = Number(amount);
-    if (!Number.isFinite(n) || n <= 0) {
-      toast.error("Enter a valid amount");
-      return;
-    }
+  const raise = async () => {
     setBusy(true);
     try {
-      await createPayoutRequest(n);
-      toast.success("Payout request submitted");
-      setAmount("");
+      const invoice = await raiseInvoice();
+      toast.success(invoice.note || "Invoice raised");
       await load();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Request failed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not raise invoice");
     } finally {
       setBusy(false);
     }
   };
 
-  if (loading || !summary) {
+  if (loading || !centre) {
     return (
       <div className="grid place-items-center py-16">
         <Loader2 className="size-6 animate-spin text-[#10662A]" />
@@ -73,121 +53,103 @@ function EarningsPage() {
     );
   }
 
+  const cards = [
+    ["Expected", centre.expected, "Commission on disbursed cases"],
+    ["Pending", centre.pending, "Not invoiced yet"],
+    ["Invoice raised", centre.invoice_raised, "Waiting for admin"],
+    ["Approved", centre.approved, "Verified"],
+    ["Processing", centre.processing, "Payment in progress"],
+    ["Paid", centre.paid, "Settled"],
+    ["Rejected / query", centre.rejected, "Needs a correction"],
+  ] as const;
+  const openCases = centre.cases.filter((item) => !item.invoiced);
+
   return (
-    <div className="max-w-4xl space-y-5">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="max-w-5xl space-y-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="font-display text-2xl font-bold text-[#390A5D] flex items-center gap-2">
-            <IndianRupee className="size-6 text-[#10662A]" /> Earnings &amp; payouts
+          <h1 className="flex items-center gap-2 font-display text-2xl font-bold text-[#390A5D]">
+            <Receipt className="size-6 text-[#10662A]" /> Invoice & payout
           </h1>
-          <p className="text-sm text-[#5c4d72] mt-1">{summary.policy}</p>
+          <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
+            Disbursed cases become eligible commission at {Math.round(centre.rate * 1000) / 10}%. Raise one invoice, then admin verifies, processes and marks it paid.
+          </p>
         </div>
-        <Link
-          to="/dashboard/settings"
-          className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] px-3 py-2 text-xs font-semibold text-[#390A5D]"
-        >
+        <Link to="/dashboard/settings" className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] px-3 py-2 text-xs font-semibold text-[#390A5D]">
           <Building2 className="size-3.5" /> Bank details
         </Link>
       </div>
 
-      <div className="grid sm:grid-cols-4 gap-3">
-        {[
-          { label: "Earned", value: summary.earned },
-          { label: "Paid out", value: summary.paid_out },
-          { label: "Pending", value: summary.pending },
-          { label: "Available", value: summary.available },
-        ].map((c) => (
-          <div key={c.label} className="rounded-xl border border-[#d8ecdd] bg-white px-4 py-3">
-            <div className="text-[10px] uppercase text-[#5c4d72]">{c.label}</div>
-            <div className="font-display font-bold text-lg text-[#10662A]">
-              ₹{c.value.toLocaleString("en-IN")}
-            </div>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
+        {cards.map(([label, value, hint]) => (
+          <div key={label} className="rounded-2xl border border-[#d8ecdd] bg-white px-3 py-3">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</p>
+            <p className="mt-1 font-display text-lg font-bold text-[#10662A]">{inr(value)}</p>
+            <p className="mt-0.5 text-[10px] text-slate-500">{hint}</p>
           </div>
         ))}
       </div>
 
-      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 space-y-3">
-        <div className="font-semibold text-[#390A5D]">Request payout</div>
-        <p className="text-xs text-[#5c4d72]">
-          Min ₹{summary.payout_min.toLocaleString("en-IN")}. Bank transfer is manual — admin marks paid with UTR.
-          {!summary.bank.complete && (
-            <>
-              {" "}
-              <Link to="/dashboard/settings" className="font-semibold text-[#10662A] underline">
-                Add bank details
-              </Link>{" "}
-              first.
-            </>
-          )}
-          {summary.bank.complete && !summary.kyc_verified && (
-            <> Ask admin to verify KYC (Trust & Audit) before requesting.</>
-          )}
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <input
-            type="number"
-            min={summary.payout_min}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="rounded-lg border border-[#d8ecdd] px-3 py-2 text-sm w-40"
-            placeholder="Amount"
-          />
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold text-[#390A5D]">Disbursed cases</h2>
+            <p className="text-xs text-[#5c4d72]">{openCases.length} waiting · {inr(centre.pending)} eligible</p>
+          </div>
           <button
             type="button"
-            disabled={busy || !summary.can_request}
-            onClick={() => void requestPayout()}
-            className="rounded-xl bg-[#10662A] text-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            disabled={busy || openCases.length === 0}
+            onClick={() => void raise()}
+            className="rounded-xl bg-[#10662A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
-            {busy ? "…" : "Submit request"}
+            {busy ? "Raising…" : "Raise invoice"}
           </button>
         </div>
-      </section>
-
-      {requests.length > 0 && (
-        <section className="rounded-2xl border border-[#d8ecdd] bg-white divide-y divide-[#d8ecdd]">
-          <div className="px-4 py-3 font-semibold text-sm text-[#390A5D]">Your requests</div>
-          {requests.map((r) => (
-            <div key={r.id} className="px-4 py-3 flex justify-between gap-3 text-sm">
-              <div>
-                <div className="font-medium text-[#390A5D]">₹{r.amount.toLocaleString("en-IN")}</div>
-                <div className="text-xs text-[#5c4d72]">
-                  {r.created_at ? new Date(r.created_at).toLocaleString("en-IN") : ""}
-                  {r.utr ? ` · UTR ${r.utr}` : ""}
-                  {r.rejection_reason ? ` · ${r.rejection_reason}` : ""}
-                </div>
-              </div>
-              <span className="text-[10px] uppercase font-bold self-center text-[#5c4d72]">{r.status}</span>
-            </div>
-          ))}
-        </section>
-      )}
-
-      <section>
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-semibold text-[#390A5D] text-sm">Converted deals</h2>
-          <Link to="/dashboard/my-leads" className="text-xs font-semibold text-[#10662A] inline-flex items-center gap-1">
-            My Leads <ArrowRight className="size-3" />
-          </Link>
-        </div>
-        {rows.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-[#d8ecdd] py-10 text-center text-sm text-[#5c4d72]">
-            No converted deals yet
-          </div>
+        {centre.cases.length === 0 ? (
+          <p className="py-8 text-center text-sm text-[#5c4d72]">No disbursed cases yet. Commission starts after disbursement.</p>
         ) : (
-          <ul className="rounded-2xl border border-[#d8ecdd] bg-white divide-y divide-[#d8ecdd]">
-            {rows.map((p) => (
-              <li key={p.id} className="px-4 py-3 flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="font-semibold text-sm text-[#390A5D] truncate">
-                    {p.lead?.applicant_name ?? p.lead_id}
-                  </div>
-                  <div className="text-xs text-[#5c4d72]">{p.pipeline_stage}</div>
+          <ul className="mt-3 divide-y divide-[#d8ecdd]">
+            {centre.cases.map((item) => (
+              <li key={item.purchase_id} className="flex items-center justify-between gap-3 py-3 text-sm">
+                <div>
+                  <div className="font-medium text-[#390A5D]">{item.applicant_name}</div>
+                  <div className="text-xs text-[#5c4d72]">{item.product} · {item.city || "—"} · Disbursed {inr(item.disbursed)}</div>
                 </div>
-                <div className="font-bold text-[#10662A]">
-                  ₹{Number(p.deal_value || 0).toLocaleString("en-IN")}
+                <div className="text-right">
+                  <div className="font-bold text-[#10662A]">{inr(item.commission)}</div>
+                  <div className="text-[10px] uppercase text-[#5c4d72]">{item.invoiced ? "On an invoice" : "Ready"}</div>
                 </div>
               </li>
             ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white">
+        <h2 className="border-b border-[#d8ecdd] px-4 py-3 font-semibold text-[#390A5D]">Invoices</h2>
+        {centre.requests.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-[#5c4d72]">No invoice raised yet.</p>
+        ) : (
+          <ul className="divide-y divide-[#d8ecdd]">
+            {centre.requests.map((row) => {
+              const number = String(row.bank_snapshot?.invoice_number || row.note || "Payout");
+              return (
+                <li key={row.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                  <div>
+                    <div className="font-medium text-[#390A5D]">{number}</div>
+                    <div className="text-xs text-[#5c4d72]">
+                      {row.created_at ? new Date(row.created_at).toLocaleString("en-IN") : ""}
+                      {row.utr ? ` · UTR ${row.utr}` : ""}
+                      {row.rejection_reason ? ` · ${row.rejection_reason}` : ""}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="font-bold text-[#10662A]">{inr(row.amount)}</div>
+                    <div className="text-[10px] font-bold uppercase text-[#5c4d72]">{row.status}</div>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

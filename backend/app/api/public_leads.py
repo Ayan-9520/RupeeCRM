@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.models import Lead
 from app.plans import CATEGORY_LEAD_PRICES, PLANS, cycle_price, default_lead_price
 from app.schemas import PublicLeadIn, PublicLeadOut
+from app.services.lead_grades import grade_code, grade_label, listing_type, property_label
 from app.services.leads import create_lead_from_website_payload, mask_phone, normalize_phone
 
 router = APIRouter(prefix="/api/public", tags=["public"])
@@ -31,6 +32,10 @@ class MarketplaceLeadOut(BaseModel):
     score: str
     price: float
     employment_type: str | None = None
+    lead_grade: str = "L0"
+    lead_grade_label: str = "Raw"
+    listing_type: str = "shared"
+    property_type: str | None = None
     created_at: str | None = None
 
 
@@ -60,6 +65,7 @@ def _mask_name(name: str | None) -> str:
 
 
 def _to_marketplace(lead: Lead) -> MarketplaceLeadOut:
+    code = grade_code(lead)
     return MarketplaceLeadOut(
         id=lead.id,
         display_name=_mask_name(lead.applicant_name),
@@ -72,6 +78,10 @@ def _to_marketplace(lead: Lead) -> MarketplaceLeadOut:
         score=lead.score or "cold",
         price=float(lead.price or default_lead_price(lead.product_category)),
         employment_type=lead.employment_type,
+        lead_grade=code,
+        lead_grade_label=grade_label(code),
+        listing_type=listing_type(lead),
+        property_type=property_label(lead),
         created_at=lead.created_at.isoformat() if lead.created_at else None,
     )
 
