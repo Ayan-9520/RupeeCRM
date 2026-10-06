@@ -47,7 +47,7 @@ function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [submitting, setSubmitting] = useState(false);
 
-  const [email, setEmail] = useState("admin@rupeedial.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -63,7 +63,7 @@ function AuthPage() {
   };
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard/website-leads" });
+    if (!loading && user) navigate({ to: "/dashboard" });
   }, [user, loading, navigate]);
 
   if (loading || (!loading && user)) {
