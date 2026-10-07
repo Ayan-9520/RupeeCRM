@@ -13,6 +13,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import type { AppRole } from "@/lib/auth-context";
+import { forgotPassword } from "@/lib/python-api";
 
 export const Route = createFileRoute("/auth")({
   head: () => ({
@@ -58,7 +59,29 @@ function AuthPage() {
   const [role, setRole] = useState<AppRole>("dsa");
   const [showPassword, setShowPassword] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotBusy, setForgotBusy] = useState(false);
+  const [forgotState, setForgotState] = useState<"idle" | "sent" | "unavailable">("idle");
   const { next } = Route.useSearch();
+
+  const sendReset = async () => {
+    const value = forgotEmail.trim().toLowerCase();
+    if (!z.string().email().safeParse(value).success) {
+      toast.error("Enter the email you sign in with");
+      return;
+    }
+    setForgotBusy(true);
+    try {
+      await forgotPassword(value);
+      setForgotState("sent");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("not set up")) setForgotState("unavailable");
+      else toast.error(msg || "Could not send reset email");
+    } finally {
+      setForgotBusy(false);
+    }
+  };
   const destination = next ?? "/dashboard";
 
   useEffect(() => {
@@ -273,7 +296,11 @@ function AuthPage() {
                     <div className="mt-1.5 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => setForgotOpen((v) => !v)}
+                        onClick={() => {
+                          setForgotEmail((v) => v || email);
+                          setForgotState("idle");
+                          setForgotOpen((v) => !v);
+                        }}
                         className="text-[11px] text-[#10662A] font-bold hover:underline"
                       >
                         Forgot password?
@@ -286,12 +313,51 @@ function AuthPage() {
 
                 {mode === "signin" && forgotOpen && (
                   <div className="rounded-xl border border-[#d8ecdd] bg-[#f5fcf7] p-3 text-xs text-[#5c4d72]">
-                    <p className="font-semibold text-[#390A5D]">Reset by your admin</p>
-                    <p className="mt-1">
-                      Ask your RupeeDial admin or call support at{" "}
-                      <a href="tel:+917982953129" className="font-semibold text-[#10662A]">+91 79829 53129</a>{" "}
-                      to get a temporary password. Sign in with it, then set your own from Settings → Change password.
-                    </p>
+                    {forgotState === "sent" ? (
+                      <>
+                        <p className="font-semibold text-[#10662A]">Check your inbox</p>
+                        <p className="mt-1">
+                          If that email has an account, we've sent a reset link. It works once and expires in 30 minutes. Check spam too.
+                        </p>
+                      </>
+                    ) : forgotState === "unavailable" ? (
+                      <>
+                        <p className="font-semibold text-[#390A5D]">Reset by your admin</p>
+                        <p className="mt-1">
+                          Ask your RupeeDial admin or call support at{" "}
+                          <a href="tel:+917982953129" className="font-semibold text-[#10662A]">+91 79829 53129</a>{" "}
+                          for a temporary password, then change it from Settings.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-semibold text-[#390A5D]">Get a reset link by email</p>
+                        <div className="mt-2 flex gap-2">
+                          <input
+                            type="email"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                void sendReset();
+                              }
+                            }}
+                            className="rd-auth-input flex-1"
+                            placeholder="you@example.com"
+                            autoComplete="email"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void sendReset()}
+                            disabled={forgotBusy}
+                            className="h-11 px-4 rounded-xl bg-[#10662A] text-white text-xs font-bold shrink-0 disabled:opacity-60"
+                          >
+                            {forgotBusy ? "Sending…" : "Send link"}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 )}
 

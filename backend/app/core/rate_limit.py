@@ -16,10 +16,11 @@ def check_rate_limit(
     *,
     limit: int = 30,
     window_sec: int = 60,
+    scope: str = "default",
 ) -> None:
     ip = request.client.host if request.client else "unknown"
     now = time.time()
-    q = _buckets[ip]
+    q = _buckets[f"{scope}:{ip}"]
     while q and now - q[0] > window_sec:
         q.popleft()
     if len(q) >= limit:

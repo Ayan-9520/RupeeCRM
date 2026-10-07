@@ -13,6 +13,18 @@ class Settings(BaseSettings):
     admin_email: str = "admin@rupeedial.com"
     admin_password: str = "Admin@12345"
     admin_name: str = "RupeeDial Admin"
+    crm_public_url: str = "https://crm.rupeedial.com"
+    smtp_host: str = "smtp.hostinger.com"
+    smtp_port: int = 465
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = ""
+    smtp_from_name: str = "RupeeDial"
+    password_reset_minutes: int = 30
+
+    @property
+    def smtp_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_user and self.smtp_password)
 
     @property
     def cors_origin_list(self) -> list[str]:

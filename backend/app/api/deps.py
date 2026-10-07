@@ -19,7 +19,7 @@ def get_current_user(
     if not creds:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
     payload = decode_token(creds.credentials)
-    if not payload or "sub" not in payload:
+    if not payload or "sub" not in payload or payload.get("purpose"):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
     try:
         user_id = UUID(str(payload["sub"]))

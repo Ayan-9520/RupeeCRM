@@ -3,7 +3,7 @@ import { useState } from "react";
 import { KeyRound, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
-import { changePassword } from "@/lib/python-api";
+import { changePassword, resetPasswordWithToken } from "@/lib/python-api";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
@@ -12,12 +12,15 @@ export const Route = createFileRoute("/reset-password")({
       { name: "description", content: "Set a new password for your RupeeDial account." },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { token?: string } =>
+    typeof search.token === "string" && search.token ? { token: search.token } : {},
   component: ChangePasswordPage,
 });
 
 function ChangePasswordPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const { token } = Route.useSearch();
   const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -36,6 +39,12 @@ function ChangePasswordPage() {
     }
     setSubmitting(true);
     try {
+      if (token) {
+        await resetPasswordWithToken(token, password);
+        toast.success("Password updated. Sign in with your new password.");
+        setTimeout(() => navigate({ to: "/auth" }), 800);
+        return;
+      }
       await changePassword(current, password);
       toast.success("Password updated");
       setTimeout(() => navigate({ to: "/dashboard" }), 600);
@@ -57,20 +66,24 @@ function ChangePasswordPage() {
         </Link>
 
         <div className="rounded-2xl border border-[#d8ecdd] bg-white p-6 shadow-[0_10px_30px_rgba(16,102,42,0.07)]">
-          <h1 className="font-display text-2xl font-bold tracking-tight text-[#390A5D]">Change password</h1>
+          <h1 className="font-display text-2xl font-bold tracking-tight text-[#390A5D]">
+            {token ? "Set a new password" : "Change password"}
+          </h1>
           <p className="mt-1.5 text-sm text-[#5c4d72]">
-            Enter your current or temporary password, then choose a new one.
+            {token
+              ? "Choose a new password for your account. This link works once."
+              : "Enter your current or temporary password, then choose a new one."}
           </p>
 
-          {loading ? (
+          {loading && !token ? (
             <div className="mt-8 flex justify-center">
               <Loader2 className="size-5 animate-spin text-[#10662A]" />
             </div>
-          ) : !user ? (
+          ) : !user && !token ? (
             <div className="mt-6 rounded-xl border border-[#d8ecdd] bg-[#F5FBF7] p-4 text-sm">
               <div className="font-semibold text-[#390A5D]">Sign in first</div>
               <p className="mt-1 text-[#5c4d72]">
-                Forgot your password? Ask your admin to reset it. Sign in with the temporary password they share, then come back here to set your own.
+                Forgot your password? Use "Forgot password?" on the sign-in page to get a reset link by email.
               </p>
               <Link
                 to="/auth"
@@ -82,17 +95,19 @@ function ChangePasswordPage() {
             </div>
           ) : (
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
-              <label className="block">
-                <span className="text-sm font-medium text-[#390A5D]">Current or temporary password</span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={current}
-                  onChange={(e) => setCurrent(e.target.value)}
-                  className="input-base mt-1.5"
-                  autoComplete="current-password"
-                  required
-                />
-              </label>
+              {!token && (
+                <label className="block">
+                  <span className="text-sm font-medium text-[#390A5D]">Current or temporary password</span>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={current}
+                    onChange={(e) => setCurrent(e.target.value)}
+                    className="input-base mt-1.5"
+                    autoComplete="current-password"
+                    required
+                  />
+                </label>
+              )}
 
               <label className="block">
                 <span className="text-sm font-medium text-[#390A5D]">New password</span>
@@ -139,8 +154,8 @@ function ChangePasswordPage() {
                 {submitting && <Loader2 className="size-4 animate-spin" />}
                 Update password
               </button>
-              <Link to="/dashboard" className="block text-center text-sm text-[#5c4d72] hover:text-[#10662A]">
-                Back to dashboard
+              <Link to={token ? "/auth" : "/dashboard"} className="block text-center text-sm text-[#5c4d72] hover:text-[#10662A]">
+                {token ? "Back to sign in" : "Back to dashboard"}
               </Link>
             </form>
           )}

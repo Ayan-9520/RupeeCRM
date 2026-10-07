@@ -1,8 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from uuid import UUID
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.config import settings
+from app.core.rate_limit import check_rate_limit
+from app.core.security import (
+    create_access_token,
+    create_reset_token,
+    decode_token,
+    hash_password,
+    password_fingerprint,
+    verify_password,
+)
+from app.services.mailer import send_email, send_password_reset
 from app.db.session import get_db
 from app.models import User
 from app.schemas import LoginIn, TokenOut, UserOut, UserUpdateIn
@@ -64,6 +76,67 @@ def change_password(
     db.add(user)
     db.commit()
     return {"success": True}
+
+
+class ForgotPasswordIn(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordIn(BaseModel):
+    token: str = Field(min_length=10, max_length=2000)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+FORGOT_REPLY = {"success": True, "message": "If that email has an account, a reset link is on its way."}
+
+
+@router.post("/forgot-password")
+def forgot_password(
+    body: ForgotPasswordIn,
+    request: Request,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+) -> dict:
+    check_rate_limit(request, limit=5, window_sec=300, scope="forgot")
+    if not settings.smtp_enabled:
+        raise HTTPException(status_code=503, detail="Email reset is not set up yet. Ask your admin to reset your password.")
+    user = db.query(User).filter(User.email == body.email.lower().strip()).first()
+    if user and user.is_active:
+        token = create_reset_token(str(user.id), user.password_hash)
+        link = f"{settings.crm_public_url.rstrip('/')}/reset-password?token={token}"
+        background.add_task(send_password_reset, user.email, user.full_name, link)
+    return FORGOT_REPLY
+
+
+@router.post("/reset-password")
+def reset_password_with_token(body: ResetPasswordIn, request: Request, db: Session = Depends(get_db)) -> dict:
+    check_rate_limit(request, limit=10, window_sec=300, scope="reset")
+    invalid = HTTPException(status_code=400, detail="This reset link is invalid or has expired. Request a new one.")
+    payload = decode_token(body.token)
+    if not payload or payload.get("purpose") != "password_reset":
+        raise invalid
+    try:
+        user_id = UUID(str(payload.get("sub")))
+    except (TypeError, ValueError):
+        raise invalid
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not user.is_active or payload.get("pwf") != password_fingerprint(user.password_hash):
+        raise invalid
+    user.password_hash = hash_password(body.new_password)
+    db.commit()
+    return {"success": True, "message": "Password updated. Sign in with your new password."}
+
+
+@router.post("/smtp-test")
+def smtp_test(user: User = Depends(get_current_user)) -> dict:
+    if user.role not in {"admin", "ceo", "super_admin"}:
+        raise HTTPException(status_code=403, detail="Admin only")
+    if not settings.smtp_enabled:
+        raise HTTPException(status_code=503, detail="SMTP_USER / SMTP_PASSWORD are not set in backend/.env")
+    ok = send_email(user.email, "RupeeDial SMTP test", "SMTP is working. Password reset emails will be delivered.")
+    if not ok:
+        raise HTTPException(status_code=502, detail="SMTP login or send failed. Check the mailbox password and host in backend/.env.")
+    return {"success": True, "message": f"Test email sent to {user.email}"}
 
 
 @router.patch("/me", response_model=UserOut)

@@ -1,3 +1,4 @@
+import hashlib
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -23,6 +24,21 @@ def create_access_token(subject: str, extra: dict[str, Any] | None = None) -> st
         payload.update(extra)
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_expire_minutes)
     payload["exp"] = expire
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def password_fingerprint(password_hash: str) -> str:
+    return hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+
+
+def create_reset_token(user_id: str, password_hash: str) -> str:
+    """Single-use: embeds a fingerprint of the current hash, so it dies once the password changes."""
+    payload = {
+        "sub": user_id,
+        "purpose": "password_reset",
+        "pwf": password_fingerprint(password_hash),
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=settings.password_reset_minutes),
+    }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
