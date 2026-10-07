@@ -3,13 +3,16 @@ import { Sparkles } from "lucide-react";
 import { askRupeeDial } from "@/lib/python-api";
 
 const PROMPTS = [
-  "Which lender may fit this LAP profile?",
+  "Mere leads ki summary",
+  "Aaj ke follow-ups",
+  "Kaunse case 48 ghante se atke hain?",
   "What documents are pending?",
-  "Show my leads requiring follow-up today",
-  "Which cases haven't moved for 48 hours?",
-  "Explain this lender's eligibility policy",
-  "Draft WhatsApp follow-up for this customer",
+  "Home loan documents",
+  "EMI 10 lakh 10.5% 5 years",
+  "Draft WhatsApp follow-up",
   "Which customers have potential cross-sell?",
+  "Meri earning",
+  "CIBIL kam hai to kya kare?",
 ];
 
 export function AskRupeeDial() {
@@ -41,7 +44,7 @@ export function AskRupeeDial() {
         <Sparkles className="size-4 text-[#10662A]" />
         <h2 className="font-semibold text-[#390A5D]">Ask RupeeDial</h2>
       </div>
-      <p className="mt-1 text-xs text-[#5c4d72]">Answers come from your cases. It will not pick or approve a lender.</p>
+      <p className="mt-1 text-xs text-[#5c4d72]">Answers come from your cases. Type a customer's name to see their case. It will not pick or approve a lender.</p>
       <div className="mt-3 flex flex-wrap gap-2">
         {PROMPTS.map((prompt) => (
           <button
@@ -59,7 +62,10 @@ export function AskRupeeDial() {
         <input
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
-          placeholder="Ask about your cases"
+          placeholder="Ask about your cases, e.g. Ramesh ka status"
+          onKeyDown={(event) => {
+            if (event.key === "Enter") void ask(question);
+          }}
           className="flex-1 rounded-xl border border-[#d8ecdd] px-3 py-2 text-sm"
         />
         <button
