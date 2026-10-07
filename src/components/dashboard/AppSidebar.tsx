@@ -40,6 +40,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "/dashboard/admin/users": Users,
   "/dashboard/admin/leads": ListPlus,
   "/dashboard/website-leads": Globe,
+  "/dashboard/business": BriefcaseBusiness,
   "/dashboard/admin/pricing": UserCog,
   "/dashboard/admin/commissions": Percent,
   "/dashboard/admin/payouts": Banknote,

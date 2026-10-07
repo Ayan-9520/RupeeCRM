@@ -6,6 +6,7 @@ from app.api import (
     assistant,
     auth,
     billing,
+    business,
     commission,
     customer,
     leads,
@@ -49,6 +50,8 @@ app.include_router(assistant.router)
 app.include_router(pipeline.router)
 app.include_router(commission.router)
 app.include_router(admin_trust.router)
+app.include_router(business.public_router)
+app.include_router(business.router)
 
 
 @app.get("/health")

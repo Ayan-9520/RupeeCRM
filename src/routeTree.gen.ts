@@ -47,6 +47,7 @@ import { Route as DashboardAutomationRouteImport } from './routes/dashboard.auto
 import { Route as ApplySlugRouteImport } from './routes/apply.$slug'
 import { Route as DashboardMarketingIndexRouteImport } from './routes/dashboard.marketing.index'
 import { Route as DashboardHrmsIndexRouteImport } from './routes/dashboard.hrms.index'
+import { Route as DashboardBusinessIndexRouteImport } from './routes/dashboard.business.index'
 import { Route as DashboardMarketingWhatsappRouteImport } from './routes/dashboard.marketing.whatsapp'
 import { Route as DashboardMarketingReferralRouteImport } from './routes/dashboard.marketing.referral'
 import { Route as DashboardMarketingReelsRouteImport } from './routes/dashboard.marketing.reels'
@@ -59,6 +60,7 @@ import { Route as DashboardHrmsLeavesRouteImport } from './routes/dashboard.hrms
 import { Route as DashboardHrmsBillingRouteImport } from './routes/dashboard.hrms.billing'
 import { Route as DashboardHrmsAttendanceRouteImport } from './routes/dashboard.hrms.attendance'
 import { Route as DashboardCustomerIdRouteImport } from './routes/dashboard.customer.$id'
+import { Route as DashboardBusinessRefRouteImport } from './routes/dashboard.business.$ref'
 import { Route as DashboardAdminUsersRouteImport } from './routes/dashboard.admin.users'
 import { Route as DashboardAdminTrustRouteImport } from './routes/dashboard.admin.trust'
 import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
@@ -267,6 +269,11 @@ const DashboardHrmsIndexRoute = DashboardHrmsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DashboardHrmsRoute,
 } as any)
+const DashboardBusinessIndexRoute = DashboardBusinessIndexRouteImport.update({
+  id: '/business/',
+  path: '/business/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardMarketingWhatsappRoute =
   DashboardMarketingWhatsappRouteImport.update({
     id: '/whatsapp',
@@ -328,6 +335,11 @@ const DashboardHrmsAttendanceRoute = DashboardHrmsAttendanceRouteImport.update({
 const DashboardCustomerIdRoute = DashboardCustomerIdRouteImport.update({
   id: '/customer/$id',
   path: '/customer/$id',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardBusinessRefRoute = DashboardBusinessRefRouteImport.update({
+  id: '/business/$ref',
+  path: '/business/$ref',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAdminUsersRoute = DashboardAdminUsersRouteImport.update({
@@ -470,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/trust': typeof DashboardAdminTrustRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/business/$ref': typeof DashboardBusinessRefRoute
   '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
@@ -482,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
   '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
   '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
+  '/dashboard/business/': typeof DashboardBusinessIndexRoute
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
   '/dashboard/marketing/': typeof DashboardMarketingIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
@@ -536,6 +550,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/trust': typeof DashboardAdminTrustRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/business/$ref': typeof DashboardBusinessRefRoute
   '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
@@ -548,6 +563,7 @@ export interface FileRoutesByTo {
   '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
   '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
   '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
+  '/dashboard/business': typeof DashboardBusinessIndexRoute
   '/dashboard/hrms': typeof DashboardHrmsIndexRoute
   '/dashboard/marketing': typeof DashboardMarketingIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
@@ -606,6 +622,7 @@ export interface FileRoutesById {
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
   '/dashboard/admin/trust': typeof DashboardAdminTrustRoute
   '/dashboard/admin/users': typeof DashboardAdminUsersRoute
+  '/dashboard/business/$ref': typeof DashboardBusinessRefRoute
   '/dashboard/customer/$id': typeof DashboardCustomerIdRoute
   '/dashboard/hrms/attendance': typeof DashboardHrmsAttendanceRoute
   '/dashboard/hrms/billing': typeof DashboardHrmsBillingRoute
@@ -618,6 +635,7 @@ export interface FileRoutesById {
   '/dashboard/marketing/reels': typeof DashboardMarketingReelsRoute
   '/dashboard/marketing/referral': typeof DashboardMarketingReferralRoute
   '/dashboard/marketing/whatsapp': typeof DashboardMarketingWhatsappRoute
+  '/dashboard/business/': typeof DashboardBusinessIndexRoute
   '/dashboard/hrms/': typeof DashboardHrmsIndexRoute
   '/dashboard/marketing/': typeof DashboardMarketingIndexRoute
   '/dashboard/hrms/employees/$id': typeof DashboardHrmsEmployeesIdRoute
@@ -677,6 +695,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/trust'
     | '/dashboard/admin/users'
+    | '/dashboard/business/$ref'
     | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
@@ -689,6 +708,7 @@ export interface FileRouteTypes {
     | '/dashboard/marketing/reels'
     | '/dashboard/marketing/referral'
     | '/dashboard/marketing/whatsapp'
+    | '/dashboard/business/'
     | '/dashboard/hrms/'
     | '/dashboard/marketing/'
     | '/dashboard/hrms/employees/$id'
@@ -743,6 +763,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/trust'
     | '/dashboard/admin/users'
+    | '/dashboard/business/$ref'
     | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
@@ -755,6 +776,7 @@ export interface FileRouteTypes {
     | '/dashboard/marketing/reels'
     | '/dashboard/marketing/referral'
     | '/dashboard/marketing/whatsapp'
+    | '/dashboard/business'
     | '/dashboard/hrms'
     | '/dashboard/marketing'
     | '/dashboard/hrms/employees/$id'
@@ -812,6 +834,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/pricing'
     | '/dashboard/admin/trust'
     | '/dashboard/admin/users'
+    | '/dashboard/business/$ref'
     | '/dashboard/customer/$id'
     | '/dashboard/hrms/attendance'
     | '/dashboard/hrms/billing'
@@ -824,6 +847,7 @@ export interface FileRouteTypes {
     | '/dashboard/marketing/reels'
     | '/dashboard/marketing/referral'
     | '/dashboard/marketing/whatsapp'
+    | '/dashboard/business/'
     | '/dashboard/hrms/'
     | '/dashboard/marketing/'
     | '/dashboard/hrms/employees/$id'
@@ -1113,6 +1137,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardHrmsIndexRouteImport
       parentRoute: typeof DashboardHrmsRoute
     }
+    '/dashboard/business/': {
+      id: '/dashboard/business/'
+      path: '/business'
+      fullPath: '/dashboard/business/'
+      preLoaderRoute: typeof DashboardBusinessIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/marketing/whatsapp': {
       id: '/dashboard/marketing/whatsapp'
       path: '/whatsapp'
@@ -1195,6 +1226,13 @@ declare module '@tanstack/react-router' {
       path: '/customer/$id'
       fullPath: '/dashboard/customer/$id'
       preLoaderRoute: typeof DashboardCustomerIdRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/business/$ref': {
+      id: '/dashboard/business/$ref'
+      path: '/business/$ref'
+      fullPath: '/dashboard/business/$ref'
+      preLoaderRoute: typeof DashboardBusinessRefRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/admin/users': {
@@ -1421,7 +1459,9 @@ interface DashboardRouteChildren {
   DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
   DashboardAdminTrustRoute: typeof DashboardAdminTrustRoute
   DashboardAdminUsersRoute: typeof DashboardAdminUsersRoute
+  DashboardBusinessRefRoute: typeof DashboardBusinessRefRoute
   DashboardCustomerIdRoute: typeof DashboardCustomerIdRoute
+  DashboardBusinessIndexRoute: typeof DashboardBusinessIndexRoute
 }
 
 const DashboardRouteChildren: DashboardRouteChildren = {
@@ -1464,7 +1504,9 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,
   DashboardAdminTrustRoute: DashboardAdminTrustRoute,
   DashboardAdminUsersRoute: DashboardAdminUsersRoute,
+  DashboardBusinessRefRoute: DashboardBusinessRefRoute,
   DashboardCustomerIdRoute: DashboardCustomerIdRoute,
+  DashboardBusinessIndexRoute: DashboardBusinessIndexRoute,
 }
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(

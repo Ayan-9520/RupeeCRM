@@ -757,4 +757,139 @@ export async function saveCommissionRule(ratePercent: number): Promise<{ rate_pe
   return request("/api/admin/commission", { method: "PUT", body: JSON.stringify({ rate_percent: ratePercent }) });
 }
 
+export type BusinessOption = {
+  facility: string;
+  label: string;
+  amount: number;
+  rate_min: number;
+  rate_max: number;
+  rate_unit: string;
+  tenure_months: number;
+  emi: number;
+  note: string;
+  recommended: boolean;
+};
+
+export type BusinessAssessment = {
+  engine: string;
+  summary: {
+    facility: string;
+    facility_label: string;
+    requested_amount: number;
+    eligible_amount: number;
+    verdict: "within" | "partial" | "not_eligible";
+    headline: string;
+  };
+  risk: { score: number; grade: string; chance: string; flags: { type: "good" | "warn" | "bad"; text: string }[] };
+  ratios: {
+    turnover: number;
+    estimated_profit: number;
+    profit_is_estimate: boolean;
+    cash_accrual: number;
+    existing_emi_annual: number;
+    dscr: number | null;
+    loan_to_turnover: number | null;
+    enterprise_size: string;
+    cibil_used: number;
+  };
+  options: BusinessOption[];
+  schemes: { key: string; name: string; eligible: boolean; detail: string }[];
+  lenders: {
+    name: string;
+    kind: string;
+    amount: number;
+    rate_min: number;
+    rate_max: number;
+    chance: string;
+    preferred: boolean;
+    cgtmse: boolean;
+  }[];
+  unmatched_lenders: { name: string; reason: string }[];
+  documents: { key: string; label: string }[];
+  assumptions: string[];
+};
+
+export type BusinessSection = Record<string, string | number | boolean | string[] | null | undefined>;
+
+export type BusinessCaseData = {
+  case_id: string;
+  stage: string;
+  completed?: string[];
+  quick: BusinessSection;
+  data: BusinessSection;
+  financials: BusinessSection;
+  documents: Record<string, { status: string; note?: string }>;
+  selected_lenders: string[];
+  applied_to: { lender: string; status: string; ref?: string; at?: string }[];
+  notes: { at: string; by: string; text: string }[];
+  history: { at: string; by: string; action: string }[];
+  assessment: BusinessAssessment;
+  updated_by?: string;
+};
+
+export type BusinessCase = {
+  id: string;
+  case_id: string;
+  applicant_name: string;
+  company_name: string | null;
+  full_phone: string;
+  email: string | null;
+  city: string;
+  state: string | null;
+  loan_amount: number;
+  status: string;
+  score: string;
+  is_marketplace: boolean;
+  created_at: string | null;
+  updated_at: string | null;
+  business: BusinessCaseData;
+};
+
+export type BusinessCaseSummary = {
+  id: string;
+  case_id: string;
+  applicant_name: string;
+  company_name: string | null;
+  full_phone: string;
+  city: string;
+  facility: string | null;
+  required_amount: number | null;
+  eligible_amount: number | null;
+  grade: string | null;
+  stage: string;
+  status: string;
+  created_at: string | null;
+};
+
+export async function listBusinessCases(params?: { q?: string; stage?: string }): Promise<{
+  items: BusinessCaseSummary[];
+  total: number;
+}> {
+  const qs = new URLSearchParams();
+  if (params?.q) qs.set("q", params.q);
+  if (params?.stage) qs.set("stage", params.stage);
+  return request(`/api/business/cases${qs.toString() ? `?${qs}` : ""}`);
+}
+
+export async function getBusinessCase(ref: string): Promise<BusinessCase> {
+  return request(`/api/business/cases/${encodeURIComponent(ref)}`);
+}
+
+export async function patchBusinessCase(
+  ref: string,
+  body: {
+    quick?: BusinessSection;
+    data?: BusinessSection;
+    financials?: BusinessSection;
+    documents?: Record<string, { status: string; note?: string }>;
+    stage?: string;
+    selected_lenders?: string[];
+    applied_to?: BusinessCaseData["applied_to"];
+    note?: string;
+    is_marketplace?: boolean;
+  },
+): Promise<BusinessCase> {
+  return request(`/api/business/cases/${encodeURIComponent(ref)}`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
 export { API_URL };
