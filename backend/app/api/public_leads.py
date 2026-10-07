@@ -12,6 +12,7 @@ from app.db.session import get_db
 from app.models import Lead
 from app.plans import CATEGORY_LEAD_PRICES, PLANS, cycle_price, default_lead_price
 from app.schemas import PublicLeadIn, PublicLeadOut
+from app.services.commission import get_percent
 from app.services.lead_grades import grade_code, grade_label, listing_type, property_label
 from app.services.leads import create_lead_from_website_payload, mask_phone, normalize_phone
 
@@ -50,6 +51,7 @@ class PublicPlansOut(BaseModel):
     activation_fee: int = 999
     recharge_min: int = 500
     payout_min: int = 1000
+    commission_percent: float = 1.0
     plans: list[dict[str, Any]]
     category_prices: dict[str, float]
 
@@ -134,7 +136,7 @@ def list_marketplace_leads(
 
 
 @router.get("/plans", response_model=PublicPlansOut)
-def list_public_plans() -> PublicPlansOut:
+def list_public_plans(db: Session = Depends(get_db)) -> PublicPlansOut:
     plans_out: list[dict[str, Any]] = []
     for pid, p in PLANS.items():
         monthly = int(p["monthly"])
@@ -152,7 +154,11 @@ def list_public_plans() -> PublicPlansOut:
                 },
             }
         )
-    return PublicPlansOut(plans=plans_out, category_prices=dict(CATEGORY_LEAD_PRICES))
+    return PublicPlansOut(
+        plans=plans_out,
+        category_prices=dict(CATEGORY_LEAD_PRICES),
+        commission_percent=get_percent(db),
+    )
 
 
 @router.post("/leads", response_model=PublicLeadOut, dependencies=[Depends(require_public_api_key)])
