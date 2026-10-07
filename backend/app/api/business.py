@@ -219,13 +219,13 @@ def _find_case(db: Session, ref: str) -> Lead:
 @public_router.post("/assess")
 def public_assess(body: dict[str, Any], request: Request) -> dict[str, Any]:
     """Instant indicative result — nothing stored."""
-    check_rate_limit(request, limit=60, window_sec=60)
+    check_rate_limit(request, limit=60, window_sec=60, scope="biz_assess")
     return assess_business({"quick": body})
 
 
 @public_router.post("/cases")
 def public_create_case(body: QuickCheckIn, request: Request, db: Session = Depends(get_db)) -> dict[str, Any]:
-    check_rate_limit(request, limit=8, window_sec=60)
+    check_rate_limit(request, limit=8, window_sec=60, scope="biz_case")
     if body.website:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid submission")
     if not body.consent:

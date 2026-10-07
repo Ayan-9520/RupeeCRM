@@ -167,7 +167,7 @@ def ingest_public_lead(
     request: Request,
     db: Session = Depends(get_db),
 ) -> PublicLeadOut:
-    check_rate_limit(request, limit=40, window_sec=60)
+    check_rate_limit(request, limit=40, window_sec=60, scope="public_lead")
     payload = body.model_dump(exclude_none=False)
     if not payload.get("price"):
         payload["price"] = default_lead_price(str(payload.get("product_category") or "loan"))

@@ -16,7 +16,7 @@ def ingest_public_partner(
     request: Request,
     db: Session = Depends(get_db),
 ) -> PublicPartnerOut:
-    check_rate_limit(request, limit=20, window_sec=60)
+    check_rate_limit(request, limit=20, window_sec=60, scope="partner_apply")
     try:
         row = upsert_partner_from_website(db, body.model_dump(exclude_none=False))
     except ValueError as e:

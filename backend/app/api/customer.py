@@ -37,7 +37,7 @@ def public_eligibility(
     request: Request,
     db: Session = Depends(get_db),
 ) -> dict:
-    check_rate_limit(request, limit=20, window_sec=60)
+    check_rate_limit(request, limit=20, window_sec=60, scope="customer")
     if not body.email.strip() or "@" not in body.email:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email is required")
     lead, password = save_eligibility_application(db, body.model_dump())
@@ -63,7 +63,7 @@ class ProductLoanIn(BaseModel):
 
 @router.post("/api/public/product-loan", dependencies=[Depends(require_public_api_key)])
 def public_product_loan(body: ProductLoanIn, request: Request, db: Session = Depends(get_db)) -> dict:
-    check_rate_limit(request, limit=20, window_sec=60)
+    check_rate_limit(request, limit=20, window_sec=60, scope="customer")
     try:
         return intake_product_form(
             db,
