@@ -135,7 +135,10 @@ def smtp_test(user: User = Depends(get_current_user)) -> dict:
         raise HTTPException(status_code=503, detail="SMTP_USER / SMTP_PASSWORD are not set in backend/.env")
     ok = send_email(user.email, "RupeeDial SMTP test", "SMTP is working. Password reset emails will be delivered.")
     if not ok:
-        raise HTTPException(status_code=502, detail="SMTP login or send failed. Check the mailbox password and host in backend/.env.")
+        raise HTTPException(
+            status_code=502,
+            detail="Email could not be sent. Check SMTP_USER / SMTP_PASSWORD in backend/.env, then run: docker compose -f docker-compose.prod.yml logs api --tail 30",
+        )
     return {"success": True, "message": f"Test email sent to {user.email}"}
 
 

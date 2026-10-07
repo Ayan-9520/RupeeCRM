@@ -18,29 +18,43 @@ def send_email(to: str, subject: str, text: str, html: str | None = None) -> boo
         log.warning("SMTP not configured; email to %s not sent", to)
         return False
 
+    user = settings.smtp_user.strip()
+    password = settings.smtp_password.strip().strip('"').strip("'")
+    # Hostinger rejects mail whose From differs from the authenticated mailbox.
+    sender = (settings.smtp_from or "").strip() or user
+    if sender.split("@")[-1].lower() != user.split("@")[-1].lower():
+        sender = user
+
     msg = EmailMessage()
     msg["Subject"] = subject
-    msg["From"] = formataddr((settings.smtp_from_name, settings.smtp_from or settings.smtp_user))
+    msg["From"] = formataddr((settings.smtp_from_name, sender))
+    msg["Reply-To"] = sender
     msg["To"] = to
     msg.set_content(text)
     if html:
         msg.add_alternative(html, subtype="html")
 
+    attempts = [settings.smtp_port] + [p for p in (465, 587) if p != settings.smtp_port]
     context = ssl.create_default_context()
-    try:
-        if settings.smtp_port == 465:
-            with smtplib.SMTP_SSL(settings.smtp_host, settings.smtp_port, context=context, timeout=20) as smtp:
-                smtp.login(settings.smtp_user, settings.smtp_password)
-                smtp.send_message(msg)
-        else:
-            with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=20) as smtp:
-                smtp.starttls(context=context)
-                smtp.login(settings.smtp_user, settings.smtp_password)
-                smtp.send_message(msg)
-    except (smtplib.SMTPException, OSError) as exc:
-        log.error("SMTP send to %s failed: %s", to, exc)
-        return False
-    return True
+    for port in attempts:
+        try:
+            if port == 465:
+                with smtplib.SMTP_SSL(settings.smtp_host, port, context=context, timeout=20) as smtp:
+                    smtp.login(user, password)
+                    smtp.send_message(msg, from_addr=user)
+            else:
+                with smtplib.SMTP(settings.smtp_host, port, timeout=20) as smtp:
+                    smtp.starttls(context=context)
+                    smtp.login(user, password)
+                    smtp.send_message(msg, from_addr=user)
+            log.info("SMTP sent to %s via port %s", to, port)
+            return True
+        except smtplib.SMTPAuthenticationError as exc:
+            log.error("SMTP login failed for %s: %s — check SMTP_USER / SMTP_PASSWORD", user, exc)
+            return False
+        except (smtplib.SMTPException, OSError) as exc:
+            log.error("SMTP send to %s via port %s failed: %s", to, port, exc)
+    return False
 
 
 def send_password_reset(to: str, name: str, link: str) -> bool:
