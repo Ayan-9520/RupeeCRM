@@ -139,6 +139,7 @@ class PublicLeadOut(BaseModel):
     success: bool = True
     id: UUID
     message: str = "Lead saved to CRM"
+    referred: bool = False
 
 
 class PublicPartnerIn(BaseModel):

@@ -267,7 +267,7 @@ function ApplyPage() {
       });
       setLeadId(created.id as string);
       setMaskedPhone(masked);
-      setIsExclusive(false);
+      setIsExclusive(created.referred === true);
       toast.success("Application started — verify mobile (demo OTP: any 6 digits)");
       setOtpSentAt(Date.now());
       setResendIn(30);
@@ -498,7 +498,7 @@ function ApplyPage() {
 
       {/* WhatsApp floating button */}
       <a
-        href={`https://wa.me/919999999999?text=${waText}`}
+        href={`https://wa.me/917982953129?text=${waText}`}
         target="_blank" rel="noopener noreferrer"
         aria-label="Apply via WhatsApp"
         className="fixed bottom-5 right-5 z-30 size-14 rounded-full bg-[#25D366] text-white grid place-items-center shadow-lg hover:scale-105 transition"
@@ -602,7 +602,7 @@ function Step1({
       </div>
 
       <a
-        href={`https://wa.me/919999999999?text=${waText}`}
+        href={`https://wa.me/917982953129?text=${waText}`}
         target="_blank" rel="noopener noreferrer"
         className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-border py-3 font-semibold text-sm hover:bg-muted/50 transition"
       >

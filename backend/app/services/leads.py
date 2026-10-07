@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import re
+from datetime import datetime, timezone
 from typing import Any
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.models import Lead
+from app.models import Lead, LeadPurchase, User
 from app.plans import default_lead_price
 
 KNOWN_FIELDS = {
@@ -137,4 +139,43 @@ def create_lead_from_website_payload(db: Session, payload: dict[str, Any]) -> Le
     db.add(lead)
     db.commit()
     db.refresh(lead)
+    assign_referral(db, lead, details.get("ref_code"))
     return lead
+
+
+def assign_referral(db: Session, lead: Lead, ref_code: Any) -> LeadPurchase | None:
+    """A customer who applies through a partner's link belongs to that partner.
+
+    The lead skips the marketplace and lands in the partner's My Leads free of charge,
+    so the normal disbursed-case commission applies to it.
+    """
+    code = str(ref_code or "").strip()
+    if not code:
+        return None
+    partner = (
+        db.query(User)
+        .filter(func.upper(User.dsa_id) == code.upper(), User.is_active.is_(True), User.role != "customer")
+        .first()
+    )
+    if not partner:
+        return None
+    if db.query(LeadPurchase).filter(LeadPurchase.lead_id == lead.id).first():
+        return None
+
+    now = datetime.now(timezone.utc).isoformat()
+    purchase = LeadPurchase(
+        lead_id=lead.id,
+        buyer_user_id=partner.id,
+        price_paid=0,
+        pipeline_stage="new",
+        notes=[{"at": now, "text": "Customer applied through your referral link", "by": "system", "kind": "referral"}],
+    )
+    lead.status = "sold"
+    lead.is_marketplace = False
+    lead.sale_available = False
+    lead.source = "partner_referral"
+    lead.product_details = {**(lead.product_details or {}), "referred_by_user_id": str(partner.id)}
+    db.add(purchase)
+    db.commit()
+    db.refresh(purchase)
+    return purchase

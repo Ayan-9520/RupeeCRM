@@ -174,7 +174,7 @@ def ingest_public_lead(
     payload.setdefault("is_marketplace", True)
     payload.setdefault("sale_available", True)
     lead = create_lead_from_website_payload(db, payload)
-    return PublicLeadOut(id=lead.id)
+    return PublicLeadOut(id=lead.id, referred=lead.source == "partner_referral")
 
 
 @router.patch("/leads/{lead_id}", response_model=PublicLeadOut, dependencies=[Depends(require_public_api_key)])

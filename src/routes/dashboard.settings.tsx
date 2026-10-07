@@ -194,7 +194,7 @@ function SettingsPage() {
             <div className="flex-1">
               <h2 className="font-semibold text-[#390A5D]">Your referral link</h2>
               <p className="text-sm text-[#5c4d72]">
-                DSA ID <span className="font-mono font-semibold text-[#10662A]">{dsaId}</span> — share with customers.
+                DSA ID <span className="font-mono font-semibold text-[#10662A]">{dsaId}</span> — share with customers. Anyone who applies through it lands in your My Leads for free, and you earn the normal commission when the case is disbursed.
               </p>
             </div>
           </div>
