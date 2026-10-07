@@ -14,9 +14,12 @@ from app.core.security import hash_password
 from app.db.session import get_db
 from app.models import User
 from app.plans import PLANS, cycle_price
+from app.services.audit import write_audit
 from app.services.partners import generate_temp_password
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
+
+ADMIN_ROLES = {"admin", "ceo", "super_admin"}
 
 
 def _owner(user: User) -> UUID:
@@ -141,47 +144,165 @@ def billing_me(db: Session = Depends(get_db), user: User = Depends(get_current_u
     )
 
 
+def _apply_plan(db: Session, owner: User, plan_id: str, cycle: str) -> str:
+    plan = PLANS.get(plan_id)
+    if not plan:
+        raise HTTPException(status_code=400, detail="Unknown plan")
+    monthly = int(plan["monthly"])
+    amount = cycle_price(monthly, cycle)
+    months = {"monthly": 1, "quarterly": 3, "yearly": 12}[cycle]
+    credits = float(plan["lead_credits_monthly"]) * months
+    days = {"monthly": 30, "quarterly": 90, "yearly": 365}[cycle]
+
+    now = datetime.now(timezone.utc)
+    owner.plan_id = plan_id
+    owner.plan_cycle = cycle
+    owner.plan_status = "active"
+    owner.plan_started_at = now
+    owner.plan_ends_at = now + timedelta(days=days)
+    owner.wallet_balance = float(owner.wallet_balance or 0) + credits
+    db.commit()
+    db.refresh(owner)
+    return f"Activated {plan['name']} ({cycle}) · ₹{amount} · ₹{int(credits)} lead credits added"
+
+
 @router.post("/activate", response_model=ActivateOut)
 def activate_plan(
     body: ActivateIn,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> ActivateOut:
-    """Manual activate (Razorpay later). Credits wallet + sets plan window."""
+    """Online checkout is not live, so only admins may activate. Partners pay offline and an admin activates."""
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(
+            status_code=402,
+            detail="Online payment isn't live yet. Pay RupeeDial by UPI/bank transfer and an admin will activate your plan.",
+        )
     if user.seat_owner_id and user.seat_owner_id != user.id:
         raise HTTPException(status_code=403, detail="Only account owner can activate a plan")
-    plan = PLANS.get(body.plan_id)
-    if not plan:
-        raise HTTPException(status_code=400, detail="Unknown plan")
-    owner = user
-    monthly = int(plan["monthly"])
-    amount = cycle_price(monthly, body.cycle)
-    credits = float(plan["lead_credits_monthly"])
-    if body.cycle == "quarterly":
-        credits *= 3
-    elif body.cycle == "yearly":
-        credits *= 12
+    message = _apply_plan(db, user, body.plan_id, body.cycle)
+    return ActivateOut(message=message, entitlements=_entitlements(user))
 
-    now = datetime.now(timezone.utc)
-    if body.cycle == "quarterly":
-        ends = now + timedelta(days=90)
-    elif body.cycle == "yearly":
-        ends = now + timedelta(days=365)
-    else:
-        ends = now + timedelta(days=30)
 
-    owner.plan_id = body.plan_id
-    owner.plan_cycle = body.cycle
-    owner.plan_status = "active"
-    owner.plan_started_at = now
-    owner.plan_ends_at = ends
-    owner.wallet_balance = float(owner.wallet_balance or 0) + credits
+def require_admin(user: User = Depends(get_current_user)) -> User:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Admin only")
+    return user
+
+
+class AdminActivateIn(ActivateIn):
+    user_id: UUID
+
+
+class AdminCancelIn(BaseModel):
+    user_id: UUID
+
+
+@router.get("/admin/subscriptions")
+def admin_subscriptions(db: Session = Depends(get_db), _admin: User = Depends(require_admin)) -> dict:
+    owners = (
+        db.query(User)
+        .filter(User.seat_owner_id.is_(None), User.role.notin_(tuple(ADMIN_ROLES) + ("customer",)))
+        .order_by(User.created_at.desc())
+        .all()
+    )
+    items = []
+    for u in owners:
+        plan = PLANS.get(u.plan_id or "")
+        items.append(
+            {
+                "user_id": str(u.id),
+                "full_name": u.full_name,
+                "email": u.email,
+                "role": u.role,
+                "plan_id": u.plan_id,
+                "plan_name": (plan or {}).get("name"),
+                "plan_cycle": u.plan_cycle,
+                "plan_status": u.plan_status,
+                "plan_started_at": u.plan_started_at.isoformat() if u.plan_started_at else None,
+                "plan_ends_at": u.plan_ends_at.isoformat() if u.plan_ends_at else None,
+                "amount": cycle_price(int(plan["monthly"]), u.plan_cycle or "monthly") if plan else 0,
+                "wallet_balance": float(u.wallet_balance or 0),
+                "seats_used": _seat_count(db, u.id),
+            }
+        )
+    active = [i for i in items if i["plan_status"] == "active"]
+    return {
+        "items": items,
+        "active_count": len(active),
+        "active_value": sum(i["amount"] for i in active),
+        "plans": [{"id": pid, "name": p["name"]} for pid, p in PLANS.items()],
+    }
+
+
+@router.post("/admin/activate", response_model=ActivateOut)
+def admin_activate(body: AdminActivateIn, db: Session = Depends(get_db), admin: User = Depends(require_admin)) -> ActivateOut:
+    owner = db.query(User).filter(User.id == body.user_id).first()
+    if not owner:
+        raise HTTPException(status_code=404, detail="User not found")
+    if owner.seat_owner_id and owner.seat_owner_id != owner.id:
+        raise HTTPException(status_code=400, detail="This user is a team seat. Activate the account owner instead.")
+    write_audit(
+        db,
+        action="plan_activate",
+        actor_user_id=admin.id,
+        entity_type="user",
+        entity_id=str(owner.id),
+        detail={"plan_id": body.plan_id, "cycle": body.cycle},
+    )
+    message = _apply_plan(db, owner, body.plan_id, body.cycle)
+    return ActivateOut(message=f"{owner.full_name}: {message}", entitlements=_entitlements(owner))
+
+
+class WalletCreditIn(BaseModel):
+    user_id: UUID
+    amount: float = Field(gt=0, le=500000)
+    note: str = Field(default="", max_length=200)
+
+
+@router.post("/admin/wallet-credit")
+def admin_wallet_credit(
+    body: WalletCreditIn,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> dict:
+    """Credit a partner wallet after an offline (UPI / bank) payment is confirmed."""
+    target = db.query(User).filter(User.id == body.user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    owner = target
+    if target.seat_owner_id and target.seat_owner_id != target.id:
+        owner = db.query(User).filter(User.id == target.seat_owner_id).first() or target
+    amount = round(float(body.amount), 2)
+    owner.wallet_balance = float(owner.wallet_balance or 0) + amount
+    write_audit(
+        db,
+        action="wallet_credit",
+        actor_user_id=admin.id,
+        entity_type="user",
+        entity_id=str(owner.id),
+        detail={"amount": amount, "note": body.note.strip()},
+    )
     db.commit()
     db.refresh(owner)
-    return ActivateOut(
-        message=f"Activated {plan['name']} ({body.cycle}) · ₹{amount} billed (manual) · ₹{int(credits)} credits added",
-        entitlements=_entitlements(owner),
-    )
+    return {
+        "success": True,
+        "message": f"₹{amount:,.0f} added to {owner.full_name}'s wallet",
+        "wallet_balance": float(owner.wallet_balance or 0),
+    }
+
+
+@router.post("/admin/cancel", response_model=ActivateOut)
+def admin_cancel(body: AdminCancelIn, db: Session = Depends(get_db), _admin: User = Depends(require_admin)) -> ActivateOut:
+    owner = db.query(User).filter(User.id == body.user_id).first()
+    if not owner:
+        raise HTTPException(status_code=404, detail="User not found")
+    if owner.plan_status != "active":
+        raise HTTPException(status_code=400, detail="No active plan")
+    owner.plan_status = "cancelled"
+    db.commit()
+    db.refresh(owner)
+    return ActivateOut(message=f"{owner.full_name}: plan cancelled", entitlements=_entitlements(owner))
 
 
 @router.post("/cancel", response_model=ActivateOut)

@@ -254,6 +254,22 @@ class NetworkSettings(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+class Certificate(Base):
+    """Academy certificate issued once per user and course on a passing quiz score."""
+
+    __tablename__ = "certificates"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    course_slug: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    course_title: Mapped[str] = mapped_column(String(160), nullable=False)
+    badge: Mapped[str] = mapped_column(String(80), nullable=False)
+    score_percent: Mapped[int] = mapped_column(Integer, nullable=False)
+    points: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    certificate_no: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class NetworkLink(Base):
     __tablename__ = "network_links"
 

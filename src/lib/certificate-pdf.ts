@@ -1,4 +1,5 @@
 import { jsPDF } from "jspdf";
+import type { CrmCertificate } from "@/lib/python-api";
 
 export type CertificatePayload = {
   fullName: string;
@@ -38,7 +39,7 @@ export function generateCertificatePdf(p: CertificatePayload): string {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(46, 204, 113);
-  doc.text("LEADMINES ACADEMY · CERTIFIED PARTNER", W / 2, 28, { align: "center" });
+  doc.text("RUPEEDIAL ACADEMY · CERTIFIED PARTNER", W / 2, 28, { align: "center" });
 
   // Title
   doc.setFontSize(36);
@@ -102,17 +103,27 @@ export function generateCertificatePdf(p: CertificatePayload): string {
   doc.setFont("helvetica", "bold");
   doc.text("Authorised Signatory", W - 75, 172, { align: "center" });
   doc.setFont("helvetica", "normal");
-  doc.text("LeadMines Academy · MoneyMines", W - 75, 178, { align: "center" });
+  doc.text("RupeeDial Academy", W - 75, 178, { align: "center" });
 
   // Certificate number
   doc.setFontSize(9);
   doc.setTextColor(120, 120, 120);
-  doc.text(`Certificate No. ${p.certificateNo}`, W / 2, 195, { align: "center" });
-  doc.text("Verify at rupeedial.com/verify", W / 2, 200, { align: "center" });
+  doc.text(`Certificate No. ${p.certificateNo}`, W / 2, 197, { align: "center" });
 
   // Trigger download
   const filename = `${p.certificateNo}.pdf`;
   doc.save(filename);
 
   return doc.output("datauristring");
+}
+
+export function downloadCertificate(cert: CrmCertificate): string {
+  return generateCertificatePdf({
+    fullName: cert.full_name || "Verified Partner",
+    courseTitle: cert.course_title,
+    badge: cert.badge,
+    scorePercent: cert.score_percent,
+    certificateNo: cert.certificate_no,
+    issuedAt: cert.issued_at ?? new Date().toISOString(),
+  });
 }

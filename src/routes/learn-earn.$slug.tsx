@@ -15,10 +15,10 @@ export const Route = createFileRoute("/learn-earn/$slug")({
   },
   head: ({ loaderData }) => {
     const c = loaderData?.course;
-    if (!c) return { meta: [{ title: "Course not found — LeadMines Academy" }] };
+    if (!c) return { meta: [{ title: "Course not found — RupeeDial Academy" }] };
     return {
       meta: [
-        { title: `${c.title} — LeadMines Academy` },
+        { title: `${c.title} — RupeeDial Academy` },
         { name: "description", content: c.tagline },
         { property: "og:title", content: `${c.title} — Free DSA certification` },
         { property: "og:description", content: c.tagline },

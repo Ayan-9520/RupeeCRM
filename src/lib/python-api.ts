@@ -892,4 +892,137 @@ export async function patchBusinessCase(
   return request(`/api/business/cases/${encodeURIComponent(ref)}`, { method: "PATCH", body: JSON.stringify(body) });
 }
 
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ ok: boolean }> {
+  return request("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+}
+
+export type CrmCertificate = {
+  id: string;
+  course_slug: string;
+  course_title: string;
+  badge: string | null;
+  score_percent: number;
+  points: number;
+  certificate_no: string;
+  issued_at: string | null;
+  full_name: string;
+};
+
+export type CrmQuiz = {
+  slug: string;
+  title: string;
+  badge: string;
+  points: number;
+  pass_percent: number;
+  questions: { index: number; question: string; options: string[] }[];
+  certificate: CrmCertificate | null;
+};
+
+export type CrmQuizResult = {
+  correct: number;
+  total: number;
+  score_percent: number;
+  passed: boolean;
+  pass_percent: number;
+  points_awarded: number;
+  certificate: CrmCertificate | null;
+  review: { question: string; options: string[]; correct_index: number; your_index: number | null; explanation: string }[];
+};
+
+export async function getQuiz(slug: string): Promise<CrmQuiz> {
+  return request(`/api/learn/quizzes/${encodeURIComponent(slug)}`);
+}
+
+export async function submitQuiz(slug: string, answers: number[]): Promise<CrmQuizResult> {
+  return request(`/api/learn/quizzes/${encodeURIComponent(slug)}/submit`, {
+    method: "POST",
+    body: JSON.stringify({ answers }),
+  });
+}
+
+export async function listCertificates(): Promise<{
+  items: CrmCertificate[];
+  total_points: number;
+  available: { slug: string; title: string; badge: string; points: number }[];
+}> {
+  return request("/api/learn/certificates");
+}
+
+export type AdminOverview = {
+  kpis: {
+    total_leads: number;
+    verified_leads: number;
+    marketplace_sales: number;
+    lead_revenue: number;
+    conversions: number;
+    disbursed_value: number;
+    active_partners: number;
+    team_members: number;
+    pending_partner_applications: number;
+    pending_payout_amount: number;
+  };
+  roles: Record<string, number>;
+  by_product: { name: string; value: number }[];
+  daily: { day: string; leads: number; sales: number }[];
+  top_performers: { name: string; conversions: number; revenue: number; purchases: number }[];
+};
+
+export async function getAdminOverview(): Promise<AdminOverview> {
+  return request("/api/admin/overview");
+}
+
+export type AdminSubscription = {
+  user_id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  plan_id: string | null;
+  plan_name: string | null;
+  plan_cycle: string | null;
+  plan_status: string;
+  plan_started_at: string | null;
+  plan_ends_at: string | null;
+  amount: number;
+  wallet_balance: number;
+  seats_used: number;
+};
+
+export async function getAdminSubscriptions(): Promise<{
+  items: AdminSubscription[];
+  active_count: number;
+  active_value: number;
+  plans: { id: string; name: string }[];
+}> {
+  return request("/api/billing/admin/subscriptions");
+}
+
+export async function adminActivatePlan(
+  userId: string,
+  planId: string,
+  cycle: "monthly" | "quarterly" | "yearly",
+): Promise<{ message: string }> {
+  return request("/api/billing/admin/activate", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId, plan_id: planId, cycle }),
+  });
+}
+
+export async function adminCreditWallet(
+  userId: string,
+  amount: number,
+  note: string,
+): Promise<{ message: string; wallet_balance: number }> {
+  return request("/api/billing/admin/wallet-credit", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId, amount, note }),
+  });
+}
+
+export async function adminCancelPlan(userId: string): Promise<{ message: string }> {
+  return request("/api/billing/admin/cancel", { method: "POST", body: JSON.stringify({ user_id: userId }) });
+}
+
 export { API_URL };

@@ -49,7 +49,7 @@ export const VisitingCardCanvas = forwardRef<HTMLDivElement, { data: CardData }>
                 </div>
               )}
               <div className="leading-tight">
-                <div className="text-xl font-bold">{data.company_name ?? "LeadMines"}</div>
+                <div className="text-xl font-bold">{data.company_name ?? "RupeeDial"}</div>
                 <div className="text-xs opacity-60 uppercase tracking-widest">Authorised Partner</div>
               </div>
             </div>

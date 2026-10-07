@@ -1,13 +1,13 @@
 import { createFileRoute, Link, useNavigate, redirect } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrowLeft, ArrowRight, CheckCircle2, XCircle, Trophy, Award,
   RotateCcw, Loader2, Sparkles, Download,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { getCourse } from "@/lib/courses";
-import { generateCertificatePdf } from "@/lib/certificate-pdf";
+import { downloadCertificate } from "@/lib/certificate-pdf";
+import { getQuiz, submitQuiz, type CrmQuiz, type CrmQuizResult } from "@/lib/python-api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/learn-quiz/$slug")({
@@ -17,28 +17,10 @@ export const Route = createFileRoute("/learn-quiz/$slug")({
   },
   head: ({ params }) => {
     const c = getCourse(params.slug);
-    return { meta: [{ title: c ? `Quiz: ${c.title} — LeadMines` : "Quiz — LeadMines" }] };
+    return { meta: [{ title: c ? `Quiz: ${c.title} — RupeeDial One` : "Quiz — RupeeDial One" }] };
   },
   component: QuizRunner,
 });
-
-type Question = {
-  id: string;
-  question: string;
-  options: string[];
-  display_order: number;
-  // correct_index & explanation are server-truth; revealed only after submit.
-};
-
-type SubmitResult = {
-  success: boolean;
-  passed: boolean;
-  score_percent: number;
-  correct: number;
-  total: number;
-  points_awarded: number;
-  certificate_id: string | null;
-};
 
 function QuizRunner() {
   const { slug } = Route.useParams();
@@ -46,71 +28,40 @@ function QuizRunner() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
 
-  const [questions, setQuestions] = useState<Question[]>([]);
+  const [quiz, setQuiz] = useState<CrmQuiz | null>(null);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [current, setCurrent] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<SubmitResult | null>(null);
-  const [reviewQuestions, setReviewQuestions] = useState<
-    Array<Question & { correct_index: number; explanation: string | null }>
-  >([]);
-  const [profileName, setProfileName] = useState<string>("");
+  const [result, setResult] = useState<CrmQuizResult | null>(null);
 
-  // Auth guard
   useEffect(() => {
     if (!authLoading && !user) {
       navigate({ to: "/auth", search: { next: `/learn-quiz/${slug}` } as never });
     }
   }, [authLoading, user, navigate, slug]);
 
-  // Load questions
   useEffect(() => {
     if (!user) return;
     let active = true;
-    (async () => {
-      setLoading(true);
-      const { data: quiz } = await supabase
-        .from("course_quizzes")
-        .select("id")
-        .eq("course_slug", slug)
-        .eq("enabled", true)
-        .maybeSingle();
-      if (!quiz) {
-        if (active) {
-          toast.error("Quiz not available yet for this course");
-          setLoading(false);
-        }
-        return;
-      }
-      const { data: qs } = await supabase
-        .from("quiz_questions")
-        .select("id, question, options, display_order")
-        .eq("quiz_id", quiz.id)
-        .order("display_order", { ascending: true });
-      if (active) {
-        setQuestions(
-          (qs ?? []).map((q) => ({
-            id: q.id as string,
-            question: q.question as string,
-            options: q.options as string[],
-            display_order: q.display_order as number,
-          })),
-        );
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .maybeSingle();
-        setProfileName((prof?.full_name as string) ?? user.email ?? "");
-        setLoading(false);
-      }
-    })();
+    setLoading(true);
+    getQuiz(slug)
+      .then((q) => {
+        if (active) setQuiz(q);
+      })
+      .catch((e: Error) => {
+        if (active) toast.error(e.message || "Could not load quiz");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
     return () => {
       active = false;
     };
   }, [slug, user]);
 
+  const questions = quiz?.questions ?? [];
+  const passPercent = quiz?.pass_percent ?? 70;
   const totalQ = questions.length;
   const answeredCount = Object.keys(answers).length;
   const allAnswered = answeredCount === totalQ && totalQ > 0;
@@ -126,88 +77,33 @@ function QuizRunner() {
       return;
     }
     setSubmitting(true);
-    const ordered = questions.map((_, i) => answers[i]);
-    const { data, error } = await supabase.rpc("submit_quiz", {
-      _course_slug: slug,
-      _answers: ordered as unknown as never,
-    });
-    if (error) {
-      toast.error(error.message);
-      setSubmitting(false);
-      return;
-    }
-    const r = data as unknown as SubmitResult;
-    setResult(r);
-
-    // Fetch correct answers for review
-    if (questions.length > 0) {
-      const { data: full } = await supabase
-        .from("quiz_questions")
-        .select("id, question, options, display_order, correct_index, explanation")
-        .eq("quiz_id", (await supabase.from("course_quizzes").select("id").eq("course_slug", slug).maybeSingle()).data?.id ?? "")
-        .order("display_order", { ascending: true });
-      setReviewQuestions(
-        (full ?? []).map((q) => ({
-          id: q.id as string,
-          question: q.question as string,
-          options: q.options as string[],
-          display_order: q.display_order as number,
-          correct_index: q.correct_index as number,
-          explanation: q.explanation as string | null,
-        })),
-      );
-    }
-
-    if (r.passed) {
-      toast.success(`🎉 Passed with ${r.score_percent}%! +${r.points_awarded} points`);
-      // Auto-generate PDF
-      if (r.certificate_id) {
-        const { data: cert } = await supabase
-          .from("certificates")
-          .select("certificate_no, issued_at, badge")
-          .eq("id", r.certificate_id)
-          .maybeSingle();
-        if (cert) {
-          generateCertificatePdf({
-            fullName: profileName || "Verified Partner",
-            courseTitle: course.title,
-            badge: (cert.badge as string | null) ?? course.badge,
-            scorePercent: r.score_percent,
-            certificateNo: cert.certificate_no as string,
-            issuedAt: cert.issued_at as string,
-          });
+    try {
+      const r = await submitQuiz(slug, questions.map((_, i) => answers[i]));
+      setResult(r);
+      if (r.passed) {
+        toast.success(
+          r.points_awarded > 0
+            ? `Passed with ${r.score_percent}%! +${r.points_awarded} points`
+            : `Passed with ${r.score_percent}%. Certificate already earned.`,
+        );
+        if (r.certificate) {
+          setQuiz((q) => (q ? { ...q, certificate: r.certificate } : q));
+          downloadCertificate(r.certificate);
         }
+      } else {
+        toast.error(`Scored ${r.score_percent}%. You need ${r.pass_percent}% to pass — try again.`);
       }
-    } else {
-      toast.error(`Scored ${r.score_percent}%. You need ${70}% to pass — try again.`);
+    } catch (e) {
+      toast.error((e as Error).message || "Could not submit quiz");
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleRetry = () => {
     setAnswers({});
     setCurrent(0);
     setResult(null);
-    setReviewQuestions([]);
-  };
-
-  const handleDownloadAgain = async () => {
-    if (!result?.certificate_id) return;
-    const { data: cert } = await supabase
-      .from("certificates")
-      .select("certificate_no, issued_at, badge, score_percent, course_title")
-      .eq("id", result.certificate_id)
-      .maybeSingle();
-    if (cert) {
-      generateCertificatePdf({
-        fullName: profileName || "Verified Partner",
-        courseTitle: (cert.course_title as string) ?? course.title,
-        badge: (cert.badge as string | null) ?? course.badge,
-        scorePercent: (cert.score_percent as number) ?? result.score_percent,
-        certificateNo: cert.certificate_no as string,
-        issuedAt: cert.issued_at as string,
-      });
-    }
   };
 
   if (authLoading || loading) {
@@ -222,8 +118,8 @@ function QuizRunner() {
     return (
       <div className="min-h-screen grid place-items-center bg-background p-8 text-center">
         <div>
-          <h1 className="font-display text-2xl font-bold">Quiz coming soon</h1>
-          <p className="text-muted-foreground mt-2">Questions for this course are being prepared.</p>
+          <h1 className="font-display text-2xl font-bold">Quiz not available</h1>
+          <p className="text-muted-foreground mt-2">We could not load questions for this course. Please try again in a moment.</p>
           <Link to="/dashboard/learn" className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-full bg-foreground text-background font-medium">
             <ArrowLeft className="size-4" /> Back to academy
           </Link>
@@ -232,7 +128,6 @@ function QuizRunner() {
     );
   }
 
-  // Result screen
   if (result) {
     return (
       <div className="min-h-screen bg-background text-foreground py-10 px-5">
@@ -241,7 +136,6 @@ function QuizRunner() {
             <ArrowLeft className="size-4" /> Back to academy
           </Link>
 
-          {/* Hero result */}
           <div
             className={`mt-6 rounded-3xl p-8 lg:p-10 text-center shadow-elevated ${
               result.passed
@@ -255,12 +149,12 @@ function QuizRunner() {
               <RotateCcw className="size-14 mx-auto text-amber-600 dark:text-amber-400" strokeWidth={2.5} />
             )}
             <h1 className="mt-4 font-display text-3xl lg:text-4xl font-bold">
-              {result.passed ? "🎉 Certified!" : "Almost there"}
+              {result.passed ? "Certified!" : "Almost there"}
             </h1>
             <p className="mt-2 text-muted-foreground">
               {result.passed
                 ? `You scored ${result.score_percent}% on ${course.title}.`
-                : `You scored ${result.score_percent}%. You need 70% to earn the badge.`}
+                : `You scored ${result.score_percent}%. You need ${result.pass_percent}% to earn the badge.`}
             </p>
 
             <div className="mt-6 grid grid-cols-3 gap-3 max-w-md mx-auto">
@@ -271,12 +165,14 @@ function QuizRunner() {
 
             {result.passed ? (
               <div className="mt-7 flex flex-wrap gap-3 justify-center">
-                <button
-                  onClick={handleDownloadAgain}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background font-semibold hover:scale-[1.02] transition-smooth"
-                >
-                  <Download className="size-4" /> Download certificate
-                </button>
+                {result.certificate && (
+                  <button
+                    onClick={() => downloadCertificate(result.certificate!)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background font-semibold hover:scale-[1.02] transition-smooth"
+                  >
+                    <Download className="size-4" /> Download certificate
+                  </button>
+                )}
                 <Link
                   to="/dashboard/certificates"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border font-medium hover:border-foreground/30 transition-smooth"
@@ -299,15 +195,13 @@ function QuizRunner() {
             )}
           </div>
 
-          {/* Review */}
           <div className="mt-8">
             <h2 className="font-display text-xl font-bold">Review answers</h2>
             <div className="mt-4 space-y-3">
-              {reviewQuestions.map((q, i) => {
-                const userAns = answers[i];
-                const correct = userAns === q.correct_index;
+              {result.review.map((q, i) => {
+                const correct = q.your_index === q.correct_index;
                 return (
-                  <div key={q.id} className="rounded-2xl bg-card border border-border p-5">
+                  <div key={i} className="rounded-2xl bg-card border border-border p-5">
                     <div className="flex items-start gap-3">
                       {correct ? (
                         <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
@@ -322,7 +216,7 @@ function QuizRunner() {
                         <div className="mt-3 space-y-1.5">
                           {q.options.map((opt, oi) => {
                             const isCorrect = oi === q.correct_index;
-                            const isUser = oi === userAns;
+                            const isUser = oi === q.your_index;
                             return (
                               <div
                                 key={oi}
@@ -359,7 +253,6 @@ function QuizRunner() {
     );
   }
 
-  // Quiz screen
   const q = questions[current];
   const selected = answers[current];
 
@@ -370,7 +263,20 @@ function QuizRunner() {
           <ArrowLeft className="size-4" /> {course.title}
         </Link>
 
-        {/* Header */}
+        {quiz?.certificate && (
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 px-5 py-4 text-sm">
+            <span className="inline-flex items-center gap-2 font-medium">
+              <Award className="size-4 text-emerald-600" /> You already hold this certificate ({quiz.certificate.score_percent}%). Retaking won't add points.
+            </span>
+            <button
+              onClick={() => downloadCertificate(quiz.certificate!)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-1.5 font-semibold"
+            >
+              <Download className="size-3.5" /> Download
+            </button>
+          </div>
+        )}
+
         <div className="mt-6 rounded-3xl bg-gradient-to-br from-accent/15 via-accent/5 to-background border border-border p-6 lg:p-8">
           <div className="flex items-center gap-2 text-accent">
             <Sparkles className="size-4" />
@@ -378,7 +284,7 @@ function QuizRunner() {
           </div>
           <h1 className="mt-2 font-display text-2xl lg:text-3xl font-bold">{course.title}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {totalQ} questions · Pass with ≥ 70% · Earn the {course.badge} badge
+            {totalQ} questions · Pass with ≥ {passPercent}% · Earn the {quiz?.badge ?? course.badge} badge and {quiz?.points ?? course.reward_points} points
           </p>
 
           <div className="mt-5">
@@ -394,7 +300,6 @@ function QuizRunner() {
           </div>
         </div>
 
-        {/* Question card */}
         <div className="mt-6 rounded-3xl bg-card border border-border p-6 lg:p-8 shadow-card">
           <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">
             Question {current + 1} of {totalQ}
@@ -427,7 +332,6 @@ function QuizRunner() {
             })}
           </div>
 
-          {/* Nav */}
           <div className="mt-7 flex items-center justify-between gap-3">
             <button
               onClick={() => setCurrent((c) => Math.max(0, c - 1))}
@@ -464,7 +368,6 @@ function QuizRunner() {
           </div>
         </div>
 
-        {/* Question navigator */}
         <div className="mt-6 flex flex-wrap gap-1.5 justify-center">
           {questions.map((_, i) => {
             const answered = answers[i] !== undefined;

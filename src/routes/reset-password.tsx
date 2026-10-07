@@ -1,48 +1,33 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Sparkles, Loader2, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
+import { KeyRound, Loader2, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/lib/auth-context";
+import { changePassword } from "@/lib/python-api";
 
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: "Reset password — LeadMines" },
-      { name: "description", content: "Set a new password for your LeadMines account." },
+      { title: "Change password — RupeeDial One" },
+      { name: "description", content: "Set a new password for your RupeeDial account." },
     ],
   }),
-  component: ResetPasswordPage,
+  component: ChangePasswordPage,
 });
 
-function ResetPasswordPage() {
+function ChangePasswordPage() {
   const navigate = useNavigate();
-  const [ready, setReady] = useState(false);
-  const [hasSession, setHasSession] = useState(false);
+  const { user, loading } = useAuth();
+  const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    // Listen for the PASSWORD_RECOVERY event triggered by the recovery link
-    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || session) {
-        setHasSession(true);
-      }
-      setReady(true);
-    });
-    // Also check existing session in case event already fired
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) setHasSession(true);
-      setReady(true);
-    });
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    if (password.length < 8) {
+      toast.error("New password must be at least 8 characters");
       return;
     }
     if (password !== confirm) {
@@ -51,88 +36,96 @@ function ResetPasswordPage() {
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success("Password updated. Redirecting…");
-        setTimeout(() => navigate({ to: "/dashboard" }), 800);
-      }
+      await changePassword(current, password);
+      toast.success("Password updated");
+      setTimeout(() => navigate({ to: "/dashboard" }), 600);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update password");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen grid place-items-center bg-background p-6">
+    <div className="min-h-screen grid place-items-center bg-[#F5FBF7] p-6">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-8 flex items-center gap-2.5 justify-center">
-          <div className="size-9 rounded-xl bg-mint-gradient grid place-items-center shadow-mint">
-            <Sparkles className="size-5 text-primary" strokeWidth={2.5} />
+          <div className="size-9 rounded-xl bg-[#10662A] grid place-items-center">
+            <KeyRound className="size-5 text-white" strokeWidth={2.5} />
           </div>
-          <span className="font-display font-bold text-lg">LeadMines</span>
+          <span className="font-display font-bold text-lg text-[#390A5D]">RupeeDial One</span>
         </Link>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-card">
-          <h1 className="font-display text-2xl font-bold tracking-tight">Set a new password</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Choose a strong password you haven't used before.
+        <div className="rounded-2xl border border-[#d8ecdd] bg-white p-6 shadow-[0_10px_30px_rgba(16,102,42,0.07)]">
+          <h1 className="font-display text-2xl font-bold tracking-tight text-[#390A5D]">Change password</h1>
+          <p className="mt-1.5 text-sm text-[#5c4d72]">
+            Enter your current or temporary password, then choose a new one.
           </p>
 
-          {!ready ? (
+          {loading ? (
             <div className="mt-8 flex justify-center">
-              <Loader2 className="size-5 animate-spin text-muted-foreground" />
+              <Loader2 className="size-5 animate-spin text-[#10662A]" />
             </div>
-          ) : !hasSession ? (
-            <div className="mt-6 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm">
-              <div className="font-semibold text-destructive">Invalid or expired link</div>
-              <p className="mt-1 text-muted-foreground">
-                Please request a new password reset link from the sign-in page.
+          ) : !user ? (
+            <div className="mt-6 rounded-xl border border-[#d8ecdd] bg-[#F5FBF7] p-4 text-sm">
+              <div className="font-semibold text-[#390A5D]">Sign in first</div>
+              <p className="mt-1 text-[#5c4d72]">
+                Forgot your password? Ask your admin to reset it. Sign in with the temporary password they share, then come back here to set your own.
               </p>
               <Link
                 to="/auth"
-                className="mt-3 inline-flex h-9 items-center px-4 rounded-full bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-smooth"
+                search={{ next: "/reset-password" } as never}
+                className="mt-3 inline-flex h-9 items-center px-4 rounded-full bg-[#10662A] text-white text-sm font-semibold"
               >
-                Back to sign in
+                Sign in
               </Link>
             </div>
           ) : (
             <form onSubmit={onSubmit} className="mt-6 space-y-4">
               <label className="block">
-                <span className="text-sm font-medium">New password</span>
+                <span className="text-sm font-medium text-[#390A5D]">Current or temporary password</span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={current}
+                  onChange={(e) => setCurrent(e.target.value)}
+                  className="input-base mt-1.5"
+                  autoComplete="current-password"
+                  required
+                />
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-medium text-[#390A5D]">New password</span>
                 <div className="relative mt-1.5">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="input-base pr-10"
-                    placeholder="••••••••"
                     autoComplete="new-password"
+                    minLength={8}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-smooth"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800"
                     aria-label={showPassword ? "Hide password" : "Show password"}
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Use 8+ characters with a mix of letters, numbers & symbols.
-                </p>
+                <p className="mt-1 text-xs text-[#5c4d72]">At least 8 characters. Mix letters, numbers and symbols.</p>
               </label>
 
               <label className="block">
-                <span className="text-sm font-medium">Confirm password</span>
+                <span className="text-sm font-medium text-[#390A5D]">Confirm new password</span>
                 <input
                   type={showPassword ? "text" : "password"}
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
                   className="input-base mt-1.5"
-                  placeholder="••••••••"
                   autoComplete="new-password"
                   required
                 />
@@ -141,11 +134,14 @@ function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full h-11 rounded-full bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-smooth shadow-card disabled:opacity-60 inline-flex items-center justify-center gap-2"
+                className="w-full h-11 rounded-full bg-[#10662A] text-white font-semibold hover:bg-[#0d5523] disabled:opacity-60 inline-flex items-center justify-center gap-2"
               >
                 {submitting && <Loader2 className="size-4 animate-spin" />}
                 Update password
               </button>
+              <Link to="/dashboard" className="block text-center text-sm text-[#5c4d72] hover:text-[#10662A]">
+                Back to dashboard
+              </Link>
             </form>
           )}
         </div>

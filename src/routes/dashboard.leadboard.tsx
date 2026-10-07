@@ -27,7 +27,7 @@ import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/pro
 import { Link } from "@tanstack/react-router";
 import { useQuota } from "@/hooks/use-subscription";
 import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
-import { listCrmLeads, purchaseCrmLead, type CrmLead } from "@/lib/python-api";
+import { getCrmUser, listCrmLeads, purchaseCrmLead, type CrmLead } from "@/lib/python-api";
 import { ageLabel, gradeCode, gradeText, listingType } from "@/lib/lead-grades";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
@@ -213,8 +213,11 @@ function Leadboard() {
     }
   };
 
-  const recharge = async (_amount: number) => {
-    toast.info("Wallet recharge will move to Python CRM next.");
+  const recharge = async (amount: number) => {
+    const email = getCrmUser()?.email ?? "";
+    const text = `Hi RupeeDial, please add ₹${amount.toLocaleString("en-IN")} to my LeadBoard wallet. I will pay by UPI/bank transfer. CRM email: ${email}`;
+    window.open(`https://wa.me/917982953129?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+    toast.info("Send the WhatsApp message and pay — admin credits your wallet after confirming payment.");
   };
 
   const typeMap = useMemo(

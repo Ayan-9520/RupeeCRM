@@ -11,40 +11,34 @@ import { COURSES, CATEGORY_LABEL, LEVEL_LABEL, type CourseCategory, type CourseL
 export const Route = createFileRoute("/learn-earn/")({
   head: () => ({
     meta: [
-      { title: "Learn & Earn — Get certified, unlock premium leads | LeadMines Academy" },
-      { name: "description", content: "Free DSA certification across Personal Loan, Home Loan, Insurance & Credit Cards. Pass quizzes, earn badges, unlock premium leads + higher commissions." },
-      { property: "og:title", content: "LeadMines Academy — Learn → Get Certified → Earn More" },
-      { property: "og:description", content: "Free fintech distribution courses with badges, leaderboards & rewards. Built for India's DSAs." },
+      { title: "Learn & Earn — Free DSA certification | RupeeDial Academy" },
+      { name: "description", content: "Free DSA certification across Personal Loan, Business Loan, Home Loan, Insurance & Credit Cards. Read the lessons, pass the quiz, download your certificate." },
+      { property: "og:title", content: "RupeeDial Academy — Learn → Get Certified → Sell Better" },
+      { property: "og:description", content: "Free loan and insurance distribution courses with quizzes, badges and downloadable certificates." },
     ],
   }),
   component: LearnEarnLanding,
 });
 
 const HOW_STEPS = [
-  { icon: BookOpen, title: "Learn", body: "Bite-sized modules, scripts and real call recordings — built by top DSAs." },
-  { icon: Award, title: "Get certified", body: "Pass a quick quiz and earn a verifiable badge on your public profile." },
-  { icon: TrendingUp, title: "Earn more", body: "Unlock premium leads, higher commission slabs and tier upgrades." },
+  { icon: BookOpen, title: "Learn", body: "Short modules on eligibility, documents, pitch scripts and objection handling." },
+  { icon: Award, title: "Get certified", body: "Pass a 10-question quiz with 70% or more and download your certificate." },
+  { icon: TrendingUp, title: "Sell better", body: "Use the scripts and checklists on your next call to move more files to disbursal." },
 ];
 
 const BENEFITS = [
-  { icon: Crown, title: "Premium leads", body: "Certified-only access to high-intent leads with verified CIBIL." },
-  { icon: Zap, title: "+0.5–1% commission", body: "Stacked payout slabs the moment you certify in a product." },
-  { icon: ShieldCheck, title: "Reputation tier", body: "Badges feed your DSA score — fast-track Bronze → Diamond." },
-  { icon: Trophy, title: "Monthly leaderboard", body: "Top learners share a ₹1L bonus pool every month." },
+  { icon: ShieldCheck, title: "Fewer rejections", body: "Know lender rules and document checklists before you log a file." },
+  { icon: Zap, title: "Ready scripts", body: "Openers, objection handlers and follow-ups you can use right away." },
+  { icon: Crown, title: "Badges & points", body: "Every passed quiz adds a badge and points to your RupeeDial profile." },
+  { icon: Trophy, title: "PDF certificate", body: "A numbered certificate you can download and share with customers." },
 ];
 
-const TESTIMONIALS = [
-  { name: "Ravi K.", city: "Pune", text: "Did the HL course in a weekend, unlocked pre-approved leads on Monday — closed ₹42L by Friday.", badge: "HL Certified · Gold tier" },
-  { name: "Anjali S.", city: "Bengaluru", text: "The objection-handling scripts alone doubled my conversion. Best free training I've taken.", badge: "Sales Pro · Platinum" },
-  { name: "Mohit R.", city: "Lucknow", text: "Compliance badge got me on the leadboard the same day. No paperwork drama.", badge: "Compliance Verified" },
-];
-
-const TOP_LEARNERS = [
-  { rank: 1, name: "Priya M.", city: "Mumbai", points: 4250, badges: 7 },
-  { rank: 2, name: "Arun V.", city: "Chennai", points: 3920, badges: 6 },
-  { rank: 3, name: "Sneha P.", city: "Delhi", points: 3680, badges: 6 },
-  { rank: 4, name: "Karan J.", city: "Ahmedabad", points: 3150, badges: 5 },
-  { rank: 5, name: "Divya N.", city: "Kolkata", points: 2980, badges: 5 },
+const LEVELS = [
+  { name: "Starter", points: "0+" },
+  { name: "Bronze", points: "300+" },
+  { name: "Silver", points: "800+" },
+  { name: "Gold", points: "1,400+" },
+  { name: "Platinum", points: "2,110+" },
 ];
 
 function LearnEarnLanding() {
@@ -78,28 +72,28 @@ function LearnEarnLanding() {
             <div className="max-w-3xl">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white/90 text-xs font-medium animate-fade-up">
                 <Sparkles className="size-3.5 text-accent" />
-                LeadMines Academy · Free for verified DSAs
+                RupeeDial Academy · Free for partners
               </div>
               <h1 className="mt-6 font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight animate-fade-up">
-                Learn → Get Certified → <span className="text-gradient">Earn More</span>
+                Learn → Get Certified → <span className="text-gradient">Sell Better</span>
               </h1>
               <p className="mt-5 text-lg text-white/80 max-w-2xl animate-fade-up">
-                India's first earn-while-you-learn academy for loan, insurance and card distributors. Pass quick courses, unlock premium leads, climb the tier ladder and stack commissions.
+                Free training for loan, insurance and card distributors. Read short courses, pass the quiz, and download a certificate with your name on it.
               </p>
               <div className="mt-8 flex flex-wrap gap-3 animate-fade-up">
                 <a href="#courses" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-mint-gradient text-primary font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
                   Start learning <ArrowRight className="size-4" />
                 </a>
-                <Link to="/auth" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium hover:bg-white/20 transition-smooth">
+                <Link to="/become-partner" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium hover:bg-white/20 transition-smooth">
                   Become a partner
                 </Link>
               </div>
 
               <div className="mt-12 grid grid-cols-3 gap-4 max-w-xl">
                 {[
-                  { k: "8+", v: "Live courses" },
-                  { k: "₹1L", v: "Monthly bonus pool" },
-                  { k: "5★", v: "Avg DSA rating" },
+                  { k: String(COURSES.length), v: "Live courses" },
+                  { k: "70%", v: "Pass mark" },
+                  { k: "₹0", v: "Course fee" },
                 ].map((s) => (
                   <div key={s.v} className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md p-4">
                     <div className="font-display text-2xl font-bold text-white">{s.k}</div>
@@ -116,7 +110,7 @@ function LearnEarnLanding() {
           <div className="max-w-7xl mx-auto px-5 lg:px-8">
             <div className="text-center max-w-2xl mx-auto">
               <div className="text-xs uppercase tracking-[0.18em] text-accent font-semibold">How it works</div>
-              <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold">Three steps to a higher payout</h2>
+                <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold">Three steps to certified</h2>
             </div>
             <div className="mt-12 grid md:grid-cols-3 gap-6">
               {HOW_STEPS.map((s, i) => (
@@ -231,9 +225,9 @@ function LearnEarnLanding() {
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
                 <div className="text-xs uppercase tracking-[0.18em] text-accent font-semibold">Why certify</div>
-                <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold">Every badge converts to real money in your wallet.</h2>
+                <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold">Better files, faster disbursals.</h2>
                 <p className="mt-4 text-muted-foreground">
-                  Certification isn't a vanity metric on LeadMines. Each badge unlocks measurable advantages — premium leads, higher commission slabs and faster tier upgrades.
+                  Commission comes from disbursed cases. The academy helps you get there — right customer, right lender, complete documents, first time.
                 </p>
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
@@ -251,58 +245,22 @@ function LearnEarnLanding() {
           </div>
         </section>
 
-        {/* TESTIMONIALS + LEADERBOARD */}
+        {/* LEVELS */}
         <section className="py-20 lg:py-24 bg-secondary/40">
-          <div className="max-w-7xl mx-auto px-5 lg:px-8 grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 space-y-5">
-              <div className="text-xs uppercase tracking-[0.18em] text-accent font-semibold">From the field</div>
-              <h2 className="font-display text-3xl lg:text-4xl font-bold">DSAs are already cashing in.</h2>
-              <div className="grid sm:grid-cols-2 gap-5 mt-4">
-                {TESTIMONIALS.map((t) => (
-                  <div key={t.name} className="rounded-3xl bg-card border border-border p-6 shadow-card">
-                    <div className="flex gap-0.5 text-accent">
-                      {Array.from({ length: 5 }).map((_, i) => <Star key={i} className="size-4 fill-accent" />)}
-                    </div>
-                    <p className="text-sm text-foreground mt-3 leading-relaxed">"{t.text}"</p>
-                    <div className="mt-4 pt-4 border-t border-dashed border-border">
-                      <div className="font-semibold text-sm">{t.name} · {t.city}</div>
-                      <div className="text-xs text-accent font-medium mt-0.5">{t.badge}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+          <div className="max-w-7xl mx-auto px-5 lg:px-8">
+            <div className="text-center max-w-2xl mx-auto">
+              <div className="text-xs uppercase tracking-[0.18em] text-accent font-semibold">Levels</div>
+              <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold">Points add up as you certify.</h2>
+              <p className="mt-3 text-muted-foreground">Each course quiz you pass adds its points once. Your level shows on your Rewards page inside the CRM.</p>
             </div>
-
-            {/* Top learners */}
-            <div className="rounded-3xl bg-card border border-border p-6 shadow-card h-fit">
-              <div className="flex items-center gap-2">
-                <Trophy className="size-5 text-accent" />
-                <h3 className="font-display font-bold">Top learners this month</h3>
-              </div>
-              <div className="mt-5 space-y-2">
-                {TOP_LEARNERS.map((l) => (
-                  <div key={l.rank} className="flex items-center gap-3 p-3 rounded-2xl hover:bg-muted/50 transition-smooth">
-                    <div className={`size-9 rounded-xl grid place-items-center font-bold text-sm ${
-                      l.rank === 1 ? "bg-amber-400/20 text-amber-700 dark:text-amber-300" :
-                      l.rank === 2 ? "bg-slate-400/20 text-slate-700 dark:text-slate-300" :
-                      l.rank === 3 ? "bg-orange-500/20 text-orange-700 dark:text-orange-300" :
-                      "bg-muted text-muted-foreground"
-                    }`}>
-                      {l.rank}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-sm truncate">{l.name}</div>
-                      <div className="text-xs text-muted-foreground">{l.city} · {l.badges} badges</div>
-                    </div>
-                    <div className="text-sm font-bold text-accent">{l.points.toLocaleString("en-IN")}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-5 p-4 rounded-2xl bg-mint-gradient text-primary">
-                <div className="text-xs font-semibold uppercase tracking-wider opacity-80">Bonus pool</div>
-                <div className="font-display text-2xl font-bold mt-1">₹1,00,000 / month</div>
-                <div className="text-xs opacity-80 mt-0.5">Shared by the top 50 learners</div>
-              </div>
+            <div className="mt-10 grid grid-cols-2 sm:grid-cols-5 gap-4">
+              {LEVELS.map((l, i) => (
+                <div key={l.name} className="rounded-3xl bg-card border border-border p-6 text-center shadow-card">
+                  <Trophy className={`size-6 mx-auto ${i === LEVELS.length - 1 ? "text-amber-500" : "text-accent"}`} />
+                  <div className="mt-3 font-display text-lg font-bold">{l.name}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{l.points} pts</div>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -314,17 +272,17 @@ function LearnEarnLanding() {
               <div className="absolute inset-0 grid-bg opacity-30" />
               <div className="relative">
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white/90 text-xs font-medium">
-                  <CheckCircle2 className="size-3.5 text-accent" /> Free for verified DSAs
+                  <CheckCircle2 className="size-3.5 text-accent" /> Free for RupeeDial partners
                 </div>
                 <h2 className="mt-5 font-display text-3xl lg:text-5xl font-bold text-white">
-                  Your next ₹10L month starts with a 12-minute lesson.
+                  Your next disbursal starts with a short lesson.
                 </h2>
                 <p className="mt-4 text-white/80 max-w-xl mx-auto">
-                  Sign up free, take your first course tonight, walk into tomorrow's call as a Certified Partner.
+                  Join as a partner, take your first course tonight, and walk into tomorrow's call as a Certified Partner.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3 justify-center">
-                  <Link to="/auth" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-mint-gradient text-primary font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
-                    Create free account <ArrowRight className="size-4" />
+                  <Link to="/become-partner" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-mint-gradient text-primary font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
+                    Become a partner <ArrowRight className="size-4" />
                   </Link>
                   <a href="#courses" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium hover:bg-white/20 transition-smooth">
                     Browse courses

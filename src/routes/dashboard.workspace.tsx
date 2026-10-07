@@ -20,10 +20,10 @@ export const Route = createFileRoute("/dashboard/workspace")({
 
 function WorkspaceSettings() {
   const { current, members, canManage, loading, refresh, updateWorkspaceName } = useWorkspace();
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
-  const admin = isPlatformAdmin(user?.role ?? null);
+  const admin = isPlatformAdmin(role);
 
   useEffect(() => {
     if (current) setName(current.name);

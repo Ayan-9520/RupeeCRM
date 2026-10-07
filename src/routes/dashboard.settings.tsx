@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Loader2, Save, Share2, Copy, ExternalLink } from "lucide-react";
+import { Loader2, Save, Share2, Copy, ExternalLink, KeyRound } from "lucide-react";
 import { buildReferralLink, APPLY_PRODUCTS } from "@/lib/referrals";
 import { crmMe, getCrmUser, updateCrmProfile, getPayoutBank, savePayoutBank, type CrmUser } from "@/lib/python-api";
 
@@ -87,9 +87,17 @@ function SettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="font-display text-2xl lg:text-3xl font-bold text-[#390A5D]">Settings</h1>
-        <p className="text-[#5c4d72] mt-1">Manage your CRM profile and referral preferences.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl lg:text-3xl font-bold text-[#390A5D]">Settings</h1>
+          <p className="text-[#5c4d72] mt-1">Manage your CRM profile and referral preferences.</p>
+        </div>
+        <Link
+          to="/reset-password"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 text-xs font-semibold text-[#390A5D] hover:border-[#10662A]/40"
+        >
+          <KeyRound className="size-3.5 text-[#10662A]" /> Change password
+        </Link>
       </div>
 
       <form onSubmit={save} className="rounded-2xl bg-white border border-[#d8ecdd] p-6 shadow-[0_4px_20px_rgba(16,102,42,0.05)] space-y-4">

@@ -10,13 +10,13 @@ function AdminMarketingMediaPage() {
   return (
     <CrmPageHub
       title="Marketing media"
-      description="Product image library used Supabase storage. Media uploads are paused."
+      description="Partners create branded images with the post and visiting-card generators. A shared image library needs cloud storage."
       links={[
         { label: "Marketing posts", to: "/dashboard/marketing/posts", desc: "Text templates" },
         { label: "Reels", to: "/dashboard/marketing/reels", desc: "Short video scripts" },
         { label: "Admin marketing", to: "/dashboard/admin/marketing", desc: "Template overview" },
       ]}
-      tip="Share text templates with partners until image CDN is reconnected."
+      tip="Image uploads can be turned on once a storage bucket (for example S3 or Cloudflare R2) is connected."
     />
   );
 }

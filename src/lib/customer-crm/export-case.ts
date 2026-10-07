@@ -26,7 +26,7 @@ export function exportCasePdf(opts: {
     }
   };
 
-  line("LeadMines — Case Summary", 14, true);
+  line("RupeeDial — Case Summary", 14, true);
   line(ws.profile.full_name ?? "Customer", 12, true);
   line(`Stage: ${pipelineStage.replace(/_/g, " ")}`, 10);
   line(`Mobile: ${ws.profile.mobile ?? "—"}`, 10);

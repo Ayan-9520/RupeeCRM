@@ -87,7 +87,7 @@ export const COURSES: Course[] = [
     duration_min: 64,
     lessons: 6,
     reward_points: 250,
-    unlock: "Premium PL leads + 0.5% extra commission",
+    unlock: "PL Certified badge + downloadable certificate",
     badge: "PL Certified",
     hero_color: "from-blue-500/30 to-blue-500/5",
     outcomes: [
@@ -106,7 +106,7 @@ export const COURSES: Course[] = [
     duration_min: 72,
     lessons: 6,
     reward_points: 300,
-    unlock: "BL high-ticket leads + priority lender queue",
+    unlock: "BL Certified badge + downloadable certificate",
     badge: "BL Certified",
     hero_color: "from-cyan-500/30 to-cyan-500/5",
     outcomes: [
@@ -125,7 +125,7 @@ export const COURSES: Course[] = [
     duration_min: 95,
     lessons: 6,
     reward_points: 400,
-    unlock: "HL pre-approved leads + 1% extra commission",
+    unlock: "HL Certified badge + downloadable certificate",
     badge: "HL Certified",
     hero_color: "from-indigo-500/30 to-indigo-500/5",
     outcomes: [
@@ -144,7 +144,7 @@ export const COURSES: Course[] = [
     duration_min: 80,
     lessons: 6,
     reward_points: 350,
-    unlock: "LAP leads ≥ ₹50L + diamond-tier payout",
+    unlock: "LAP Certified badge + downloadable certificate",
     badge: "LAP Certified",
     hero_color: "from-violet-500/30 to-violet-500/5",
     outcomes: [
@@ -163,7 +163,7 @@ export const COURSES: Course[] = [
     duration_min: 70,
     lessons: 6,
     reward_points: 280,
-    unlock: "Health pre-qualified leads + renewal commission share",
+    unlock: "Health Certified badge + downloadable certificate",
     badge: "Health Certified",
     hero_color: "from-emerald-500/30 to-emerald-500/5",
     outcomes: [
@@ -182,7 +182,7 @@ export const COURSES: Course[] = [
     duration_min: 50,
     lessons: 6,
     reward_points: 200,
-    unlock: "Premium card leads + ₹500 bonus per activation",
+    unlock: "Card Certified badge + downloadable certificate",
     badge: "Card Certified",
     hero_color: "from-orange-500/30 to-orange-500/5",
     outcomes: [
@@ -201,7 +201,7 @@ export const COURSES: Course[] = [
     duration_min: 40,
     lessons: 5,
     reward_points: 150,
-    unlock: "Verified DSA badge — required to access leadboard",
+    unlock: "Compliance Verified badge + downloadable certificate",
     badge: "Compliance Verified",
     hero_color: "from-slate-500/30 to-slate-500/5",
     outcomes: [
@@ -220,7 +220,7 @@ export const COURSES: Course[] = [
     duration_min: 55,
     lessons: 6,
     reward_points: 180,
-    unlock: "+10% lead-allocation priority for 30 days",
+    unlock: "Sales Pro badge + downloadable certificate",
     badge: "Sales Pro",
     hero_color: "from-amber-500/30 to-amber-500/5",
     outcomes: [

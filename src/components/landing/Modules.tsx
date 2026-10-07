@@ -31,7 +31,7 @@ export function Modules() {
             Everything a DSA partner network needs.
           </h2>
           <p className="mt-4 text-muted-foreground text-lg">
-            Stop stitching together six tools. LeadMines ships every workflow your team runs — under one login.
+            Stop stitching together six tools. RupeeDial One ships every workflow your team runs — under one login.
           </p>
         </div>
 

@@ -8,9 +8,9 @@ import { submitPartnerApplication, uploadKycDoc, PRODUCT_OPTIONS } from "@/lib/p
 export const Route = createFileRoute("/become-partner")({
   head: () => ({
     meta: [
-      { title: "Become a Partner — LeadMines DSA Network" },
+      { title: "Become a Partner — RupeeDial Partner Network" },
       { name: "description", content: "Join 10,000+ DSAs earning lakhs every month. Apply in 3 minutes — get verified, get leads, get paid." },
-      { property: "og:title", content: "Become a LeadMines DSA Partner" },
+      { property: "og:title", content: "Become a RupeeDial Partner" },
       { property: "og:description", content: "Verified leads, daily payouts, marketing tools and AI training. Apply now." },
     ],
   }),
@@ -172,7 +172,7 @@ function BecomePartnerPage() {
             </div>
             <div className="leading-tight">
               <div className="font-display font-bold text-sm">RupeeDial</div>
-              <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground -mt-0.5">by MoneyMines</div>
+              <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground -mt-0.5">Partner network</div>
             </div>
           </Link>
           <Link to="/auth" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">

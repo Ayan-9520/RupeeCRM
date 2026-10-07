@@ -268,8 +268,8 @@ function DashboardHome() {
               <div className="p-8 text-center">
                 <p className="text-sm text-[#5c4d72] mb-4">
                   {apiUp === false
-                    ? "Python CRM API is offline. Run docker compose up in the backend folder."
-                    : "Sign in to the CRM API once to stream rupeedial.com form leads here."}
+                    ? "The CRM server is not responding right now. Refresh in a minute."
+                    : "Sign in again to stream rupeedial.com form leads here."}
                 </p>
                 <Link
                   to="/dashboard/website-leads"

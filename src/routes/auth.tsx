@@ -24,6 +24,10 @@ export const Route = createFileRoute("/auth")({
       },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>): { next?: string } => {
+    const next = typeof search.next === "string" ? search.next : undefined;
+    return next && next.startsWith("/") && !next.startsWith("//") ? { next } : {};
+  },
   component: AuthPage,
 });
 
@@ -54,17 +58,12 @@ function AuthPage() {
   const [role, setRole] = useState<AppRole>("dsa");
   const [showPassword, setShowPassword] = useState(false);
   const [forgotOpen, setForgotOpen] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-
-  const onForgot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    toast.info("Password reset is managed by admin. Contact support.");
-    setForgotOpen(false);
-  };
+  const { next } = Route.useSearch();
+  const destination = next ?? "/dashboard";
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
-  }, [user, loading, navigate]);
+    if (!loading && user) navigate({ to: destination as "/dashboard" });
+  }, [user, loading, navigate, destination]);
 
   if (loading || (!loading && user)) {
     return (
@@ -93,7 +92,7 @@ function AuthPage() {
       }
       await signIn(parsed.data.email.trim().toLowerCase(), parsed.data.password);
       toast.success("Welcome to RupeeDial One");
-      setTimeout(() => navigate({ to: "/dashboard" }), 300);
+      setTimeout(() => navigate({ to: destination as "/dashboard" }), 300);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Invalid login credentials");
     } finally {
@@ -274,10 +273,7 @@ function AuthPage() {
                     <div className="mt-1.5 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => {
-                          setForgotEmail(email);
-                          setForgotOpen((v) => !v);
-                        }}
+                        onClick={() => setForgotOpen((v) => !v)}
                         className="text-[11px] text-[#10662A] font-bold hover:underline"
                       >
                         Forgot password?
@@ -289,21 +285,13 @@ function AuthPage() {
                 </Field>
 
                 {mode === "signin" && forgotOpen && (
-                  <div className="flex gap-2">
-                    <input
-                      type="email"
-                      value={forgotEmail}
-                      onChange={(e) => setForgotEmail(e.target.value)}
-                      className="rd-auth-input flex-1"
-                      placeholder="Email for reset"
-                    />
-                    <button
-                      type="button"
-                      onClick={onForgot}
-                      className="h-11 px-4 rounded-xl bg-[#10662A] text-white text-xs font-bold shrink-0"
-                    >
-                      Send
-                    </button>
+                  <div className="rounded-xl border border-[#d8ecdd] bg-[#f5fcf7] p-3 text-xs text-[#5c4d72]">
+                    <p className="font-semibold text-[#390A5D]">Reset by your admin</p>
+                    <p className="mt-1">
+                      Ask your RupeeDial admin or call support at{" "}
+                      <a href="tel:+917982953129" className="font-semibold text-[#10662A]">+91 79829 53129</a>{" "}
+                      to get a temporary password. Sign in with it, then set your own from Settings → Change password.
+                    </p>
                   </div>
                 )}
 

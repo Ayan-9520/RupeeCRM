@@ -17,7 +17,7 @@ const ACADEMY = [
   { id: "eligibility", title: "Eligibility", body: "The website check compares indicative offers. It does not sanction. A case becomes eligible in your pipeline only after income and requirement are confirmed." },
   { id: "sales", title: "Sales training", body: "Use the call scripts, log a disposition, and move a real case only when the customer agrees to the next document step." },
   { id: "compliance", title: "Compliance", body: "Take consent before you call or message. Do not promise a bank, a rate, or a disbursal. Do not show a marketplace phone before purchase." },
-  { id: "certification", title: "Certification", body: "Finish the product lessons, then certificates are issued from the Certificates page once training sync is on." },
+  { id: "certification", title: "Certification", body: "Finish a course, pass its 10-question quiz with 70% or more, and download the certificate from the Certificates page." },
 ] as const;
 
 function Training() {
@@ -90,6 +90,14 @@ function Training() {
             <p className="text-xs text-[#5c4d72] mt-1 line-clamp-2">{c.tagline}</p>
             <div className="mt-3 flex items-center gap-1.5 text-xs text-[#5c4d72]">
               <Clock className="size-3.5" /> {c.duration_min} min · {c.lessons} lessons
+            </div>
+            <div className="mt-4 flex gap-2 text-xs font-semibold">
+              <Link to="/learn-earn/$slug" params={{ slug: c.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D]">
+                Lessons
+              </Link>
+              <Link to="/learn-quiz/$slug" params={{ slug: c.slug }} className="rounded-lg bg-[#10662A] px-3 py-1.5 text-white">
+                Take quiz
+              </Link>
             </div>
           </div>
         ))}

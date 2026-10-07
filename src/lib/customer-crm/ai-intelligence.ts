@@ -145,7 +145,7 @@ export function generateMessageDraft(
 ): string {
   const name = workspace.profile.full_name ?? "Customer";
   const product = workspace.loanRequirements[0]?.product_type ?? "loan";
-  const vars = { name, dsa: "LeadMines", product };
+  const vars = { name, dsa: "RupeeDial", product };
 
   if (channel === "whatsapp") {
     if (purpose === "docs")

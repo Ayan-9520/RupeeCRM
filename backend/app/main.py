@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
+    admin_overview,
     admin_trust,
     assistant,
     auth,
@@ -10,6 +11,7 @@ from app.api import (
     commission,
     customer,
     leads,
+    learn,
     partner_profile,
     network,
     partners,
@@ -52,6 +54,8 @@ app.include_router(commission.router)
 app.include_router(admin_trust.router)
 app.include_router(business.public_router)
 app.include_router(business.router)
+app.include_router(learn.router)
+app.include_router(admin_overview.router)
 
 
 @app.get("/health")

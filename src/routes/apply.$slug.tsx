@@ -9,7 +9,17 @@ import {
 } from "lucide-react";
 import { API_URL } from "@/lib/python-api";
 
-type LoanType = "personal" | "home" | "business" | "education" | "vehicle" | "gold" | "other";
+type LoanType =
+  | "personal"
+  | "home"
+  | "business"
+  | "education"
+  | "vehicle"
+  | "gold"
+  | "other"
+  | "credit_card"
+  | "insurance"
+  | "mutual_fund";
 type ProductCategory = "loan" | "insurance" | "credit_card" | "investment";
 
 const PUBLIC_API_KEY =

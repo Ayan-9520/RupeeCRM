@@ -116,7 +116,7 @@ function BillingPage() {
       <div>
         <h1 className="font-display text-2xl font-bold text-[#390A5D]">Billing</h1>
         <p className="text-sm text-[#5c4d72] mt-1">
-          Plans, lead credits wallet, and team seats. Razorpay checkout comes next — activate is manual for now.
+          Plans, lead credits wallet, and team seats. Pay by UPI or bank transfer, then RupeeDial activates your plan — usually the same day.
         </p>
       </div>
 
@@ -213,18 +213,27 @@ function BillingPage() {
                     </li>
                   ))}
               </ul>
-              <button
-                type="button"
-                disabled={!!busy || active}
-                onClick={() => void onActivate(p.id)}
-                className="mt-4 w-full rounded-xl bg-[#10662A] text-white text-sm font-semibold py-2 disabled:opacity-50 hover:bg-[#0d5222]"
-              >
-                {busy === `activate-${p.id}`
-                  ? "Activating…"
-                  : active
-                    ? "Active"
-                    : "Activate (manual)"}
-              </button>
+              {isAdmin || active ? (
+                <button
+                  type="button"
+                  disabled={!!busy || active}
+                  onClick={() => void onActivate(p.id)}
+                  className="mt-4 w-full rounded-xl bg-[#10662A] text-white text-sm font-semibold py-2 disabled:opacity-50 hover:bg-[#0d5222]"
+                >
+                  {busy === `activate-${p.id}` ? "Activating…" : active ? "Active" : "Activate"}
+                </button>
+              ) : (
+                <a
+                  href={`https://wa.me/917982953129?text=${encodeURIComponent(
+                    `Hi RupeeDial, I want to activate the ${p.name} plan (${cycle}, ₹${price.toLocaleString("en-IN")}). My CRM email: ${meEmail || ""}`,
+                  )}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-4 block w-full rounded-xl bg-[#10662A] text-center text-white text-sm font-semibold py-2 hover:bg-[#0d5222]"
+                >
+                  Request activation
+                </a>
+              )}
             </div>
           );
         })}

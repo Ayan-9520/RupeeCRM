@@ -16,7 +16,7 @@ interface Props {
   onDownloaded?: () => void;
 }
 
-export function ShareBar({ targetRef, shareText, shareUrl, filename = "leadmines-post.png", onShared, onDownloaded }: Props) {
+export function ShareBar({ targetRef, shareText, shareUrl, filename = "rupeedial-post.png", onShared, onDownloaded }: Props) {
   const busy = useRef(false);
 
   const snapshot = async (): Promise<string | null> => {

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, LogIn, RefreshCw, Search, Globe, Phone, MapPin, IndianRupee } from "lucide-react";
 import {
-  API_URL,
   clearCrmSession,
   crmHealth,
   crmLogin,
@@ -114,7 +113,7 @@ function WebsiteLeadsPage() {
             Website Leads
           </h1>
           <p className="text-[#5c4d72] mt-1 text-sm">
-            Leads from rupeedial.com forms via Python CRM API ({API_URL})
+            Leads submitted through rupeedial.com forms, synced live.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
