@@ -10,8 +10,15 @@ from app.api import (
     business,
     commission,
     customer,
+    customer_activity,
+    customer_documents,
+    customer_finance,
+    customer_los,
+    customer_ops,
+    customer_workspace,
     leads,
     learn,
+    loan_cases,
     partner_profile,
     network,
     partners,
@@ -48,6 +55,12 @@ app.include_router(partner_profile.router)
 app.include_router(payouts.router)
 app.include_router(network.router)
 app.include_router(customer.router)
+app.include_router(customer_workspace.router)
+app.include_router(customer_documents.router)
+app.include_router(customer_activity.router)
+app.include_router(customer_los.router)
+app.include_router(customer_finance.router)
+app.include_router(customer_ops.router)
 app.include_router(assistant.router)
 app.include_router(pipeline.router)
 app.include_router(commission.router)
@@ -55,6 +68,7 @@ app.include_router(admin_trust.router)
 app.include_router(business.public_router)
 app.include_router(business.router)
 app.include_router(learn.router)
+app.include_router(loan_cases.router)
 app.include_router(admin_overview.router)
 
 

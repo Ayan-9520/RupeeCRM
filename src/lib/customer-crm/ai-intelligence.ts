@@ -123,18 +123,6 @@ export function generateAiInsights(ctx: {
     });
   }
 
-  if (workspace.profile.salary_credit_date) {
-    insights.push({
-      insight_type: "followup_suggestion",
-      channel: "call",
-      title: "Call after salary credit",
-      content: `Salary credits around day ${workspace.profile.salary_credit_date} — ideal time for income verification call.`,
-      priority_score: 60,
-      intent_tags: ["salary_pending", "high_intent"],
-      suggested_action: `Call on day ${workspace.profile.salary_credit_date}`,
-    });
-  }
-
   return insights.slice(0, 8);
 }
 

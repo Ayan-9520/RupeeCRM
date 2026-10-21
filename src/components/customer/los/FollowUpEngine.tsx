@@ -6,8 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SectionShell } from "../shared/SectionShell";
 import { FOLLOWUP_NOTE_TYPES } from "@/lib/customer-crm/workflow-constants";
-import { addTimelineEntry, insertFollowup, loadFollowups, type CustomerFollowup } from "@/lib/customer-crm/phase3-api";
-import { supabase } from "@/integrations/supabase/client";
+import { insertFollowup, loadFollowups, type CustomerFollowup } from "@/lib/customer-crm/phase3-api";
+import { patchMyLead } from "@/lib/python-api";
 import type { CustomerProfile } from "@/lib/customer-crm/types";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
@@ -27,6 +27,7 @@ export function FollowUpEngine({ profile }: { profile: CustomerProfile }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     const res = await loadFollowups(profile.lead_purchase_id);
+    if (res.error) toast.error(res.error);
     setRows(res.rows);
     setLoading(false);
   }, [profile.lead_purchase_id]);
@@ -39,7 +40,7 @@ export function FollowUpEngine({ profile }: { profile: CustomerProfile }) {
 
   const save = async () => {
     if (!user || !notes.trim()) return;
-    await insertFollowup({
+    const saved = await insertFollowup({
       customer_profile_id: profile.id,
       lead_purchase_id: profile.lead_purchase_id,
       dsa_id: user.id,
@@ -52,24 +53,24 @@ export function FollowUpEngine({ profile }: { profile: CustomerProfile }) {
       next_action: nextAction || null,
       completed: false,
       note_type: noteType,
-    } as never);
+    });
+    if (saved.error) {
+      toast.error(saved.error.message);
+      return;
+    }
     const iso = date ? new Date(`${date}T${time || "10:00"}`).toISOString() : null;
     if (iso) {
-      await supabase.from("lead_purchases").update({ next_followup_at: iso }).eq("id", profile.lead_purchase_id);
+      try {
+        await patchMyLead(profile.lead_purchase_id, { next_followup_at: iso });
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Follow-up was saved, but the next date was not");
+        void refresh();
+        return;
+      }
     }
-    await addTimelineEntry({
-      customer_profile_id: profile.id,
-      lead_purchase_id: profile.lead_purchase_id,
-      dsa_id: user.id,
-      activity_type: noteType,
-      title: `${noteType} follow-up`,
-      body: notes.trim(),
-      metadata: { outcome, next_action: nextAction },
-      created_by: user.id,
-    });
     toast.success("Follow-up saved");
     setNotes("");
-    refresh();
+    void refresh();
   };
 
   return (
@@ -121,7 +122,7 @@ export function FollowUpEngine({ profile }: { profile: CustomerProfile }) {
         <ul className="mt-6 space-y-2 max-h-48 overflow-y-auto">
           {rows.map((r) => (
             <li key={r.id} className="text-xs border-b border-border/60 pb-2">
-              <span className="text-muted-foreground">{r.followup_date ?? "—"}</span> · {(r as { note_type?: string }).note_type ?? "note"}
+              <span className="text-muted-foreground">{r.followup_date ?? "—"}</span> · {r.note_type ?? "note"}
               <p className="mt-0.5">{r.discussion_notes}</p>
             </li>
           ))}

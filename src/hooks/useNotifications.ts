@@ -12,12 +12,14 @@ export function useNotifications() {
   const { user } = useAuth();
   const [rows, setRows] = useState<NotificationRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const res = await loadNotifications(user.id);
-    setRows(res.rows);
+    setError(res.error ?? null);
+    if (!res.error) setRows(res.rows);
     setLoading(false);
   }, [user]);
 
@@ -28,15 +30,23 @@ export function useNotifications() {
   }, [refresh]);
 
   const markRead = async (id: string) => {
-    await markNotificationRead(id);
+    const res = await markNotificationRead(id);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
     setRows((p) => p.map((r) => (r.id === id ? { ...r, read_at: new Date().toISOString() } : r)));
   };
 
   const markAllRead = async () => {
     if (!user) return;
-    await markAllNotificationsRead(user.id);
+    const res = await markAllNotificationsRead(user.id);
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
     setRows((p) => p.map((r) => ({ ...r, read_at: r.read_at ?? new Date().toISOString() })));
   };
 
-  return { rows, loading, unread: unreadCount(rows), refresh, markRead, markAllRead };
+  return { rows, loading, error, unread: unreadCount(rows), refresh, markRead, markAllRead };
 }

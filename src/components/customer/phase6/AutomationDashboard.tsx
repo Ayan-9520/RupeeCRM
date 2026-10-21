@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, Cog, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { loadAutomationLogs, loadAutomationRules, toggleAutomationRule } from "@/lib/customer-crm/automation-engine";
 import { DEFAULT_AUTOMATION_RULES } from "@/lib/customer-crm/phase6-constants";
@@ -12,6 +13,7 @@ export function AutomationDashboard() {
   const [rules, setRules] = useState<Awaited<ReturnType<typeof loadAutomationRules>>["rows"]>([]);
   const [logs, setLogs] = useState<Awaited<ReturnType<typeof loadAutomationLogs>>["rows"]>([]);
   const [loading, setLoading] = useState(true);
+  const [logError, setLogError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -20,6 +22,7 @@ export function AutomationDashboard() {
       const [r, l] = await Promise.all([loadAutomationRules(user.id), loadAutomationLogs(user.id)]);
       setRules(r.rows);
       setLogs(l.rows);
+      setLogError("error" in l ? l.error ?? null : null);
       setLoading(false);
     })();
   }, [user]);
@@ -70,7 +73,10 @@ export function AutomationDashboard() {
                     {"enabled" in r && r.id && typeof r.enabled === "boolean" && (
                       <Switch
                         checked={r.enabled}
-                        onCheckedChange={(v) => toggleAutomationRule(r.id as string, v).then(() => loadAutomationRules(user!.id).then((x) => setRules(x.rows)))}
+                        onCheckedChange={async (v) => {
+                          const res = await toggleAutomationRule(r.id as string, v);
+                          if (res.error) toast.error(res.error.message);
+                        }}
                       />
                     )}
                   </li>
@@ -80,7 +86,9 @@ export function AutomationDashboard() {
           </section>
           <section className="rounded-2xl border border-border bg-card p-4">
             <h2 className="font-semibold mb-3">Recent automation logs</h2>
-            {logs.length === 0 ? (
+            {logError ? (
+              <p className="text-sm text-destructive">{logError}</p>
+            ) : logs.length === 0 ? (
               <p className="text-sm text-muted-foreground">No automation runs yet</p>
             ) : (
               <ul className="space-y-2 max-h-64 overflow-y-auto text-xs">

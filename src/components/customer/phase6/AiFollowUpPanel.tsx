@@ -56,7 +56,8 @@ export function AiFollowUpPanel({
       latestFollowupNote: fu.rows[0]?.discussion_notes ?? undefined,
     });
     if (generated.length) {
-      await persistAiInsights(profile.id, profile.lead_purchase_id, profile.dsa_id, user.id, generated);
+      const saved = await persistAiInsights(profile.id, profile.lead_purchase_id, profile.dsa_id, user.id, generated);
+      if (saved.error) toast.error(saved.error);
     }
     await loadOnly();
   }, [profile, workspace, eligibility, pipelineStage, pendingDocs, user, loadOnly]);
@@ -119,7 +120,12 @@ export function AiFollowUpPanel({
                   ))}
                 </div>
               </div>
-              <Button type="button" size="icon" variant="ghost" className="shrink-0" onClick={() => dismissAiInsight(ins.id).then(refresh)}>
+              <Button type="button" size="icon" variant="ghost" className="shrink-0" onClick={() =>
+                  dismissAiInsight(ins.id).then((res) => {
+                    if (res.error) toast.error(res.error.message);
+                    else void loadOnly();
+                  })
+                }>
                 <X className="size-4" />
               </Button>
             </li>

@@ -25,9 +25,8 @@ import {
 } from "lucide-react";
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
-import { useQuota } from "@/hooks/use-subscription";
 import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
-import { getCrmUser, listCrmLeads, purchaseCrmLead, type CrmLead } from "@/lib/python-api";
+import { getBillingMe, getCrmUser, listCrmLeads, purchaseCrmLead, type BillingMe, type CrmLead } from "@/lib/python-api";
 import { ageLabel, gradeCode, gradeText, listingType } from "@/lib/lead-grades";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
@@ -111,7 +110,9 @@ const LOW_BALANCE_THRESHOLD = 300;
 
 function Leadboard() {
   const { user } = useAuth();
-  const { quota: leadQuota } = useQuota("leads");
+  const [billing, setBilling] = useState<BillingMe | null>(null);
+  const [billingLoading, setBillingLoading] = useState(true);
+  const [billingError, setBillingError] = useState<string | null>(null);
   const [leads, setLeads] = useState<Lead[]>([]);
   const [productTypes] = useState<ProductType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +124,7 @@ function Leadboard() {
   const [sort, setSort] = useState<SortKey>("newest");
   const [timeRange, setTimeRange] = useState<TimeRangeKey>("all");
   const [buying, setBuying] = useState<string | null>(null);
-  const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0, balance: 0 });
+  const [stats, setStats] = useState({ total: 0, hot: 0, purchases: 0 });
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 30_000);
@@ -173,7 +174,6 @@ function Leadboard() {
         total: data.total,
         hot: data.items.filter((l) => l.score === "hot").length,
         purchases: Object.keys(purchased).length,
-        balance: 0,
       });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load CRM leads");
@@ -187,6 +187,21 @@ function Leadboard() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
+
+  const loadBilling = async () => {
+    try {
+      setBilling(await getBillingMe());
+      setBillingError(null);
+    } catch (err) {
+      setBillingError(err instanceof Error ? err.message : "Could not load wallet");
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadBilling();
+  }, []);
 
   useEffect(() => {
     setProductTypeId("all");
@@ -206,6 +221,7 @@ function Leadboard() {
         prev.map((l) => (l.id === lead.id ? { ...l, status: "sold", full_phone: res.full_phone } : l)),
       );
       toast.success("Lead purchased — open My Leads for pipeline");
+      void loadBilling();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Purchase failed");
     } finally {
@@ -225,7 +241,9 @@ function Leadboard() {
     [productTypes],
   );
 
-  const lowBalance = stats.balance < LOW_BALANCE_THRESHOLD;
+  const balance = billing && !billingError ? Number(billing.entitlements.wallet_balance || 0) : null;
+  const balanceLabel = billingLoading ? "…" : balance == null ? "—" : `₹${balance.toLocaleString("en-IN")}`;
+  const lowBalance = balance != null && balance < LOW_BALANCE_THRESHOLD;
 
   return (
     <div className="space-y-5 max-w-7xl">
@@ -263,7 +281,7 @@ function Leadboard() {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white border border-[#d8ecdd] shadow-[0_2px_8px_rgba(16,102,42,0.04)]">
             <Wallet className="size-3.5 text-[#10662A]" />
             <span className="text-[11px] text-[#5c4d72]">Balance</span>
-            <span className="font-display font-bold text-sm text-[#390A5D]">₹{stats.balance.toLocaleString("en-IN")}</span>
+            <span className="font-display font-bold text-sm text-[#390A5D]">{balanceLabel}</span>
           </div>
           <Link
             to="/dashboard/wallet"
@@ -312,12 +330,12 @@ function Leadboard() {
         <StatCard
           icon={Wallet}
           label="Wallet balance"
-          value={`₹${stats.balance.toLocaleString("en-IN")}`}
+          value={balanceLabel}
           tone="accent"
         />
       </div>
 
-      <PlanQuotaBanner quota={leadQuota} kind="leads" />
+      <PlanQuotaBanner billing={billing} loading={billingLoading} error={billingError} />
 
       <div className="rounded-xl bg-white border border-[#d8ecdd] p-3 shadow-[0_2px_12px_rgba(16,102,42,0.04)] sticky top-2 z-10">
         <div className="flex items-center justify-between gap-3 mb-2.5 flex-wrap">
@@ -431,7 +449,7 @@ function Leadboard() {
       {shortfallLead && (
         <InsufficientBalanceModal
           lead={shortfallLead}
-          balance={stats.balance}
+          balance={balance ?? 0}
           onClose={() => setShortfallLead(null)}
           onRecharge={async (amt) => {
             await recharge(amt);

@@ -35,7 +35,6 @@ function mergeRow<T extends { id: string }>(rows: T[], id: string, patch: Partia
 export function useCustomerWorkspace(purchaseId: string) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [migrationRequired, setMigrationRequired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<CustomerWorkspaceData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -46,7 +45,6 @@ export function useCustomerWorkspace(purchaseId: string) {
     if (!user) return;
     setLoading(true);
     const res = await loadCustomerWorkspace(purchaseId, user.id);
-    if (res.migrationRequired) setMigrationRequired(true);
     if (res.error) setError(res.error);
     else {
       setError(null);
@@ -73,6 +71,7 @@ export function useCustomerWorkspace(purchaseId: string) {
       const errPin = normalizedPatch.pincode != null ? validatePincode(String(normalizedPatch.pincode)) : null;
       if (errPan || errMob || errEmail || errPin) {
         toast.error(errPan || errMob || errEmail || errPin || "Validation failed");
+        setLastSaved(null);
         return false;
       }
       const normalized = { ...normalizedPatch };
@@ -85,6 +84,7 @@ export function useCustomerWorkspace(purchaseId: string) {
       if (saveInFlight.current <= 0) setSaving(false);
       if (e) {
         toast.error(e);
+        setLastSaved(null);
         return false;
       }
       setProfile(normalized);
@@ -111,7 +111,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     async <T extends { id: string }>(
       id: string,
       patch: Partial<T>,
-      updater: (rowId: string, p: Partial<T>) => ReturnType<typeof updateBankAccount>,
+      updater: (rowId: string, p: Partial<T>) => Promise<{ data: T | null; error: { message: string } | null }>,
       key: "bankAccounts" | "obligations" | "coApplicants" | "loanRequirements",
     ) => {
       saveInFlight.current += 1;
@@ -121,10 +121,15 @@ export function useCustomerWorkspace(purchaseId: string) {
       if (saveInFlight.current <= 0) setSaving(false);
       if (e?.message) {
         toast.error(e.message);
+        setLastSaved(null);
         return;
       }
       if (row) {
-        setData((d) => (d ? { ...d, [key]: mergeRow(d[key] as T[], id, row as T) } : d));
+        setData((d) => {
+          if (!d) return d;
+          const rows = d[key] as unknown as T[];
+          return { ...d, [key]: mergeRow(rows, id, row as unknown as T) };
+        });
         setLastSaved(new Date());
       }
     },
@@ -250,6 +255,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     });
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     if (row) setData((d) => (d ? { ...d, bankAccounts: [...d.bankAccounts, row as BankAccount] } : d));
@@ -262,6 +268,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     const { error: e } = await deleteBankAccount(id);
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     setData((d) => (d ? { ...d, bankAccounts: d.bankAccounts.filter((b) => b.id !== id) } : d));
@@ -285,6 +292,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     });
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     if (row) setData((d) => (d ? { ...d, obligations: [...d.obligations, row as Obligation] } : d));
@@ -297,6 +305,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     const { error: e } = await deleteObligation(id);
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     setData((d) => (d ? { ...d, obligations: d.obligations.filter((o) => o.id !== id) } : d));
@@ -321,6 +330,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     });
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     if (row) setData((d) => (d ? { ...d, coApplicants: [...d.coApplicants, row as CoApplicant] } : d));
@@ -333,6 +343,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     const { error: e } = await deleteCoApplicant(id);
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     setData((d) => (d ? { ...d, coApplicants: d.coApplicants.filter((c) => c.id !== id) } : d));
@@ -357,6 +368,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     });
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     if (row) setData((d) => (d ? { ...d, loanRequirements: [...d.loanRequirements, row as LoanRequirement] } : d));
@@ -369,6 +381,7 @@ export function useCustomerWorkspace(purchaseId: string) {
     const { error: e } = await deleteLoanRequirement(id);
     if (e?.message) {
       toast.error(e.message);
+      setLastSaved(null);
       return;
     }
     setData((d) => (d ? { ...d, loanRequirements: d.loanRequirements.filter((l) => l.id !== id) } : d));
@@ -377,7 +390,6 @@ export function useCustomerWorkspace(purchaseId: string) {
   return {
     loading,
     error,
-    migrationRequired,
     data,
     saving,
     lastSaved,

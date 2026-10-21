@@ -1,15 +1,7 @@
-import { supabase } from "@/integrations/supabase/client";
 import type { EligibilityEngineResult } from "./eligibility-types";
 import type { CustomerProfile } from "./types";
 
-function isMissingTableError(message: string): boolean {
-  return /does not exist|relation.*not found|42P01/i.test(message);
-}
-
-export async function persistEligibilitySnapshot(
-  profile: CustomerProfile,
-  result: EligibilityEngineResult,
-): Promise<{ ok: boolean; migrationRequired?: boolean }> {
+export function buildEligibilitySnapshot(profile: CustomerProfile, result: EligibilityEngineResult) {
   const { financial: fin, metrics: m, risk, lenders, products, validations, primaryProduct } = result;
   const base = {
     customer_profile_id: profile.id,
@@ -17,7 +9,7 @@ export async function persistEligibilitySnapshot(
     dsa_id: profile.dsa_id,
   };
 
-  const finRow = {
+  const financial = {
     ...base,
     gross_income: fin.grossIncome,
     net_income: fin.netIncome,
@@ -35,7 +27,7 @@ export async function persistEligibilitySnapshot(
     computed_at: result.computedAt,
   };
 
-  const riskRow = {
+  const riskProfile = {
     ...base,
     cibil_score: risk.cibilScore,
     risk_grade: risk.riskGrade,
@@ -46,7 +38,7 @@ export async function persistEligibilitySnapshot(
     validation_issues: validations,
   };
 
-  const reportRow = {
+  const report = {
     ...base,
     primary_product_type: primaryProduct,
     foir_percent: m.foirPercent,
@@ -64,38 +56,17 @@ export async function persistEligibilitySnapshot(
     computed_at: result.computedAt,
   };
 
-  const { error: e1 } = await supabase.from("customer_financial_summary").upsert(finRow, { onConflict: "customer_profile_id" });
-  if (e1) {
-    if (isMissingTableError(e1.message)) return { ok: false, migrationRequired: true };
-    console.warn("financial summary save:", e1.message);
-    return { ok: false };
-  }
-
-  const { error: e2 } = await supabase.from("customer_risk_profiles").upsert(riskRow, { onConflict: "customer_profile_id" });
-  if (e2) {
-    if (isMissingTableError(e2.message)) return { ok: false, migrationRequired: true };
-    console.warn("risk profile save:", e2.message);
-    return { ok: false };
-  }
-
-  const { error: e3 } = await supabase.from("customer_eligibility_reports").upsert(reportRow, { onConflict: "customer_profile_id" });
-  if (e3) {
-    if (isMissingTableError(e3.message)) return { ok: false, migrationRequired: true };
-    console.warn("eligibility report save:", e3.message);
-    return { ok: false };
-  }
-
-  return { ok: true };
+  return { financial, riskProfile, report };
 }
 
-export async function updateWorkflowStage(
-  profileId: string,
-  stage: string,
-): Promise<boolean> {
-  const { error } = await supabase
-    .from("customer_risk_profiles")
-    .update({ workflow_stage: stage })
-    .eq("customer_profile_id", profileId);
-  if (error && isMissingTableError(error.message)) return false;
-  return !error;
+/** No eligibility snapshot API or table exists yet; the live calculation is not stored. */
+export async function persistEligibilitySnapshot(
+  _profile: CustomerProfile,
+  _result: EligibilityEngineResult,
+): Promise<{ ok: boolean; notStored?: boolean }> {
+  return { ok: false, notStored: true };
+}
+
+export async function updateWorkflowStage(_profileId: string, _stage: string): Promise<boolean> {
+  return false;
 }

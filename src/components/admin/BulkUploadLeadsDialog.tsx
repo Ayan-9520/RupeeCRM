@@ -55,6 +55,7 @@ function maskPhone(p: string): string {
   return `${digits.slice(0, 2)}****${digits.slice(-2)}`;
 }
 
+/** Legacy: not mounted. Inserts into the removed Supabase backend; no admin bulk-lead API exists. */
 export function BulkUploadLeadsDialog({
   open,
   onClose,

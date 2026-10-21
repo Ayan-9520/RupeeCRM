@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -252,6 +252,503 @@ class NetworkSettings(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     levels: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class LoanCase(Base):
+    """Closure file. Bank commission in, connector payout out, company net left."""
+
+    __tablename__ = "loan_cases"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    deal_no: Mapped[str] = mapped_column(String(40), unique=True, nullable=False, index=True)
+    stage: Mapped[str] = mapped_column(String(40), nullable=False, default="draft", index=True)
+    flag: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    loan_type: Mapped[str] = mapped_column(String(40), nullable=False, default="LAP")
+    lead_source: Mapped[str] = mapped_column(String(40), nullable=False, default="Connector")
+    partner_code: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    partner_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    partner_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    client_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    client_phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    project_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    expected_sanction_on: Mapped[str] = mapped_column(String(20), nullable=False, default="")
+    client_access: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    loan_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    sanctioned_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    receivable_percent: Mapped[float] = mapped_column(Float, nullable=False, default=1.4)
+    payable_percent: Mapped[float] = mapped_column(Float, nullable=False, default=90)
+    loyalty_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    loyalty_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    bank_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    bank_rm: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    bank_rm_phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    submitted_by: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    pod_pending: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    pod_remarks: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    counted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    invoice_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    collected_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    payout_status: Mapped[str] = mapped_column(String(20), nullable=False, default="none")
+    payout_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    owner_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerProfile(Base):
+    """One customer file per purchased lead. Owner is the purchase buyer, not the caller."""
+
+    __tablename__ = "customer_profiles"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    workspace_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    mobile: Mapped[str | None] = mapped_column(String(15), nullable=True)
+    alternate_mobile: Mapped[str | None] = mapped_column(String(15), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    dob: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    marital_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    father_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    mother_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    pan: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    aadhaar: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    education: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    residence_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    current_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    permanent_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    city: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    state: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    pincode: Mapped[str | None] = mapped_column(String(6), nullable=True)
+    family_members: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    employment_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    company_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    business_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    designation: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    industry_type: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    monthly_income: Mapped[float | None] = mapped_column(Float, nullable=True)
+    net_salary: Mapped[float | None] = mapped_column(Float, nullable=True)
+    annual_turnover: Mapped[float | None] = mapped_column(Float, nullable=True)
+    work_experience: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    business_vintage: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    salary_mode: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    gst_number: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    itr_filed: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    office_address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    profile_completion: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerBankAccount(Base):
+    __tablename__ = "customer_bank_accounts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    bank_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    account_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    account_vintage: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    average_balance: Mapped[float | None] = mapped_column(Float, nullable=True)
+    is_salary_account: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    emi_bounce_history: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    statement_available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_primary: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class CustomerObligation(Base):
+    __tablename__ = "customer_obligations"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    loan_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    bank_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    emi: Mapped[float | None] = mapped_column(Float, nullable=True)
+    outstanding_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    sanction_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    remaining_tenure: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    start_date: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    overdue_status: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class CustomerCoApplicant(Base):
+    __tablename__ = "customer_co_applicants"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    relation: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    full_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    mobile: Mapped[str | None] = mapped_column(String(15), nullable=True)
+    pan: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    aadhaar: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    employment_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    income: Mapped[float | None] = mapped_column(Float, nullable=True)
+    obligations_summary: Mapped[str | None] = mapped_column(String(400), nullable=True)
+    cibil_score: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class CustomerLoanRequirement(Base):
+    __tablename__ = "customer_loan_requirements"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    product_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    loan_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tenure_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    purpose: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    property_value: Mapped[float | None] = mapped_column(Float, nullable=True)
+    has_existing_loan: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    balance_transfer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    top_up_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    insurance_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    roi_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    extra_fields: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+
+class CustomerDocument(Base):
+    """One catalog slot per purchase. File bytes live on disk, not in this row."""
+
+    __tablename__ = "customer_documents"
+    __table_args__ = (UniqueConstraint("lead_purchase_id", "doc_slug", name="uq_customer_documents_purchase_slug"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String(40), nullable=False)
+    doc_slug: Mapped[str] = mapped_column(String(80), nullable=False)
+    doc_label: Mapped[str] = mapped_column(String(120), nullable=False)
+    file_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    storage_key: Mapped[str | None] = mapped_column(String(240), nullable=True)
+    file_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    mime_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="pending")
+    verification_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    comments: Mapped[str | None] = mapped_column(Text, nullable=True)
+    uploaded_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    verified_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerDocumentEvent(Base):
+    """History of uploads, status changes, and file removals."""
+
+    __tablename__ = "customer_document_events"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(40), nullable=False)
+    status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    file_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CustomerFollowup(Base):
+    """Follow-up history. The purchase's next_followup_at remains the single scheduled time."""
+
+    __tablename__ = "customer_followups"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    note_type: Mapped[str] = mapped_column(String(40), nullable=False, default="other")
+    followup_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    followup_time: Mapped[str | None] = mapped_column(String(5), nullable=True)
+    priority: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    assigned_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    discussion_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    outcome: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    next_action: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    completed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerBankLogin(Base):
+    """Lender login tracking. This is not a bank credential store."""
+
+    __tablename__ = "customer_bank_logins"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    product: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    login_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    login_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    roi_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tenure_months: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    banker_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    banker_mobile: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    branch: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    login_status: Mapped[str] = mapped_column(String(40), nullable=False, default="draft")
+    sanction_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    approved_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processing_fees: Mapped[float | None] = mapped_column(Float, nullable=True)
+    disbursal_status: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    expected_disbursal_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerLosPipeline(Base):
+    """One LOS stage record per purchase. Distinct from the lead-board pipeline."""
+
+    __tablename__ = "customer_los_pipelines"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    current_stage: Mapped[str] = mapped_column(String(40), nullable=False, default="lead_purchased")
+    case_owner_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    assigned_rm_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    assigned_dsa_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    banker_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    banker_mobile: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    banker_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    priority: Mapped[str] = mapped_column(String(20), nullable=False, default="medium")
+    sla_target_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    reminder_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_stage_changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    last_stage_changed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerPipelineHistory(Base):
+    __tablename__ = "customer_pipeline_history"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    from_stage: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    to_stage: Mapped[str] = mapped_column(String(40), nullable=False)
+    changed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CustomerLenderCase(Base):
+    """A lender the case was sent to. Separate from bank-login tracking rows."""
+
+    __tablename__ = "customer_lender_cases"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lender_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    branch: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    banker_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    banker_mobile: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    banker_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    login_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    login_status: Mapped[str] = mapped_column(String(40), nullable=False, default="draft")
+    sanctioned_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    roi: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tenure: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    processing_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
+    insurance_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    disbursed_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_expected: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_received: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    rejection_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    remarks: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_best_offer: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerTask(Base):
+    __tablename__ = "customer_tasks"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    task_type: Mapped[str] = mapped_column(String(40), nullable=False, default="general")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
+    due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    assigned_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    comments: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerSanctionDisbursal(Base):
+    """Explicit sanction figures. Saving this row does not approve the loan by itself."""
+
+    __tablename__ = "customer_sanction_disbursals"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
+    lender_case_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    sanction_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    final_roi: Mapped[float | None] = mapped_column(Float, nullable=True)
+    final_tenure: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    emi: Mapped[float | None] = mapped_column(Float, nullable=True)
+    processing_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
+    insurance_deduction: Mapped[float | None] = mapped_column(Float, nullable=True)
+    net_disbursal: Mapped[float | None] = mapped_column(Float, nullable=True)
+    disbursal_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    utr_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    bank_account_credited: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    payout_expected: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_received: Mapped[float | None] = mapped_column(Float, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerDisbursal(Base):
+    """A recorded disbursal. Net, EMI, and payout pending are calculated, not typed as rules."""
+
+    __tablename__ = "customer_disbursals"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lender_case_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    disbursal_status: Mapped[str] = mapped_column(String(40), nullable=False, default="pending")
+    sanctioned_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    disbursed_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    net_disbursal: Mapped[float | None] = mapped_column(Float, nullable=True)
+    roi: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tenure: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    emi: Mapped[float | None] = mapped_column(Float, nullable=True)
+    processing_fee: Mapped[float | None] = mapped_column(Float, nullable=True)
+    insurance_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    deductions: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_expected: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_received: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_pending: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_status: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    disbursal_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    utr_number: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    credited_bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    credited_account_number: Mapped[str | None] = mapped_column(String(18), nullable=True)
+    credited_ifsc: Mapped[str | None] = mapped_column(String(11), nullable=True)
+    first_emi_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    disbursal_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class CustomerCasePayout(Base):
+    """Case commission/incentive ledger. Separate from partner payout requests."""
+
+    __tablename__ = "customer_case_payouts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    customer_profile_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lender_case_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    lead_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    payout_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payout_type: Mapped[str] = mapped_column(String(20), nullable=False, default="commission")
+    payout_status: Mapped[str] = mapped_column(String(20), nullable=False, default="expected")
+    expected_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    received_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    payout_reference: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    payout_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
+class UserNotification(Base):
+    """In-app notice for one user. Not a substitute for email or SMS."""
+
+    __tablename__ = "user_notifications"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    type: Mapped[str] = mapped_column(String(40), nullable=False)
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    body: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    link: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    read_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class CustomerAutomationLog(Base):
+    """A run of one of the built-in case rules. Rules themselves stay in application code."""
+
+    __tablename__ = "customer_automation_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lead_purchase_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    dsa_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    rule_key: Mapped[str] = mapped_column(String(60), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)
+    message: Mapped[str] = mapped_column(String(300), nullable=False)
+    task_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    retry_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class Certificate(Base):

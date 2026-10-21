@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { listMyLeads, patchMyLead } from "@/lib/python-api";
 import { toast } from "sonner";
 import {
   Bot,
@@ -19,14 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { Json } from "@/integrations/supabase/types";
-import {
-  addTimelineEntry,
-  insertFollowup,
-  loadFollowups,
-  loadTimeline,
-  type TimelineEntry,
-} from "@/lib/customer-crm/phase3-api";
+import { insertFollowup, loadFollowups, loadTimeline, type TimelineEntry } from "@/lib/customer-crm/phase3-api";
 import type { CustomerProfile } from "@/lib/customer-crm/types";
 
 type Note = { at: string; text: string; by?: string; kind?: string };
@@ -62,7 +55,6 @@ export function CustomerRightPanel({
   const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [timeline, setTimeline] = useState<TimelineEntry[]>([]);
-  const [logs, setLogs] = useState<{ at: string; text: string }[]>([]);
   const [noteText, setNoteText] = useState("");
   const [followupDate, setFollowupDate] = useState(nextFollowup?.slice(0, 10) ?? "");
   const [followupTime, setFollowupTime] = useState("10:00");
@@ -82,32 +74,22 @@ export function CustomerRightPanel({
     if (focusNote) setFormOpen(true);
   }, [focusNote]);
 
+  const visibleNote = (note: Note) => !note.kind || note.kind === "note";
+
   const loadAll = useCallback(async () => {
-    const [p, l, tl, fu] = await Promise.all([
-      supabase.from("lead_purchases").select("notes,created_at").eq("id", purchaseId).single(),
-      supabase
-        .from("case_status_logs")
-        .select("from_stage,to_stage,created_at")
-        .eq("lead_purchase_id", purchaseId)
-        .order("created_at", { ascending: false })
-        .limit(20),
+    const [leadList, tl, fu] = await Promise.all([
+      listMyLeads().catch(() => null),
       loadTimeline(purchaseId),
       loadFollowups(purchaseId),
     ]);
-    const raw = p.data?.notes;
-    setNotes(Array.isArray(raw) ? (raw as Note[]).filter((n) => !n.kind) : []);
+    const purchase = leadList?.items.find((item) => item.id === purchaseId);
+    setNotes((purchase?.notes ?? []).filter(visibleNote));
+    if (tl.error) toast.error(tl.error);
+    if (fu.error) toast.error(fu.error);
     setTimeline(tl.entries);
-    setLogs(
-      (l.data ?? []).map((x) => ({
-        at: x.created_at,
-        text: `Stage: ${x.from_stage ? `${x.from_stage} → ` : ""}${x.to_stage}`,
-      })),
-    );
-    if (p.data?.created_at) {
-      setLogs((prev) => [{ at: p.data!.created_at, text: "Lead purchased" }, ...prev]);
-    }
     const today = new Date().toISOString().slice(0, 10);
     const due =
+      (purchase?.next_followup_at && purchase.next_followup_at.slice(0, 10) <= today) ||
       (nextFollowup && nextFollowup.slice(0, 10) <= today) ||
       fu.rows.some((f) => !f.completed && f.followup_date && f.followup_date <= today);
     setHasDueFollowup(Boolean(due));
@@ -123,28 +105,16 @@ export function CustomerRightPanel({
     const txt = noteText.trim();
     if (!txt || !user) return;
     setBusy(true);
-    const { data: row } = await supabase.from("lead_purchases").select("notes").eq("id", purchaseId).single();
-    const prev = Array.isArray(row?.notes) ? (row!.notes as Note[]) : [];
-    const next = [...prev, { at: new Date().toISOString(), text: txt, by: user.email }];
-    const { error } = await supabase.from("lead_purchases").update({ notes: next as unknown as Json }).eq("id", purchaseId);
-    if (!error && user) {
-      await addTimelineEntry({
-        customer_profile_id: profile.id,
-        lead_purchase_id: purchaseId,
-        dsa_id: user.id,
-        activity_type: "note",
-        title: "Note",
-        body: txt,
-        created_by: user.id,
-      });
-    }
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else {
-      setNotes(next.filter((n) => !n.kind));
+    try {
+      const updated = await patchMyLead(purchaseId, { notes_text: txt });
+      setNotes((updated.notes ?? []).filter(visibleNote));
       setNoteText("");
       toast.success("Note saved");
-      loadAll();
+      void loadAll();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save note");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -154,72 +124,66 @@ export function CustomerRightPanel({
     const iso = followupDate
       ? new Date(`${followupDate}T${followupTime || "10:00"}:00`).toISOString()
       : null;
-    const { error } = await supabase.from("lead_purchases").update({ next_followup_at: iso }).eq("id", purchaseId);
-    if (!error) {
-      await insertFollowup({
-        customer_profile_id: profile.id,
-        lead_purchase_id: purchaseId,
-        dsa_id: user.id,
-        followup_date: followupDate || null,
-        followup_time: followupTime || null,
-        priority,
-        assigned_user_id: user.id,
-        discussion_notes: noteText.trim() || null,
-        outcome: outcome || null,
-        next_action: nextAction || null,
-        completed: false,
-      });
-      await addTimelineEntry({
-        customer_profile_id: profile.id,
-        lead_purchase_id: purchaseId,
-        dsa_id: user.id,
-        activity_type: "followup",
-        title: "Follow-up scheduled",
-        body: [followupDate, outcome, nextAction].filter(Boolean).join(" · "),
-        created_by: user.id,
-      });
-    }
-    setBusy(false);
-    if (error) toast.error(error.message);
-    else {
+    const detail = [outcome, nextAction, noteText.trim()].filter(Boolean).join(" · ");
+    try {
+      if (detail || followupDate) {
+        const saved = await insertFollowup({
+          customer_profile_id: profile.id,
+          lead_purchase_id: purchaseId,
+          dsa_id: user.id,
+          followup_date: followupDate || null,
+          followup_time: followupTime || null,
+          priority,
+          assigned_user_id: user.id,
+          discussion_notes: detail || null,
+          outcome: outcome || null,
+          next_action: nextAction || null,
+          completed: false,
+          note_type: "other",
+        });
+        if (saved.error) {
+          toast.error(saved.error.message);
+          return;
+        }
+      }
+      await patchMyLead(purchaseId, iso ? { next_followup_at: iso } : { clear_followup: true });
       toast.success("Follow-up saved");
       onFollowupSaved();
-      loadAll();
+      void loadAll();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save follow-up");
+    } finally {
+      setBusy(false);
     }
   };
 
   const logCall = async () => {
     if (!user || !noteText.trim()) return;
     setBusy(true);
-    await addTimelineEntry({
-      customer_profile_id: profile.id,
-      lead_purchase_id: purchaseId,
-      dsa_id: user.id,
-      activity_type: "call",
-      title: "Call log",
-      body: noteText.trim(),
-      created_by: user.id,
-    });
-    setBusy(false);
-    setNoteText("");
-    toast.success("Call logged");
-    loadAll();
+    try {
+      await patchMyLead(purchaseId, { notes_text: `Call: ${noteText.trim()}` });
+      setNoteText("");
+      toast.success("Call logged");
+      void loadAll();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not log call");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const merged = useMemo(() => {
-    const items = [
-      ...timeline.map((t) => ({
+    const items = timeline
+      .map((t) => ({
         at: t.created_at,
         text: t.body ? (t.title ? `${t.title}: ${t.body}` : t.body) : (t.title ?? ""),
         type: t.activity_type ?? "note",
         id: t.id,
-      })),
-      ...logs.map((l, i) => ({ ...l, type: "stage", id: `log-${i}` })),
-      ...notes.map((n, i) => ({ at: n.at, text: n.text, type: "note", id: `note-${i}` })),
-    ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+      }))
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
     if (filter === "all") return items;
     return items.filter((t) => t.type === filter);
-  }, [timeline, logs, notes, filter]);
+  }, [timeline, filter]);
 
   const groupedByDay = useMemo(() => {
     const map = new Map<string, typeof merged>();

@@ -17,7 +17,7 @@ export function useDailyLogin() {
 
     (async () => {
       const { data, error } = await supabase.rpc("claim_daily_login_points");
-      if (error) return;
+      if (error || data == null) return;
       localStorage.setItem(key, "1");
       const result = data as { already_claimed?: boolean; awarded?: number; streak?: number };
       if (!result?.already_claimed && result?.awarded) {

@@ -1,5 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
-import { DOCUMENT_CATALOG, MAX_UPLOAD_BYTES, ALLOWED_MIME } from "./document-catalog";
+import { request, requestBlob } from "@/lib/python-api";
+import { MAX_UPLOAD_BYTES, ALLOWED_MIME } from "./document-catalog";
 import type { DocumentStatus } from "./document-catalog";
 
 export type CustomerDocument = {
@@ -70,54 +70,33 @@ export type CustomerFollowup = {
   outcome: string | null;
   next_action: string | null;
   completed: boolean;
+  note_type?: string;
 };
 
-function missingTable(msg: string): boolean {
-  return /does not exist|42P01|relation.*not found/i.test(msg);
+function apiError(err: unknown, fallback: string) {
+  return { message: err instanceof Error ? err.message : fallback };
 }
 
 export async function ensureDocumentSlots(
-  profileId: string,
-  purchaseId: string,
-  leadId: string,
-  dsaId: string,
+  _profileId: string,
+  _purchaseId: string,
+  _leadId: string,
+  _dsaId: string,
 ): Promise<{ ok: boolean; migrationRequired?: boolean }> {
-  const rows = DOCUMENT_CATALOG.map((d) => ({
-    customer_profile_id: profileId,
-    lead_purchase_id: purchaseId,
-    lead_id: leadId,
-    dsa_id: dsaId,
-    category: d.category,
-    doc_slug: d.slug,
-    doc_label: d.label,
-    status: "pending",
-  }));
-  const { error } = await supabase.from("customer_documents").upsert(rows, {
-    onConflict: "lead_purchase_id,doc_slug",
-    ignoreDuplicates: true,
-  });
-  if (error) {
-    if (missingTable(error.message)) return { ok: false, migrationRequired: true };
-    return { ok: false };
-  }
   return { ok: true };
 }
 
 export async function loadCustomerDocuments(purchaseId: string): Promise<{
   docs: CustomerDocument[];
   migrationRequired?: boolean;
+  error?: string;
 }> {
-  const { data, error } = await supabase
-    .from("customer_documents")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("category")
-    .order("doc_label");
-  if (error) {
-    if (missingTable(error.message)) return { docs: [], migrationRequired: true };
-    return { docs: [] };
+  try {
+    const data = await request<{ documents: CustomerDocument[] }>(`/api/my-leads/${purchaseId}/documents`);
+    return { docs: data.documents ?? [] };
+  } catch (err) {
+    return { docs: [], error: err instanceof Error ? err.message : "Could not load documents" };
   }
-  return { docs: (data ?? []) as CustomerDocument[] };
 }
 
 export async function uploadCustomerDocument(opts: {
@@ -127,105 +106,101 @@ export async function uploadCustomerDocument(opts: {
   leadId: string;
   onProgress?: (pct: number) => void;
 }): Promise<{ error: string | null }> {
-  const { doc, file, userId, leadId, onProgress } = opts;
+  const { doc, file, onProgress } = opts;
   if (file.size > MAX_UPLOAD_BYTES) return { error: "File too large (max 10MB)" };
   if (!ALLOWED_MIME.includes(file.type) && !file.type.startsWith("image/")) {
     return { error: "Only PDF and images are allowed" };
   }
-  const path = `${userId}/${doc.lead_purchase_id}/${doc.category}/${doc.doc_slug}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-  onProgress?.(10);
-  const { error: upErr } = await supabase.storage.from("case-documents").upload(path, file, { upsert: true });
-  if (upErr) return { error: upErr.message };
-  onProgress?.(70);
-  const { data: signed } = await supabase.storage.from("case-documents").createSignedUrl(path, 60 * 60 * 24 * 365);
-  const fileUrl = signed?.signedUrl ?? path;
-  const { error: docErr } = await supabase
-    .from("customer_documents")
-    .update({
-      file_name: file.name,
-      file_url: fileUrl,
-      storage_path: path,
-      file_size: file.size,
-      mime_type: file.type,
-      status: "uploaded",
-      uploaded_by: userId,
-    })
-    .eq("id", doc.id);
-  if (docErr) return { error: docErr.message };
-  onProgress?.(90);
-  const catalog = DOCUMENT_CATALOG.find((c) => c.slug === doc.doc_slug);
-  await supabase.from("case_documents").insert({
-    lead_purchase_id: doc.lead_purchase_id,
-    lead_id: leadId,
-    uploaded_by: userId,
-    doc_type: catalog?.legacyDocType ?? "other",
-    file_name: file.name,
-    file_url: fileUrl,
-    file_size: file.size,
-    mime_type: file.type,
-  });
-  onProgress?.(100);
-  return { error: null };
+  const body = new FormData();
+  body.append("file", file);
+  onProgress?.(30);
+  try {
+    await request(`/api/my-leads/${doc.lead_purchase_id}/documents/${doc.doc_slug}/file`, {
+      method: "POST",
+      body,
+    });
+    onProgress?.(100);
+    return { error: null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Upload failed" };
+  }
 }
 
 export async function updateDocumentMeta(
   id: string,
   patch: Partial<Pick<CustomerDocument, "status" | "verification_notes" | "comments">>,
 ) {
-  return supabase.from("customer_documents").update(patch).eq("id", id);
+  try {
+    await request(`/api/customer-documents/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return { error: null as { message: string } | null };
+  } catch (err) {
+    return { error: { message: err instanceof Error ? err.message : "Update failed" } };
+  }
 }
 
 export async function removeCustomerDocument(doc: CustomerDocument) {
-  if (doc.storage_path) {
-    await supabase.storage.from("case-documents").remove([doc.storage_path]);
+  try {
+    await request(`/api/customer-documents/${doc.id}/file`, { method: "DELETE" });
+    return { error: null as { message: string } | null };
+  } catch (err) {
+    return { error: { message: err instanceof Error ? err.message : "Remove failed" } };
   }
-  return supabase
-    .from("customer_documents")
-    .update({
-      file_name: null,
-      file_url: null,
-      storage_path: null,
-      file_size: null,
-      mime_type: null,
-      status: "pending",
-      uploaded_by: null,
-      verified_by: null,
-      verified_at: null,
-    })
-    .eq("id", doc.id);
 }
 
-export async function loadBankLogins(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_bank_logins")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("sort_order");
-  if (error && missingTable(error.message)) return { rows: [] as BankLogin[], migrationRequired: true };
-  return { rows: (data ?? []) as BankLogin[] };
+export { requestBlob };
+
+export async function loadBankLogins(purchaseId: string): Promise<{ rows: BankLogin[]; error?: string }> {
+  try {
+    const data = await request<{ rows: BankLogin[] }>(`/api/my-leads/${purchaseId}/bank-logins`);
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: apiError(err, "Could not load bank logins").message };
+  }
 }
 
 export async function insertBankLogin(row: Omit<BankLogin, "id" | "created_at" | "updated_at">) {
-  return supabase.from("customer_bank_logins").insert(row as never).select("*").single();
+  try {
+    const data = await request<BankLogin>(`/api/my-leads/${row.lead_purchase_id}/bank-logins`, {
+      method: "POST",
+      body: JSON.stringify(row),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: apiError(err, "Could not add bank login") };
+  }
 }
 
 export async function updateBankLogin(id: string, patch: Partial<BankLogin>) {
-  return supabase.from("customer_bank_logins").update(patch as never).eq("id", id).select("*").single();
+  try {
+    const data = await request<BankLogin>(`/api/customer-bank-logins/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: apiError(err, "Could not update bank login") };
+  }
 }
 
 export async function deleteBankLogin(id: string) {
-  return supabase.from("customer_bank_logins").delete().eq("id", id);
+  try {
+    await request(`/api/customer-bank-logins/${id}`, { method: "DELETE" });
+    return { error: null as { message: string } | null };
+  } catch (err) {
+    return { error: apiError(err, "Could not remove bank login") };
+  }
 }
 
-export async function loadTimeline(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_timeline")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-  if (error && missingTable(error.message)) return { entries: [] as TimelineEntry[], migrationRequired: true };
-  return { entries: (data ?? []) as TimelineEntry[] };
+export async function loadTimeline(purchaseId: string): Promise<{ entries: TimelineEntry[]; error?: string }> {
+  try {
+    const data = await request<{ entries: TimelineEntry[] }>(`/api/my-leads/${purchaseId}/timeline`);
+    return { entries: data.entries ?? [] };
+  } catch (err) {
+    return { entries: [], error: apiError(err, "Could not load activity").message };
+  }
 }
 
 export async function addTimelineEntry(row: {
@@ -238,27 +213,68 @@ export async function addTimelineEntry(row: {
   metadata?: Record<string, unknown>;
   created_by: string;
 }) {
-  return supabase.from("customer_timeline").insert(row as never).select("*").single();
+  const noteType = ["call", "whatsapp", "meeting", "email"].includes(row.activity_type) ? row.activity_type : "other";
+  return insertFollowup({
+    customer_profile_id: row.customer_profile_id,
+    lead_purchase_id: row.lead_purchase_id,
+    dsa_id: row.dsa_id,
+    followup_date: null,
+    followup_time: null,
+    priority: "medium",
+    assigned_user_id: row.created_by,
+    discussion_notes: row.body,
+    outcome: null,
+    next_action: null,
+    completed: false,
+    note_type: noteType,
+  });
 }
 
-export async function loadFollowups(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_followups")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("followup_date", { ascending: true });
-  if (error && missingTable(error.message)) return { rows: [] as CustomerFollowup[], migrationRequired: true };
-  return { rows: (data ?? []) as CustomerFollowup[] };
+export async function loadFollowups(purchaseId: string): Promise<{ rows: CustomerFollowup[]; error?: string }> {
+  try {
+    const data = await request<{ rows: CustomerFollowup[] }>(`/api/my-leads/${purchaseId}/followups`);
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: apiError(err, "Could not load follow-ups").message };
+  }
 }
 
-export async function insertFollowup(row: Omit<CustomerFollowup, "id" | "created_at" | "updated_at"> & {
-  customer_profile_id: string;
-  lead_purchase_id: string;
-  dsa_id: string;
-}) {
-  return supabase.from("customer_followups").insert(row as never).select("*").single();
+export async function insertFollowup(
+  row: Omit<CustomerFollowup, "id" | "created_at" | "updated_at"> & {
+    customer_profile_id: string;
+    lead_purchase_id: string;
+    dsa_id: string;
+    note_type?: string;
+  },
+) {
+  try {
+    const data = await request<CustomerFollowup>(`/api/my-leads/${row.lead_purchase_id}/followups`, {
+      method: "POST",
+      body: JSON.stringify(row),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: apiError(err, "Could not save follow-up") };
+  }
 }
 
 export async function updateFollowup(id: string, patch: Partial<CustomerFollowup>) {
-  return supabase.from("customer_followups").update(patch as never).eq("id", id);
+  try {
+    const data = await request<CustomerFollowup>(`/api/customer-followups/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: apiError(err, "Could not update follow-up") };
+  }
+}
+
+export async function deleteFollowup(id: string) {
+  try {
+    await request(`/api/customer-followups/${id}`, { method: "DELETE" });
+    return { error: null as { message: string } | null };
+  } catch (err) {
+    return { error: apiError(err, "Could not delete follow-up") };
+  }
 }

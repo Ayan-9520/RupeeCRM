@@ -34,6 +34,7 @@ type ExistingRefund = {
   decided_at: string | null;
 };
 
+/** Legacy: not mounted. Writes to the removed Supabase backend; no refund API exists. */
 export function RefundRequestDialog({
   open,
   onClose,

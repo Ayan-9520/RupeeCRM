@@ -26,17 +26,16 @@ export function LosPipelineSection({
   const [pipeline, setPipeline] = useState<LosPipeline | null>(null);
   const [history, setHistory] = useState<PipelineHistoryRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [migrationHint, setMigrationHint] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     const res = await ensureLosPipeline(profile.id, profile.lead_purchase_id, user.id);
-    if (res.migrationRequired) setMigrationHint(true);
-    setPipeline(res.pipeline);
     const hist = await loadPipelineHistory(profile.lead_purchase_id);
-    if (hist.migrationRequired) setMigrationHint(true);
+    setLoadError(res.error ?? hist.error ?? null);
+    setPipeline(res.pipeline);
     setHistory(hist.rows);
     setLoading(false);
   }, [user, profile.id, profile.lead_purchase_id]);
@@ -62,10 +61,10 @@ export function LosPipelineSection({
 
   return (
     <SectionShell title="LOS Pipeline" description="Case stage tracking with audit history" icon={GitBranch}>
-      {migrationHint && (
-        <div className="mb-4 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+      {loadError && (
+        <div className="mb-4 flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs">
           <AlertTriangle className="size-4 shrink-0" />
-          Run <code className="px-1 rounded bg-background/80">20260520100000_customer_los_phase4.sql</code>
+          {loadError}
         </div>
       )}
       {loading ? (

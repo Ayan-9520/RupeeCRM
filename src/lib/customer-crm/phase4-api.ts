@@ -1,10 +1,8 @@
-import { supabase } from "@/integrations/supabase/client";
-import { createAuditLog } from "./audit-log";
+import { request } from "@/lib/python-api";
 import type { LosPipelineStage } from "./workflow-constants";
-import { stageLabel } from "./workflow-constants";
 
-function missingTable(msg: string): boolean {
-  return /does not exist|42P01|relation.*not found/i.test(msg);
+function apiError(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback;
 }
 
 export type LosPipeline = {
@@ -109,185 +107,141 @@ export type LosDashboardStats = {
 };
 
 export async function ensureLosPipeline(
-  profileId: string,
+  _profileId: string,
   purchaseId: string,
-  dsaId: string,
-): Promise<{ pipeline: LosPipeline | null; migrationRequired?: boolean }> {
-  const { data: existing } = await supabase
-    .from("customer_los_pipeline")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .maybeSingle();
-
-  if (existing) return { pipeline: existing as LosPipeline };
-
-  const { data, error } = await supabase
-    .from("customer_los_pipeline")
-    .insert({
-      customer_profile_id: profileId,
-      lead_purchase_id: purchaseId,
-      dsa_id: dsaId,
-      current_stage: "lead_purchased",
-      case_owner_id: dsaId,
-      assigned_dsa_id: dsaId,
-      last_stage_changed_by: dsaId,
-    })
-    .select("*")
-    .single();
-
-  if (error) {
-    if (missingTable(error.message)) return { pipeline: null, migrationRequired: true };
-    return { pipeline: null };
+  _dsaId: string,
+): Promise<{ pipeline: LosPipeline | null; error?: string }> {
+  try {
+    const pipeline = await request<LosPipeline>(`/api/my-leads/${purchaseId}/los-pipeline`);
+    return { pipeline };
+  } catch (err) {
+    return { pipeline: null, error: apiError(err, "Could not load the pipeline") };
   }
-
-  await supabase.from("customer_pipeline_history").insert({
-    customer_profile_id: profileId,
-    lead_purchase_id: purchaseId,
-    dsa_id: dsaId,
-    from_stage: null,
-    to_stage: "lead_purchased",
-    changed_by: dsaId,
-    notes: "Pipeline initialized",
-  });
-
-  return { pipeline: data as LosPipeline };
 }
 
 export async function updatePipelineStage(
   pipeline: LosPipeline,
   toStage: string,
-  userId: string,
-  profileId: string,
+  _userId: string,
+  _profileId: string,
 ): Promise<{ error: string | null }> {
-  const from = pipeline.current_stage;
-  if (from === toStage) return { error: null };
-
-  const { error: uErr } = await supabase
-    .from("customer_los_pipeline")
-    .update({
-      current_stage: toStage,
-      last_stage_changed_at: new Date().toISOString(),
-      last_stage_changed_by: userId,
-    })
-    .eq("id", pipeline.id);
-
-  if (uErr) return { error: uErr.message };
-
-  await supabase.from("customer_pipeline_history").insert({
-    customer_profile_id: profileId,
-    lead_purchase_id: pipeline.lead_purchase_id,
-    dsa_id: pipeline.dsa_id,
-    from_stage: from,
-    to_stage: toStage,
-    changed_by: userId,
-  });
-
-  await supabase.from("customer_timeline").insert({
-    customer_profile_id: profileId,
-    lead_purchase_id: pipeline.lead_purchase_id,
-    dsa_id: pipeline.dsa_id,
-    activity_type: "stage_changed",
-    title: "Stage changed",
-    body: `${stageLabel(from)} → ${stageLabel(toStage)}`,
-    metadata: { from_stage: from, to_stage: toStage },
-    created_by: userId,
-  });
-
-  await createAuditLog({
-    customer_profile_id: profileId,
-    lead_purchase_id: pipeline.lead_purchase_id,
-    dsa_id: pipeline.dsa_id,
-    action_type: "stage_changed",
-    section_name: "Pipeline",
-    field_name: "current_stage",
-    old_value: from,
-    new_value: toStage,
-    action_by: userId,
-  });
-
-  return { error: null };
+  try {
+    await request(`/api/customer-los-pipelines/${pipeline.id}/stage`, {
+      method: "POST",
+      body: JSON.stringify({ to_stage: toStage }),
+    });
+    return { error: null };
+  } catch (err) {
+    return { error: apiError(err, "Could not update the stage") };
+  }
 }
 
 export async function updatePipelineAssignment(
   pipelineId: string,
   patch: Partial<LosPipeline>,
 ): Promise<{ error: string | null }> {
-  const { error } = await supabase.from("customer_los_pipeline").update(patch).eq("id", pipelineId);
-  return { error: error?.message ?? null };
+  try {
+    await request(`/api/customer-los-pipelines/${pipelineId}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return { error: null };
+  } catch (err) {
+    return { error: apiError(err, "Could not update assignment") };
+  }
 }
 
-export async function loadPipelineHistory(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_pipeline_history")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("created_at", { ascending: false });
-  if (error && missingTable(error.message)) return { rows: [] as PipelineHistoryRow[], migrationRequired: true };
-  return { rows: (data ?? []) as PipelineHistoryRow[] };
+export async function loadPipelineHistory(purchaseId: string): Promise<{ rows: PipelineHistoryRow[]; error?: string }> {
+  try {
+    const data = await request<{ rows: PipelineHistoryRow[] }>(`/api/my-leads/${purchaseId}/pipeline-history`);
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: apiError(err, "Could not load stage history") };
+  }
 }
 
-export async function loadLenderCases(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_lender_cases")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("sort_order");
-  if (error && missingTable(error.message)) return { rows: [] as LenderCase[], migrationRequired: true };
-  return { rows: (data ?? []) as LenderCase[] };
+export async function loadLenderCases(purchaseId: string): Promise<{ rows: LenderCase[]; error?: string }> {
+  try {
+    const data = await request<{ rows: LenderCase[] }>(`/api/my-leads/${purchaseId}/lender-cases`);
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: apiError(err, "Could not load lender cases") };
+  }
 }
 
 export async function insertLenderCase(row: Omit<LenderCase, "id" | "created_by"> & { created_by?: string }) {
-  return supabase.from("customer_lender_cases").insert(row as never).select("*").single();
+  try {
+    const data = await request<LenderCase>(`/api/my-leads/${row.lead_purchase_id}/lender-cases`, {
+      method: "POST",
+      body: JSON.stringify(row),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: { message: apiError(err, "Could not add lender") } };
+  }
 }
 
 export async function updateLenderCase(id: string, patch: Partial<LenderCase>) {
-  return supabase.from("customer_lender_cases").update(patch as never).eq("id", id).select("*").single();
+  try {
+    const data = await request<LenderCase>(`/api/customer-lender-cases/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: { message: apiError(err, "Could not update lender") } };
+  }
 }
 
 export async function deleteLenderCase(id: string) {
-  return supabase.from("customer_lender_cases").delete().eq("id", id);
-}
-
-export async function setBestOffer(purchaseId: string, lenderCaseId: string) {
-  await supabase.from("customer_lender_cases").update({ is_best_offer: false }).eq("lead_purchase_id", purchaseId);
-  return supabase.from("customer_lender_cases").update({ is_best_offer: true }).eq("id", lenderCaseId);
-}
-
-export async function loadSanctionRecords(purchaseId: string) {
-  const { data, error } = await supabase.from("customer_sanction_disbursal").select("*").eq("lead_purchase_id", purchaseId);
-  if (error && missingTable(error.message)) return { rows: [] as SanctionDisbursal[], migrationRequired: true };
-  return { rows: (data ?? []) as SanctionDisbursal[] };
-}
-
-export async function upsertSanction(row: Partial<SanctionDisbursal> & { id?: string }) {
-  if (row.id) {
-    return supabase.from("customer_sanction_disbursal").update(row as never).eq("id", row.id).select("*").single();
+  try {
+    await request(`/api/customer-lender-cases/${id}`, { method: "DELETE" });
+    return { error: null as { message: string } | null };
+  } catch (err) {
+    return { error: { message: apiError(err, "Could not remove lender") } };
   }
-  return supabase.from("customer_sanction_disbursal").insert(row as never).select("*").single();
 }
 
-export async function loadLosTasks(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_tasks")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("created_at", { ascending: false });
-  if (error) return { rows: [] as LosTask[] };
-  return {
-    rows: (data ?? []).map((t) => ({
-      ...t,
-      task_type: (t as { task_type?: string }).task_type ?? "general",
-      comments: Array.isArray((t as { comments?: unknown }).comments)
-        ? ((t as { comments: LosTask["comments"] }).comments ?? [])
-        : [],
-      status: mapTaskStatus((t as { status: string }).status),
-    })) as LosTask[],
-  };
+export async function setBestOffer(_purchaseId: string, lenderCaseId: string) {
+  try {
+    await request(`/api/customer-lender-cases/${lenderCaseId}/best-offer`, { method: "POST" });
+    return { error: null as string | null };
+  } catch (err) {
+    return { error: apiError(err, "Could not mark the best offer") };
+  }
 }
 
-function mapTaskStatus(s: string) {
-  if (s === "open") return "pending";
-  return s;
+export async function loadSanctionRecords(purchaseId: string): Promise<{ rows: SanctionDisbursal[]; error?: string }> {
+  try {
+    const data = await request<{ rows: SanctionDisbursal[] }>(`/api/my-leads/${purchaseId}/sanction`);
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: apiError(err, "Could not load sanction details") };
+  }
+}
+
+export async function upsertSanction(row: Partial<SanctionDisbursal> & { id?: string; lead_purchase_id?: string }) {
+  if (!row.lead_purchase_id) {
+    return { data: null, error: { message: "Missing purchase" } };
+  }
+  try {
+    const data = await request<SanctionDisbursal>(`/api/my-leads/${row.lead_purchase_id}/sanction`, {
+      method: "PUT",
+      body: JSON.stringify(row),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: { message: apiError(err, "Could not save sanction details") } };
+  }
+}
+
+export async function loadLosTasks(purchaseId: string): Promise<{ rows: LosTask[]; error?: string }> {
+  try {
+    const data = await request<{ rows: LosTask[] }>(`/api/my-leads/${purchaseId}/tasks`);
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: apiError(err, "Could not load tasks") };
+  }
 }
 
 export async function insertLosTask(row: {
@@ -301,57 +255,43 @@ export async function insertLosTask(row: {
   assigned_user_id?: string | null;
   description?: string | null;
 }) {
-  return supabase
-    .from("customer_tasks")
-    .insert({ ...row, status: row.status ?? "pending", comments: [] } as never)
-    .select("*")
-    .single();
+  try {
+    const data = await request<LosTask>(`/api/my-leads/${row.lead_purchase_id}/tasks`, {
+      method: "POST",
+      body: JSON.stringify(row),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: { message: apiError(err, "Could not add task") } };
+  }
 }
 
 export async function updateLosTask(id: string, patch: Partial<LosTask>) {
-  const dbPatch: Record<string, unknown> = { ...patch };
-  if (patch.status === "completed" && !patch.completed_at) {
-    dbPatch.completed_at = new Date().toISOString();
+  try {
+    const data = await request<LosTask>(`/api/customer-tasks/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(patch),
+    });
+    return { data, error: null as { message: string } | null };
+  } catch (err) {
+    return { data: null, error: { message: apiError(err, "Could not update task") } };
   }
-  return supabase.from("customer_tasks").update(dbPatch as never).eq("id", id).select("*").single();
 }
 
-export async function loadLosDashboardStats(dsaId: string): Promise<LosDashboardStats> {
-  const empty: LosDashboardStats = {
-    activeCases: 0,
-    approvedCases: 0,
-    disbursedAmount: 0,
-    pendingDocs: 0,
-    followupsDueToday: 0,
-    payoutPending: 0,
-    rejectionCount: 0,
-  };
+const EMPTY_STATS: LosDashboardStats = {
+  activeCases: 0,
+  approvedCases: 0,
+  disbursedAmount: 0,
+  pendingDocs: 0,
+  followupsDueToday: 0,
+  payoutPending: 0,
+  rejectionCount: 0,
+};
 
-  const today = new Date().toISOString().slice(0, 10);
-
-  const [pipelines, docs, followups, lenders] = await Promise.all([
-    supabase.from("customer_los_pipeline").select("current_stage").eq("dsa_id", dsaId),
-    supabase.from("customer_documents").select("status").eq("dsa_id", dsaId),
-    supabase.from("customer_followups").select("followup_date,completed").eq("dsa_id", dsaId),
-    supabase.from("customer_lender_cases").select("payout_status,disbursed_amount,login_status").eq("dsa_id", dsaId),
-  ]);
-
-  const stages = pipelines.data ?? [];
-  empty.activeCases = stages.filter((s) => !["closed", "rejected", "disbursed"].includes(s.current_stage)).length;
-  empty.approvedCases = stages.filter((s) => ["approved", "sanctioned", "disbursed"].includes(s.current_stage)).length;
-  empty.rejectionCount = stages.filter((s) => s.current_stage === "rejected").length;
-
-  empty.pendingDocs = (docs.data ?? []).filter((d) =>
-    ["pending", "requested"].includes(d.status ?? ""),
-  ).length;
-
-  empty.followupsDueToday = (followups.data ?? []).filter(
-    (f) => !f.completed && f.followup_date && f.followup_date <= today,
-  ).length;
-
-  const lenderRows = lenders.data ?? [];
-  empty.disbursedAmount = lenderRows.reduce((s, r) => s + (Number(r.disbursed_amount) || 0), 0);
-  empty.payoutPending = lenderRows.filter((r) => r.payout_status === "pending" && Number(r.payout_expected) > 0).length;
-
-  return empty;
+export async function loadLosDashboardStats(_dsaId: string): Promise<LosDashboardStats> {
+  try {
+    return await request<LosDashboardStats>("/api/los/summary");
+  } catch {
+    return EMPTY_STATS;
+  }
 }

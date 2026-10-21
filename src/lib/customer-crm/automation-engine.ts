@@ -1,5 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
-import { insertLosTask } from "./phase4-api";
+import { request } from "@/lib/python-api";
+import { insertLosTask, loadLosTasks } from "./phase4-api";
 import { createNotification } from "./notifications-service";
 import type { CustomerWorkspaceData } from "./types";
 
@@ -15,10 +15,6 @@ export type AutomationContext = {
   unreachableFollowup?: boolean;
 };
 
-function missingTable(msg: string): boolean {
-  return /does not exist|42P01/i.test(msg);
-}
-
 export async function logAutomation(
   ruleKey: string,
   dsaId: string,
@@ -29,29 +25,30 @@ export async function logAutomation(
   taskId?: string,
   retryAt?: string,
 ) {
-  const { error } = await supabase.from("customer_automation_logs").insert({
-    rule_key: ruleKey,
-    dsa_id: dsaId,
-    lead_purchase_id: purchaseId,
-    customer_profile_id: profileId,
-    status,
-    message,
-    task_id: taskId ?? null,
-    retry_at: retryAt ?? null,
-    metadata: {},
-  });
-  if (error && !missingTable(error.message)) console.warn("automation log:", error.message);
+  if (!purchaseId) return;
+  try {
+    await request(`/api/my-leads/${purchaseId}/automation-logs`, {
+      method: "POST",
+      body: JSON.stringify({
+        rule_key: ruleKey,
+        status,
+        message,
+        task_id: taskId ?? null,
+        retry_at: retryAt ?? null,
+        dsa_id: dsaId,
+        customer_profile_id: profileId,
+      }),
+    });
+  } catch {
+    /* The task or notification is the user-visible result. A log failure must not look like the rule succeeded. */
+  }
 }
 
 async function taskExists(purchaseId: string, titlePrefix: string): Promise<boolean> {
-  const { data } = await supabase
-    .from("customer_tasks")
-    .select("id")
-    .eq("lead_purchase_id", purchaseId)
-    .ilike("title", `${titlePrefix}%`)
-    .neq("status", "completed")
-    .limit(1);
-  return (data?.length ?? 0) > 0;
+  const res = await loadLosTasks(purchaseId);
+  if (res.error) return true;
+  const prefix = titlePrefix.toLowerCase();
+  return res.rows.some((task) => task.status !== "completed" && task.title.toLowerCase().startsWith(prefix));
 }
 
 export async function runAutomationForCase(ctx: AutomationContext): Promise<{ triggered: string[] }> {
@@ -64,7 +61,7 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
   if (ctx.pendingDocsCount > 0 && (ctx.pendingDocsDays ?? 0) >= 3) {
     const title = "Reminder: pending documents";
     if (!(await taskExists(pid, title))) {
-      const { data } = await insertLosTask({
+      const { data, error } = await insertLosTask({
         customer_profile_id: profId,
         lead_purchase_id: pid,
         dsa_id: dsaId,
@@ -74,16 +71,20 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
         due_at: new Date(Date.now() + 86400_000).toISOString(),
         assigned_user_id: userId,
       });
-      await logAutomation("docs_pending_reminder", dsaId, pid, profId, "success", title, data?.id as string | undefined);
-      await createNotification(userId, "docs_pending", "Docs pending reminder", title, `/dashboard/customer/${pid}`);
-      triggered.push("docs_pending_reminder");
+      if (error) {
+        await logAutomation("docs_pending_reminder", dsaId, pid, profId, "failed", error.message);
+      } else {
+        await logAutomation("docs_pending_reminder", dsaId, pid, profId, "success", title, data?.id);
+        const note = await createNotification(userId, "docs_pending", "Docs pending reminder", title, `/dashboard/customer/${pid}`);
+        if (!note.error) triggered.push("docs_pending_reminder");
+      }
     }
   }
 
   if (ctx.hasSanction && ctx.pipelineStage === "sanctioned") {
     const title = "Coordinate disbursal";
     if (!(await taskExists(pid, title))) {
-      const { data } = await insertLosTask({
+      const { data, error } = await insertLosTask({
         customer_profile_id: profId,
         lead_purchase_id: pid,
         dsa_id: dsaId,
@@ -93,15 +94,19 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
         due_at: new Date(Date.now() + 2 * 86400_000).toISOString(),
         assigned_user_id: userId,
       });
-      await logAutomation("sanction_disbursal_task", dsaId, pid, profId, "success", title, data?.id as string | undefined);
-      triggered.push("sanction_disbursal_task");
+      if (error) {
+        await logAutomation("sanction_disbursal_task", dsaId, pid, profId, "failed", error.message);
+      } else {
+        await logAutomation("sanction_disbursal_task", dsaId, pid, profId, "success", title, data?.id);
+        triggered.push("sanction_disbursal_task");
+      }
     }
   }
 
   if ((ctx.payoutPendingDays ?? 0) >= 7) {
     const title = "Payout follow-up";
     if (!(await taskExists(pid, title))) {
-      const { data } = await insertLosTask({
+      const { data, error } = await insertLosTask({
         customer_profile_id: profId,
         lead_purchase_id: pid,
         dsa_id: dsaId,
@@ -111,8 +116,12 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
         due_at: new Date(Date.now() + 86400_000).toISOString(),
         assigned_user_id: userId,
       });
-      await logAutomation("payout_followup", dsaId, pid, profId, "success", title, data?.id as string | undefined);
-      triggered.push("payout_followup");
+      if (error) {
+        await logAutomation("payout_followup", dsaId, pid, profId, "failed", error.message);
+      } else {
+        await logAutomation("payout_followup", dsaId, pid, profId, "success", title, data?.id);
+        triggered.push("payout_followup");
+      }
     }
   }
 
@@ -120,7 +129,7 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
     const retryAt = new Date(Date.now() + 2 * 86400_000).toISOString();
     const title = "Retry: customer unreachable";
     if (!(await taskExists(pid, title))) {
-      const { data } = await insertLosTask({
+      const { data, error } = await insertLosTask({
         customer_profile_id: profId,
         lead_purchase_id: pid,
         dsa_id: dsaId,
@@ -130,9 +139,13 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
         due_at: retryAt,
         assigned_user_id: userId,
       });
-      await logAutomation("unreachable_retry", dsaId, pid, profId, "success", title, data?.id as string | undefined, retryAt);
-      await createNotification(userId, "followup_due", "Retry scheduled", title, `/dashboard/customer/${pid}`);
-      triggered.push("unreachable_retry");
+      if (error) {
+        await logAutomation("unreachable_retry", dsaId, pid, profId, "failed", error.message);
+      } else {
+        await logAutomation("unreachable_retry", dsaId, pid, profId, "success", title, data?.id, retryAt);
+        const note = await createNotification(userId, "followup_due", "Retry scheduled", title, `/dashboard/customer/${pid}`);
+        if (!note.error) triggered.push("unreachable_retry");
+      }
     }
   }
 
@@ -151,27 +164,21 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
   return { triggered };
 }
 
-export async function loadAutomationRules(dsaId: string) {
-  const { data, error } = await supabase
-    .from("customer_automation_rules")
-    .select("*")
-    .or(`dsa_id.eq.${dsaId},dsa_id.is.null`)
-    .order("rule_key");
-  if (error && missingTable(error.message)) return { rows: [], migrationRequired: true };
-  return { rows: data ?? [] };
+export async function loadAutomationRules(_dsaId: string) {
+  return { rows: [] as { id: string; rule_key: string; name: string; enabled: boolean }[] };
 }
 
-export async function loadAutomationLogs(dsaId: string, limit = 50) {
-  const { data, error } = await supabase
-    .from("customer_automation_logs")
-    .select("*")
-    .eq("dsa_id", dsaId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error && missingTable(error.message)) return { rows: [], migrationRequired: true };
-  return { rows: data ?? [] };
+export async function loadAutomationLogs(_dsaId: string, _limit = 50) {
+  try {
+    const data = await request<{ rows: { id: string; rule_key: string; status: string; message: string; retry_at: string | null; created_at: string }[] }>(
+      "/api/automation-logs",
+    );
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: err instanceof Error ? err.message : "Could not load automation logs" };
+  }
 }
 
-export async function toggleAutomationRule(ruleId: string, enabled: boolean) {
-  return supabase.from("customer_automation_rules").update({ enabled }).eq("id", ruleId);
+export async function toggleAutomationRule(_ruleId: string, _enabled: boolean) {
+  return { error: { message: "These rules are part of the product and cannot be turned off here." } };
 }

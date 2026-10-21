@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { request } from "@/lib/python-api";
 
 export type NotificationRow = {
   id: string;
@@ -11,49 +11,53 @@ export type NotificationRow = {
   metadata: Record<string, unknown>;
 };
 
-export async function loadNotifications(userId: string, limit = 30) {
-  const { data, error } = await supabase
-    .from("notifications")
-    .select("id, type, title, body, link, read_at, created_at, metadata")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
-  if (error) return { rows: [] as NotificationRow[], error: error.message };
-  return { rows: (data ?? []) as NotificationRow[] };
+function apiError(err: unknown, fallback: string) {
+  return err instanceof Error ? err.message : fallback;
+}
+
+export async function loadNotifications(_userId: string, _limit = 30): Promise<{ rows: NotificationRow[]; error?: string }> {
+  try {
+    const data = await request<{ rows: NotificationRow[] }>("/api/notifications");
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [], error: apiError(err, "Could not load notifications") };
+  }
 }
 
 export async function createNotification(
-  userId: string,
+  _userId: string,
   type: string,
   title: string,
   body?: string,
   link?: string,
 ) {
-  const { error } = await supabase.rpc("notify", {
-    _user_id: userId,
-    _type: type,
-    _title: title,
-    _body: body ?? null,
-    _link: link ?? null,
-    _metadata: {},
-  });
-  if (error) {
-    await supabase.from("notifications").insert({
-      user_id: userId,
-      type: type as never,
-      title,
-      body: body ?? null,
-      link: link ?? null,
+  try {
+    await request("/api/notifications", {
+      method: "POST",
+      body: JSON.stringify({ type, title, body: body ?? null, link: link ?? null }),
     });
+    return { error: null as string | null };
+  } catch (err) {
+    return { error: apiError(err, "Could not save the notification") };
   }
 }
 
 export async function markNotificationRead(id: string) {
-  return supabase.from("notifications").update({ read_at: new Date().toISOString() }).eq("id", id);
+  try {
+    await request(`/api/notifications/${id}/read`, { method: "POST" });
+    return { error: null as string | null };
+  } catch (err) {
+    return { error: apiError(err, "Could not mark the notification read") };
+  }
 }
 
-export async function markAllNotificationsRead(userId: string) {
-  return supabase.rpc("mark_all_notifications_read");
+export async function markAllNotificationsRead(_userId: string) {
+  try {
+    await request("/api/notifications/read-all", { method: "POST" });
+    return { error: null as string | null };
+  } catch (err) {
+    return { error: apiError(err, "Could not mark notifications read") };
+  }
 }
 
 export function unreadCount(rows: NotificationRow[]): number {

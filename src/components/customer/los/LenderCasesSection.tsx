@@ -88,6 +88,7 @@ export function LenderCasesSection({
   const refresh = useCallback(async () => {
     setLoading(true);
     const res = await loadLenderCases(profile.lead_purchase_id);
+    if (res.error) toast.error(res.error);
     setRows(res.rows);
     onCountChange?.(res.rows.filter((r) => !["closed", "rejected"].includes(r.login_status)).length);
     setLoading(false);
@@ -192,7 +193,17 @@ export function LenderCasesSection({
                       {r.is_best_offer ? (
                         <Badge className="text-[9px]">Best offer</Badge>
                       ) : (
-                        <Button type="button" size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setBestOffer(profile.lead_purchase_id, r.id).then(refresh)}>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-[10px]"
+                          onClick={async () => {
+                            const res = await setBestOffer(profile.lead_purchase_id, r.id);
+                            if (res.error) toast.error(res.error);
+                            else void refresh();
+                          }}
+                        >
                           <Star className="size-3" />
                         </Button>
                       )}
@@ -209,7 +220,16 @@ export function LenderCasesSection({
           )}
           <div className="space-y-4">
             {rows.map((row, i) => (
-              <RepeatableBlock key={row.id} title="Lender" index={i} onRemove={() => deleteLenderCase(row.id).then(refresh)}>
+              <RepeatableBlock
+                key={row.id}
+                title="Lender"
+                index={i}
+                onRemove={async () => {
+                  const res = await deleteLenderCase(row.id);
+                  if (res.error) toast.error(res.error.message);
+                  else void refresh();
+                }}
+              >
                 <CrmFormGrid fields={FIELDS} values={rowValues(row)} onChange={(k, v) => onChange(row, k, v)} />
               </RepeatableBlock>
             ))}

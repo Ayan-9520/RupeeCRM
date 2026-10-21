@@ -31,6 +31,7 @@ export function TasksSection({ profile }: { profile: CustomerProfile }) {
   const refresh = useCallback(async () => {
     setLoading(true);
     const res = await loadLosTasks(profile.lead_purchase_id);
+    if (res.error) toast.error(res.error);
     setTasks(res.rows);
     setLoading(false);
   }, [profile.lead_purchase_id]);

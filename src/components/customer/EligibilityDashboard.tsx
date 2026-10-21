@@ -141,10 +141,7 @@ export function EligibilityDashboard({
       {phase2MigrationHint && (
         <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
           <AlertTriangle className="size-4 shrink-0 mt-0.5" />
-          <p>
-            Run <code className="bg-background/60 px-1 rounded">20260518100000_customer_eligibility_phase2.sql</code> to persist
-            eligibility snapshots. Live calculations still work.
-          </p>
+          <p>Eligibility snapshots and workflow stage changes are not saved yet. Live calculations still work.</p>
         </div>
       )}
 

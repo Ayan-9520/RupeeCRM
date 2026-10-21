@@ -32,6 +32,7 @@ type Cycle = "monthly" | "quarterly" | "yearly";
 function BillingPage() {
   const [data, setData] = useState<BillingMe | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [cycle, setCycle] = useState<Cycle>("monthly");
   const [busy, setBusy] = useState<string | null>(null);
   const [invite, setInvite] = useState({ email: "", full_name: "", role: "dsa" });
@@ -40,8 +41,11 @@ function BillingPage() {
     try {
       const me = await getBillingMe();
       setData(me);
+      setLoadError(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not load billing");
+      const message = e instanceof Error ? e.message : "Could not load billing";
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -97,6 +101,24 @@ function BillingPage() {
     return (
       <div className="grid place-items-center py-20">
         <Loader2 className="size-6 animate-spin text-[#10662A]" />
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="py-20 text-center space-y-3">
+        <p className="text-sm text-destructive">{loadError ?? "Could not load billing"}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            void load();
+          }}
+          className="rounded-xl border border-[#d8ecdd] px-4 py-2 text-sm font-semibold text-[#390A5D]"
+        >
+          Try again
+        </button>
       </div>
     );
   }

@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     smtp_from: str = ""
     smtp_from_name: str = "RupeeDial"
     password_reset_minutes: int = 30
+    document_storage_dir: str = ""
 
     @property
     def smtp_enabled(self) -> bool:

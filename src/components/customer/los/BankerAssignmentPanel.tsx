@@ -26,6 +26,7 @@ export function BankerAssignmentPanel({ profile }: { profile: CustomerProfile })
     if (!user) return;
     setLoading(true);
     const res = await ensureLosPipeline(profile.id, profile.lead_purchase_id, user.id);
+    if (res.error) toast.error(res.error);
     setPipeline(res.pipeline);
     setLoading(false);
   }, [user, profile.id, profile.lead_purchase_id]);
@@ -54,10 +55,14 @@ export function BankerAssignmentPanel({ profile }: { profile: CustomerProfile })
     save(patch);
   };
 
-  const transferOwner = () => {
-    if (!user) return;
-    onField("case_owner_id", user.id);
-    toast.success("You are now case owner");
+  const transferOwner = async () => {
+    if (!user || !pipeline) return;
+    const { error } = await updatePipelineAssignment(pipeline.id, { case_owner_id: user.id });
+    if (error) toast.error(error);
+    else {
+      setPipeline((current) => (current ? { ...current, case_owner_id: user.id } : current));
+      toast.success("You are now case owner");
+    }
   };
 
   if (loading) {

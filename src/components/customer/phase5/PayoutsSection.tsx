@@ -41,15 +41,15 @@ function rowValues(r: CustomerPayout) {
 export function PayoutsSection({ profile, userId }: { profile: CustomerProfile; userId: string }) {
   const [rows, setRows] = useState<CustomerPayout[]>([]);
   const [loading, setLoading] = useState(true);
-  const [migrationHint, setMigrationHint] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const queues = useRef(new Map<string, Partial<CustomerPayout>>());
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const refresh = useCallback(async () => {
     setLoading(true);
     const res = await loadPayouts(profile.lead_purchase_id);
+    setLoadError(res.error ?? null);
     setRows(res.rows);
-    if (res.migrationRequired) setMigrationHint(true);
     setLoading(false);
   }, [profile.lead_purchase_id]);
 
@@ -120,9 +120,9 @@ export function PayoutsSection({ profile, userId }: { profile: CustomerProfile; 
         </Button>
       }
     >
-      {migrationHint && (
-        <p className="text-xs text-amber-700 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-4">
-          Run migration <code className="text-[10px]">20260521100000_customer_los_phase5.sql</code> to persist payouts.
+      {loadError && (
+        <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mb-4">
+          {loadError}
         </p>
       )}
       <div className="grid grid-cols-3 gap-3 mb-6">
@@ -144,7 +144,16 @@ export function PayoutsSection({ profile, userId }: { profile: CustomerProfile; 
       ) : (
         <div className="space-y-4">
           {rows.map((row, i) => (
-            <RepeatableBlock key={row.id} title="Payout" index={i} onRemove={() => deletePayout(row.id).then(refresh)}>
+            <RepeatableBlock
+              key={row.id}
+              title="Payout"
+              index={i}
+              onRemove={async () => {
+                const res = await deletePayout(row.id);
+                if (res.error) toast.error(res.error.message);
+                else void refresh();
+              }}
+            >
               <Badge variant="secondary" className="mb-3 capitalize">
                 {row.payout_status.replace(/_/g, " ")}
               </Badge>

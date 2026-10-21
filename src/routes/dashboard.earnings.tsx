@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Building2, Loader2, Receipt } from "lucide-react";
-import { getInvoiceCentre, raiseInvoice, type InvoiceCentre } from "@/lib/python-api";
+import { getInvoiceCentre, listCaseFiles, raiseInvoice, type InvoiceCentre, type LoanCaseFile } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/earnings")({
   head: () => ({ meta: [{ title: "Invoices — RupeeDial One" }] }),
@@ -15,14 +15,31 @@ function inr(n: number) {
 
 function InvoiceCentrePage() {
   const [centre, setCentre] = useState<InvoiceCentre | null>(null);
+  const [files, setFiles] = useState<LoanCaseFile[]>([]);
+  const [filesError, setFilesError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      setCentre(await getInvoiceCentre());
+      const [invoiceCentre, caseFiles] = await Promise.all([
+        getInvoiceCentre(),
+        listCaseFiles().catch((error: unknown) => (error instanceof Error ? error : new Error("Could not load closure files"))),
+      ]);
+      setCentre(invoiceCentre);
+      setLoadError(null);
+      if (caseFiles instanceof Error) {
+        setFilesError(caseFiles.message);
+        setFiles([]);
+      } else {
+        setFilesError(null);
+        setFiles(caseFiles.items ?? []);
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not load invoices");
+      const message = error instanceof Error ? error.message : "Could not load invoices";
+      setLoadError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -45,10 +62,28 @@ function InvoiceCentrePage() {
     }
   };
 
-  if (loading || !centre) {
+  if (loading) {
     return (
       <div className="grid place-items-center py-16">
         <Loader2 className="size-6 animate-spin text-[#10662A]" />
+      </div>
+    );
+  }
+
+  if (!centre) {
+    return (
+      <div className="py-16 text-center space-y-3">
+        <p className="text-sm text-destructive">{loadError ?? "Could not load invoices"}</p>
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            void load();
+          }}
+          className="rounded-xl border border-[#d8ecdd] px-4 py-2 text-sm font-semibold text-[#390A5D]"
+        >
+          Try again
+        </button>
       </div>
     );
   }
@@ -72,13 +107,40 @@ function InvoiceCentrePage() {
             <Receipt className="size-6 text-[#10662A]" /> Invoice & payout
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
-            Disbursed cases become eligible commission at {Math.round(centre.rate * 1000) / 10}%. Raise one invoice, then admin verifies, processes and marks it paid.
+            Closure files use lender receivable, then the connector percent, then an equal split between agent and company net. Lead-purchase invoices below stay on the admin percent ({Math.round(centre.rate * 1000) / 10}%).
           </p>
         </div>
         <Link to="/dashboard/settings" className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] px-3 py-2 text-xs font-semibold text-[#390A5D]">
           <Building2 className="size-3.5" /> Bank details
         </Link>
       </div>
+
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold text-[#390A5D]">Closure payout</h2>
+          <Link to="/dashboard/cases" className="text-sm font-semibold text-[#10662A]">Open case files</Link>
+        </div>
+        {filesError ? (
+          <p className="py-6 text-sm text-destructive">{filesError}</p>
+        ) : files.length === 0 ? (
+          <p className="py-6 text-sm text-[#5c4d72]">No closure file yet. Open Case Files and use the sample deal.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-[#d8ecdd]">
+            {files.map((row) => (
+              <li key={row.id} className="grid gap-1 py-3 text-sm sm:grid-cols-5">
+                <div>
+                  <div className="font-medium text-[#390A5D]">{row.deal_no}</div>
+                  <div className="text-xs text-[#5c4d72]">{row.status_label} · {row.loan_type}</div>
+                </div>
+                <div>Receivable ₹{inr(row.receivable_amount)}</div>
+                <div>Connector ₹{inr(row.payable_amount)}</div>
+                <div>Agent ₹{inr(row.agent_amount)}</div>
+                <div className="font-bold text-[#10662A]">Net ₹{inr(row.net_revenue)}</div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
         {cards.map(([label, value, hint]) => (

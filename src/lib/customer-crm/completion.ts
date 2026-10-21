@@ -65,6 +65,7 @@ export function sectionCompletion(
         obligations.length,
       );
     case "co-applicant":
+    case "co-applicants":
       if (coApps.length === 0) return 0;
       return pct(coApps.filter((c) => filled(c.full_name) && filled(c.relation)).length, coApps.length);
     case "loan-requirements":

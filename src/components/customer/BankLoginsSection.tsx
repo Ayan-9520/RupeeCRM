@@ -90,14 +90,14 @@ export function BankLoginsSection({
 }) {
   const [rows, setRows] = useState<BankLogin[]>([]);
   const [loading, setLoading] = useState(true);
-  const [migrationHint, setMigrationHint] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const queues = useRef(new Map<string, Partial<BankLogin>>());
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const refresh = useCallback(async () => {
     setLoading(true);
     const res = await loadBankLogins(profile.lead_purchase_id);
-    if (res.migrationRequired) setMigrationHint(true);
+    setLoadError(res.error ?? null);
     setRows(res.rows);
     const active = res.rows.filter((r) => !["closed", "rejected"].includes(r.login_status)).length;
     onCountChange?.(active);
@@ -152,7 +152,6 @@ export function BankLoginsSection({
       sort_order: rows.length,
     });
     if (error) {
-      if (error.message.includes("does not exist")) setMigrationHint(true);
       toast.error(error.message);
       return;
     }
@@ -176,10 +175,10 @@ export function BankLoginsSection({
         </Button>
       }
     >
-      {migrationHint && (
-        <div className="mb-4 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+      {loadError && (
+        <div className="mb-4 flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs">
           <AlertTriangle className="size-4 shrink-0" />
-          Run Phase 3 migration for bank login tracking.
+          {loadError}
         </div>
       )}
       {loading ? (

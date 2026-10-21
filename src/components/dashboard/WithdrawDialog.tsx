@@ -20,6 +20,7 @@ interface Props {
   onSuccess?: () => void;
 }
 
+/** Legacy: not mounted. Calls the removed Supabase RPCs; the live payout flow is invoices via /api/payouts. */
 export function WithdrawDialog({ open, onOpenChange, onSuccess }: Props) {
   const { user } = useAuth();
   const [available, setAvailable] = useState<number>(0);

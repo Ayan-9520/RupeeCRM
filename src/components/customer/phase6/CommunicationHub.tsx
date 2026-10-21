@@ -47,7 +47,7 @@ export function CommunicationHub({
 
   const send = async () => {
     if (!user || !body.trim()) return;
-    await saveCommunication({
+    const { error } = await saveCommunication({
       customer_profile_id: profile.id,
       lead_purchase_id: profile.lead_purchase_id,
       dsa_id: profile.dsa_id,
@@ -57,6 +57,10 @@ export function CommunicationHub({
       scheduled_at: schedule || null,
       created_by: user.id,
     });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success(schedule ? "Scheduled" : "Logged");
     setBody("");
     refresh();

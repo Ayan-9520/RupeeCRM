@@ -108,6 +108,7 @@ const SECTION_ICONS: Record<string, React.ComponentType<{ className?: string }>>
 
 type TabId = "crm" | "pipeline" | "documents" | "notes" | "commission";
 
+/** Legacy: not mounted. Uses the removed Supabase backend; the live case screen is CustomerWorkspacePage. */
 export function LeadCrmWorkspace({
   purchase,
   pipeline,

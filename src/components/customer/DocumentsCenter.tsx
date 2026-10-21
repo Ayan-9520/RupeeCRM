@@ -7,12 +7,11 @@ import {
   type DocumentCategory,
 } from "@/lib/customer-crm/document-catalog";
 import {
-  ensureDocumentSlots,
   loadCustomerDocuments,
   removeCustomerDocument,
   updateDocumentMeta,
   uploadCustomerDocument,
-  addTimelineEntry,
+  requestBlob,
   type CustomerDocument,
 } from "@/lib/customer-crm/phase3-api";
 import { SectionShell } from "./shared/SectionShell";
@@ -45,7 +44,7 @@ export function DocumentsCenter({
   const { user } = useAuth();
   const [docs, setDocs] = useState<CustomerDocument[]>([]);
   const [loading, setLoading] = useState(true);
-  const [migrationHint, setMigrationHint] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [uploadingSlug, setUploadingSlug] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
@@ -53,10 +52,8 @@ export function DocumentsCenter({
   const refresh = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const ensured = await ensureDocumentSlots(profile.id, profile.lead_purchase_id, leadId, user.id);
-    if (ensured.migrationRequired) setMigrationHint(true);
     const res = await loadCustomerDocuments(profile.lead_purchase_id);
-    if (res.migrationRequired) setMigrationHint(true);
+    setLoadError(res.error ?? null);
     setDocs(res.docs);
     const pending = res.docs.filter((d) => d.status === "pending" || d.status === "rejected").length;
     onDocsChange?.(pending);
@@ -86,21 +83,18 @@ export function DocumentsCenter({
     else {
       toast.success("Document uploaded");
       await refresh();
-      await addTimelineNote(`Document uploaded: ${doc.doc_label}`);
     }
   };
 
-  const addTimelineNote = async (body: string) => {
-    if (!user) return;
-    await addTimelineEntry({
-      customer_profile_id: profile.id,
-      lead_purchase_id: profile.lead_purchase_id,
-      dsa_id: user.id,
-      activity_type: "document",
-      title: "Document",
-      body,
-      created_by: user.id,
-    });
+  const onPreview = async (doc: CustomerDocument) => {
+    if (!doc.file_url) return;
+    try {
+      const blob = await requestBlob(doc.file_url);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not open the document");
+    }
   };
 
   const onStatusChange = async (doc: CustomerDocument, status: string) => {
@@ -123,10 +117,10 @@ export function DocumentsCenter({
 
   return (
     <SectionShell title="Documents" description="Upload center — KYC, income, property & banking proofs" icon={FolderOpen}>
-      {migrationHint && (
-        <div className="mb-4 flex gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+      {loadError && (
+        <div className="mb-4 flex gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs">
           <AlertTriangle className="size-4 shrink-0" />
-          Run <code className="px-1 rounded bg-background/80">20260519100000_customer_crm_phase3.sql</code> for full document workflow.
+          {loadError}
         </div>
       )}
       {loading ? (
@@ -187,10 +181,8 @@ export function DocumentsCenter({
                             {doc?.file_url ? "Replace" : "Upload"}
                           </Button>
                           {doc?.file_url && (
-                            <Button type="button" size="sm" variant="ghost" asChild>
-                              <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                                <Eye className="size-3.5 mr-1" /> Preview
-                              </a>
+                            <Button type="button" size="sm" variant="ghost" onClick={() => doc && void onPreview(doc)}>
+                              <Eye className="size-3.5 mr-1" /> Preview
                             </Button>
                           )}
                           {doc?.file_url && (
@@ -224,7 +216,10 @@ export function DocumentsCenter({
                               defaultValue={doc.verification_notes ?? ""}
                               onBlur={(e) => {
                                 if (e.target.value !== (doc.verification_notes ?? "")) {
-                                  void updateDocumentMeta(doc.id, { verification_notes: e.target.value }).then(refresh);
+                                  void updateDocumentMeta(doc.id, { verification_notes: e.target.value }).then((res) => {
+                                    if (res.error) toast.error(res.error.message);
+                                    else void refresh();
+                                  });
                                 }
                               }}
                             />

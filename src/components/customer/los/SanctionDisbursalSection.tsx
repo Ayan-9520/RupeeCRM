@@ -28,11 +28,12 @@ const NUM = new Set(FIELDS.filter((f) => f.type === "number").map((f) => f.key))
 export function SanctionDisbursalSection({ profile, dsaId }: { profile: CustomerProfile; dsaId: string }) {
   const [row, setRow] = useState<SanctionDisbursal | null>(null);
   const [loading, setLoading] = useState(true);
-  const timer = useRef<ReturnType<typeof setTimeout>>();
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const refresh = useCallback(async () => {
     setLoading(true);
     const res = await loadSanctionRecords(profile.lead_purchase_id);
+    if (res.error) toast.error(res.error);
     setRow(res.rows[0] ?? null);
     setLoading(false);
   }, [profile.lead_purchase_id]);
@@ -61,10 +62,18 @@ export function SanctionDisbursalSection({ profile, dsaId }: { profile: Customer
     timer.current = setTimeout(() => void save(patch), 650);
   };
 
-  const create = () => {
-    void save({});
-    toast.success("Sanction record created");
-    refresh();
+  const create = async () => {
+    const { data, error } = await upsertSanction({
+      customer_profile_id: profile.id,
+      lead_purchase_id: profile.lead_purchase_id,
+      dsa_id: dsaId,
+      lender_case_id: null,
+    });
+    if (error) toast.error(error.message);
+    else {
+      if (data) setRow(data as SanctionDisbursal);
+      toast.success("Sanction record created");
+    }
   };
 
   return (

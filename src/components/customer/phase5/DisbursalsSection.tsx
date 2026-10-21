@@ -84,16 +84,16 @@ export function DisbursalsSection({ profile, userId }: { profile: CustomerProfil
   const [rows, setRows] = useState<CustomerDisbursal[]>([]);
   const [payouts, setPayouts] = useState<Awaited<ReturnType<typeof loadPayouts>>["rows"]>([]);
   const [loading, setLoading] = useState(true);
-  const [migrationHint, setMigrationHint] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const queues = useRef(new Map<string, Partial<CustomerDisbursal>>());
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   const refresh = useCallback(async () => {
     setLoading(true);
     const [d, p] = await Promise.all([loadDisbursals(profile.lead_purchase_id), loadPayouts(profile.lead_purchase_id)]);
+    setLoadError(d.error ?? p.error ?? null);
     setRows(d.rows);
     setPayouts(p.rows);
-    if (d.migrationRequired || p.migrationRequired) setMigrationHint(true);
     setLoading(false);
   }, [profile.lead_purchase_id]);
 
@@ -174,9 +174,9 @@ export function DisbursalsSection({ profile, userId }: { profile: CustomerProfil
         </Button>
       }
     >
-      {migrationHint && (
-        <p className="text-xs text-amber-700 bg-amber-500/10 border border-amber-500/20 rounded-lg px-3 py-2 mb-4">
-          Run migration <code className="text-[10px]">20260521100000_customer_los_phase5.sql</code> to persist disbursals.
+      {loadError && (
+        <p className="text-xs text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2 mb-4">
+          {loadError}
         </p>
       )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -199,7 +199,16 @@ export function DisbursalsSection({ profile, userId }: { profile: CustomerProfil
           {rows.map((row, i) => {
             const st = disbursalStatusMeta(row.disbursal_status);
             return (
-              <RepeatableBlock key={row.id} title="Disbursal" index={i} onRemove={() => deleteDisbursal(row.id).then(refresh)}>
+              <RepeatableBlock
+                key={row.id}
+                title="Disbursal"
+                index={i}
+                onRemove={async () => {
+                  const res = await deleteDisbursal(row.id);
+                  if (res.error) toast.error(res.error.message);
+                  else void refresh();
+                }}
+              >
                 <Badge className={`mb-3 ${st.color} border-0`}>{st.label}</Badge>
                 <CrmFormGrid fields={FIELDS} values={rowValues(row)} onChange={(k, v) => onChange(row, k, v)} />
               </RepeatableBlock>

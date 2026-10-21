@@ -73,9 +73,9 @@ export function clearCrmSession() {
   localStorage.removeItem(USER_KEY);
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
-  if (!headers.has("Content-Type") && init.body) {
+  if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
   }
   const token = getToken();
@@ -93,6 +93,24 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new Error(detail);
   }
   return res.json() as Promise<T>;
+}
+
+export async function requestBlob(path: string): Promise<Blob> {
+  const headers = new Headers();
+  const token = getToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const res = await fetch(`${API_URL}${path}`, { headers });
+  if (!res.ok) {
+    let detail = `Request failed (${res.status})`;
+    try {
+      const body = await res.json();
+      if (typeof body?.detail === "string") detail = body.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  return res.blob();
 }
 
 export async function crmLogin(email: string, password: string): Promise<CrmUser> {
@@ -1038,6 +1056,71 @@ export async function adminCreditWallet(
 
 export async function adminCancelPlan(userId: string): Promise<{ message: string }> {
   return request("/api/billing/admin/cancel", { method: "POST", body: JSON.stringify({ user_id: userId }) });
+}
+
+export type LoanCaseFile = {
+  id: string;
+  deal_no: string;
+  stage: string;
+  stage_label: string;
+  status_label: string;
+  flag: string;
+  loan_type: string;
+  lead_source: string;
+  partner_code: string;
+  partner_name: string;
+  client_name: string;
+  client_phone: string;
+  project_name: string;
+  expected_sanction_on: string;
+  client_access: string;
+  loan_amount: number;
+  sanctioned_amount: number;
+  receivable_percent: number;
+  payable_percent: number;
+  loyalty_name: string;
+  loyalty_amount: number;
+  bank_name: string;
+  bank_rm: string;
+  bank_rm_phone: string;
+  submitted_by: string;
+  pod_pending: boolean;
+  pod_remarks: string;
+  counted: boolean;
+  invoice_amount: number;
+  collected_amount: number;
+  payout_status: string;
+  payout_note: string;
+  submitted_on?: string;
+  base_amount: number;
+  receivable_amount: number;
+  payable_amount: number;
+  agent_amount: number;
+  net_revenue: number;
+  invoice_percent: number;
+  collection_percent: number;
+};
+
+export async function listCaseFiles(chip = "all", dateFrom = "", dateTo = ""): Promise<{
+  revenue: number;
+  disbursed_revenue: number;
+  confirmed_count: number;
+  items: LoanCaseFile[];
+}> {
+  const query = new URLSearchParams({ chip, date_from: dateFrom, date_to: dateTo });
+  return request(`/api/cases?${query.toString()}`);
+}
+
+export async function createCaseFile(body: Partial<LoanCaseFile>): Promise<LoanCaseFile> {
+  return request("/api/cases", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function saveCaseFile(id: string, body: Partial<LoanCaseFile>): Promise<LoanCaseFile> {
+  return request(`/api/cases/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+
+export async function openSampleCase(): Promise<LoanCaseFile> {
+  return request("/api/cases/sample", { method: "POST" });
 }
 
 export { API_URL };

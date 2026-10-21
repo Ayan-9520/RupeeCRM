@@ -1,10 +1,5 @@
-import { supabase } from "@/integrations/supabase/client";
 import type { AiInsightDraft } from "./ai-intelligence";
 import type { CommChannel } from "./phase6-constants";
-
-function missingTable(msg: string): boolean {
-  return /does not exist|42P01/i.test(msg);
-}
 
 export type AiInsight = {
   id: string;
@@ -49,61 +44,32 @@ export type SlaEvent = {
   status: string;
 };
 
-export async function loadAiInsights(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_ai_insights")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .is("dismissed_at", null)
-    .order("priority_score", { ascending: false })
-    .limit(20);
-  if (error && missingTable(error.message)) return { rows: [] as AiInsight[], migrationRequired: true };
-  return { rows: (data ?? []) as AiInsight[] };
+/* AI insights, communications, templates, and SLA events have no Python API or table yet. */
+
+export async function loadAiInsights(_purchaseId: string) {
+  return { rows: [] as AiInsight[] };
 }
 
 export async function persistAiInsights(
-  profileId: string,
-  purchaseId: string,
-  dsaId: string,
-  userId: string,
+  _profileId: string,
+  _purchaseId: string,
+  _dsaId: string,
+  _userId: string,
   drafts: AiInsightDraft[],
 ) {
-  if (!drafts.length) return { error: null };
-  const rows = drafts.map((d) => ({
-    customer_profile_id: profileId,
-    lead_purchase_id: purchaseId,
-    dsa_id: dsaId,
-    insight_type: d.insight_type,
-    channel: d.channel,
-    title: d.title,
-    content: d.content,
-    priority_score: d.priority_score,
-    intent_tags: d.intent_tags,
-    suggested_action: d.suggested_action ?? null,
-    scheduled_for: d.scheduled_for ?? null,
-    created_by: userId,
-  }));
-  const { error } = await supabase.from("customer_ai_insights").insert(rows as never);
-  if (error && missingTable(error.message)) return { migrationRequired: true, error: null };
-  return { error: error?.message ?? null };
+  if (!drafts.length) return { error: null as string | null };
+  return { error: "AI suggestions are not stored yet." as string | null };
 }
 
-export async function dismissAiInsight(id: string) {
-  return supabase.from("customer_ai_insights").update({ dismissed_at: new Date().toISOString() }).eq("id", id);
+export async function dismissAiInsight(_id: string) {
+  return { error: { message: "AI suggestions are not stored yet." } };
 }
 
-export async function loadCommunications(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_communications")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("created_at", { ascending: false })
-    .limit(50);
-  if (error && missingTable(error.message)) return { rows: [] as Communication[], migrationRequired: true };
-  return { rows: (data ?? []) as Communication[] };
+export async function loadCommunications(_purchaseId: string) {
+  return { rows: [] as Communication[] };
 }
 
-export async function saveCommunication(row: {
+export async function saveCommunication(_row: {
   customer_profile_id: string;
   lead_purchase_id: string;
   dsa_id: string;
@@ -114,61 +80,18 @@ export async function saveCommunication(row: {
   scheduled_at?: string | null;
   created_by: string;
 }) {
-  const { data, error } = await supabase
-    .from("customer_communications")
-    .insert({
-      ...row,
-      direction: "outbound",
-      status: row.status ?? (row.scheduled_at ? "scheduled" : "sent"),
-      sent_at: row.scheduled_at ? null : new Date().toISOString(),
-    } as never)
-    .select("*")
-    .single();
-  return { data, error };
+  return {
+    data: null as Communication | null,
+    error: { message: "Communication history is not stored yet. Log calls and messages under Follow-ups." },
+  };
 }
 
-export async function loadCommTemplates(dsaId: string) {
-  const { data, error } = await supabase
-    .from("customer_communication_templates")
-    .select("*")
-    .or(`is_system.eq.true,dsa_id.eq.${dsaId}`)
-    .order("name");
-  if (error && missingTable(error.message)) return { rows: [] as CommTemplate[], migrationRequired: true };
-  return { rows: (data ?? []) as CommTemplate[] };
+export async function loadCommTemplates(_dsaId: string) {
+  return { rows: [] as CommTemplate[] };
 }
 
-export async function loadSlaEvents(purchaseId: string) {
-  const { data, error } = await supabase
-    .from("customer_sla_events")
-    .select("*")
-    .eq("lead_purchase_id", purchaseId)
-    .order("created_at", { ascending: false });
-  if (error && missingTable(error.message)) return { rows: [] as SlaEvent[], migrationRequired: true };
-  return { rows: (data ?? []) as SlaEvent[] };
-}
-
-export async function upsertSlaEvent(row: {
-  customer_profile_id: string;
-  lead_purchase_id: string;
-  dsa_id: string;
-  sla_type: string;
-  target_hours: number;
-  status: string;
-  started_at?: string;
-  completed_at?: string | null;
-}) {
-  const { data: existing } = await supabase
-    .from("customer_sla_events")
-    .select("id")
-    .eq("lead_purchase_id", row.lead_purchase_id)
-    .eq("sla_type", row.sla_type)
-    .is("completed_at", null)
-    .maybeSingle();
-
-  if (existing?.id) {
-    return supabase.from("customer_sla_events").update(row as never).eq("id", existing.id).select("*").single();
-  }
-  return supabase.from("customer_sla_events").insert(row as never).select("*").single();
+export async function loadSlaEvents(_purchaseId: string) {
+  return { rows: [] as SlaEvent[] };
 }
 
 export function computeSlaStatus(startedAt: string, targetHours: number, completedAt?: string | null): string {
@@ -190,8 +113,16 @@ export type ExecutiveMetrics = {
   rejectionReasons: { reason: string; count: number }[];
 };
 
-export async function loadExecutiveMetrics(dsaId: string): Promise<ExecutiveMetrics> {
-  const empty: ExecutiveMetrics = {
+export type ExecutiveSourceRows = {
+  pipelines: { current_stage: string; created_at: string | null; last_stage_changed_at: string | null }[];
+  lenderCases: { lender_name: string | null; sanctioned_amount: number | null; rejection_reason: string | null }[];
+  disbursals: { disbursed_amount: number | null; disbursal_date: string | null; created_at: string }[];
+  payouts: { payout_amount: number | null; payout_status: string; received_date: string | null }[];
+  purchaseCount: number;
+};
+
+export function buildExecutiveMetrics(src: ExecutiveSourceRows): ExecutiveMetrics {
+  const out: ExecutiveMetrics = {
     dsaPerformance: [],
     stageFunnel: [],
     lenderConversion: [],
@@ -201,23 +132,11 @@ export async function loadExecutiveMetrics(dsaId: string): Promise<ExecutiveMetr
     approvalRatio: 0,
     rejectionReasons: [],
   };
-
-  const [pipes, lenders, disb, payouts, purchases] = await Promise.all([
-    supabase.from("customer_los_pipeline").select("current_stage,created_at,last_stage_changed_at").eq("dsa_id", dsaId),
-    supabase.from("customer_lender_cases").select("lender_name,login_status,sanctioned_amount,rejection_reason").eq("dsa_id", dsaId),
-    supabase.from("customer_disbursals").select("disbursed_amount,disbursal_date,created_at").eq("dsa_id", dsaId),
-    supabase.from("customer_payouts").select("payout_amount,payout_status,received_date").eq("dsa_id", dsaId),
-    supabase.from("lead_purchases").select("id,created_at,pipeline_stage,price_paid").eq("dsa_id", dsaId),
-  ]);
-
-  const pipeRows = pipes.data ?? [];
-  const lenderRows = lenders.data ?? [];
-  const disbRows = disb.data ?? [];
-  const payRows = payouts.data ?? [];
+  const { pipelines: pipeRows, lenderCases: lenderRows, disbursals: disbRows, payouts: payRows } = src;
 
   const stageMap = new Map<string, number>();
   for (const p of pipeRows) stageMap.set(p.current_stage, (stageMap.get(p.current_stage) ?? 0) + 1);
-  empty.stageFunnel = Array.from(stageMap.entries()).map(([stage, count]) => ({ stage, count }));
+  out.stageFunnel = Array.from(stageMap.entries()).map(([stage, count]) => ({ stage, count }));
 
   const lenderMap = new Map<string, { logins: number; sanctions: number }>();
   for (const l of lenderRows) {
@@ -227,7 +146,7 @@ export async function loadExecutiveMetrics(dsaId: string): Promise<ExecutiveMetr
     if (Number(l.sanctioned_amount) > 0) cur.sanctions += 1;
     lenderMap.set(n, cur);
   }
-  empty.lenderConversion = Array.from(lenderMap.entries()).map(([name, v]) => ({ name, ...v }));
+  out.lenderConversion = Array.from(lenderMap.entries()).map(([name, v]) => ({ name, ...v }));
 
   const monthMap = new Map<string, { disbursed: number; payout: number }>();
   for (const d of disbRows) {
@@ -242,28 +161,32 @@ export async function loadExecutiveMetrics(dsaId: string): Promise<ExecutiveMetr
     cur.payout += Number(p.payout_amount) || 0;
     monthMap.set(m, cur);
   }
-  empty.monthlyGrowth = Array.from(monthMap.entries())
+  out.monthlyGrowth = Array.from(monthMap.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([month, v]) => ({ month, ...v }));
 
   const logins = lenderRows.length;
   const sanctioned = lenderRows.filter((l) => Number(l.sanctioned_amount) > 0).length;
   const disbursed = disbRows.filter((d) => Number(d.disbursed_amount) > 0).length;
-  empty.approvalRatio = logins > 0 ? Math.round((sanctioned / logins) * 100) : 0;
-  empty.loginToDisbursalRatio = logins > 0 ? Math.round((disbursed / logins) * 100) : 0;
+  out.approvalRatio = logins > 0 ? Math.round((sanctioned / logins) * 100) : 0;
+  out.loginToDisbursalRatio = logins > 0 ? Math.round((disbursed / logins) * 100) : 0;
 
   const reasonMap = new Map<string, number>();
-  for (const l of lenderRows.filter((l) => l.rejection_reason)) {
-    const r = l.rejection_reason!.slice(0, 40);
+  for (const l of lenderRows) {
+    if (!l.rejection_reason) continue;
+    const r = l.rejection_reason.slice(0, 40);
     reasonMap.set(r, (reasonMap.get(r) ?? 0) + 1);
   }
-  empty.rejectionReasons = Array.from(reasonMap.entries()).map(([reason, count]) => ({ reason, count }));
+  out.rejectionReasons = Array.from(reasonMap.entries()).map(([reason, count]) => ({ reason, count }));
 
-  empty.dsaPerformance = [
+  out.dsaPerformance = [
     { label: "Active cases", value: pipeRows.length },
-    { label: "Purchases", value: (purchases.data ?? []).length },
+    { label: "Purchases", value: src.purchaseCount },
     { label: "Disbursed ₹", value: disbRows.reduce((s, d) => s + (Number(d.disbursed_amount) || 0), 0) },
-    { label: "Payout ₹", value: payRows.filter((p) => p.payout_status === "received").reduce((s, p) => s + (Number(p.payout_amount) || 0), 0) },
+    {
+      label: "Payout ₹",
+      value: payRows.filter((p) => p.payout_status === "received").reduce((s, p) => s + (Number(p.payout_amount) || 0), 0),
+    },
   ];
 
   let tatSum = 0;
@@ -274,7 +197,12 @@ export async function loadExecutiveMetrics(dsaId: string): Promise<ExecutiveMetr
       tatN += 1;
     }
   }
-  empty.avgTatHours = tatN > 0 ? Math.round(tatSum / tatN) : 0;
+  out.avgTatHours = tatN > 0 ? Math.round(tatSum / tatN) : 0;
 
-  return empty;
+  return out;
+}
+
+/** No cross-case metrics endpoint exists yet, so this returns the empty aggregate. */
+export async function loadExecutiveMetrics(_dsaId: string): Promise<ExecutiveMetrics> {
+  return buildExecutiveMetrics({ pipelines: [], lenderCases: [], disbursals: [], payouts: [], purchaseCount: 0 });
 }

@@ -6,7 +6,7 @@ import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 
 export function NotificationCenter() {
-  const { rows, loading, unread, markRead, markAllRead } = useNotifications();
+  const { rows, loading, error, unread, markRead, markAllRead } = useNotifications();
 
   return (
     <Popover>
@@ -32,6 +32,8 @@ export function NotificationCenter() {
         <div className="max-h-80 overflow-y-auto">
           {loading ? (
             <Loader2 className="size-5 animate-spin mx-auto my-6" />
+          ) : error ? (
+            <p className="text-xs text-destructive text-center py-8 px-3">{error}</p>
           ) : rows.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-8">No notifications</p>
           ) : (

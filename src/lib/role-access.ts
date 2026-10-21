@@ -85,7 +85,7 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ceo", "super_admin", "admin", "coordinator"],
     group: "main",
   },
-  { title: "Cases", url: "/dashboard/cases", roles: ["ceo", "super_admin", "admin", "lender", "dsa", "coordinator"], group: "main" },
+  { title: "Case Files", url: "/dashboard/cases", roles: ["ceo", "super_admin", "admin", "lender", "dsa", "coordinator"], group: "main" },
   {
     title: "Invoices",
     url: "/dashboard/earnings",

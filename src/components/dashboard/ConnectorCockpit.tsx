@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import {
   getBillingMe,
-  getPayoutSummary,
   listMyLeads,
   listMyPayoutRequests,
   type CrmPurchase,
@@ -59,6 +58,7 @@ const MODULES = [
 
 export function ConnectorCockpit({ firstName }: { firstName: string }) {
   const [loading, setLoading] = useState(true);
+  const [payoutError, setPayoutError] = useState(false);
   const [cards, setCards] = useState({
     today: 0,
     active: 0,
@@ -75,12 +75,14 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [leads, payout, requests, billing] = await Promise.all([
+      const [leads, requestsOrNull, billing] = await Promise.all([
         listMyLeads().catch(() => ({ items: [] as CrmPurchase[], total: 0, stages: [] as string[] })),
-        getPayoutSummary().catch(() => null),
-        listMyPayoutRequests().catch(() => []),
+        listMyPayoutRequests().catch(() => null),
         getBillingMe().catch(() => null),
       ]);
+      const requests = requestsOrNull ?? [];
+      const sumStatus = (...statuses: string[]) =>
+        requests.filter((r) => statuses.includes(r.status)).reduce((s, r) => s + Number(r.amount || 0), 0);
       if (cancelled) return;
       const rows = leads.items ?? [];
       const today = rows.filter((r) => isToday(r.created_at) || isToday(r.next_followup_at)).length;
@@ -88,9 +90,6 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
       const login = rows.filter((r) => LOGIN_STAGES.has(r.pipeline_stage)).reduce((s, r) => s + amountOf(r), 0);
       const sanction = rows.filter((r) => SANCTION_STAGES.has(r.pipeline_stage)).reduce((s, r) => s + amountOf(r), 0);
       const disburse = rows.filter((r) => r.pipeline_stage === "disbursed" || r.converted).reduce((s, r) => s + amountOf(r), 0);
-      const approved = requests
-        .filter((r) => r.status === "approved" || r.status === "processing")
-        .reduce((s, r) => s + Number(r.amount || 0), 0);
       const done = rows.filter((r) => r.pipeline_stage === "disbursed" || r.converted).length;
       setCards({
         today,
@@ -98,12 +97,13 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
         login,
         sanction,
         disburse,
-        pending: Number(payout?.pending || 0),
-        approved,
-        paid: Number(payout?.paid_out || 0),
+        pending: sumStatus("pending"),
+        approved: sumStatus("approved", "processing"),
+        paid: sumStatus("paid"),
         wallet: Number(billing?.entitlements.wallet_balance || 0),
         conversion: rows.length ? Math.round((done / rows.length) * 100) : 0,
       });
+      setPayoutError(requestsOrNull === null);
       setLoading(false);
     })();
     return () => {
@@ -117,9 +117,9 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
     { label: "Login amount", value: loading ? "…" : inr(cards.login), hint: "Sent to lender" },
     { label: "Sanction amount", value: loading ? "…" : inr(cards.sanction), hint: "Approved cases" },
     { label: "Disbursement", value: loading ? "…" : inr(cards.disburse), hint: "Money released" },
-    { label: "Pending payout", value: loading ? "…" : inr(cards.pending), hint: "Waiting review" },
-    { label: "Approved payout", value: loading ? "…" : inr(cards.approved), hint: "Ready to pay" },
-    { label: "Paid payout", value: loading ? "…" : inr(cards.paid), hint: "Already paid" },
+    { label: "Pending payout", value: loading ? "…" : payoutError ? "—" : inr(cards.pending), hint: payoutError ? "Could not load" : "Waiting review" },
+    { label: "Approved payout", value: loading ? "…" : payoutError ? "—" : inr(cards.approved), hint: payoutError ? "Could not load" : "Approved or processing" },
+    { label: "Paid payout", value: loading ? "…" : payoutError ? "—" : inr(cards.paid), hint: payoutError ? "Could not load" : "Marked paid by admin" },
     { label: "Lead wallet", value: loading ? "…" : inr(cards.wallet), hint: "Marketplace balance" },
     { label: "Conversion", value: loading ? "…" : `${cards.conversion}%`, hint: "Disbursed / all leads" },
   ];

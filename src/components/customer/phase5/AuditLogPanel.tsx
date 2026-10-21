@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SectionShell } from "../shared/SectionShell";
 import { loadAuditLogs, type AuditLogRow } from "@/lib/customer-crm/phase5-api";
+import { toast } from "sonner";
 
 const SECTIONS = ["All", "Disbursal", "Payout", "Pipeline", "Lender", "Documents", "Follow-up"];
 
@@ -16,6 +17,7 @@ export function AuditLogPanel({ purchaseId }: { purchaseId: string }) {
   const load = useCallback(async () => {
     setLoading(true);
     const res = await loadAuditLogs(purchaseId, { limit: 200 });
+    if (res.error) toast.error(res.error);
     setRows(res.rows);
     setLoading(false);
   }, [purchaseId]);

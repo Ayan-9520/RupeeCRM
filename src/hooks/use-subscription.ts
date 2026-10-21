@@ -32,7 +32,7 @@ export function useQuota(kind: "leads" | "marketing") {
     if (!current?.id) { setQuota(null); setLoading(false); return; }
     setLoading(true);
     const q = kind === "leads" ? await checkLeadQuota(current.id) : await checkMarketingQuota(current.id);
-    setQuota(q);
+    setQuota(q.reason === "error" || q.reason === "no_workspace" ? null : q);
     setLoading(false);
   }, [current?.id, kind]);
 

@@ -12,7 +12,7 @@ import { computeCustomerRisk } from "@/lib/customer-crm/risk-scoring";
 import { buildAssistantReply } from "@/lib/customer-crm/ai-intelligence";
 import type { BankAccount, CoApplicant, CustomerProfile, LoanRequirement, Obligation } from "@/lib/customer-crm/types";
 import { useAuth } from "@/lib/auth-context";
-import { ArrowLeft, Loader2, Save, CheckCircle2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Loader2, Save, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerRightPanel } from "./CustomerRightPanel";
@@ -101,7 +101,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
     if (!ws.data || !eligibility) return;
     const t = window.setTimeout(async () => {
       const res = await persistEligibilitySnapshot(ws.data!.profile, eligibility);
-      if (res.migrationRequired) setPhase2MigrationHint(true);
+      if (res.notStored) setPhase2MigrationHint(true);
     }, 1200);
     return () => clearTimeout(t);
   }, [eligibility?.computedAt, ws.data?.profile.id]);
@@ -227,21 +227,6 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   };
 
   if (ws.loading) return <WorkspaceSkeleton />;
-
-  if (ws.migrationRequired) {
-    return (
-      <div className="max-w-lg mx-auto py-16 text-center space-y-4">
-        <AlertTriangle className="size-10 text-amber-500 mx-auto" />
-        <h2 className="font-display text-xl font-bold">Database migration required</h2>
-        <p className="text-sm text-muted-foreground">
-          Run <code className="text-xs bg-secondary px-1 rounded">supabase/migrations/20260517100000_customer_los_phase1.sql</code> in Supabase SQL editor, then refresh.
-        </p>
-        <Link to="/dashboard/my-leads" className="text-accent text-sm font-semibold inline-flex items-center gap-1">
-          <ArrowLeft className="size-4" /> Back to My Leads
-        </Link>
-      </div>
-    );
-  }
 
   if (ws.error || !ws.data) {
     return (

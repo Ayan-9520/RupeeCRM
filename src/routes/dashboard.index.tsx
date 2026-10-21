@@ -18,6 +18,7 @@ import {
 import type { AppRole } from "@/lib/auth-context";
 import {
   crmHealth,
+  getBillingMe,
   getCrmUser,
   listCrmLeads,
   listMyLeads,
@@ -59,8 +60,16 @@ function ScoreIcon({ score }: { score: string }) {
 function DashboardHome() {
   const navigate = useNavigate();
   const { user, role, loading } = useAuth();
-  const [stats, setStats] = useState({
-    balance: 0,
+  const [stats, setStats] = useState<{
+    balance: number | null;
+    leadsBought: number;
+    available: number;
+    totalSpent: number;
+    callsPending: number;
+    casesOpen: number;
+    earnings: number;
+  }>({
+    balance: null,
     leadsBought: 0,
     available: 0,
     totalSpent: 0,
@@ -91,9 +100,10 @@ function DashboardHome() {
 
     (async () => {
       try {
-        const [mine, market] = await Promise.all([
+        const [mine, market, billing] = await Promise.all([
           listMyLeads().catch(() => ({ items: [] as CrmPurchase[], total: 0, stages: [] as string[] })),
           listCrmLeads({ limit: 200 }).catch(() => ({ items: [] as CrmLead[], total: 0 })),
+          getBillingMe().catch(() => null),
         ]);
 
         const purchases = mine.items ?? [];
@@ -118,7 +128,7 @@ function DashboardHome() {
         setByCategory(next);
 
         setStats({
-          balance: Math.max(0, 10000 - totalSpent),
+          balance: billing ? Number(billing.entitlements.wallet_balance || 0) : null,
           leadsBought: purchases.length,
           available,
           totalSpent,
@@ -446,7 +456,7 @@ function RoleStats({
   role: AppRole | null;
   config: RoleDashboardConfig;
   stats: {
-    balance: number;
+    balance: number | null;
     leadsBought: number;
     available: number;
     totalSpent: number;
@@ -471,8 +481,8 @@ function RoleStats({
         cards.push({
           key: "wallet",
           icon: Wallet,
-          label: "Lead credits (demo)",
-          value: `₹${stats.balance.toLocaleString("en-IN")}`,
+          label: "Lead wallet",
+          value: stats.balance == null ? "—" : `₹${stats.balance.toLocaleString("en-IN")}`,
           accent: true,
           href: "/dashboard/wallet",
         });

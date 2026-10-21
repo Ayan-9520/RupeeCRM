@@ -16,6 +16,7 @@ interface Props {
   onSuccess: () => void;
 }
 
+/** Legacy: not mounted. Calls the removed Supabase transfer RPC; no wallet-transfer API exists. */
 export function SendMoneyDialog({ open, onOpenChange, currentBalance, onSuccess }: Props) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);

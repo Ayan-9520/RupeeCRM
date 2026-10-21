@@ -22,6 +22,7 @@ dist-ssr
 !.env.example
 !.env.prod.example
 backend/.env
+backend/app/storage_private/
 __pycache__/
 *.pyc
 *.sql
