@@ -2,10 +2,9 @@ import { useState } from "react";
 import { Download, FileSpreadsheet, FileText, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SectionShell } from "../shared/SectionShell";
-import { exportCasePdf, exportCsv, printCaseSummary } from "@/lib/customer-crm/export-case";
-import { loadDisbursals, loadPayouts, summarizeFinance } from "@/lib/customer-crm/phase5-api";
+import { downloadCaseFilePdf, exportCsv, printCaseSummary } from "@/lib/customer-crm/export-case";
+import { loadDisbursals, loadPayouts } from "@/lib/customer-crm/phase5-api";
 import { loadLenderCases } from "@/lib/customer-crm/phase4-api";
-import { computeCustomerRisk } from "@/lib/customer-crm/risk-scoring";
 import type { CustomerWorkspaceData } from "@/lib/customer-crm/types";
 import type { EligibilityEngineResult } from "@/lib/customer-crm/eligibility-types";
 import { toast } from "sonner";
@@ -24,19 +23,19 @@ export function ExportToolbar({
   const run = async (kind: "pdf" | "profile" | "lenders" | "disbursal" | "payout" | "print") => {
     setBusy(true);
     try {
+      if (kind === "pdf") {
+        const file = await downloadCaseFilePdf({ workspace, eligibility, pipelineStage });
+        toast.success(`${file} downloaded`);
+        return;
+      }
       const [d, p, l] = await Promise.all([
         loadDisbursals(workspace.profile.lead_purchase_id),
         loadPayouts(workspace.profile.lead_purchase_id),
         loadLenderCases(workspace.profile.lead_purchase_id),
       ]);
-      const finance = summarizeFinance(d.rows, p.rows);
-      const risk = computeCustomerRisk(workspace, eligibility);
       const id = workspace.profile.lead_purchase_id.slice(0, 8);
 
-      if (kind === "pdf") {
-        exportCasePdf({ ws: workspace, finance, lenders: l.rows, risk, pipelineStage });
-        toast.success("PDF downloaded");
-      } else if (kind === "print") {
+      if (kind === "print") {
         printCaseSummary();
       } else if (kind === "profile") {
         exportCsv(`profile-${id}.csv`, ["Field", "Value"], [
@@ -96,7 +95,7 @@ export function ExportToolbar({
     <SectionShell title="Export & Print" description="PDF, Excel (CSV), and print" icon={Download}>
       <div className="flex flex-wrap gap-2">
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => run("pdf")}>
-          <FileText className="size-4 mr-1" /> PDF summary
+          <FileText className="size-4 mr-1" /> Case file PDF
         </Button>
         <Button type="button" size="sm" variant="outline" disabled={busy} onClick={() => run("profile")}>
           <FileSpreadsheet className="size-4 mr-1" /> Profile CSV

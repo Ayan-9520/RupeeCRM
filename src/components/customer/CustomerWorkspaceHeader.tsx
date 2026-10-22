@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { toast } from "sonner";
 import {
   ArrowLeft,
+  Download,
+  Loader2,
   Phone,
   MessageSquare,
   Mail,
@@ -16,6 +20,7 @@ import { RISK_BADGE } from "@/lib/customer-crm/risk-scoring";
 import type { RiskLevel } from "@/lib/customer-crm/risk-scoring";
 import type { CustomerWorkspaceData } from "@/lib/customer-crm/types";
 import type { EligibilityEngineResult } from "@/lib/customer-crm/eligibility-types";
+import { downloadCaseFilePdf } from "@/lib/customer-crm/export-case";
 
 export function CustomerWorkspaceHeader({
   purchaseId,
@@ -50,6 +55,19 @@ export function CustomerWorkspaceHeader({
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const [pdfBusy, setPdfBusy] = useState(false);
+
+  const downloadPdf = async () => {
+    setPdfBusy(true);
+    try {
+      const file = await downloadCaseFilePdf({ workspace, eligibility, pipelineStage });
+      toast.success(`${file} downloaded`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create the PDF");
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
@@ -89,6 +107,16 @@ export function CustomerWorkspaceHeader({
             <QuickBtn href={`mailto:${profile.email ?? ""}`} icon={Mail} label="Email" disabled={!profile.email} />
             <Button type="button" size="sm" variant="outline" className="h-8 text-xs" onClick={onAddNote}>
               <StickyNote className="size-3.5 mr-1" /> Note
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs border-[#10662A]/40 text-[#10662A] hover:bg-[#E8F7EC]"
+              disabled={pdfBusy}
+              onClick={() => void downloadPdf()}
+            >
+              {pdfBusy ? <Loader2 className="size-3.5 mr-1 animate-spin" /> : <Download className="size-3.5 mr-1" />} PDF
             </Button>
             <Link
               to="/dashboard/my-leads/$id/apply"
