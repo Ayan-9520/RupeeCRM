@@ -32,6 +32,7 @@ const STAGES = [
 
 const CHIPS: { id: string; label: string; className: string }[] = [
   { id: "draft", label: "Draft", className: "bg-orange-500" },
+  { id: "submitted", label: "Submitted", className: "bg-indigo-500" },
   { id: "logged_in", label: "Logged In", className: "bg-slate-800" },
   { id: "sanctioned", label: "Sanctioned", className: "bg-pink-600" },
   { id: "disbursed", label: "Disbursed", className: "bg-blue-600" },
@@ -82,6 +83,7 @@ function CasesPage() {
   const [items, setItems] = useState<LoanCaseFile[]>([]);
   const [revenue, setRevenue] = useState(0);
   const [confirmed, setConfirmed] = useState(0);
+  const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<LoanCaseFile | null>(null);
   const [saving, setSaving] = useState(false);
@@ -107,6 +109,7 @@ function CasesPage() {
       setItems(data.items);
       setRevenue(data.revenue);
       setConfirmed(data.confirmed_count);
+      setCounts(data.counts ?? {});
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not load case files");
     } finally {
@@ -239,7 +242,7 @@ function CasesPage() {
                 <label className="text-xs font-semibold text-[#5c4d72]">To
                   <Input type="date" className="mt-1 w-[168px] bg-white" value={dateTo} onChange={(event) => { const value = event.target.value; setDateTo(value); void refresh(chip, dateFrom, value); }} />
                 </label>
-                <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setItems([]); setRevenue(0); setConfirmed(0); }}>Clear dates</Button>
+                <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear dates</Button>
               </div>
               <div className="text-sm xl:text-right">
                 <div className="font-display text-lg font-bold text-[#10662A]">₹{inr(dateFrom && dateTo && chip ? revenue : 0)} revenue</div>
@@ -281,7 +284,7 @@ function CasesPage() {
               ) : null}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-              <button className={`rounded-lg px-3 py-2 text-xs font-bold text-white ${chip === "all" ? "bg-[#390A5D] ring-2 ring-[#390A5D] ring-offset-1" : "bg-slate-500"}`} onClick={() => { setChip("all"); void refresh("all", dateFrom, dateTo); }}>All</button>
+              <button className={`rounded-lg px-3 py-2 text-xs font-bold text-white ${chip === "all" ? "bg-[#390A5D] ring-2 ring-[#390A5D] ring-offset-1" : "bg-slate-500"}`} onClick={() => { setChip("all"); void refresh("all", dateFrom, dateTo); }}>All{dateFrom && dateTo ? ` (${counts.all ?? 0})` : ""}</button>
               {CHIPS.map((item) => (
                 <button
                   key={item.id}
@@ -289,6 +292,7 @@ function CasesPage() {
                   onClick={() => { setChip(item.id); void refresh(item.id, dateFrom, dateTo); }}
                 >
                   {item.label}
+                  {dateFrom && dateTo ? ` (${counts[item.id] ?? 0})` : ""}
                 </button>
               ))}
             </div>
@@ -417,6 +421,9 @@ function CaseForm({
         <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
         <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
         <Field label="Customer credit" type="number" value={String(active.loyalty_amount)} onChange={(value) => onChange({ ...active, loyalty_amount: Number(value) })} />
+        <Field label="Invoice amount (to lender)" type="number" value={String(active.invoice_amount)} onChange={(value) => onChange({ ...active, invoice_amount: Number(value) })} />
+        <Field label="Collected amount" type="number" value={String(active.collected_amount)} onChange={(value) => onChange({ ...active, collected_amount: Number(value) })} />
+        <Field label="POD remarks" value={active.pod_remarks} onChange={(pod_remarks) => onChange({ ...active, pod_remarks })} />
       </div>
 
       <div className="overflow-x-auto rounded-xl border">
@@ -465,10 +472,12 @@ function CaseForm({
       {admin ? (
         <div className="flex flex-wrap gap-2">
           <Button disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save file"}</Button>
-          <Button variant="outline" onClick={() => onChange({ ...active, flag: active.flag === "hold" ? "" : "hold", stage: "disbursed" })}>Disbursed hold</Button>
-          <Button variant="outline" onClick={() => onChange({ ...active, flag: "banker_pending" })}>Banker pending</Button>
-          <Button variant="outline" onClick={() => onChange({ ...active, pod_pending: !active.pod_pending, counted: true })}>POD pending</Button>
-          <Button variant="outline" onClick={() => onChange({ ...active, flag: "cancelled" })}>Cancel</Button>
+          <Button variant={active.flag === "hold" ? "default" : "outline"} onClick={() => onChange({ ...active, flag: active.flag === "hold" ? "" : "hold", stage: "disbursed" })}>Disbursed hold</Button>
+          <Button variant={active.flag === "banker_pending" ? "default" : "outline"} onClick={() => onChange({ ...active, flag: active.flag === "banker_pending" ? "" : "banker_pending" })}>Banker pending</Button>
+          <Button variant={active.flag === "movement" ? "default" : "outline"} onClick={() => onChange({ ...active, flag: active.flag === "movement" ? "" : "movement" })}>Movement</Button>
+          <Button variant={active.counted ? "default" : "outline"} onClick={() => onChange({ ...active, counted: !active.counted, pod_pending: active.counted ? false : active.pod_pending })}>{active.counted ? "Counted ✓" : "Mark counted"}</Button>
+          <Button variant={active.pod_pending ? "default" : "outline"} onClick={() => onChange({ ...active, pod_pending: !active.pod_pending, counted: true })}>POD pending</Button>
+          <Button variant={active.flag === "cancelled" ? "default" : "outline"} onClick={() => onChange({ ...active, flag: active.flag === "cancelled" ? "" : "cancelled" })}>{active.flag === "cancelled" ? "Undo cancel" : "Cancel"}</Button>
         </div>
       ) : (
         <p className="text-xs text-[#5c4d72]">This login can view the file. An admin saves stage and payout changes.</p>

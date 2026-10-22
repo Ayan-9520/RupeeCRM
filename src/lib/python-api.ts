@@ -1105,6 +1105,7 @@ export async function listCaseFiles(chip = "all", dateFrom = "", dateTo = ""): P
   revenue: number;
   disbursed_revenue: number;
   confirmed_count: number;
+  counts?: Record<string, number>;
   items: LoanCaseFile[];
 }> {
   const query = new URLSearchParams({ chip, date_from: dateFrom, date_to: dateTo });

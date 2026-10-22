@@ -121,10 +121,29 @@ def matches_filter(row: LoanCase, chip: str) -> bool:
     if chip == "counted":
         return bool(row.counted) and not row.pod_pending and row.flag != "cancelled"
     if chip == "not_counted":
-        return row.stage in ("disbursed", "disbursed_confirmed", "collected") and not row.counted
+        return row.stage in ("disbursed", "disbursed_confirmed", "collected") and not row.counted and row.flag != "cancelled"
     if chip == "counted_pod_pending":
-        return bool(row.counted) and bool(row.pod_pending)
+        return bool(row.counted) and bool(row.pod_pending) and row.flag != "cancelled"
     return label == wanted
+
+
+CHIP_IDS = (
+    "draft",
+    "submitted",
+    "logged_in",
+    "sanctioned",
+    "disbursed",
+    "disbursed_hold",
+    "disbursed_confirmed",
+    "partially_collected",
+    "banker_pending",
+    "not_counted",
+    "counted",
+    "counted_pod_pending",
+    "movement",
+    "cancelled",
+    "collected",
+)
 
 
 def _deal_no() -> str:
@@ -209,10 +228,13 @@ def list_cases(db: Session, user: User, chip: str = "all", date_from: str = "", 
     ]
     rows = [row for row in pool if matches_filter(row, chip)]
     revenue = _round(sum(figures(row)["net_revenue"] for row in confirmed))
+    counts = {key: sum(1 for row in pool if matches_filter(row, key)) for key in CHIP_IDS}
+    counts["all"] = len(pool)
     return {
         "revenue": revenue,
         "disbursed_revenue": revenue,
         "confirmed_count": len(confirmed),
+        "counts": counts,
         "items": [serialize(row) for row in rows],
     }
 
