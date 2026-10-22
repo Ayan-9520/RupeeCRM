@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 IST = timezone(timedelta(hours=5, minutes=30))
 from uuid import UUID, uuid4
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Lead, LeadPurchase, LoanCase, User
@@ -216,6 +217,7 @@ def _on_day(row: LoanCase) -> str:
 
 
 def list_cases(db: Session, user: User, chip: str = "all", date_from: str = "", date_to: str = "") -> dict:
+    import_disbursed(db, None)
     pool = list(_visible(db, user).all())
     if date_from:
         pool = [row for row in pool if _on_day(row) >= date_from]
@@ -341,12 +343,54 @@ def _loan_type(lead: Lead | None) -> str:
     return (raw.replace("_", " ").upper() or "LOAN")[:40]
 
 
-def import_disbursed(db: Session, user: User) -> dict:
-    """One case file per disbursed My Leads purchase. Same rule as the invoice centre: converted or stage disbursed."""
+def is_disbursed(purchase: LeadPurchase) -> bool:
+    """Same rule as the invoice centre."""
+    return bool(purchase.converted) or purchase.pipeline_stage == "disbursed"
+
+
+def _case_from_purchase(db: Session, purchase: LeadPurchase, actor: User | None) -> LoanCase:
+    lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()
+    partner = db.query(User).filter(User.id == purchase.buyer_user_id).first()
+    lead_amount = float(lead.loan_amount or 0) if lead else 0.0
+    disbursed = float(purchase.deal_value or 0) or lead_amount
+    return LoanCase(
+        id=uuid4(),
+        deal_no=lead_deal_no(purchase.id),
+        stage="disbursed",
+        loan_type=_loan_type(lead),
+        lead_source="My Leads",
+        partner_user_id=purchase.buyer_user_id,
+        partner_name=((partner.full_name or partner.email) if partner else "")[:200],
+        partner_code=((partner.dsa_id or "") if partner else "")[:40],
+        client_name=((lead.applicant_name or "") if lead else "")[:200],
+        client_phone=((lead.full_phone or "") if lead else "")[:30],
+        loan_amount=lead_amount or disbursed,
+        sanctioned_amount=disbursed,
+        submitted_by=((actor.full_name or actor.email) if actor else "Auto · My Leads")[:120],
+        owner_user_id=actor.id if actor else None,
+    )
+
+
+def ensure_case_for_purchase(db: Session, purchase: LeadPurchase, actor: User | None = None) -> bool:
+    """Create the case file once when a My Leads purchase is disbursed. Never edits an existing file."""
+    if not is_disbursed(purchase):
+        return False
+    deal_no = lead_deal_no(purchase.id)
+    if db.query(LoanCase.id).filter(LoanCase.deal_no == deal_no).first():
+        return False
+    db.add(_case_from_purchase(db, purchase, actor))
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return False
+    return True
+
+
+def import_disbursed(db: Session, user: User | None) -> dict:
+    """One case file per disbursed My Leads purchase that does not have one yet."""
     purchases = [
-        row
-        for row in db.query(LeadPurchase).order_by(LeadPurchase.created_at.asc()).all()
-        if row.converted or row.pipeline_stage == "disbursed"
+        row for row in db.query(LeadPurchase).order_by(LeadPurchase.created_at.asc()).all() if is_disbursed(row)
     ]
     taken = {
         deal_no
@@ -354,33 +398,18 @@ def import_disbursed(db: Session, user: User) -> dict:
     }
     created: list[LoanCase] = []
     for purchase in purchases:
-        deal_no = lead_deal_no(purchase.id)
-        if deal_no in taken:
+        if lead_deal_no(purchase.id) in taken:
             continue
-        lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()
-        partner = db.query(User).filter(User.id == purchase.buyer_user_id).first()
-        lead_amount = float(lead.loan_amount or 0) if lead else 0.0
-        disbursed = float(purchase.deal_value or 0) or lead_amount
-        row = LoanCase(
-            id=uuid4(),
-            deal_no=deal_no,
-            stage="disbursed",
-            loan_type=_loan_type(lead),
-            lead_source="My Leads",
-            partner_user_id=purchase.buyer_user_id,
-            partner_name=((partner.full_name or partner.email) if partner else "")[:200],
-            partner_code=((partner.dsa_id or "") if partner else "")[:40],
-            client_name=((lead.applicant_name or "") if lead else "")[:200],
-            client_phone=((lead.full_phone or "") if lead else "")[:30],
-            loan_amount=lead_amount or disbursed,
-            sanctioned_amount=disbursed,
-            submitted_by=(user.full_name or user.email)[:120],
-            owner_user_id=user.id,
-        )
+        row = _case_from_purchase(db, purchase, user)
         db.add(row)
         created.append(row)
-        taken.add(deal_no)
-    db.commit()
+        taken.add(row.deal_no)
+    if created:
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            created = []
     return {
         "created": len(created),
         "already_linked": len(purchases) - len(created),

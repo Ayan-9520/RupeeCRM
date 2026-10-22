@@ -1120,15 +1120,6 @@ export async function saveCaseFile(id: string, body: Partial<LoanCaseFile>): Pro
   return request(`/api/cases/${id}`, { method: "PUT", body: JSON.stringify(body) });
 }
 
-export async function importDisbursedCases(): Promise<{
-  created: number;
-  already_linked: number;
-  disbursed_leads: number;
-  items: LoanCaseFile[];
-}> {
-  return request("/api/cases/import-disbursed", { method: "POST" });
-}
-
 export async function openSampleCase(): Promise<LoanCaseFile> {
   return request("/api/cases/sample", { method: "POST" });
 }

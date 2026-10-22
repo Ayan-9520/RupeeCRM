@@ -17,11 +17,15 @@ API = "http://127.0.0.1:8000"
 STAFF = ["admin", "ceo", "super_admin"]
 
 
-def call(method: str, path: str, token: str | None = None):
+def call(method: str, path: str, token: str | None = None, payload: dict | None = None):
     headers: dict[str, str] = {}
+    data = None
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    req = urllib.request.Request(API + path, headers=headers, method=method)
+    if payload is not None:
+        data = json.dumps(payload).encode()
+        headers["Content-Type"] = "application/json"
+    req = urllib.request.Request(API + path, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=30) as res:
             return res.status, res.read()
@@ -102,6 +106,29 @@ def main() -> None:
         check("another partner does not see it", deal_done not in other_rows)
         status, raw = call("GET", f"/api/cases?chip=disbursed&date_from={today}&date_to={today}", admin_token)
         check("admin list shows it", status == 200 and deal_done in {row["deal_no"] for row in json.loads(raw).get("items", [])})
+
+        check("open lead still has no case file", db.query(LoanCase).filter(LoanCase.deal_no == deal_open).count() == 0)
+        status, _ = call("PATCH", f"/api/my-leads/{open_.id}", dsa_token, {"pipeline_stage": "disbursed"})
+        db.expire_all()
+        auto = db.query(LoanCase).filter(LoanCase.deal_no == deal_open).first()
+        check("moving a lead to Disbursed creates its case file at once", status == 200 and auto is not None)
+        check("auto file is marked as automatic", auto is not None and auto.submitted_by == "Auto · My Leads" and auto.stage == "disbursed")
+        check("auto file uses the lead amount when no deal value", auto is not None and auto.sanctioned_amount == 300000)
+        status, _ = call("PATCH", f"/api/my-leads/{open_.id}", dsa_token, {"deal_value": 280000})
+        db.expire_all()
+        check("saving the lead again adds no duplicate", status == 200 and db.query(LoanCase).filter(LoanCase.deal_no == deal_open).count() == 1)
+
+        lead_db = Lead(applicant_name="Verify Direct Client", full_phone="9000000013", masked_phone="90XXXXXX13", city="Pune", price=99, loan_amount=200000, status="sold")
+        db.add(lead_db)
+        db.flush()
+        lead_ids.append(lead_db.id)
+        direct = LeadPurchase(lead_id=lead_db.id, buyer_user_id=dsa.id, price_paid=99, pipeline_stage="disbursed", converted=True, notes=[])
+        db.add(direct)
+        db.commit()
+        purchase_ids.append(direct.id)
+        status, raw = call("GET", q, dsa_token)
+        listed = {row["deal_no"] for row in json.loads(raw).get("items", [])} if status == 200 else set()
+        check("opening Case Files picks up a disbursed lead with no file", lead_deal_no(direct.id) in listed)
     finally:
         db.rollback()
         db.query(LoanCase).filter(LoanCase.deal_no.like("RD-LP-%"), LoanCase.created_at >= started).delete(synchronize_session=False)
