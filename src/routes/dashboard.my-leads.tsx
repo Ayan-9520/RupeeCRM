@@ -25,6 +25,7 @@ import {
   CalendarClock,
   CheckCircle2,
   Activity,
+  FolderOpen,
 } from "lucide-react";
 import { listMyLeads, patchMyLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
 import { gradeCode, gradeFromPipeline, gradeText } from "@/lib/lead-grades";
@@ -642,6 +643,16 @@ function MyLeadsPage() {
                   >
                     Next stage <ArrowRight className="size-3.5" />
                   </button>
+                  <Link
+                    to="/dashboard/customer/$id"
+                    params={{ id: selected.id }}
+                    onClick={(e) => {
+                      if (dirty && !confirm("Discard unsaved changes?")) e.preventDefault();
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-lg border border-[#10662A] bg-[#E8F7EC] px-2.5 py-1.5 text-xs font-semibold text-[#10662A] hover:bg-[#d8ecdd]"
+                  >
+                    <FolderOpen className="size-3.5" /> Open full workspace
+                  </Link>
                 </div>
               </div>
               <button
