@@ -12,7 +12,7 @@ from app.models import DEFAULT_PIPELINE_STAGES, Lead, LeadPurchase, User
 from app.schemas import LeadOut
 from app.services.audit import write_audit
 from app.services.leads import mask_phone, normalize_phone
-from app.services.loan_cases import ensure_case_for_purchase
+from app.services.loan_cases import sync_case_for_purchase
 
 router = APIRouter(prefix="/api", tags=["purchases"])
 
@@ -242,6 +242,7 @@ def patch_my_lead(
 
     notes = list(p.notes or [])
     lead = db.query(Lead).filter(Lead.id == p.lead_id).first()
+    stage_before = p.pipeline_stage
 
     if body.disposition:
         code = body.disposition.strip().lower()
@@ -327,7 +328,7 @@ def patch_my_lead(
     db.commit()
     db.refresh(p)
     try:
-        ensure_case_for_purchase(db, p, None)
+        sync_case_for_purchase(db, p, None, reopened=stage_before == "rejected" and p.pipeline_stage != "rejected")
     except Exception:
         db.rollback()
     return _purchase_out(db, p)

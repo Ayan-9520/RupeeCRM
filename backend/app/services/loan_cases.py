@@ -344,8 +344,19 @@ def _loan_type(lead: Lead | None) -> str:
 
 
 def is_disbursed(purchase: LeadPurchase) -> bool:
-    """Same rule as the invoice centre."""
+    """Invoice-centre rule, except a rejected lead is never treated as disbursed."""
+    if purchase.pipeline_stage == "rejected":
+        return False
     return bool(purchase.converted) or purchase.pipeline_stage == "disbursed"
+
+
+def lender_from_notes(purchase: LeadPurchase) -> str:
+    """Lender Submissions saves the chosen lender as an 'Assigned to <lender>' note."""
+    for note in reversed(list(purchase.notes or [])):
+        text = str((note or {}).get("text") or "") if isinstance(note, dict) else ""
+        if text.startswith("Assigned to "):
+            return text[len("Assigned to "):].strip()[:200]
+    return ""
 
 
 def _case_from_purchase(db: Session, purchase: LeadPurchase, actor: User | None) -> LoanCase:
@@ -366,19 +377,40 @@ def _case_from_purchase(db: Session, purchase: LeadPurchase, actor: User | None)
         client_phone=((lead.full_phone or "") if lead else "")[:30],
         loan_amount=lead_amount or disbursed,
         sanctioned_amount=disbursed,
+        bank_name=lender_from_notes(purchase),
         submitted_by=((actor.full_name or actor.email) if actor else "Auto · My Leads")[:120],
         owner_user_id=actor.id if actor else None,
     )
 
 
-def ensure_case_for_purchase(db: Session, purchase: LeadPurchase, actor: User | None = None) -> bool:
-    """Create the case file once when a My Leads purchase is disbursed. Never edits an existing file."""
-    if not is_disbursed(purchase):
+def sync_case_for_purchase(
+    db: Session, purchase: LeadPurchase, actor: User | None = None, reopened: bool = False
+) -> bool:
+    """Keep a lead's case file in step with My Leads.
+
+    Disbursed with no file: create it. Rejected: cancel the file. Rejected lead moved back to disbursed:
+    lift the cancel. Every other field on an existing file belongs to the admin and is left alone.
+    """
+    row = db.query(LoanCase).filter(LoanCase.deal_no == lead_deal_no(purchase.id)).first()
+    changed = False
+    if purchase.pipeline_stage == "rejected":
+        if row is not None and row.flag != "cancelled":
+            row.flag = "cancelled"
+            changed = True
+    elif is_disbursed(purchase):
+        if row is None:
+            db.add(_case_from_purchase(db, purchase, actor))
+            changed = True
+        elif reopened and row.flag == "cancelled":
+            row.flag = ""
+            changed = True
+    if row is not None and not row.bank_name:
+        lender = lender_from_notes(purchase)
+        if lender:
+            row.bank_name = lender
+            changed = True
+    if not changed:
         return False
-    deal_no = lead_deal_no(purchase.id)
-    if db.query(LoanCase.id).filter(LoanCase.deal_no == deal_no).first():
-        return False
-    db.add(_case_from_purchase(db, purchase, actor))
     try:
         db.commit()
     except IntegrityError:
@@ -388,10 +420,10 @@ def ensure_case_for_purchase(db: Session, purchase: LeadPurchase, actor: User | 
 
 
 def import_disbursed(db: Session, user: User | None) -> dict:
-    """One case file per disbursed My Leads purchase that does not have one yet."""
-    purchases = [
-        row for row in db.query(LeadPurchase).order_by(LeadPurchase.created_at.asc()).all() if is_disbursed(row)
-    ]
+    """Bring Case Files in line with My Leads: a file for every disbursed lead, cancelled for every rejected one."""
+    everything = db.query(LeadPurchase).order_by(LeadPurchase.created_at.asc()).all()
+    purchases = [row for row in everything if is_disbursed(row)]
+    rejected = {lead_deal_no(row.id) for row in everything if row.pipeline_stage == "rejected"}
     taken = {
         deal_no
         for (deal_no,) in db.query(LoanCase.deal_no).filter(LoanCase.deal_no.like("RD-LP-%")).all()
@@ -404,14 +436,27 @@ def import_disbursed(db: Session, user: User | None) -> dict:
         db.add(row)
         created.append(row)
         taken.add(row.deal_no)
-    if created:
+    cancelled = 0
+    if rejected:
+        for row in db.query(LoanCase).filter(LoanCase.deal_no.in_(rejected), LoanCase.flag != "cancelled").all():
+            row.flag = "cancelled"
+            cancelled += 1
+    lenders = {lead_deal_no(row.id): lender_from_notes(row) for row in everything}
+    lenders = {deal: name for deal, name in lenders.items() if name}
+    filled = 0
+    if lenders:
+        for row in db.query(LoanCase).filter(LoanCase.deal_no.in_(list(lenders)), LoanCase.bank_name == "").all():
+            row.bank_name = lenders[row.deal_no]
+            filled += 1
+    if created or cancelled or filled:
         try:
             db.commit()
         except IntegrityError:
             db.rollback()
-            created = []
+            created, cancelled = [], 0
     return {
         "created": len(created),
+        "cancelled": cancelled,
         "already_linked": len(purchases) - len(created),
         "disbursed_leads": len(purchases),
         "items": [serialize(row) for row in created],

@@ -129,6 +129,56 @@ def main() -> None:
         status, raw = call("GET", q, dsa_token)
         listed = {row["deal_no"] for row in json.loads(raw).get("items", [])} if status == 200 else set()
         check("opening Case Files picks up a disbursed lead with no file", lead_deal_no(direct.id) in listed)
+
+        def flag_of(deal: str) -> str | None:
+            db.expire_all()
+            row = db.query(LoanCase).filter(LoanCase.deal_no == deal).first()
+            return row.flag if row else None
+
+        def in_chip(chip: str, deal: str) -> bool:
+            status, raw = call("GET", f"/api/cases?chip={chip}&date_from={today}&date_to={today}", admin_token)
+            return status == 200 and deal in {row["deal_no"] for row in json.loads(raw).get("items", [])}
+
+        status, _ = call("PATCH", f"/api/my-leads/{done.id}", dsa_token, {"pipeline_stage": "rejected"})
+        check("rejecting the lead cancels its case file", status == 200 and flag_of(deal_done) == "cancelled")
+        check("rejected file shows under Cancelled", in_chip("cancelled", deal_done))
+        check("rejected file leaves Disbursed and Not Counted", not in_chip("disbursed", deal_done) and not in_chip("not_counted", deal_done))
+        status, _ = call("PATCH", f"/api/my-leads/{done.id}", dsa_token, {"pipeline_stage": "disbursed"})
+        check("moving the lead back to Disbursed lifts the cancel", status == 200 and flag_of(deal_done) == "")
+        check("reopened file is back under Disbursed", in_chip("disbursed", deal_done) and not in_chip("cancelled", deal_done))
+        check("reopening adds no duplicate", db.query(LoanCase).filter(LoanCase.deal_no == deal_done).count() == 1)
+
+        def bank_of(deal: str) -> str | None:
+            db.expire_all()
+            row = db.query(LoanCase).filter(LoanCase.deal_no == deal).first()
+            return row.bank_name if row else None
+
+        status, _ = call("PATCH", f"/api/my-leads/{done.id}", dsa_token, {"notes_text": "Assigned to HDFC Bank"})
+        check("assigning a lender fills the empty Bank on the case file", status == 200 and bank_of(deal_done) == "HDFC Bank")
+        file_row = db.query(LoanCase).filter(LoanCase.deal_no == deal_done).first()
+        call("PUT", f"/api/cases/{file_row.id}", admin_token, {"bank_name": "ICICI Bank"})
+        call("PATCH", f"/api/my-leads/{done.id}", dsa_token, {"notes_text": "Assigned to Axis Bank"})
+        check("a bank the admin typed is never overwritten", bank_of(deal_done) == "ICICI Bank")
+
+        file_id = db.query(LoanCase).filter(LoanCase.deal_no == deal_done).first().id
+        status, _ = call("PUT", f"/api/cases/{file_id}", admin_token, {"flag": "cancelled"})
+        in_chip("all", deal_done)
+        check("admin cancel on a disbursed lead is kept after reload", status == 200 and flag_of(deal_done) == "cancelled")
+
+        db.query(LeadPurchase).filter(LeadPurchase.id == direct.id).update({LeadPurchase.pipeline_stage: "rejected", LeadPurchase.converted: True})
+        db.commit()
+        check("opening Case Files cancels a lead rejected elsewhere", in_chip("cancelled", lead_deal_no(direct.id)) and flag_of(lead_deal_no(direct.id)) == "cancelled")
+
+        lead_rej = Lead(applicant_name="Verify Rejected Client", full_phone="9000000014", masked_phone="90XXXXXX14", city="Pune", price=99, loan_amount=100000, status="sold")
+        db.add(lead_rej)
+        db.flush()
+        lead_ids.append(lead_rej.id)
+        rej = LeadPurchase(lead_id=lead_rej.id, buyer_user_id=dsa.id, price_paid=99, pipeline_stage="rejected", converted=True, notes=[])
+        db.add(rej)
+        db.commit()
+        purchase_ids.append(rej.id)
+        in_chip("all", lead_deal_no(rej.id))
+        check("a rejected lead never gets a new case file", db.query(LoanCase).filter(LoanCase.deal_no == lead_deal_no(rej.id)).count() == 0)
     finally:
         db.rollback()
         db.query(LoanCase).filter(LoanCase.deal_no.like("RD-LP-%"), LoanCase.created_at >= started).delete(synchronize_session=False)
