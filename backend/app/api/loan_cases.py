@@ -75,6 +75,13 @@ def open_sample(db: Session = Depends(get_db), user: User = Depends(require_read
     return service.sample_file(db, user)
 
 
+@router.post("/import-disbursed")
+def import_disbursed_leads(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import disbursed leads")
+    return service.import_disbursed(db, user)
+
+
 @router.put("/{case_id}")
 def save_case(
     case_id: UUID,

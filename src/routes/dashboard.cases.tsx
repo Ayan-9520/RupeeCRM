@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import {
   createCaseFile,
+  importDisbursedCases,
   listCaseFiles,
   openSampleCase,
   saveCaseFile,
@@ -87,6 +88,7 @@ function CasesPage() {
   const [dealQuery, setDealQuery] = useState("RD-MCF-SAMPLE-0844");
   const [payoutRows, setPayoutRows] = useState<LoanCaseFile[]>([]);
   const [payoutLoading, setPayoutLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   const refresh = async (nextChip = chip, from = dateFrom, to = dateTo) => {
     if (!from || !to || !nextChip) {
@@ -245,6 +247,34 @@ function CasesPage() {
               </div>
               {admin ? (
                 <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    disabled={importing}
+                    onClick={async () => {
+                      setImporting(true);
+                      try {
+                        const res = await importDisbursedCases();
+                        toast.success(
+                          res.created > 0
+                            ? `${res.created} disbursed lead(s) added as case files`
+                            : `No new disbursed leads (${res.already_linked} already have a case file)`,
+                        );
+                        const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+                        const from = dateFrom || today;
+                        const to = dateTo && dateTo >= today ? dateTo : today;
+                        setDateFrom(from);
+                        setDateTo(to);
+                        setChip("all");
+                        await refresh("all", from, to);
+                      } catch (error) {
+                        toast.error(error instanceof Error ? error.message : "Import failed");
+                      } finally {
+                        setImporting(false);
+                      }
+                    }}
+                  >
+                    {importing ? "Importing…" : "Import disbursed leads"}
+                  </Button>
                   <Button variant="outline" onClick={() => void createCaseFile({ loan_type: "LAP", client_name: "New applicant" }).then((row) => { setActive(row); void refresh("draft", dateFrom, dateTo); })}>New draft</Button>
                   <Button className="bg-[#10662A] hover:bg-[#0d5522]" onClick={() => void openSampleCase().then(() => { toast.success("Sample file ready"); void refresh("all", dateFrom, dateTo); })}>Sample file</Button>
                 </div>

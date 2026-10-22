@@ -14,7 +14,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
 
-from app.models import LoanCase, User
+from app.models import Lead, LeadPurchase, LoanCase, User
 
 STAGES = (
     "draft",
@@ -112,6 +112,8 @@ def matches_filter(row: LoanCase, chip: str) -> bool:
         "collected": "Collected",
         "submitted": "Submitted",
     }.get(chip, chip)
+    if chip == "disbursed":
+        return row.stage == "disbursed" and row.flag not in ("cancelled", "hold")
     if chip == "disbursed_confirmed":
         return row.stage == "disbursed_confirmed" and row.flag != "cancelled"
     if chip == "collected":
@@ -303,6 +305,66 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
     db.commit()
     db.refresh(row)
     return serialize(row)
+
+
+def lead_deal_no(purchase_id: UUID) -> str:
+    return f"RD-LP-{purchase_id.hex}"
+
+
+def _loan_type(lead: Lead | None) -> str:
+    raw = (lead.product_subtype or lead.loan_type or "") if lead else ""
+    raw = raw.strip().lower()
+    if raw.startswith("loan_"):
+        raw = raw[5:]
+    return (raw.replace("_", " ").upper() or "LOAN")[:40]
+
+
+def import_disbursed(db: Session, user: User) -> dict:
+    """One case file per disbursed My Leads purchase. Same rule as the invoice centre: converted or stage disbursed."""
+    purchases = [
+        row
+        for row in db.query(LeadPurchase).order_by(LeadPurchase.created_at.asc()).all()
+        if row.converted or row.pipeline_stage == "disbursed"
+    ]
+    taken = {
+        deal_no
+        for (deal_no,) in db.query(LoanCase.deal_no).filter(LoanCase.deal_no.like("RD-LP-%")).all()
+    }
+    created: list[LoanCase] = []
+    for purchase in purchases:
+        deal_no = lead_deal_no(purchase.id)
+        if deal_no in taken:
+            continue
+        lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()
+        partner = db.query(User).filter(User.id == purchase.buyer_user_id).first()
+        lead_amount = float(lead.loan_amount or 0) if lead else 0.0
+        disbursed = float(purchase.deal_value or 0) or lead_amount
+        row = LoanCase(
+            id=uuid4(),
+            deal_no=deal_no,
+            stage="disbursed",
+            loan_type=_loan_type(lead),
+            lead_source="My Leads",
+            partner_user_id=purchase.buyer_user_id,
+            partner_name=((partner.full_name or partner.email) if partner else "")[:200],
+            partner_code=((partner.dsa_id or "") if partner else "")[:40],
+            client_name=((lead.applicant_name or "") if lead else "")[:200],
+            client_phone=((lead.full_phone or "") if lead else "")[:30],
+            loan_amount=lead_amount or disbursed,
+            sanctioned_amount=disbursed,
+            submitted_by=(user.full_name or user.email)[:120],
+            owner_user_id=user.id,
+        )
+        db.add(row)
+        created.append(row)
+        taken.add(deal_no)
+    db.commit()
+    return {
+        "created": len(created),
+        "already_linked": len(purchases) - len(created),
+        "disbursed_leads": len(purchases),
+        "items": [serialize(row) for row in created],
+    }
 
 
 def sample_file(db: Session, user: User) -> dict:
