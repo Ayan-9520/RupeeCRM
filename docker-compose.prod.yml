@@ -22,6 +22,9 @@ services:
       - ./backend/.env
     environment:
       DATABASE_URL: postgresql+psycopg://rupeedial:${POSTGRES_PASSWORD}@db:5432/rupeedial_crm
+      DOCUMENT_STORAGE_DIR: /data/customer-documents
+    volumes:
+      - customer_documents:/data/customer-documents
     depends_on:
       db:
         condition: service_healthy
@@ -55,3 +58,4 @@ networks:
 
 volumes:
   pgdata:
+  customer_documents:
