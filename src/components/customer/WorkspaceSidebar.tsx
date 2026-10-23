@@ -52,10 +52,10 @@ export function WorkspaceSidebar({
   const offset = ring - (completionOverall / 100) * ring;
 
   return (
-    <aside className="xl:w-64 shrink-0 border-b xl:border-b-0 xl:border-r border-border bg-card/50 flex flex-col ws-col">
+    <aside className="xl:w-64 shrink-0 border-b xl:border-b-0 xl:border-r border-[#cfe6d6] bg-gradient-to-b from-[#EAF6EE] to-[#F3FAF5] flex flex-col ws-col">
       <button
         type="button"
-        className="xl:hidden flex items-center justify-between px-4 py-2.5 text-xs font-semibold border-b border-border"
+        className="xl:hidden flex items-center justify-between px-4 py-2.5 text-xs font-semibold text-[#10662A] border-b border-[#cfe6d6]"
         onClick={() => setMobileOpen((o) => !o)}
       >
         <span className="flex items-center gap-2">
@@ -65,9 +65,9 @@ export function WorkspaceSidebar({
       </button>
 
       <div className={`${mobileOpen ? "block" : "hidden"} xl:block overflow-y-auto p-4 space-y-4 flex-1`}>
-        <div className="flex items-center gap-3 rounded-xl border border-border bg-card p-3">
+        <div className="flex items-center gap-3 rounded-xl border border-[#cfe6d6] bg-white p-3 shadow-[0_4px_14px_rgba(16,102,42,0.06)]">
           <svg className="size-11 shrink-0 -rotate-90" viewBox="0 0 44 44">
-            <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" className="text-secondary" strokeWidth="4" />
+            <circle cx="22" cy="22" r="18" fill="none" stroke="currentColor" className="text-[#d8ecdd]" strokeWidth="4" />
             <circle
               cx="22"
               cy="22"
@@ -82,7 +82,7 @@ export function WorkspaceSidebar({
             />
           </svg>
           <div>
-            <p className="text-[10px] uppercase font-bold text-muted-foreground">Profile complete</p>
+            <p className="text-[10px] uppercase font-bold text-[#5c4d72]">Profile complete</p>
             <p className="text-xl font-display font-bold text-accent">{completionOverall}%</p>
           </div>
         </div>
@@ -108,7 +108,7 @@ export function WorkspaceSidebar({
         <nav className="space-y-3">
           {grouped.map(({ group, label, items }) => (
             <div key={group}>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 mb-1">{label}</p>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#10662A]/70 px-2 mb-1">{label}</p>
               <ul className="space-y-0.5">
                 {items.map((s) => {
                   const pct = sectionCompletion[s.id];
@@ -120,8 +120,8 @@ export function WorkspaceSidebar({
                         onClick={() => onNavigate(s.id)}
                         className={`w-full text-left px-2.5 py-2 rounded-lg text-xs font-medium transition flex items-center gap-2 ${
                           isActive
-                            ? "bg-accent text-accent-foreground shadow-sm"
-                            : "text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
+                            ? "bg-[#10662A] text-white shadow-[0_6px_16px_rgba(16,102,42,0.25)]"
+                            : "text-[#3d3550] hover:bg-white hover:text-[#10662A]"
                         }`}
                       >
                         <s.icon className="size-3.5 shrink-0 opacity-80" />
@@ -146,9 +146,9 @@ export function WorkspaceSidebar({
 
 function MiniStat({ label, value, warn }: { label: string; value: string; warn?: boolean }) {
   return (
-    <div className={`rounded-md border px-2 py-1.5 ${warn ? "border-amber-500/40 bg-amber-500/5" : "border-border bg-card"}`}>
-      <span className="text-muted-foreground">{label}</span>
-      <span className="block font-bold">{value}</span>
+    <div className={`rounded-lg border px-2 py-1.5 ${warn ? "border-amber-400/50 bg-amber-50" : "border-[#cfe6d6] bg-white"}`}>
+      <span className="text-[#5c4d72]">{label}</span>
+      <span className={`block font-bold ${warn ? "text-amber-800" : "text-[#10662A]"}`}>{value}</span>
     </div>
   );
 }

@@ -197,13 +197,13 @@ export function CustomerRightPanel({
   }, [merged]);
 
   return (
-    <aside className="w-full xl:w-96 shrink-0 border-t xl:border-t-0 xl:border-l border-border bg-card/60 flex flex-col ws-col">
-      <div className="p-4 border-b border-border shrink-0">
+    <aside className="w-full xl:w-96 shrink-0 border-t xl:border-t-0 xl:border-l border-[#cfe6d6] bg-white xl:shadow-[-8px_0_24px_rgba(16,102,42,0.07)] flex flex-col ws-col">
+      <div className="px-4 py-3 shrink-0 bg-gradient-to-r from-[#10662A] to-[#1b8a3d] text-white">
         <h3 className="font-display font-bold text-sm">Activity & Follow-up</h3>
-        <p className="text-xs text-muted-foreground mt-0.5 capitalize flex flex-wrap items-center gap-1">
+        <p className="text-xs text-white/80 mt-0.5 capitalize flex flex-wrap items-center gap-1">
           {pipelineStage.replace(/_/g, " ")}
           {hasDueFollowup && (
-            <Badge variant="outline" className="text-[10px] border-amber-500/50 text-amber-700 dark:text-amber-300">
+            <Badge variant="outline" className="text-[10px] border-amber-300 bg-amber-100 text-amber-800">
               Due today
             </Badge>
           )}
@@ -222,8 +222,8 @@ export function CustomerRightPanel({
         </div>
       )}
 
-      <div className="mx-4 mt-3 rounded-xl border border-border bg-secondary/30 p-3 shrink-0">
-        <p className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-1 mb-1">
+      <div className="mx-4 mt-3 rounded-xl border border-[#cfe6d6] bg-[#EEF8F1] p-3 shrink-0">
+        <p className="text-[10px] font-bold uppercase text-[#10662A] flex items-center gap-1 mb-1">
           <Bot className="size-3 text-accent" /> Suggested next step
         </p>
         <p className="text-xs leading-relaxed">{aiSuggestion ?? "Complete profile and schedule follow-up to improve conversion."}</p>
@@ -231,7 +231,7 @@ export function CustomerRightPanel({
 
       <button
         type="button"
-        className="flex items-center justify-between px-4 py-2.5 border-b border-border text-xs font-semibold hover:bg-secondary/40 shrink-0"
+        className="mt-3 flex items-center justify-between px-4 py-2.5 border-y border-[#e3f1e7] text-xs font-semibold text-[#10662A] hover:bg-[#f5fbf7] shrink-0"
         onClick={() => setFormOpen((o) => !o)}
       >
         <span className="flex items-center gap-1.5">
@@ -269,7 +269,7 @@ export function CustomerRightPanel({
                 type="button"
                 onClick={() => setOutcome(chip)}
                 className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
-                  outcome === chip ? "bg-accent text-accent-foreground border-accent" : "border-border hover:bg-secondary"
+                  outcome === chip ? "bg-[#10662A] text-white border-[#10662A]" : "border-[#cfe6d6] text-[#3d3550] hover:bg-[#EEF8F1]"
                 }`}
               >
                 {chip}
@@ -298,8 +298,8 @@ export function CustomerRightPanel({
         </div>
       )}
 
-      <div className="px-4 py-2 border-b border-border flex items-center gap-2 shrink-0">
-        <Filter className="size-3.5 text-muted-foreground" />
+      <div className="px-4 py-2 border-b border-[#e3f1e7] bg-[#f8fcf9] flex items-center gap-2 shrink-0">
+        <Filter className="size-3.5 text-[#10662A]" />
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -320,7 +320,7 @@ export function CustomerRightPanel({
           <div className="space-y-5">
             {groupedByDay.map(([day, items]) => (
               <div key={day}>
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2 sticky top-0 bg-card/95 py-1 z-10">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-[#10662A]/80 mb-2 sticky top-0 bg-white/95 py-1 z-10">
                   {day}
                 </p>
                 <ol className="space-y-3">

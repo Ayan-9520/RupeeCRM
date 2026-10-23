@@ -62,7 +62,7 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
   };
 
   return (
-    <div className="w-full min-w-0 max-w-full border-t border-border bg-[#f7fdf8]">
+    <div className="w-full min-w-0 max-w-full border-t border-[#e3f1e7] bg-[#EEF8F1]">
       <div className="flex min-w-0 flex-col gap-2.5 px-4 py-2.5 lg:px-6 xl:flex-row xl:items-center xl:gap-4">
         <div className="flex w-full min-w-0 flex-1 items-center gap-3">
           <span className="hidden shrink-0 text-[10px] font-bold uppercase tracking-wide text-[#5c4d72] sm:block">Lead stage</span>

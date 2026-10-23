@@ -70,7 +70,7 @@ export function CustomerWorkspaceHeader({
   };
 
   return (
-    <header className="relative z-30 shrink-0 border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
+    <header className="relative z-30 shrink-0 border-b-2 border-[#cfe6d6] bg-white shadow-[0_4px_16px_rgba(16,102,42,0.06)]">
       <div className="px-4 lg:px-6 py-3 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <Link

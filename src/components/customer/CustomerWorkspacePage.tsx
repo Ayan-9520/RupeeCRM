@@ -243,7 +243,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   const lead = purchase.lead;
   const phone = lead?.full_phone ?? profile.mobile ?? "";
   return (
-    <div className="ws-shell -m-4 lg:-m-6 min-h-[calc(100vh-3.5rem)] flex flex-col bg-background">
+    <div className="ws-shell -m-4 lg:-m-6 min-h-[calc(100vh-3.5rem)] flex flex-col bg-[#F5F8F6]">
       <CustomerWorkspaceHeader
         purchaseId={purchaseId}
         workspace={ws.data}
@@ -272,7 +272,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
 
         <main
           ref={mainScrollRef}
-          className="flex-1 overflow-y-auto px-4 pb-4 lg:px-6 lg:pb-6 space-y-5 min-w-0 scroll-smooth"
+          className="flex-1 overflow-y-auto bg-[#F5F8F6] px-4 pb-4 lg:px-6 lg:pb-6 space-y-5 min-w-0 scroll-smooth"
         >
           <div className="pt-4 lg:pt-6">
 
@@ -402,7 +402,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
         />
       )}
 
-      <footer className="relative z-30 shrink-0 border-t border-border bg-background/95 backdrop-blur px-4 py-2 flex items-center justify-between gap-3">
+      <footer className="relative z-30 shrink-0 border-t-2 border-[#cfe6d6] bg-white px-4 py-2 flex items-center justify-between gap-3">
         <div className="text-xs text-muted-foreground flex items-center gap-2">
           {ws.saving ? (
             <>
