@@ -125,54 +125,54 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
   ];
 
   return (
-    <div className="max-w-7xl space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="max-w-7xl space-y-4">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Connector cockpit</p>
-          <h1 className="mt-1 font-display text-2xl font-extrabold text-[#390A5D] lg:text-3xl">
+          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Connector cockpit</p>
+          <h1 className="font-display text-xl font-extrabold text-[#390A5D] lg:text-2xl">
             {firstName ? `${firstName}'s business` : "Your partner business"}
           </h1>
-          <p className="mt-1 max-w-xl text-sm text-[#5c4d72]">
+          <p className="max-w-xl text-xs text-[#5c4d72]">
             Leads, cases, lender movement and payouts in one place.
           </p>
         </div>
         <Link
           to="/dashboard/leadboard"
-          className="inline-flex items-center gap-2 rounded-xl bg-[#10662A] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(16,102,42,0.22)]"
+          className="inline-flex items-center gap-2 self-start rounded-xl bg-[#10662A] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(16,102,42,0.22)] sm:self-auto"
         >
           <Store className="size-4" /> Browse leads
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
         {metrics.map((m) => (
-          <div key={m.label} className="rounded-2xl border border-[#d8ecdd] bg-white px-4 py-3.5 shadow-[0_4px_18px_rgba(16,102,42,0.05)]">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{m.label}</p>
-            <p className="mt-1 font-display text-xl font-extrabold text-[#390A5D]">{m.value}</p>
-            <p className="mt-0.5 text-[11px] text-slate-500">{m.hint}</p>
+          <div key={m.label} className="rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 shadow-[0_4px_14px_rgba(16,102,42,0.04)]">
+            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{m.label}</p>
+            <p className="font-display text-lg font-extrabold leading-tight text-[#390A5D]">{m.value}</p>
+            <p className="truncate text-[10px] text-slate-500">{m.hint}</p>
           </div>
         ))}
       </div>
 
       <div>
-        <h2 className="font-display text-lg font-bold text-[#390A5D]">Work from here</h2>
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <h2 className="font-display text-base font-bold text-[#390A5D]">Work from here</h2>
+        <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
           {MODULES.map((item) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.title}
                 to={item.to}
-                className="group flex items-center gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4 transition hover:border-[#10662A]/40 hover:bg-[#f5fcf7]"
+                className="group flex items-center gap-2.5 rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 transition hover:border-[#10662A]/40 hover:bg-[#f5fcf7]"
               >
-                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A]">
+                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#E8F7EC] text-[#10662A]">
                   <Icon className="size-4" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block font-semibold text-[#390A5D]">{item.title}</span>
-                  <span className="block text-xs text-[#5c4d72]">{item.desc}</span>
+                  <span className="block truncate text-sm font-semibold text-[#390A5D]">{item.title}</span>
+                  <span className="block truncate text-[11px] text-[#5c4d72]">{item.desc}</span>
                 </span>
-                <ArrowRight className="size-4 text-[#10662A] opacity-0 transition group-hover:opacity-100" />
+                <ArrowRight className="size-3.5 shrink-0 text-[#10662A] opacity-0 transition group-hover:opacity-100" />
               </Link>
             );
           })}
