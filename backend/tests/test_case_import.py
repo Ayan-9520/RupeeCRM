@@ -175,6 +175,18 @@ def main() -> None:
         call("PATCH", f"/api/my-leads/{done.id}", dsa_token, {"notes_text": "Assigned to Axis Bank"})
         check("a bank the admin typed is never overwritten", bank_of(deal_done) == "ICICI Bank")
 
+        def client_of(deal: str) -> str | None:
+            db.expire_all()
+            row = db.query(LoanCase).filter(LoanCase.deal_no == deal).first()
+            return row.client_name if row else None
+
+        status, _ = call("PATCH", f"/api/my-leads/{done.id}", dsa_token, {"lead": {"applicant_name": "Verify Renamed Client"}})
+        check("renaming the lead renames its case file client", status == 200 and client_of(deal_done) == "Verify Renamed Client")
+        case_row = db.query(LoanCase).filter(LoanCase.deal_no == deal_done).first()
+        call("PUT", f"/api/cases/{case_row.id}", admin_token, {"client_name": "Admin Typed Client"})
+        call("PATCH", f"/api/my-leads/{done.id}", dsa_token, {"lead": {"applicant_name": "Verify Second Rename"}})
+        check("a client name the admin typed on the case is kept", client_of(deal_done) == "Admin Typed Client")
+
         file_id = db.query(LoanCase).filter(LoanCase.deal_no == deal_done).first().id
         status, _ = call("PUT", f"/api/cases/{file_id}", admin_token, {"flag": "cancelled"})
         in_chip("all", deal_done)

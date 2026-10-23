@@ -8,11 +8,12 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
-from app.models import DEFAULT_PIPELINE_STAGES, Lead, LeadPurchase, User
+from app.models import DEFAULT_PIPELINE_STAGES, CustomerProfile, Lead, LeadPurchase, User
 from app.schemas import LeadOut
 from app.services.audit import write_audit
 from app.services.leads import mask_phone, normalize_phone
 from app.services.loan_cases import sync_case_for_purchase
+from app.services.name_sync import sync_customer_name
 
 router = APIRouter(prefix="/api", tags=["purchases"])
 
@@ -314,7 +315,11 @@ def patch_my_lead(
         )
 
     if body.lead is not None and lead is not None:
+        old_name = lead.applicant_name
         _apply_lead_updates(lead, body.lead)
+        if lead.applicant_name and lead.applicant_name != old_name:
+            profile = db.query(CustomerProfile).filter(CustomerProfile.lead_purchase_id == p.id).first()
+            sync_customer_name(db, p, lead.applicant_name, [old_name, profile.full_name if profile else None])
         notes.append(
             {
                 "at": datetime.now(timezone.utc).isoformat(),

@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.services.name_sync import sync_customer_name
 from app.models import (
     CustomerBankAccount,
     CustomerCoApplicant,
@@ -598,9 +599,13 @@ def save_profile(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    _purchase, profile = _require_profile(db, user, profile_id)
+    purchase, profile = _require_profile(db, user, profile_id)
     present = set(body.model_fields_set)
+    old_name = profile.full_name
     _apply(profile, _clean_profile(body, present))
+    if "full_name" in present and profile.full_name and profile.full_name != old_name:
+        lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()
+        sync_customer_name(db, purchase, profile.full_name, [old_name, lead.applicant_name if lead else None])
     db.commit()
     db.refresh(profile)
     return _profile_out(profile)

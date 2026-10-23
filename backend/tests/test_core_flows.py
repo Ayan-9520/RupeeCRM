@@ -150,6 +150,15 @@ def main() -> None:
             prof.get("city") == "Nashik" and prof.get("pan") == "ABCDE1234F" and float(prof.get("monthly_income") or 0) == 55000,
         )
 
+        status, _ = call("PATCH", patch_path, token, {"full_name": "Verify Renamed Customer"})
+        db.expire_all()
+        renamed_lead = db.query(Lead).filter(Lead.id == lead_a.id).first()
+        check("renaming in the workspace renames the lead card", status == 200 and renamed_lead.applicant_name == "Verify Renamed Customer")
+        status, _ = call("PATCH", f"/api/my-leads/{purchase_id}", token, {"lead": {"applicant_name": "Verify Quick Edit Name"}})
+        status2, raw = call("GET", base, token)
+        prof = (json.loads(raw).get("profile") or {}) if status2 == 200 else {}
+        check("renaming in Quick edit renames the workspace profile", status == 200 and prof.get("full_name") == "Verify Quick Edit Name")
+
         status, _ = call("PATCH", f"/api/my-leads/{purchase_id}", token, {"deal_value": 123456})
         status2, raw = call("GET", base, token)
         purchase_out = (json.loads(raw).get("purchase") or {}) if status2 == 200 else {}
