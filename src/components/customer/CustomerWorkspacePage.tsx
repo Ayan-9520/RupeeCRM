@@ -243,7 +243,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   const lead = purchase.lead;
   const phone = lead?.full_phone ?? profile.mobile ?? "";
   return (
-    <div className="-m-4 lg:-m-6 min-h-[calc(100vh-3.5rem)] lg:h-[calc(100dvh-3.5rem)] lg:min-h-0 flex flex-col bg-background">
+    <div className="ws-shell -m-4 lg:-m-6 min-h-[calc(100vh-3.5rem)] flex flex-col bg-background">
       <CustomerWorkspaceHeader
         purchaseId={purchaseId}
         workspace={ws.data}
@@ -255,7 +255,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
         riskLevel={risk.level}
         onAddNote={() => setFocusNote(true)}
       />
-      <div className="flex flex-1 min-h-0 flex-col lg:flex-row lg:overflow-hidden">
+      <div className="ws-cols flex flex-1 min-h-0 flex-col xl:flex-row">
         <WorkspaceSidebar
           completionOverall={ws.completion.overall}
           sectionCompletion={ws.completion.sections}
@@ -274,7 +274,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
           ref={mainScrollRef}
           className="flex-1 overflow-y-auto px-4 pb-4 lg:px-6 lg:pb-6 space-y-5 min-w-0 scroll-smooth"
         >
-          <div className="sticky top-0 z-10 -mx-1 px-1 pt-4 pb-3 lg:pt-6 bg-background [&>*]:bg-card">
+          <div className="pt-4 lg:pt-6">
 
             <CaseSummaryPanel workspace={ws.data} eligibility={eligibility} pipelineStage={pipelineStage} />
           </div>

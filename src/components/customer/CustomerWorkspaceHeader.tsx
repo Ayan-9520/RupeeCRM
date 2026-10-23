@@ -80,7 +80,7 @@ export function CustomerWorkspaceHeader({
             <ArrowLeft className="size-3.5" /> My Leads
           </Link>
           <div className="h-4 w-px bg-border hidden sm:block" />
-          <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-3 min-w-[14rem] flex-1">
             <div className="size-11 rounded-xl bg-gradient-to-br from-accent/30 to-accent/5 border border-accent/20 grid place-items-center font-display font-bold text-sm text-accent shrink-0">
               {initials}
             </div>

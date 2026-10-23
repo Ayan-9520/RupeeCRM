@@ -1,4 +1,4 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
 @import "tw-animate-css";
 
 @source "../src";
@@ -65,7 +65,7 @@
 
 :root {
   --radius: 0.875rem;
-  /* RupeeDial.com brand — light only */
+  /* RupeeDial.com brand â€” light only */
   --wa-green: #10662A;
   --wa-green-dark: #0D4F20;
   --wa-teal: #10662A;
@@ -131,7 +131,7 @@
   --sidebar-ring: #10662A;
 }
 
-/* Force light — dark class ignored (RupeeDial One = light only) */
+/* Force light â€” dark class ignored (RupeeDial One = light only) */
 .dark {
   --wa-green: #10662A;
   --wa-green-dark: #0D4F20;
@@ -188,7 +188,7 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* RupeeDial.com theme — scoped to CRM landing only */
+/* RupeeDial.com theme â€” scoped to CRM landing only */
 .landing-page {
   --rd-green: #10662A;
   --rd-green-dark: #0D4F20;
@@ -467,3 +467,10 @@
 }
 .animate-float { animation: float-slow 6s ease-in-out infinite; }
 .animate-fade-up { animation: fade-up 0.8s var(--ease-out-expo) both; }
+
+/* Customer workspace: fixed three-column shell only on screens tall enough for it; shorter screens scroll the page. */
+@media (min-width: 1280px) and (min-height: 760px) {
+  .ws-shell { height: calc(100dvh - 3.5rem); min-height: 0; }
+  .ws-cols { overflow: hidden; }
+  .ws-col { height: 100%; min-height: 0; overflow: hidden; }
+}
