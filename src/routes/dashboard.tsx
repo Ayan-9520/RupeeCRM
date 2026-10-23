@@ -1,5 +1,5 @@
 import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, type CSSProperties } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/dashboard/AppSidebar";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
@@ -32,7 +32,7 @@ function DashboardLayout() {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider style={{ "--sidebar-width": "19.5rem", "--sidebar-width-icon": "4.75rem" } as CSSProperties}>
       <div className="min-h-screen flex w-full bg-[#f5fcf7]">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
