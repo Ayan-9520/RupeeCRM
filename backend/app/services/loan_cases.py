@@ -12,6 +12,7 @@ from datetime import datetime, timedelta, timezone
 IST = timezone(timedelta(hours=5, minutes=30))
 from uuid import UUID, uuid4
 
+from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -147,9 +148,38 @@ CHIP_IDS = (
 )
 
 
-def _deal_no() -> str:
-    day = datetime.now(timezone.utc).strftime("%Y%m%d")
-    return f"RD-MCF-{day}-{uuid4().hex[:4].upper()}"
+FIRST_CASE_NO = 1001
+SAMPLE_DEAL = "RD-MCF-SAMPLE-0844"
+
+
+def _next_case_no(db: Session) -> int:
+    current = db.query(func.max(LoanCase.case_no)).scalar()
+    return max(int(current or 0) + 1, FIRST_CASE_NO)
+
+
+def _deal_no(case_no: int) -> str:
+    """RD-MCF-<IST date of opening>-<running case number>, e.g. RD-MCF-20261022-1001."""
+    return f"RD-MCF-{datetime.now(IST).strftime('%Y%m%d')}-{case_no}"
+
+
+def _insert_numbered(db: Session, row: LoanCase) -> LoanCase | None:
+    """Give a new file the next case number. Two files opened at once race on the unique number, so retry."""
+    for _ in range(5):
+        number = _next_case_no(db)
+        row.case_no = number
+        if row.deal_no != SAMPLE_DEAL:
+            row.deal_no = _deal_no(number)
+        db.add(row)
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            if row.lead_purchase_id and db.query(LoanCase.id).filter(LoanCase.lead_purchase_id == row.lead_purchase_id).first():
+                return None
+            continue
+        db.refresh(row)
+        return row
+    return None
 
 
 def serialize(row: LoanCase) -> dict:
@@ -164,6 +194,7 @@ def serialize(row: LoanCase) -> dict:
     return {
         "id": str(row.id),
         "deal_no": row.deal_no,
+        "case_no": row.case_no,
         "stage": row.stage,
         "stage_label": STAGE_LABEL.get(row.stage, row.stage),
         "status_label": status_label(row),
@@ -244,7 +275,7 @@ def list_cases(db: Session, user: User, chip: str = "all", date_from: str = "", 
 def create_case(db: Session, user: User, payload: dict) -> dict:
     row = LoanCase(
         id=uuid4(),
-        deal_no=_deal_no(),
+        deal_no="",
         stage="draft",
         submitted_by=user.full_name or user.email,
         owner_user_id=user.id,
@@ -257,10 +288,10 @@ def create_case(db: Session, user: User, payload: dict) -> dict:
         partner_code=(payload.get("partner_code") or "").strip(),
         lead_source="Connector",
     )
-    db.add(row)
-    db.commit()
-    db.refresh(row)
-    return serialize(row)
+    saved = _insert_numbered(db, row)
+    if saved is None:
+        raise RuntimeError("Could not assign a case number, try again")
+    return serialize(saved)
 
 
 def _apply(row: LoanCase, payload: dict) -> None:
@@ -331,8 +362,8 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
     return serialize(row)
 
 
-def lead_deal_no(purchase_id: UUID) -> str:
-    return f"RD-LP-{purchase_id.hex}"
+def case_for_purchase(db: Session, purchase_id: UUID) -> LoanCase | None:
+    return db.query(LoanCase).filter(LoanCase.lead_purchase_id == purchase_id).first()
 
 
 def _loan_type(lead: Lead | None) -> str:
@@ -366,7 +397,8 @@ def _case_from_purchase(db: Session, purchase: LeadPurchase, actor: User | None)
     disbursed = float(purchase.deal_value or 0) or lead_amount
     return LoanCase(
         id=uuid4(),
-        deal_no=lead_deal_no(purchase.id),
+        deal_no="",
+        lead_purchase_id=purchase.id,
         stage="disbursed",
         loan_type=_loan_type(lead),
         lead_source="My Leads",
@@ -391,7 +423,7 @@ def sync_case_for_purchase(
     Disbursed with no file: create it. Rejected: cancel the file. Rejected lead moved back to disbursed:
     lift the cancel. Every other field on an existing file belongs to the admin and is left alone.
     """
-    row = db.query(LoanCase).filter(LoanCase.deal_no == lead_deal_no(purchase.id)).first()
+    row = case_for_purchase(db, purchase.id)
     changed = False
     if purchase.pipeline_stage == "rejected":
         if row is not None and row.flag != "cancelled":
@@ -399,9 +431,8 @@ def sync_case_for_purchase(
             changed = True
     elif is_disbursed(purchase):
         if row is None:
-            db.add(_case_from_purchase(db, purchase, actor))
-            changed = True
-        elif reopened and row.flag == "cancelled":
+            return _insert_numbered(db, _case_from_purchase(db, purchase, actor)) is not None
+        if reopened and row.flag == "cancelled":
             row.flag = ""
             changed = True
     if row is not None and not row.bank_name:
@@ -423,30 +454,33 @@ def import_disbursed(db: Session, user: User | None) -> dict:
     """Bring Case Files in line with My Leads: a file for every disbursed lead, cancelled for every rejected one."""
     everything = db.query(LeadPurchase).order_by(LeadPurchase.created_at.asc()).all()
     purchases = [row for row in everything if is_disbursed(row)]
-    rejected = {lead_deal_no(row.id) for row in everything if row.pipeline_stage == "rejected"}
+    rejected = [row.id for row in everything if row.pipeline_stage == "rejected"]
     taken = {
-        deal_no
-        for (deal_no,) in db.query(LoanCase.deal_no).filter(LoanCase.deal_no.like("RD-LP-%")).all()
+        pid for (pid,) in db.query(LoanCase.lead_purchase_id).filter(LoanCase.lead_purchase_id.isnot(None)).all()
     }
     created: list[LoanCase] = []
+    number = _next_case_no(db)
     for purchase in purchases:
-        if lead_deal_no(purchase.id) in taken:
+        if purchase.id in taken:
             continue
         row = _case_from_purchase(db, purchase, user)
+        row.case_no = number
+        row.deal_no = _deal_no(number)
+        number += 1
         db.add(row)
         created.append(row)
-        taken.add(row.deal_no)
+        taken.add(purchase.id)
     cancelled = 0
     if rejected:
-        for row in db.query(LoanCase).filter(LoanCase.deal_no.in_(rejected), LoanCase.flag != "cancelled").all():
+        for row in db.query(LoanCase).filter(LoanCase.lead_purchase_id.in_(rejected), LoanCase.flag != "cancelled").all():
             row.flag = "cancelled"
             cancelled += 1
-    lenders = {lead_deal_no(row.id): lender_from_notes(row) for row in everything}
-    lenders = {deal: name for deal, name in lenders.items() if name}
+    lenders = {row.id: lender_from_notes(row) for row in everything}
+    lenders = {pid: name for pid, name in lenders.items() if name}
     filled = 0
     if lenders:
-        for row in db.query(LoanCase).filter(LoanCase.deal_no.in_(list(lenders)), LoanCase.bank_name == "").all():
-            row.bank_name = lenders[row.deal_no]
+        for row in db.query(LoanCase).filter(LoanCase.lead_purchase_id.in_(list(lenders)), LoanCase.bank_name == "").all():
+            row.bank_name = lenders[row.lead_purchase_id]
             filled += 1
     if created or cancelled or filled:
         try:
@@ -465,12 +499,12 @@ def import_disbursed(db: Session, user: User | None) -> dict:
 
 def sample_file(db: Session, user: User) -> dict:
     """One local file with the same sums as a 1.4% / 90% closure. Not a live customer."""
-    existing = db.query(LoanCase).filter(LoanCase.deal_no == "RD-MCF-SAMPLE-0844").first()
+    existing = db.query(LoanCase).filter(LoanCase.deal_no == SAMPLE_DEAL).first()
     if existing:
         return serialize(existing)
     row = LoanCase(
         id=uuid4(),
-        deal_no="RD-MCF-SAMPLE-0844",
+        deal_no=SAMPLE_DEAL,
         stage="collected",
         loan_type="LAP",
         lead_source="Connector",
@@ -497,7 +531,7 @@ def sample_file(db: Session, user: User) -> dict:
         payout_note="Payout completed against the sample file",
         owner_user_id=user.id,
     )
-    db.add(row)
-    db.commit()
-    db.refresh(row)
-    return serialize(row)
+    saved = _insert_numbered(db, row)
+    if saved is None:
+        raise RuntimeError("Could not assign a case number, try again")
+    return serialize(saved)

@@ -291,6 +291,8 @@ class LoanCase(Base):
     payout_status: Mapped[str] = mapped_column(String(20), nullable=False, default="none")
     payout_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
     owner_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    lead_purchase_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, unique=True)
+    case_no: Mapped[int | None] = mapped_column(Integer, nullable=True, unique=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
