@@ -129,6 +129,7 @@ export type PurchaseContext = {
   pipeline_stage: string;
   price_paid: number;
   converted: boolean;
+  deal_value?: number | null;
   next_followup_at: string | null;
   lead: {
     id: string;

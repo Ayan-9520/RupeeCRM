@@ -438,6 +438,7 @@ def _workspace(db: Session, purchase: LeadPurchase) -> dict:
             "pipeline_stage": purchase.pipeline_stage,
             "price_paid": float(purchase.price_paid or 0),
             "converted": bool(purchase.converted),
+            "deal_value": float(purchase.deal_value) if purchase.deal_value is not None else None,
             "next_followup_at": _iso(purchase.next_followup_at),
             "lead": _lead_out(lead),
         },

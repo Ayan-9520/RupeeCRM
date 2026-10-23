@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CustomerRightPanel } from "./CustomerRightPanel";
 import { CustomerWorkspaceHeader } from "./CustomerWorkspaceHeader";
+import { LeadStageBar } from "./LeadStageBar";
 import { EligibilityDashboard } from "./EligibilityDashboard";
 import { WorkspaceSidebar } from "./WorkspaceSidebar";
 import { DocumentsCenter } from "./DocumentsCenter";
@@ -255,6 +256,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
         riskLevel={risk.level}
         onAddNote={() => setFocusNote(true)}
       />
+      <LeadStageBar key={purchase.id} purchase={purchase} />
       <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
         <WorkspaceSidebar
           completionOverall={ws.completion.overall}

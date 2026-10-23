@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -205,6 +205,7 @@ const textareaClass =
   "w-full min-h-[72px] px-3 py-2 rounded-lg border border-[#d8ecdd] bg-white text-sm text-[#390A5D] focus:outline-none focus:border-[#10662A] focus:ring-2 focus:ring-[#10662A]/15 transition";
 
 function MyLeadsPage() {
+  const navigate = useNavigate();
   const [items, setItems] = useState<CrmPurchase[]>([]);
   const [stages, setStages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -495,10 +496,14 @@ function MyLeadsPage() {
             const sm = scoreMeta(lead?.score || "cold");
             const ScoreIcon = sm.Icon;
             return (
-              <button
+              <div
                 key={p.id}
-                type="button"
-                onClick={() => openLead(p)}
+                role="button"
+                tabIndex={0}
+                onClick={() => void navigate({ to: "/dashboard/customer/$id", params: { id: p.id } })}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void navigate({ to: "/dashboard/customer/$id", params: { id: p.id } });
+                }}
                 className="text-left rounded-xl border border-[#d8ecdd] bg-white p-3.5 shadow-[0_2px_8px_rgba(16,102,42,0.04)] hover:border-[#10662A]/35 hover:shadow-[0_10px_24px_rgba(16,102,42,0.1)] hover:-translate-y-0.5 transition-all group flex flex-col gap-2.5 cursor-pointer"
               >
                 <div className="flex items-start justify-between gap-2">
@@ -561,11 +566,23 @@ function MyLeadsPage() {
                       ? `Follow-up ${new Date(p.next_followup_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}`
                       : "No follow-up"}
                   </span>
-                  <span className="inline-flex items-center gap-0.5 text-[#10662A] font-bold text-[11px]">
-                    Edit CRM <ChevronRight className="size-3.5" />
+                  <span className="inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openLead(p);
+                      }}
+                      className="rounded-md border border-[#d8ecdd] bg-white px-2 py-0.5 text-[10px] font-semibold text-[#5c4d72] hover:border-[#10662A]/40 hover:text-[#10662A]"
+                    >
+                      Quick edit
+                    </button>
+                    <span className="inline-flex items-center gap-0.5 text-[#10662A] font-bold text-[11px]">
+                      Open <ChevronRight className="size-3.5" />
+                    </span>
                   </span>
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

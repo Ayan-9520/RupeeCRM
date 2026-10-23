@@ -87,7 +87,7 @@ export function CustomerWorkspaceHeader({
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <h1 className="font-display text-lg font-bold truncate">{name}</h1>
-                <Badge className={`${stage.color} border-0 text-[10px] capitalize`}>{stage.label}</Badge>
+                <Badge className={`${stage.color} border-0 text-[10px] capitalize`} title="Loan processing (LOS) stage">LOS · {stage.label}</Badge>
                 <Badge className={`${RISK_BADGE[riskLevel]} border-0 text-[10px] capitalize`}>{riskLevel} risk</Badge>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5 flex flex-wrap gap-x-3 gap-y-0">

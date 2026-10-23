@@ -150,6 +150,11 @@ def main() -> None:
             prof.get("city") == "Nashik" and prof.get("pan") == "ABCDE1234F" and float(prof.get("monthly_income") or 0) == 55000,
         )
 
+        status, _ = call("PATCH", f"/api/my-leads/{purchase_id}", token, {"deal_value": 123456})
+        status2, raw = call("GET", base, token)
+        purchase_out = (json.loads(raw).get("purchase") or {}) if status2 == 200 else {}
+        check("workspace shows the saved deal value and lead stage", status == 200 and purchase_out.get("deal_value") == 123456 and purchase_out.get("pipeline_stage") == "new")
+
         db.query(User).filter(User.id == buyer.id).update({User.is_active: False})
         db.commit()
         status, _ = call("GET", "/api/auth/me", token)
