@@ -243,7 +243,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   const lead = purchase.lead;
   const phone = lead?.full_phone ?? profile.mobile ?? "";
   return (
-    <div className="-m-4 lg:-m-6 min-h-[calc(100vh-3.5rem)] flex flex-col bg-background">
+    <div className="-m-4 lg:-m-6 min-h-[calc(100vh-3.5rem)] lg:h-[calc(100dvh-3.5rem)] lg:min-h-0 flex flex-col bg-background">
       <CustomerWorkspaceHeader
         purchaseId={purchaseId}
         workspace={ws.data}
@@ -255,7 +255,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
         riskLevel={risk.level}
         onAddNote={() => setFocusNote(true)}
       />
-      <div className="flex flex-1 min-h-0 flex-col lg:flex-row">
+      <div className="flex flex-1 min-h-0 flex-col lg:flex-row lg:overflow-hidden">
         <WorkspaceSidebar
           completionOverall={ws.completion.overall}
           sectionCompletion={ws.completion.sections}
@@ -272,9 +272,10 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
 
         <main
           ref={mainScrollRef}
-          className="flex-1 overflow-y-auto p-4 lg:p-6 space-y-5 min-w-0 scroll-smooth"
+          className="flex-1 overflow-y-auto px-4 pb-4 lg:px-6 lg:pb-6 space-y-5 min-w-0 scroll-smooth"
         >
-          <div className="sticky top-0 z-10 -mx-1 px-1 pb-2 bg-gradient-to-b from-background via-background/95 to-transparent">
+          <div className="sticky top-0 z-10 -mx-1 px-1 pt-4 pb-3 lg:pt-6 bg-background [&>*]:bg-card">
+
             <CaseSummaryPanel workspace={ws.data} eligibility={eligibility} pipelineStage={pipelineStage} />
           </div>
           <section ref={(el) => { sectionRefs.current.personal = el; }} id="personal" className="scroll-mt-28">
@@ -401,7 +402,7 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
         />
       )}
 
-      <footer className="sticky bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur px-4 py-2 flex items-center justify-between gap-3">
+      <footer className="relative z-30 shrink-0 border-t border-border bg-background/95 backdrop-blur px-4 py-2 flex items-center justify-between gap-3">
         <div className="text-xs text-muted-foreground flex items-center gap-2">
           {ws.saving ? (
             <>

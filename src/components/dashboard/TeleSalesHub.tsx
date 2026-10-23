@@ -197,6 +197,13 @@ function QueueCard({ row, onOpen }: { row: CrmPurchase; onOpen: () => void }) {
           <Phone className="size-4" /> Call
         </a>
         <button type="button" onClick={onOpen} className="rounded-lg border border-border px-3 py-2 text-sm font-semibold">Open</button>
+        <Link
+          to="/dashboard/customer/$id"
+          params={{ id: row.id }}
+          className="rounded-lg border border-[#10662A]/40 bg-[#E8F7EC] px-3 py-2 text-sm font-semibold text-[#10662A]"
+        >
+          Workspace
+        </Link>
       </div>
     </div>
   );
@@ -252,6 +259,13 @@ function LeadWork({
         </a>
         <p className="mt-2 text-sm">{lead.product_subtype || "Loan"} · {inr(lead.loan_amount)}</p>
         <p className="mt-1 text-xs text-muted-foreground">{lastDisposition(row)?.text || row.pipeline_stage}</p>
+        <Link
+          to="/dashboard/customer/$id"
+          params={{ id: row.id }}
+          className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#10662A]/40 bg-[#E8F7EC] px-3 py-2 text-sm font-semibold text-[#10662A]"
+        >
+          Open full workspace
+        </Link>
       </div>
 
       <div className="rounded-2xl border border-border bg-white p-4">

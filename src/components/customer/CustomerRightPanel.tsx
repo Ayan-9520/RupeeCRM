@@ -197,7 +197,7 @@ export function CustomerRightPanel({
   }, [merged]);
 
   return (
-    <aside className="w-full lg:w-[min(100%,22rem)] xl:w-96 shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-card/60 flex flex-col lg:sticky lg:top-[8.5rem] lg:self-start lg:max-h-[calc(100vh-9.5rem)]">
+    <aside className="w-full lg:w-[min(100%,22rem)] xl:w-96 shrink-0 border-t lg:border-t-0 lg:border-l border-border bg-card/60 flex flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
       <div className="p-4 border-b border-border shrink-0">
         <h3 className="font-display font-bold text-sm">Activity & Follow-up</h3>
         <p className="text-xs text-muted-foreground mt-0.5 capitalize flex flex-wrap items-center gap-1">

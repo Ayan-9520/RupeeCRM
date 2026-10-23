@@ -43,7 +43,28 @@ const EMPTY: CatStats = {
 };
 
 const CALL_STAGES = new Set(["new", "contacted"]);
-const CASE_STAGES = new Set(["docs", "docs_pending", "submitted", "approved"]);
+const CASE_STAGES = new Set(["docs_collected", "bank_submitted", "sanctioned"]);
+
+const PIPELINE: { key: string; label: string; bar: string; dot: string }[] = [
+  { key: "new", label: "New", bar: "bg-sky-400", dot: "bg-sky-400" },
+  { key: "contacted", label: "Contacted", bar: "bg-indigo-400", dot: "bg-indigo-400" },
+  { key: "docs_collected", label: "Docs collected", bar: "bg-amber-400", dot: "bg-amber-400" },
+  { key: "bank_submitted", label: "Bank submitted", bar: "bg-orange-500", dot: "bg-orange-500" },
+  { key: "sanctioned", label: "Sanctioned", bar: "bg-[#7c3aed]", dot: "bg-[#7c3aed]" },
+  { key: "disbursed", label: "Disbursed", bar: "bg-[#10662A]", dot: "bg-[#10662A]" },
+  { key: "rejected", label: "Rejected", bar: "bg-red-400", dot: "bg-red-400" },
+];
+
+function inr(n: number) {
+  return `₹${Math.round(Number(n) || 0).toLocaleString("en-IN")}`;
+}
+
+function inrShort(n: number) {
+  const v = Number(n) || 0;
+  if (v >= 1e7) return `₹${(v / 1e7).toFixed(v >= 1e8 ? 0 : 1).replace(/\.0$/, "")} Cr`;
+  if (v >= 1e5) return `₹${(v / 1e5).toFixed(v >= 1e6 ? 0 : 1).replace(/\.0$/, "")} L`;
+  return inr(v);
+}
 
 function scoreTone(score: string) {
   if (score === "hot") return "bg-red-50 text-red-600 border-red-200";
@@ -78,6 +99,8 @@ function DashboardHome() {
     earnings: 0,
   });
   const [byCategory, setByCategory] = useState<CatStats>(EMPTY);
+  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
+  const [statsLoading, setStatsLoading] = useState(true);
   const [profileName, setProfileName] = useState("");
   const [webLeads, setWebLeads] = useState<CrmLead[]>([]);
   const [webTotal, setWebTotal] = useState(0);
@@ -126,6 +149,9 @@ function DashboardHome() {
           }
         }
         setByCategory(next);
+        const counts: Record<string, number> = {};
+        for (const p of purchases) counts[p.pipeline_stage] = (counts[p.pipeline_stage] ?? 0) + 1;
+        setStageCounts(counts);
 
         setStats({
           balance: billing ? Number(billing.entitlements.wallet_balance || 0) : null,
@@ -138,6 +164,8 @@ function DashboardHome() {
         });
       } catch {
         /* keep zeros */
+      } finally {
+        setStatsLoading(false);
       }
     })();
   }, [user, role]);
@@ -198,44 +226,118 @@ function DashboardHome() {
     return <CustomerHome firstName={firstName} />;
   }
 
+  const totalPipeline = Object.values(stageCounts).reduce((s, n) => s + n, 0);
+  const activePipeline = totalPipeline - (stageCounts.disbursed ?? 0) - (stageCounts.rejected ?? 0);
+  const conversion = totalPipeline ? Math.round(((stageCounts.disbursed ?? 0) / totalPipeline) * 100) : 0;
+  const today = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const heroStats: [string, string, string][] = [
+    ["Leads purchased", statsLoading ? "…" : String(stats.leadsBought), String(stats.leadsBought)],
+    ["Active pipeline", statsLoading ? "…" : String(activePipeline), String(activePipeline)],
+    ["Disbursed value", statsLoading ? "…" : inrShort(stats.earnings), inr(stats.earnings)],
+  ];
+
   return (
     <div className="space-y-5 max-w-7xl">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A] mb-1.5">
-            <Sparkles className="size-3.5" />
-            {role ? getRoleLabel(role) : "Member"} · RupeeDial One
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0b4a1e] via-[#10662A] to-[#390A5D] p-5 text-white shadow-[0_18px_40px_rgba(16,102,42,0.25)] sm:p-7">
+        <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-white/10 blur-2xl" />
+        <div aria-hidden className="pointer-events-none absolute -bottom-28 left-1/3 size-72 rounded-full bg-[#7c3aed]/30 blur-3xl" />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ring-1 ring-white/20">
+              <Sparkles className="size-3.5" />
+              {role ? getRoleLabel(role) : "Member"} · RupeeDial One
+            </div>
+            <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
+              Welcome back{firstName ? `, ${firstName}` : ""}
+            </h1>
+            <p className="mt-1 max-w-xl text-sm text-white/80">{config.subtitle}</p>
+            <p className="mt-1 text-xs text-white/60">{today}</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {admin && (
+                <Link
+                  to="/dashboard/website-leads"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-[#10662A] shadow-sm hover:bg-[#E8F7EC] transition-colors"
+                >
+                  <Globe className="size-4" /> Website Leads
+                </Link>
+              )}
+              <Link
+                to="/dashboard/leadboard"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 transition-colors"
+              >
+                <Store className="size-4" /> Leadboard
+              </Link>
+              <Link
+                to="/dashboard/my-leads"
+                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 transition-colors"
+              >
+                <KanbanSquare className="size-4" /> My Leads
+              </Link>
+            </div>
           </div>
-          <h1 className="font-display text-2xl lg:text-[1.75rem] font-extrabold text-[#390A5D] tracking-tight">
-            Welcome back{firstName ? `, ${firstName}` : ""}
-          </h1>
-          <p className="text-[#5c4d72] mt-1 text-sm max-w-xl">{config.subtitle}</p>
+          <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[420px]">
+            {heroStats.map(([label, value, full]) => (
+              <div key={label} title={full} className="min-w-0 rounded-2xl bg-white/10 px-3 py-3 ring-1 ring-white/15 backdrop-blur-sm sm:px-4">
+                <div className="text-[10px] font-semibold uppercase tracking-wide text-white/70">{label}</div>
+                <div className="mt-1 truncate font-display text-lg font-bold sm:text-xl">{value}</div>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {admin && (
-            <Link
-              to="/dashboard/website-leads"
-              className="inline-flex items-center gap-2 rounded-xl bg-[#10662A] text-white px-4 py-2.5 text-sm font-semibold shadow-[0_8px_20px_rgba(16,102,42,0.22)] hover:bg-[#0D4F20] transition-colors"
-            >
-              <Globe className="size-4" /> Website Leads
-            </Link>
-          )}
-          <Link
-            to="/dashboard/leadboard"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8ecdd] bg-white text-[#390A5D] px-4 py-2.5 text-sm font-semibold hover:border-[#10662A]/40 hover:bg-[#E8F7EC] transition-colors"
-          >
-            <Store className="size-4 text-[#10662A]" /> Leadboard
-          </Link>
-          <Link
-            to="/dashboard/my-leads"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8ecdd] bg-white text-[#390A5D] px-4 py-2.5 text-sm font-semibold hover:border-[#10662A]/40 hover:bg-[#E8F7EC] transition-colors"
-          >
-            <KanbanSquare className="size-4 text-[#10662A]" /> My Leads
-          </Link>
-        </div>
-      </div>
+      </section>
 
-      <RoleStats role={role} config={config} stats={stats} webTotal={admin ? webTotal : undefined} />
+      <RoleStats role={role} config={config} stats={stats} webTotal={admin ? webTotal : undefined} loading={statsLoading} />
+
+      {hasRole(role, ["dsa", "ceo", "super_admin", "admin"]) && (
+        <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 shadow-[0_4px_24px_rgba(16,102,42,0.05)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-base font-bold text-[#390A5D]">Pipeline snapshot</h2>
+              <p className="text-xs text-[#5c4d72]">
+                {totalPipeline} leads · {activePipeline} in progress · {conversion}% disbursed
+              </p>
+            </div>
+            <Link to="/dashboard/my-leads" className="inline-flex items-center gap-1 text-sm font-bold text-[#10662A] hover:underline">
+              Open My Leads <ArrowRight className="size-3.5" />
+            </Link>
+          </div>
+          {totalPipeline === 0 ? (
+            <p className="mt-4 rounded-xl border border-dashed border-[#d8ecdd] bg-[#f5fcf7] p-4 text-center text-sm text-[#5c4d72]">
+              {statsLoading ? "Loading pipeline…" : "No leads in the pipeline yet."}
+            </p>
+          ) : (
+            <>
+              <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-[#E8F7EC]">
+                {PIPELINE.map((s) =>
+                  stageCounts[s.key] ? (
+                    <div
+                      key={s.key}
+                      className={`${s.bar} h-full`}
+                      style={{ width: `${(stageCounts[s.key] / totalPipeline) * 100}%` }}
+                      title={`${s.label}: ${stageCounts[s.key]}`}
+                    />
+                  ) : null,
+                )}
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+                {PIPELINE.map((s) => (
+                  <Link
+                    key={s.key}
+                    to="/dashboard/my-leads"
+                    className="rounded-xl border border-[#d8ecdd] px-3 py-2.5 transition-colors hover:border-[#10662A]/35 hover:bg-[#f5fcf7]"
+                  >
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#5c4d72]">
+                      <span className={`size-2 rounded-full ${s.dot}`} />
+                      {s.label}
+                    </div>
+                    <div className="mt-1 font-display text-xl font-bold text-[#390A5D]">{stageCounts[s.key] ?? 0}</div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      )}
 
       <div className={`grid gap-5 ${admin ? "xl:grid-cols-5" : ""}`}>
         {admin && (
@@ -249,7 +351,7 @@ function DashboardHome() {
                   <h2 className="font-display font-bold text-[#390A5D] text-base">Recent website leads</h2>
                   <p className="text-xs text-[#5c4d72] truncate">
                     {apiUp === false
-                      ? "CRM API offline — start Docker"
+                      ? "Could not reach the CRM API"
                       : !crmConnected
                         ? "Connect API on Website Leads page"
                         : `${webTotal} total · Hot ${scoreCounts.hot} · Warm ${scoreCounts.warm}`}
@@ -278,7 +380,7 @@ function DashboardHome() {
               <div className="p-8 text-center">
                 <p className="text-sm text-[#5c4d72] mb-4">
                   {apiUp === false
-                    ? "The CRM server is not responding right now. Refresh in a minute."
+                    ? "The CRM API did not answer. Press refresh above to try again."
                     : "Sign in again to stream rupeedial.com form leads here."}
                 </p>
                 <Link
@@ -452,6 +554,7 @@ function RoleStats({
   config,
   stats,
   webTotal,
+  loading,
 }: {
   role: AppRole | null;
   config: RoleDashboardConfig;
@@ -465,6 +568,7 @@ function RoleStats({
     earnings: number;
   };
   webTotal?: number;
+  loading?: boolean;
 }) {
   const cards: {
     key: string;
@@ -473,6 +577,8 @@ function RoleStats({
     value: string;
     accent?: boolean;
     href: string;
+    hint?: string;
+    tone?: string;
   }[] = [];
 
   for (const key of config.stats) {
@@ -485,6 +591,7 @@ function RoleStats({
           value: stats.balance == null ? "—" : `₹${stats.balance.toLocaleString("en-IN")}`,
           accent: true,
           href: "/dashboard/wallet",
+          hint: "Credits for buying leads",
         });
         break;
       case "leads_available":
@@ -494,6 +601,8 @@ function RoleStats({
           label: webTotal != null ? "Website leads" : "Leads available",
           value: String(webTotal != null ? webTotal : stats.available),
           href: webTotal != null ? "/dashboard/website-leads" : "/dashboard/leadboard",
+          hint: webTotal != null ? "From rupeedial.com forms" : "Ready on the Leadboard",
+          tone: "bg-sky-50 text-sky-600",
         });
         break;
       case "leads_purchased":
@@ -503,6 +612,8 @@ function RoleStats({
           label: "Leads purchased",
           value: stats.leadsBought.toString(),
           href: "/dashboard/my-leads",
+          hint: "Open in My Leads",
+          tone: "bg-[#E8F7EC] text-[#10662A]",
         });
         break;
       case "spent":
@@ -512,6 +623,8 @@ function RoleStats({
           label: "Total invested",
           value: `₹${stats.totalSpent.toLocaleString("en-IN")}`,
           href: "/dashboard/wallet",
+          hint: "Spent on lead purchases",
+          tone: "bg-violet-50 text-violet-600",
         });
         break;
       case "calls":
@@ -521,6 +634,8 @@ function RoleStats({
           label: "Follow-ups due",
           value: stats.callsPending.toString(),
           href: "/dashboard/calls",
+          hint: "New and contacted leads",
+          tone: "bg-amber-50 text-amber-600",
         });
         break;
       case "cases":
@@ -530,15 +645,19 @@ function RoleStats({
           label: "Open cases",
           value: stats.casesOpen.toString(),
           href: "/dashboard/cases",
+          hint: "Docs, bank and sanction stage",
+          tone: "bg-orange-50 text-orange-600",
         });
         break;
       case "earnings":
         cards.push({
           key: "earn",
           icon: IndianRupee,
-          label: "Total earnings",
+          label: "Disbursed value",
           value: `₹${stats.earnings.toLocaleString("en-IN")}`,
           href: "/dashboard/earnings",
+          hint: "Deal value of disbursed leads",
+          tone: "bg-[#E8F7EC] text-[#10662A]",
         });
         break;
     }
@@ -558,26 +677,27 @@ function RoleStats({
         <Link
           key={c.key}
           to={c.href}
-          className={`rounded-2xl p-4 border transition-all block cursor-pointer group ${
+          className={`group relative block overflow-hidden rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${
             c.accent
-              ? "bg-[#10662A] border-transparent text-white shadow-[0_8px_24px_rgba(16,102,42,0.22)] hover:bg-[#0D4F20] hover:-translate-y-0.5"
-              : "bg-white border-[#d8ecdd] shadow-[0_2px_12px_rgba(16,102,42,0.04)] hover:border-[#10662A]/35 hover:shadow-[0_10px_24px_rgba(16,102,42,0.08)] hover:-translate-y-0.5"
+              ? "border-transparent bg-gradient-to-br from-[#10662A] to-[#0b4a1e] text-white shadow-[0_10px_28px_rgba(16,102,42,0.28)]"
+              : "border-[#d8ecdd] bg-white shadow-[0_2px_12px_rgba(16,102,42,0.04)] hover:border-[#10662A]/35 hover:shadow-[0_12px_28px_rgba(16,102,42,0.10)]"
           }`}
         >
           <div className="flex items-start justify-between">
-            <c.icon className={`size-5 ${c.accent ? "text-white/90" : "text-[#10662A]"}`} />
+            <span className={`grid size-9 place-items-center rounded-xl ${c.accent ? "bg-white/15 text-white" : c.tone ?? "bg-[#E8F7EC] text-[#10662A]"}`}>
+              <c.icon className="size-[18px]" />
+            </span>
             <ArrowRight
-              className={`size-4 opacity-0 group-hover:opacity-100 transition-opacity ${
-                c.accent ? "text-white/80" : "text-[#10662A]"
-              }`}
+              className={`size-4 opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100 ${c.accent ? "text-white/80" : "text-[#10662A]"}`}
             />
           </div>
-          <div className={`text-[11px] mt-3 uppercase tracking-wide font-semibold ${c.accent ? "text-white/70" : "text-[#5c4d72]"}`}>
+          <div className={`mt-3 text-[11px] font-semibold uppercase tracking-wide ${c.accent ? "text-white/75" : "text-[#5c4d72]"}`}>
             {c.label}
           </div>
-          <div className={`mt-0.5 text-2xl font-bold font-display ${c.accent ? "text-white" : "text-[#390A5D]"}`}>
-            {c.value}
+          <div className={`mt-0.5 truncate font-display text-2xl font-bold ${c.accent ? "text-white" : "text-[#390A5D]"}`}>
+            {loading ? <span className={`inline-block h-7 w-20 animate-pulse rounded-md ${c.accent ? "bg-white/20" : "bg-[#E8F7EC]"}`} /> : c.value}
           </div>
+          {c.hint ? <div className={`mt-1 truncate text-[11px] ${c.accent ? "text-white/65" : "text-[#8a7aa0]"}`}>{c.hint}</div> : null}
         </Link>
       ))}
     </div>

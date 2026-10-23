@@ -125,15 +125,19 @@ export async function crmLogin(email: string, password: string): Promise<CrmUser
 }
 
 /** Ping Docker CRM API — used by Website Leads connect panel */
+/** Production only proxies /api/* to the API, so /health there returns the web app's HTML. */
 export async function crmHealth(): Promise<boolean> {
-  try {
-    const res = await fetch(`${API_URL}/health`, { method: "GET" });
-    if (!res.ok) return false;
-    const body = (await res.json()) as { status?: string };
-    return body?.status === "ok" || res.ok;
-  } catch {
-    return false;
+  for (const path of ["/api/health", "/health"]) {
+    try {
+      const res = await fetch(`${API_URL}${path}`, { method: "GET" });
+      if (!res.ok || !(res.headers.get("content-type") || "").includes("json")) continue;
+      const body = (await res.json()) as { status?: string };
+      if (body?.status === "ok") return true;
+    } catch {
+      /* try the next path */
+    }
   }
+  return false;
 }
 
 export async function crmMe(): Promise<CrmUser> {

@@ -73,5 +73,6 @@ app.include_router(admin_overview.router)
 
 
 @app.get("/health")
+@app.get("/api/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "rupeedial-crm-api"}

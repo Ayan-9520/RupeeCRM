@@ -52,7 +52,7 @@ export function WorkspaceSidebar({
   const offset = ring - (completionOverall / 100) * ring;
 
   return (
-    <aside className="lg:w-60 xl:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card/50 flex flex-col lg:sticky lg:top-[9.5rem] lg:self-start lg:max-h-[calc(100vh-10.5rem)]">
+    <aside className="lg:w-60 xl:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-border bg-card/50 flex flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
       <button
         type="button"
         className="lg:hidden flex items-center justify-between px-4 py-2.5 text-xs font-semibold border-b border-border"

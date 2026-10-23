@@ -57,7 +57,6 @@ export function CustomerWorkspaceHeader({
     .slice(0, 2)
     .toUpperCase();
   const [pdfBusy, setPdfBusy] = useState(false);
-
   const downloadPdf = async () => {
     setPdfBusy(true);
     try {
@@ -71,7 +70,7 @@ export function CustomerWorkspaceHeader({
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
+    <header className="relative z-30 shrink-0 border-b border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85">
       <div className="px-4 lg:px-6 py-3 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <Link
