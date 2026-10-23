@@ -21,6 +21,7 @@ import type { RiskLevel } from "@/lib/customer-crm/risk-scoring";
 import type { CustomerWorkspaceData } from "@/lib/customer-crm/types";
 import type { EligibilityEngineResult } from "@/lib/customer-crm/eligibility-types";
 import { downloadCaseFilePdf } from "@/lib/customer-crm/export-case";
+import { LeadStageBar } from "./LeadStageBar";
 
 export function CustomerWorkspaceHeader({
   purchaseId,
@@ -138,6 +139,7 @@ export function CustomerWorkspaceHeader({
           <StatChip label="FOIR" value={eligibility?.metrics.foirPercent != null ? `${eligibility.metrics.foirPercent.toFixed(0)}%` : "—"} />
         </div>
       </div>
+      <LeadStageBar key={purchase.id} purchase={purchase} />
     </header>
   );
 }
