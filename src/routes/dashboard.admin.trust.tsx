@@ -31,6 +31,7 @@ function AdminTrustPage() {
   const [loading, setLoading] = useState(true);
   const [purchaseId, setPurchaseId] = useState("");
   const [reason, setReason] = useState("Dead / wrong number");
+  const [kycSearch, setKycSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -68,11 +69,24 @@ function AdminTrustPage() {
       </div>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 space-y-3">
-        <h2 className="font-semibold text-[#390A5D]">KYC verify users</h2>
-        <ul className="divide-y divide-[#d8ecdd] max-h-64 overflow-auto">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold text-[#390A5D]">KYC verify users</h2>
+          <input
+            value={kycSearch}
+            onChange={(e) => setKycSearch(e.target.value)}
+            placeholder="Search name or email"
+            className="h-8 w-56 rounded-lg border border-[#d8ecdd] px-2.5 text-xs outline-none focus:border-[#10662A]"
+          />
+        </div>
+        <ul className="divide-y divide-[#d8ecdd] max-h-80 overflow-auto">
           {users
-            .filter((u) => u.role === "dsa" || u.role === "admin")
-            .slice(0, 40)
+            .filter((u) => ["dsa", "affiliate", "coordinator", "admin"].includes(u.role))
+            .filter((u) => {
+              const q = kycSearch.trim().toLowerCase();
+              return !q || u.email.toLowerCase().includes(q) || (u.full_name || "").toLowerCase().includes(q);
+            })
+            .sort((a, b) => Number(Boolean(a.kyc_verified)) - Number(Boolean(b.kyc_verified)))
+            .slice(0, 100)
             .map((u) => (
               <li key={u.id} className="py-2 flex flex-wrap items-center justify-between gap-2 text-sm">
                 <div>

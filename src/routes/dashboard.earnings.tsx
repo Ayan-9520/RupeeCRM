@@ -1,8 +1,18 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Building2, Loader2, Receipt } from "lucide-react";
-import { getInvoiceCentre, listCaseFiles, raiseInvoice, type InvoiceCentre, type LoanCaseFile } from "@/lib/python-api";
+import { AlertTriangle, Building2, CheckCircle2, Loader2, Receipt } from "lucide-react";
+import {
+  getInvoiceCentre,
+  getPayoutSummary,
+  listCaseFiles,
+  raiseInvoice,
+  type InvoiceCentre,
+  type LoanCaseFile,
+  type PayoutSummary,
+} from "@/lib/python-api";
+import { useAuth } from "@/lib/auth-context";
+import { isPlatformAdmin } from "@/lib/role-access";
 
 export const Route = createFileRoute("/dashboard/earnings")({
   head: () => ({ meta: [{ title: "Invoices — RupeeDial One" }] }),
@@ -20,14 +30,19 @@ function InvoiceCentrePage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [summary, setSummary] = useState<PayoutSummary | null>(null);
+  const { role } = useAuth();
+  const isAdmin = isPlatformAdmin(role);
 
   const load = useCallback(async () => {
     try {
-      const [invoiceCentre, caseFiles] = await Promise.all([
+      const [invoiceCentre, caseFiles, payoutSummary] = await Promise.all([
         getInvoiceCentre(),
         listCaseFiles().catch((error: unknown) => (error instanceof Error ? error : new Error("Could not load closure files"))),
+        getPayoutSummary().catch(() => null),
       ]);
       setCentre(invoiceCentre);
+      setSummary(payoutSummary);
       setLoadError(null);
       if (caseFiles instanceof Error) {
         setFilesError(caseFiles.message);
@@ -98,6 +113,9 @@ function InvoiceCentrePage() {
     ["Rejected / query", centre.rejected, "Needs a correction"],
   ] as const;
   const openCases = centre.cases.filter((item) => !item.invoiced);
+  const kycOk = isAdmin || Boolean(summary?.kyc_verified);
+  const bankOk = Boolean(summary?.bank.complete);
+  const ready = !summary || (kycOk && bankOk);
 
   return (
     <div className="max-w-5xl space-y-5">
@@ -132,10 +150,10 @@ function InvoiceCentrePage() {
                   <div className="font-medium text-[#390A5D]">{row.deal_no}</div>
                   <div className="text-xs text-[#5c4d72]">{row.status_label} · {row.loan_type}</div>
                 </div>
-                <div>Receivable ₹{inr(row.receivable_amount)}</div>
-                <div>Connector ₹{inr(row.payable_amount)}</div>
-                <div>Agent ₹{inr(row.agent_amount)}</div>
-                <div className="font-bold text-[#10662A]">Net ₹{inr(row.net_revenue)}</div>
+                <div>Receivable {inr(row.receivable_amount)}</div>
+                <div>Connector {inr(row.payable_amount)}</div>
+                <div>Agent {inr(row.agent_amount)}</div>
+                <div className="font-bold text-[#10662A]">Net {inr(row.net_revenue)}</div>
               </li>
             ))}
           </ul>
@@ -160,13 +178,46 @@ function InvoiceCentrePage() {
           </div>
           <button
             type="button"
-            disabled={busy || openCases.length === 0}
+            disabled={busy || openCases.length === 0 || !ready}
             onClick={() => void raise()}
+            title={ready ? undefined : "Complete the checklist below first"}
             className="rounded-xl bg-[#10662A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
           >
             {busy ? "Raising…" : "Raise invoice"}
           </button>
         </div>
+        {summary && !ready ? (
+          <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm">
+            <div className="flex items-center gap-2 font-semibold text-amber-900">
+              <AlertTriangle className="size-4" /> Before your first invoice
+            </div>
+            <ul className="mt-2 space-y-1.5 text-xs">
+              <li className="flex items-start gap-2">
+                {kycOk ? <CheckCircle2 className="size-4 shrink-0 text-[#10662A]" /> : <AlertTriangle className="size-4 shrink-0 text-amber-700" />}
+                <span className={kycOk ? "text-[#10662A]" : "text-amber-900"}>
+                  {kycOk
+                    ? "KYC verified"
+                    : "KYC pending — RupeeDial admin verifies your KYC from Trust & Audit. Share PAN / Aadhaar with your RupeeDial manager."}
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                {bankOk ? <CheckCircle2 className="size-4 shrink-0 text-[#10662A]" /> : <AlertTriangle className="size-4 shrink-0 text-amber-700" />}
+                <span className={bankOk ? "text-[#10662A]" : "text-amber-900"}>
+                  {bankOk ? (
+                    "Bank details added"
+                  ) : (
+                    <>
+                      Bank details missing —{" "}
+                      <Link to="/dashboard/settings" className="font-semibold underline">
+                        add them in Settings
+                      </Link>
+                    </>
+                  )}
+                </span>
+              </li>
+            </ul>
+          </div>
+        ) : null}
         {centre.cases.length === 0 ? (
           <p className="py-8 text-center text-sm text-[#5c4d72]">No disbursed cases yet. Commission starts after disbursement.</p>
         ) : (
