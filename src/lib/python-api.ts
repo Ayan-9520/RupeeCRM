@@ -1221,4 +1221,109 @@ export async function openSampleCase(): Promise<LoanCaseFile> {
   return request("/api/cases/sample", { method: "POST" });
 }
 
+export type InvoiceHistoryItem = {
+  stage: string;
+  stage_label: string;
+  action: string;
+  comment: string | null;
+  actor_name: string | null;
+  created_at: string | null;
+};
+
+export type InvoiceApprovalRow = {
+  id: string;
+  amount: number;
+  status: string;
+  bank_snapshot: Record<string, unknown>;
+  note: string | null;
+  rejection_reason: string | null;
+  utr: string | null;
+  created_at: string | null;
+  user_email: string | null;
+  user_name: string | null;
+  stage: string;
+  stage_label: string;
+  queried_stage: string | null;
+  gst_amount: number | null;
+  tds_amount: number | null;
+  net_payable: number | null;
+  payment_mode: string | null;
+  payment_bank: string | null;
+  payment_date: string | null;
+  paid_amount: number | null;
+  can_act: boolean;
+  partner_dsa_id: string | null;
+  rm1_name: string | null;
+  rm2_name: string | null;
+  history: InvoiceHistoryItem[];
+};
+
+export type FinanceSetupUser = {
+  id: string;
+  full_name: string;
+  email: string;
+  role: string;
+  finance_level: string | null;
+  rm1_user_id: string | null;
+  rm2_user_id: string | null;
+};
+
+export async function listInvoiceApprovals(query: {
+  scope: "mine" | "all";
+  stage?: string;
+  date_from?: string;
+  date_to?: string;
+}): Promise<InvoiceApprovalRow[]> {
+  const params = new URLSearchParams({ scope: query.scope });
+  if (query.stage) params.set("stage", query.stage);
+  if (query.date_from) params.set("date_from", query.date_from);
+  if (query.date_to) params.set("date_to", query.date_to);
+  return request(`/api/invoice-approvals?${params.toString()}`);
+}
+
+export async function invoiceApprovalAction(
+  id: string,
+  action: "approve" | "query" | "reject" | "processing",
+  comment: string,
+): Promise<InvoiceApprovalRow> {
+  return request(`/api/invoice-approvals/${id}/action`, {
+    method: "POST",
+    body: JSON.stringify({ action, comment: comment || null }),
+  });
+}
+
+export async function payInvoice(
+  id: string,
+  body: {
+    payment_mode: string;
+    payment_bank: string;
+    transaction_id: string;
+    payment_date: string;
+    paid_amount?: number;
+    remarks?: string;
+  },
+): Promise<InvoiceApprovalRow> {
+  return request(`/api/invoice-approvals/${id}/pay`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function downloadInvoiceExcel(query: { stage?: string; date_from?: string; date_to?: string }): Promise<Blob> {
+  const params = new URLSearchParams();
+  if (query.stage) params.set("stage", query.stage);
+  if (query.date_from) params.set("date_from", query.date_from);
+  if (query.date_to) params.set("date_to", query.date_to);
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return requestBlob(`/api/invoice-approvals/export.xlsx${suffix}`);
+}
+
+export async function getFinanceSetup(): Promise<{ users: FinanceSetupUser[] }> {
+  return request("/api/invoice-approvals/setup");
+}
+
+export async function saveFinanceSetup(
+  userId: string,
+  body: { finance_level?: string | null; rm1_user_id?: string | null; rm2_user_id?: string | null },
+): Promise<{ ok: boolean }> {
+  return request(`/api/invoice-approvals/setup/${userId}`, { method: "PUT", body: JSON.stringify(body) });
+}
+
 export { API_URL };
