@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, Date, DateTime, Float, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -31,6 +31,9 @@ class User(Base):
     )
     payout_bank: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     kyc_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    finance_level: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    rm1_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    rm2_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -215,10 +218,31 @@ class PayoutRequest(Base):
     utr: Mapped[str | None] = mapped_column(String(80), nullable=True)
     reviewed_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    stage: Mapped[str | None] = mapped_column(String(30), nullable=True, index=True)
+    queried_stage: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    gst_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    tds_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    net_payable: Mapped[float | None] = mapped_column(Float, nullable=True)
+    payment_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    payment_bank: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    payment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    paid_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class InvoiceApproval(Base):
+    __tablename__ = "invoice_approvals"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    request_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    stage: Mapped[str] = mapped_column(String(30), nullable=False)
+    action: Mapped[str] = mapped_column(String(20), nullable=False)
+    comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    actor_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    actor_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
 
 class AuditEvent(Base):
     """Append-only trust audit trail (Phase 7)."""
@@ -241,7 +265,52 @@ class CommissionSettings(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     rate_percent: Mapped[float] = mapped_column(Float, nullable=False, default=1)
+    gst_percent: Mapped[float] = mapped_column(Float, nullable=False, default=18)
+    tds_percent: Mapped[float] = mapped_column(Float, nullable=False, default=2)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class PayoutGrid(Base):
+    """Approved lender rate for a product from a date. Does not rewrite old cases."""
+
+    __tablename__ = "payout_grids"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    channel_name: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
+    product: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    effective_from: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    receivable_percent: Mapped[float] = mapped_column(Float, nullable=False)
+    payable_percent: Mapped[float] = mapped_column(Float, nullable=False)
+    note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class PayoutAdjustment(Base):
+    """Case-only change. The grid stays as approved."""
+
+    __tablename__ = "payout_adjustments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    loan_case_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    deal_no: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(30), nullable=False, default="subvention")
+    subvention_points: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    other_points: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    payable_percent: Mapped[float | None] = mapped_column(Float, nullable=True)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    before_receivable: Mapped[float | None] = mapped_column(Float, nullable=True)
+    before_payable: Mapped[float | None] = mapped_column(Float, nullable=True)
+    after_receivable: Mapped[float | None] = mapped_column(Float, nullable=True)
+    after_payable: Mapped[float | None] = mapped_column(Float, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending", index=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class NetworkSettings(Base):

@@ -185,7 +185,9 @@ function AdminBillingPage() {
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
         <h2 className="font-semibold text-[#390A5D]">Credit a wallet after payment</h2>
-        <p className="mt-0.5 text-xs text-[#5c4d72]">For LeadBoard recharges paid by UPI or bank transfer. Every credit is saved in the audit log.</p>
+        <p className="mt-0.5 text-xs text-[#5c4d72]">
+          Enter the amount the partner paid. ₹5,000+ adds 5% extra credit, ₹10,000+ adds 10%. Bonus is lead credit, not cash.
+        </p>
         <div className="mt-3 grid gap-3 md:grid-cols-[2fr_1fr_2fr_auto]">
           <select
             value={credit.userId}
@@ -222,6 +224,18 @@ function AdminBillingPage() {
             {busy === "credit" ? "Adding…" : "Add credit"}
           </button>
         </div>
+        {Number(credit.amount) > 0 && (
+          <p className="mt-3 text-sm text-[#390A5D]">
+            {(() => {
+              const paid = Number(credit.amount);
+              const percent = paid >= 10000 ? 10 : paid >= 5000 ? 5 : 0;
+              const bonus = Math.round(paid * (percent / 100));
+              return percent
+                ? `Partner pays ₹${paid.toLocaleString("en-IN")} → wallet gets ₹${(paid + bonus).toLocaleString("en-IN")} (₹${bonus.toLocaleString("en-IN")} extra).`
+                : `₹${paid.toLocaleString("en-IN")} goes in as-is. Extra credit starts at ₹5,000.`;
+            })()}
+          </p>
+        )}
       </section>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">

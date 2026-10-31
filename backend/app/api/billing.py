@@ -254,6 +254,22 @@ def admin_activate(body: AdminActivateIn, db: Session = Depends(get_db), admin: 
     return ActivateOut(message=f"{owner.full_name}: {message}", entitlements=_entitlements(owner))
 
 
+# Paid amount is what the partner transferred. Bonus is extra lead credit, not cash.
+RECHARGE_BONUS_SLABS: tuple[tuple[float, float], ...] = (
+    (10000, 0.10),
+    (5000, 0.05),
+)
+
+
+def recharge_bonus(paid: float) -> tuple[float, float]:
+    rate = 0.0
+    for minimum, pct in RECHARGE_BONUS_SLABS:
+        if paid >= minimum:
+            rate = pct
+            break
+    return round(paid * rate, 2), rate
+
+
 class WalletCreditIn(BaseModel):
     user_id: UUID
     amount: float = Field(gt=0, le=500000)
@@ -273,21 +289,27 @@ def admin_wallet_credit(
     owner = target
     if target.seat_owner_id and target.seat_owner_id != target.id:
         owner = db.query(User).filter(User.id == target.seat_owner_id).first() or target
-    amount = round(float(body.amount), 2)
-    owner.wallet_balance = float(owner.wallet_balance or 0) + amount
+    paid = round(float(body.amount), 2)
+    bonus, rate = recharge_bonus(paid)
+    credited = round(paid + bonus, 2)
+    owner.wallet_balance = float(owner.wallet_balance or 0) + credited
     write_audit(
         db,
         action="wallet_credit",
         actor_user_id=admin.id,
         entity_type="user",
         entity_id=str(owner.id),
-        detail={"amount": amount, "note": body.note.strip()},
+        detail={"paid": paid, "bonus": bonus, "credited": credited, "bonus_rate": rate, "note": body.note.strip()},
     )
     db.commit()
     db.refresh(owner)
+    bonus_bit = f" + ₹{bonus:,.0f} extra credit" if bonus else ""
     return {
         "success": True,
-        "message": f"₹{amount:,.0f} added to {owner.full_name}'s wallet",
+        "message": f"₹{paid:,.0f} paid{bonus_bit} → ₹{credited:,.0f} in {owner.full_name}'s wallet",
+        "paid": paid,
+        "bonus": bonus,
+        "credited": credited,
         "wallet_balance": float(owner.wallet_balance or 0),
     }
 

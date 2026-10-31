@@ -45,6 +45,7 @@ const ICONS: Record<string, IconType> = {
   "/dashboard/business": BriefcaseBusiness,
   "/dashboard/admin/pricing": UserCog,
   "/dashboard/admin/commissions": Percent,
+  "/dashboard/admin/payout-grids": SlidersHorizontal,
   "/dashboard/admin/payouts": Banknote,
   "/dashboard/admin/trust": ScrollText,
   "/dashboard/admin/billing": CreditCard,

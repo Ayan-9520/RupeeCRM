@@ -138,7 +138,7 @@ function WalletPage() {
             <Plus className="size-4 text-[#10662A]" /> Actions
           </h3>
           <p className="text-xs text-[#5c4d72]">
-            Activate a plan under Billing to add credits. Extra recharge / Razorpay lands later.
+            Pay by UPI or bank transfer, then RupeeDial adds the credit. ₹5,000 or more gets 5% extra lead credit. ₹10,000 or more gets 10%. Bonus credit is not cash and cannot be withdrawn.
           </p>
           <Link
             to="/dashboard/billing"

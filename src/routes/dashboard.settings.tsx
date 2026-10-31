@@ -33,6 +33,7 @@ function SettingsPage() {
     ifsc: "",
     bank_name: "",
     pan: "",
+    gstin: "",
   });
   const [savingBank, setSavingBank] = useState(false);
   const [testingSmtp, setTestingSmtp] = useState(false);
@@ -51,6 +52,7 @@ function SettingsPage() {
           ifsc: b.ifsc || "",
           bank_name: b.bank_name || "",
           pan: b.pan || "",
+          gstin: b.gstin || "",
         });
       } catch (e) {
         if (!cached) toast.error(e instanceof Error ? e.message : "Could not load profile");
@@ -179,6 +181,7 @@ function SettingsPage() {
               ifsc: saved.ifsc,
               bank_name: saved.bank_name,
               pan: saved.pan,
+              gstin: saved.gstin || "",
             });
             toast.success(saved.complete ? "Bank details saved" : "Saved — fill all fields for payouts");
           } catch (err) {
@@ -200,6 +203,7 @@ function SettingsPage() {
             ["ifsc", "IFSC"],
             ["bank_name", "Bank name"],
             ["pan", "PAN (optional)"],
+            ["gstin", "GSTIN (optional — GST is added to your invoice when set)"],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="block">

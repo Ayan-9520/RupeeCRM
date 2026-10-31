@@ -33,12 +33,12 @@ function CardPage() {
       const qr =
         card.qr_target_url ||
         profile?.public_url ||
-        (profile?.slug ? `https://rupeedial.com/p/${profile.slug}` : "https://rupeedial.com");
+        (profile?.slug ? `https://pro.rupeedial.com/${profile.slug}` : "https://rupeedial.com");
       setForm({ ...card, qr_target_url: qr });
       setProductsText((card.products || []).join(", "));
       setProfileUrl(
         profile?.public_url ||
-          (profile?.slug ? `https://rupeedial.com/p/${profile.slug}` : null),
+          (profile?.slug ? `https://pro.rupeedial.com/${profile.slug}` : null),
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not load card");

@@ -152,6 +152,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Add Leads", url: "/dashboard/admin/leads", roles: ADMIN_ROLES, group: "admin" },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", roles: ADMIN_ROLES, group: "admin" },
   { title: "Commission Rules", url: "/dashboard/admin/commissions", roles: ADMIN_ROLES, group: "admin" },
+  { title: "Payout Grids", url: "/dashboard/admin/payout-grids", roles: ADMIN_ROLES, group: "admin" },
   { title: "Payouts", url: "/dashboard/admin/payouts", roles: ADMIN_ROLES, group: "admin" },
   { title: "Trust & Audit", url: "/dashboard/admin/trust", roles: ADMIN_ROLES, group: "admin" },
   { title: "Billing Overview", url: "/dashboard/admin/billing", roles: ADMIN_ROLES, group: "admin" },

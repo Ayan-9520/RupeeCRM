@@ -62,7 +62,7 @@ def approve(
     if not row:
         raise HTTPException(status_code=404, detail="Application not found")
     try:
-        app, user, temp = approve_partner(db, row, admin, body.notes)
+        app, user, temp, mailed = approve_partner(db, row, admin, body.notes)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return PartnerApproveOut(
@@ -71,6 +71,8 @@ def approve(
         user_id=user.id,
         email=user.email,
         temporary_password=temp,
+        reset_email_sent=mailed,
+        message="Reset link emailed to the partner" if mailed else "Approved. Reset email was not sent — share the temporary password.",
     )
 
 

@@ -23,6 +23,7 @@ export type AuthUser = {
   id: string;
   email: string;
   full_name?: string;
+  finance_level?: string | null;
 };
 
 interface AuthContextValue {
@@ -51,11 +52,13 @@ function clearLegacySupabaseKeys() {
   keys.forEach((k) => localStorage.removeItem(k));
 }
 
-function toAuthUser(u: CrmUser, id = "python-admin"): AuthUser {
-  return { id, email: u.email, full_name: u.full_name };
+function toAuthUser(u: CrmUser, id = "python-admin", financeLevel?: string | null): AuthUser {
+  return { id, email: u.email, full_name: u.full_name, finance_level: financeLevel ?? null };
 }
 
-async function fetchMe(token: string): Promise<{ id: string; email: string; full_name: string; role: string } | null> {
+async function fetchMe(
+  token: string,
+): Promise<{ id: string; email: string; full_name: string; role: string; finance_level?: string | null } | null> {
   try {
     const res = await fetch(`${API_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -73,9 +76,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const applyCrmUser = useCallback((u: CrmUser, token: string, id?: string) => {
+  const applyCrmUser = useCallback((u: CrmUser, token: string, id?: string, financeLevel?: string | null) => {
     setSession({ access_token: token });
-    setUser(toAuthUser(u, id));
+    setUser(toAuthUser(u, id, financeLevel));
     setRole((u.role as AppRole) || "admin");
   }, []);
 
@@ -102,6 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { email: me.email, full_name: me.full_name, role: me.role },
         token,
         me.id,
+        me.finance_level,
       );
       setLoading(false);
     })();
@@ -113,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) throw new Error("Login succeeded but no token stored");
     const me = await fetchMe(token);
-    applyCrmUser(u, token, me?.id);
+    applyCrmUser(u, token, me?.id, me?.finance_level);
   };
 
   const signOut = async () => {

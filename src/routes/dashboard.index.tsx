@@ -50,7 +50,7 @@ const PIPELINE: { key: string; label: string; bar: string; dot: string }[] = [
   { key: "contacted", label: "Contacted", bar: "bg-indigo-400", dot: "bg-indigo-400" },
   { key: "docs_collected", label: "Docs collected", bar: "bg-amber-400", dot: "bg-amber-400" },
   { key: "bank_submitted", label: "Bank submitted", bar: "bg-orange-500", dot: "bg-orange-500" },
-  { key: "sanctioned", label: "Sanctioned", bar: "bg-[#7c3aed]", dot: "bg-[#7c3aed]" },
+  { key: "sanctioned", label: "Sanctioned", bar: "bg-[#1f8a4c]", dot: "bg-[#1f8a4c]" },
   { key: "disbursed", label: "Disbursed", bar: "bg-[#10662A]", dot: "bg-[#10662A]" },
   { key: "rejected", label: "Rejected", bar: "bg-red-400", dot: "bg-red-400" },
 ];
@@ -238,9 +238,8 @@ function DashboardHome() {
 
   return (
     <div className="space-y-5 max-w-7xl">
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#0b4a1e] via-[#10662A] to-[#390A5D] p-5 text-white shadow-[0_18px_40px_rgba(16,102,42,0.25)] sm:p-7">
-        <div aria-hidden className="pointer-events-none absolute -right-16 -top-24 size-72 rounded-full bg-white/10 blur-2xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-28 left-1/3 size-72 rounded-full bg-[#7c3aed]/30 blur-3xl" />
+      <section className="relative overflow-hidden rounded-3xl bg-[#0d5222] p-5 text-white shadow-[0_16px_36px_rgba(13,82,34,0.16)] sm:p-7">
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(70%_90%_at_100%_0%,rgba(255,255,255,0.14),transparent_60%)]" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ring-1 ring-white/20">

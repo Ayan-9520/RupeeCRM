@@ -23,6 +23,7 @@ from app.api import (
     network,
     partners,
     pipeline,
+    payout_grids,
     payouts,
     public_directory,
     public_leads,
@@ -53,6 +54,7 @@ app.include_router(users.router)
 app.include_router(billing.router)
 app.include_router(partner_profile.router)
 app.include_router(payouts.router)
+app.include_router(payout_grids.router)
 app.include_router(network.router)
 app.include_router(customer.router)
 app.include_router(customer_workspace.router)

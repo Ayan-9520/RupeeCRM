@@ -23,7 +23,7 @@ function AdminPartnersPage() {
   const [acting, setActing] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [notes, setNotes] = useState("");
-  const [ creds, setCreds] = useState<{ email: string; password: string; dsa_id: string } | null>(null);
+  const [ creds, setCreds] = useState<{ email: string; password: string; dsa_id: string; resetEmailSent?: boolean } | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [importForm, setImportForm] = useState({
     website_lead_id: "",
@@ -64,10 +64,19 @@ function AdminPartnersPage() {
     setActing(true);
     try {
       const res = await approvePartnerApplication(active.id, notes || undefined);
-      setCreds({ email: res.email, password: res.temporary_password, dsa_id: res.dsa_id });
-      toast.success(`Approved · DSA ${res.dsa_id}`);
+      setCreds({ email: res.email, password: res.temporary_password, dsa_id: res.dsa_id, resetEmailSent: res.reset_email_sent });
+      toast.success(res.reset_email_sent ? `Reset link sent to ${res.email}` : `Approved · DSA ${res.dsa_id}`);
       await refresh();
-      setActive((prev) => (prev ? { ...prev, status: "approved", generated_dsa_id: res.dsa_id } : prev));
+      setActive((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "approved",
+              generated_dsa_id: res.dsa_id,
+              documents: { ...(prev.documents || {}), issued_password: res.temporary_password },
+            }
+          : prev,
+      );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Approval failed");
     } finally {
@@ -206,6 +215,11 @@ function AdminPartnersPage() {
                         {app.generated_dsa_id}
                       </span>
                     )}
+                    {docText(app, "issued_password") && (
+                      <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white text-[#390A5D] border border-[#d8ecdd]">
+                        Password: {docText(app, "issued_password")}
+                      </span>
+                    )}
                   </div>
                   <div className="text-xs text-[#5c4d72] mt-0.5 flex items-center gap-3 flex-wrap">
                     <span className="flex items-center gap-1">
@@ -276,21 +290,26 @@ function AdminPartnersPage() {
 
               <Journey docs={active.documents} />
 
-              {creds && (
+              {(creds || docText(active, "issued_password")) && (
                 <div className="rounded-xl bg-[#E8F7EC] border border-[#d8ecdd] p-4 space-y-2">
                   <div className="font-bold text-[#10662A] text-sm">CRM login credentials</div>
-                  <p className="text-xs text-[#5c4d72]">Share with partner — password shown once (re-approve resets it).</p>
+                  <p className="text-xs text-[#5c4d72]">
+                    {creds?.resetEmailSent
+                      ? "Reset link bhi email pe gaya. Password admin list pe saved hai."
+                      : "Yahi password admin list pe dikhega. Partner naya password set kare to yahan update ho jayega."}
+                  </p>
                   <div className="text-sm space-y-1 font-mono">
-                    <div>DSA ID: {creds.dsa_id}</div>
-                    <div>Email: {creds.email}</div>
-                    <div>Password: {creds.password}</div>
+                    <div>DSA ID: {creds?.dsa_id || active.generated_dsa_id || "—"}</div>
+                    <div>Email: {creds?.email || active.email}</div>
+                    <div>Password: {creds?.password || docText(active, "issued_password")}</div>
                   </div>
                   <button
                     type="button"
                     className="inline-flex items-center gap-1.5 text-xs font-bold text-[#10662A] cursor-pointer"
                     onClick={async () => {
+                      const password = creds?.password || docText(active, "issued_password");
                       await navigator.clipboard.writeText(
-                        `Email: ${creds.email}\nPassword: ${creds.password}\nDSA: ${creds.dsa_id}\nLogin: ${window.location.origin}/auth`,
+                        `Email: ${creds?.email || active.email}\nPassword: ${password}\nDSA: ${creds?.dsa_id || active.generated_dsa_id || ""}\nLogin: ${window.location.origin}/auth`,
                       );
                       toast.success("Copied");
                     }}

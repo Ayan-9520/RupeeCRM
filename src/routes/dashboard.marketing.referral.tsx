@@ -29,7 +29,7 @@ function ReferralPage() {
     (async () => {
       const profile = await getPartnerProfile().catch(() => null);
       if (profile?.public_url) setProfileUrl(profile.public_url);
-      else if (profile?.slug) setProfileUrl(`${SITE}/p/${profile.slug}`);
+      else if (profile?.slug) setProfileUrl(`https://pro.rupeedial.com/${profile.slug}`);
       if (profile?.firm_name) setFirm(profile.firm_name);
     })();
   }, []);

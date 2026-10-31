@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import secrets
 import string
 from datetime import datetime, timezone
@@ -9,8 +10,10 @@ from uuid import uuid4
 
 from sqlalchemy.orm import Session
 
-from app.core.security import hash_password
-from app.models import PartnerApplication, User
+from app.core.config import settings
+from app.core.security import create_reset_token, hash_password
+from app.models import PartnerApplication, PartnerProfile, User
+from app.services.mailer import send_password_reset
 from app.services.leads import normalize_phone
 from app.services.network import attach_sponsor
 
@@ -116,7 +119,30 @@ def upsert_partner_from_website(db: Session, payload: dict) -> PartnerApplicatio
     return row
 
 
-def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: str | None = None) -> tuple[PartnerApplication, User, str]:
+def remember_issued_password(db: Session, user: User, password: str) -> None:
+    """Keep the latest login password on the partner application so admin can see it."""
+    email = (user.email or "").lower()
+    rows = (
+        db.query(PartnerApplication)
+        .filter((PartnerApplication.user_id == user.id) | (PartnerApplication.email == email))
+        .all()
+    )
+    for app in rows:
+        docs = dict(app.documents or {})
+        docs["issued_password"] = password
+        app.documents = docs
+
+
+def email_password_reset(user: User) -> bool:
+    """Email a one-time set-password link. Never puts the password in the mail."""
+    if not settings.smtp_enabled or not user.email:
+        return False
+    token = create_reset_token(str(user.id), user.password_hash)
+    link = f"{settings.crm_public_url.rstrip('/')}/reset-password?token={token}"
+    return send_password_reset(user.email, user.full_name or "Partner", link)
+
+
+def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: str | None = None) -> tuple[PartnerApplication, User, str, bool]:
     if app.status == "approved" and app.user_id:
         user = db.query(User).filter(User.id == app.user_id).first()
         if user:
@@ -127,8 +153,11 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
             user.role = login_role_for_type(app.dsa_type)
             mark_partner_activated(app)
             _link_sponsor(db, app, user)
+            ensure_partner_profile(db, user, app)
+            remember_issued_password(db, user, temp)
             db.commit()
-            return app, user, temp
+            db.refresh(user)
+            return app, user, temp, email_password_reset(user)
         raise ValueError("Approved but user missing")
 
     if app.status == "approved":
@@ -167,11 +196,150 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
         app.internal_notes = notes
     mark_partner_activated(app)
     _link_sponsor(db, app, user)
+    ensure_partner_profile(db, user, app)
+    remember_issued_password(db, user, temp)
 
     db.commit()
     db.refresh(app)
     db.refresh(user)
-    return app, user, temp
+    return app, user, temp, email_password_reset(user)
+
+
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "", (value or "").lower())
+    return slug[:40] or "partner"
+
+
+def _digits(value: object, limit: int = 6) -> str:
+    return "".join(ch for ch in str(value or "") if ch.isdigit())[:limit]
+
+
+def _product_labels(raw: object) -> list[str]:
+    if isinstance(raw, list):
+        parts = [str(item).strip() for item in raw if str(item).strip()]
+    elif isinstance(raw, str) and raw.strip():
+        parts = [part.strip() for part in raw.replace("|", ",").split(",") if part.strip()]
+    else:
+        return []
+    labels = {
+        "personal_loan": "Personal Loan",
+        "home_loan": "Home Loan",
+        "business_loan": "Business Loan",
+        "auto_loan": "Auto Loan",
+        "education_loan": "Education Loan",
+        "insurance": "Insurance",
+        "credit_card": "Credit Cards",
+        "lap": "Loan Against Property",
+    }
+    return [labels.get(item, item.replace("_", " ").title()) for item in parts][:12]
+
+
+def _apply_application_facts(row: PartnerProfile, app: PartnerApplication) -> bool:
+    docs = app.documents if isinstance(app.documents, dict) else {}
+    theme = dict(row.theme or {})
+    changed = False
+    pin = _digits(docs.get("pincode"))
+    if pin and not str(theme.get("pincode") or "").strip():
+        theme["pincode"] = pin
+        changed = True
+    years = str(docs.get("experience_years") or "").strip()
+    if years and not str(theme.get("years") or "").strip():
+        theme["years"] = years
+        changed = True
+    products = _product_labels(docs.get("products"))
+    if products and not (row.products or []):
+        row.products = products
+        changed = True
+    if changed:
+        row.theme = theme
+    return changed
+
+
+def ensure_partner_profile(db: Session, user: User, app: PartnerApplication) -> PartnerProfile | None:
+    """Give an approved partner a public page from the application they already submitted."""
+    existing = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == user.id).first()
+    if existing:
+        _apply_application_facts(existing, app)
+        return existing
+    docs = app.documents if isinstance(app.documents, dict) else {}
+    base = _slugify(app.full_name or user.full_name or "partner")
+    slug = base
+    n = 2
+    while db.query(PartnerProfile).filter(PartnerProfile.slug == slug).first():
+        slug = f"{base}{n}"[:40]
+        n += 1
+    pin = str(docs.get("pincode") or "").strip()
+    row = PartnerProfile(
+        owner_user_id=user.id,
+        firm_name=(app.full_name or user.full_name or "Partner")[:200],
+        slug=slug,
+        city=(app.city or "")[:120],
+        state=app.state,
+        phone=app.phone or user.phone,
+        email=app.email or user.email,
+        products=[],
+        theme={
+            "pincode": pin,
+            "languages": "",
+            "years": "",
+            "since": "",
+            "designation": "",
+            "whatsapp": "",
+            "show_phone": True,
+            "show_whatsapp": False,
+        },
+        published=True,
+        directory_featured=False,
+        suspended=False,
+    )
+    db.add(row)
+    db.flush()
+    return row
+
+
+def compact_profile_slugs(db: Session) -> int:
+    """pro.rupeedial.com/{name} uses letters and digits only."""
+    changed = 0
+    rows = db.query(PartnerProfile).all()
+    for row in rows:
+        compact = _slugify(row.slug)
+        if not compact or compact == row.slug:
+            continue
+        taken = (
+            db.query(PartnerProfile)
+            .filter(PartnerProfile.slug == compact, PartnerProfile.id != row.id)
+            .first()
+        )
+        if taken:
+            continue
+        row.slug = compact
+        changed += 1
+    return changed
+
+
+def backfill_approved_profiles(db: Session) -> int:
+    apps = (
+        db.query(PartnerApplication)
+        .filter(PartnerApplication.status == "approved", PartnerApplication.user_id.isnot(None))
+        .all()
+    )
+    created = compact_profile_slugs(db)
+    for app in apps:
+        if not app.user_id:
+            continue
+        user = db.query(User).filter(User.id == app.user_id).first()
+        if not user:
+            continue
+        already = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == user.id).first()
+        if already:
+            if _apply_application_facts(already, app):
+                created += 1
+            continue
+        ensure_partner_profile(db, user, app)
+        created += 1
+    if created:
+        db.commit()
+    return created
 
 
 def _link_sponsor(db: Session, app: PartnerApplication, user: User) -> None:

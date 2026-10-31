@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   Building2, Users, ArrowRight, TrendingUp, ShieldCheck, Store, IndianRupee,
@@ -9,6 +9,7 @@ import {
   PieChart, Pie, Cell, Legend,
 } from "recharts";
 import { toast } from "sonner";
+import { DashboardShell } from "@/components/dashboard/DashboardShell";
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { getAdminOverview, type AdminOverview } from "@/lib/python-api";
@@ -21,20 +22,15 @@ export const Route = createFileRoute("/ceo/")({
 const fmtINR = (n: number) =>
   new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n || 0);
 
-const PIE_COLORS = ["#10662A", "#390A5D", "#f59e0b", "#14b8a6", "#8b5cf6", "#ef4444", "#64748b"];
+const PIE_COLORS = ["#0d5222", "#10662A", "#1f8a4c", "#3cb371", "#7dcea0", "#c5e6cf", "#14803a"];
 
 function CeoOverview() {
   const { user, role, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [data, setData] = useState<AdminOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const allowed = isPlatformAdmin(role);
-
-  useEffect(() => {
-    if (!authLoading && !user) navigate({ to: "/auth", search: { next: "/ceo" } as never });
-  }, [authLoading, user, navigate]);
 
   useEffect(() => {
     if (authLoading || !user) return;
@@ -91,23 +87,25 @@ function CeoOverview() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen grid place-items-center bg-[#F5FBF7]">
-        <Loader2 className="size-6 animate-spin text-[#10662A]" />
-      </div>
+      <DashboardShell>
+        <div className="grid min-h-[40vh] place-items-center">
+          <Loader2 className="size-6 animate-spin text-[#10662A]" />
+        </div>
+      </DashboardShell>
     );
   }
 
   if (!allowed) {
     return (
-      <div className="min-h-screen grid place-items-center bg-[#F5FBF7] p-6">
-        <div className="rounded-2xl border border-[#d8ecdd] bg-white p-8 text-center">
-          <h1 className="font-display text-2xl font-bold text-[#390A5D]">Restricted</h1>
+      <DashboardShell>
+        <div className="mx-auto mt-16 max-w-md rounded-2xl border border-[#d8ecdd] bg-white p-8 text-center shadow-[0_8px_24px_rgba(16,102,42,0.06)]">
+          <h1 className="font-display text-2xl font-bold text-[#14281c]">Restricted</h1>
           <p className="mt-2 text-sm text-[#5c4d72]">CEO / admin access required.</p>
           <Link to="/dashboard" className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-[#10662A]">
             Back to dashboard <ArrowRight className="size-4" />
           </Link>
         </div>
-      </div>
+      </DashboardShell>
     );
   }
 
@@ -115,22 +113,22 @@ function CeoOverview() {
   const roles = Object.entries(data?.roles ?? {}).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="min-h-screen bg-[#F5FBF7] py-8 px-5">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+    <DashboardShell>
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-[#E8F7EC] grid place-items-center">
+            <div className="grid size-10 place-items-center rounded-xl bg-[#E8F7EC]">
               <Building2 className="size-5 text-[#10662A]" />
             </div>
             <div>
-              <h1 className="font-display text-2xl font-bold text-[#390A5D]">CEO overview</h1>
+              <h1 className="font-display text-2xl font-bold text-[#14281c]">CEO overview</h1>
               <p className="text-sm text-[#5c4d72]">Org-wide totals with a 14-day activity trend.</p>
             </div>
           </div>
           <div className="flex gap-2">
             <Link
               to="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 text-sm font-semibold text-[#390A5D]"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 text-sm font-semibold text-[#14281c]"
             >
               Dashboard
             </Link>
@@ -145,7 +143,7 @@ function CeoOverview() {
           </div>
         </div>
 
-        <div ref={reportRef} className="space-y-6 bg-[#F5FBF7] p-2">
+        <div ref={reportRef} className="space-y-5 bg-[#f5fcf7] p-1">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
             <KpiCard icon={<Users className="size-4" />} label="Total leads" value={String(k?.total_leads ?? 0)} />
             <KpiCard icon={<ShieldCheck className="size-4" />} label="Verified leads" value={String(k?.verified_leads ?? 0)} />
@@ -170,10 +168,10 @@ function CeoOverview() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 rounded-2xl border border-[#d8ecdd] p-4 bg-white">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)] lg:col-span-2">
+              <div className="mb-3 flex items-center gap-2">
                 <TrendingUp className="size-4 text-[#10662A]" />
-                <h3 className="font-semibold text-sm text-[#390A5D]">Daily leads vs sales (14 days)</h3>
+                <h3 className="text-sm font-semibold text-[#14281c]">Daily leads vs sales (14 days)</h3>
               </div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
@@ -184,13 +182,13 @@ function CeoOverview() {
                     <Tooltip />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="leads" fill="#10662A" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="sales" fill="#390A5D" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="sales" fill="#7dcea0" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             </div>
-            <div className="rounded-2xl border border-[#d8ecdd] p-4 bg-white">
-              <h3 className="font-semibold text-sm mb-3 text-[#390A5D]">Leads by product</h3>
+            <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
+              <h3 className="mb-3 text-sm font-semibold text-[#14281c]">Leads by product</h3>
               {(data?.by_product ?? []).length === 0 ? (
                 <div className="h-64 grid place-items-center text-sm text-[#5c4d72]">No leads yet.</div>
               ) : (
@@ -211,10 +209,10 @@ function CeoOverview() {
           </div>
 
           <div className="grid lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 rounded-2xl border border-[#d8ecdd] p-4 bg-white">
-              <div className="flex items-center gap-2 mb-3">
+            <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)] lg:col-span-2">
+              <div className="mb-3 flex items-center gap-2">
                 <Trophy className="size-4 text-[#10662A]" />
-                <h3 className="font-semibold text-sm text-[#390A5D]">Top performers</h3>
+                <h3 className="text-sm font-semibold text-[#14281c]">Top performers</h3>
               </div>
               {(data?.top_performers ?? []).length === 0 ? (
                 <div className="text-sm text-[#5c4d72] py-4 text-center">No purchases yet.</div>
@@ -234,7 +232,7 @@ function CeoOverview() {
                       {data!.top_performers.map((p, i) => (
                         <tr key={i} className="border-b border-[#e2efe6]/60 last:border-0">
                           <td className="py-2 text-[#5c4d72]">{i + 1}</td>
-                          <td className="py-2 font-medium text-[#390A5D]">{p.name}</td>
+                          <td className="py-2 font-medium text-[#14281c]">{p.name}</td>
                           <td className="py-2 text-right">{p.purchases}</td>
                           <td className="py-2 text-right">{p.conversions}</td>
                           <td className="py-2 text-right font-semibold text-[#10662A]">{fmtINR(p.revenue)}</td>
@@ -245,12 +243,12 @@ function CeoOverview() {
                 </div>
               )}
             </div>
-            <div className="rounded-2xl border border-[#d8ecdd] p-4 bg-white">
-              <h3 className="font-semibold text-sm mb-3 text-[#390A5D]">Active users by role</h3>
+            <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
+              <h3 className="mb-3 text-sm font-semibold text-[#14281c]">Active users by role</h3>
               <ul className="space-y-2 text-sm">
                 {roles.map(([r, n]) => (
                   <li key={r} className="flex items-center justify-between rounded-lg bg-[#F5FBF7] px-3 py-2">
-                    <span className="capitalize text-[#390A5D]">{r.replace(/_/g, " ")}</span>
+                    <span className="capitalize text-[#14281c]">{r.replace(/_/g, " ")}</span>
                     <span className="font-semibold text-[#10662A]">{n}</span>
                   </li>
                 ))}
@@ -259,7 +257,7 @@ function CeoOverview() {
           </div>
         </div>
       </div>
-    </div>
+    </DashboardShell>
   );
 }
 
@@ -270,15 +268,15 @@ function KpiCard({ icon, label, value, to }: { icon: React.ReactNode; label: str
         {icon}
         {label}
       </div>
-      <div className="text-xl font-display font-bold mt-1.5 text-[#390A5D]">{value}</div>
+      <div className="mt-1.5 font-display text-xl font-bold text-[#14281c]">{value}</div>
     </>
   );
   if (to) {
     return (
-      <Link to={to as "/dashboard"} className="rounded-2xl border border-[#d8ecdd] p-4 bg-white hover:border-[#10662A]/40">
+      <Link to={to as "/dashboard"} className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)] hover:border-[#10662A]/40">
         {body}
       </Link>
     );
   }
-  return <div className="rounded-2xl border border-[#d8ecdd] p-4 bg-white">{body}</div>;
+  return <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">{body}</div>;
 }

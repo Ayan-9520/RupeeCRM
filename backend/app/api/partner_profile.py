@@ -16,7 +16,7 @@ from app.models import PartnerProfile, User, VisitingCard
 
 router = APIRouter(prefix="/api/partner", tags=["partner-profile"])
 
-PUBLIC_SITE = "https://rupeedial.com"
+PROFILE_ORIGIN = "https://pro.rupeedial.com"
 
 
 def _owner_id(user: User) -> UUID:
@@ -34,9 +34,8 @@ def _get_owner(db: Session, user: User) -> User:
 
 
 def _slugify(raw: str) -> str:
-    s = re.sub(r"[^a-z0-9]+", "-", (raw or "").lower().strip())
-    s = re.sub(r"-+", "-", s).strip("-")
-    return (s or "partner")[:60]
+    s = re.sub(r"[^a-z0-9]+", "", (raw or "").lower())
+    return (s or "partner")[:40]
 
 
 class ProfileOut(BaseModel):
@@ -113,8 +112,15 @@ class CardIn(BaseModel):
     qr_target_url: str | None = None
 
 
+_PUBLISH_ROLES = {"admin", "ceo", "super_admin", "dsa", "caller", "coordinator", "affiliate"}
+
+
+def _can_publish_profile(owner: User) -> bool:
+    return has_module(owner, "public_profile") or owner.role in _PUBLISH_ROLES
+
+
 def _profile_out(row: PartnerProfile | None, owner: User) -> ProfileOut:
-    can_pub = has_module(owner, "public_profile") or owner.role in {"admin", "ceo", "super_admin"}
+    can_pub = _can_publish_profile(owner)
     can_feat = has_module(owner, "directory_featured") or owner.role in {"admin", "ceo", "super_admin"}
     if not row:
         return ProfileOut(can_publish=can_pub, can_feature=can_feat, email=owner.email, phone=owner.phone)
@@ -135,7 +141,7 @@ def _profile_out(row: PartnerProfile | None, owner: User) -> ProfileOut:
         theme=row.theme or {},
         published=row.published,
         directory_featured=row.directory_featured,
-        public_url=f"{PUBLIC_SITE}/p/{slug}" if slug else None,
+        public_url=f"{PROFILE_ORIGIN}/{slug}" if slug else None,
         can_publish=can_pub,
         can_feature=can_feat,
     )
@@ -167,10 +173,8 @@ def upsert_profile(
         data["slug"] = base
 
     if data.get("published"):
-        if not (has_module(owner, "public_profile") or owner.role in {"admin", "ceo", "super_admin"}):
-            raise HTTPException(status_code=403, detail="Public profile requires Growth plan or higher")
-        if not owner.kyc_verified and owner.role not in {"admin", "ceo", "super_admin"}:
-            raise HTTPException(status_code=403, detail="KYC verification required before publishing")
+        if not _can_publish_profile(owner):
+            raise HTTPException(status_code=403, detail="Public profile is available after partner approval")
         if row and row.suspended:
             raise HTTPException(status_code=403, detail="Profile is suspended by admin")
     if data.get("directory_featured"):
@@ -226,7 +230,7 @@ def get_card(db: Session = Depends(get_db), user: User = Depends(get_current_use
         pass
     card = db.query(VisitingCard).filter(VisitingCard.user_id == user.id).first()
     profile = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == owner.id).first()
-    default_qr = f"{PUBLIC_SITE}/p/{profile.slug}" if profile and profile.slug else None
+    default_qr = f"{PROFILE_ORIGIN}/{profile.slug}" if profile and profile.slug else None
     if not card:
         return CardOut(
             full_name=user.full_name,
@@ -281,7 +285,7 @@ def upsert_card(
             city=data.get("city") or (profile.city if profile else None),
             products=data.get("products") or (list(profile.products or []) if profile else []),
             qr_target_url=data.get("qr_target_url")
-            or (f"{PUBLIC_SITE}/p/{profile.slug}" if profile else None),
+            or (f"{PROFILE_ORIGIN}/{profile.slug}" if profile else None),
         )
         db.add(card)
     for key, val in data.items():

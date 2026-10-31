@@ -27,6 +27,7 @@ class UserOut(BaseModel):
     dsa_id: str | None = None
     is_active: bool = True
     kyc_verified: bool = False
+    finance_level: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -209,4 +210,5 @@ class PartnerApproveOut(BaseModel):
     user_id: UUID
     email: str
     temporary_password: str
+    reset_email_sent: bool = False
     message: str = "Partner approved — DSA can login to CRM"

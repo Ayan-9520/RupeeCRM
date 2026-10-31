@@ -57,6 +57,7 @@ function ProfilePage() {
         published: form.published,
         directory_featured: form.directory_featured,
         products,
+        theme: form.theme || {},
       });
       setForm(saved);
       setProductsText((saved.products || []).join(", "));
@@ -77,16 +78,19 @@ function ProfilePage() {
   }
 
   const previewSlug = form.slug || "your-firm";
+  const previewHref = `https://pro.rupeedial.com/${previewSlug}`;
+  const theme = (form.theme || {}) as Record<string, unknown>;
+  const themeText = (key: string) => (typeof theme[key] === "string" ? (theme[key] as string) : "");
+  const setTheme = (key: string, value: string | boolean) =>
+    setForm({ ...form, theme: { ...theme, [key]: value } });
 
   return (
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="font-display text-2xl font-bold text-[#390A5D]">Public profile</h1>
         <p className="text-sm text-[#5c4d72] mt-1">
-          Growth+: publish at{" "}
-          <span className="font-mono text-[#10662A]">rupeedial.com/p/{previewSlug}</span>
-          {" · "}
-          subdomain <span className="font-mono">{previewSlug}.rupeedial.com</span> (DNS later).
+          Public page{" "}
+          <span className="font-mono text-[#10662A]">pro.rupeedial.com/{previewSlug}</span>
         </p>
       </div>
 
@@ -117,7 +121,7 @@ function ProfilePage() {
             onChange={(e) =>
               setForm({
                 ...form,
-                slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""),
+                slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""),
               })
             }
             className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2 font-mono text-sm"
@@ -133,13 +137,68 @@ function ProfilePage() {
           />
         </label>
         <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Bio</span>
+          <span className="font-semibold text-[#390A5D]">Story</span>
           <textarea
-            rows={4}
+            rows={5}
             value={form.bio || ""}
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
             className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            placeholder="How you help customers, in your own words"
           />
+        </label>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Mission</span>
+            <textarea rows={3} value={themeText("mission")} onChange={(e) => setTheme("mission", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Vision</span>
+            <textarea rows={3} value={themeText("vision")} onChange={(e) => setTheme("vision", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+          </label>
+        </div>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Office address</span>
+          <input value={themeText("address")} onChange={(e) => setTheme("address", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+        </label>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Founder</span>
+            <input value={themeText("founder")} onChange={(e) => setTheme("founder", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Established</span>
+            <input value={themeText("founded")} onChange={(e) => setTheme("founded", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="2016" />
+          </label>
+        </div>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Working areas</span>
+          <input value={themeText("areas")} onChange={(e) => setTheme("areas", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="Delhi, Noida, Gurugram" />
+        </label>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Business assisted</span>
+            <input value={themeText("stat_business")} onChange={(e) => setTheme("stat_business", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="₹12 Cr" />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Families served</span>
+            <input value={themeText("stat_families")} onChange={(e) => setTheme("stat_families", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Rating</span>
+            <input value={themeText("stat_rating")} onChange={(e) => setTheme("stat_rating", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="4.8" />
+          </label>
+        </div>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Achievements</span>
+          <textarea rows={3} value={themeText("achievements")} onChange={(e) => setTheme("achievements", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder={"One per line: Title | 2025"} />
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Certificates</span>
+          <textarea rows={3} value={themeText("certificates")} onChange={(e) => setTheme("certificates", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder={"One per line: Certificate | Institute"} />
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Customer notes</span>
+          <textarea rows={3} value={themeText("reviews")} onChange={(e) => setTheme("reviews", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder={"One per line: Name | 5 | What they said"} />
         </label>
         <div className="grid sm:grid-cols-2 gap-3">
           <label className="block text-sm">
@@ -171,9 +230,98 @@ function ProfilePage() {
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Email</span>
             <input
+              type="email"
               value={form.email || ""}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            />
+          </label>
+        </div>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Website</span>
+          <input
+            value={themeText("website")}
+            onChange={(e) => setTheme("website", e.target.value)}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            placeholder="https://"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Booking link</span>
+          <input
+            value={themeText("booking_url")}
+            onChange={(e) => setTheme("booking_url", e.target.value)}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            placeholder="https://… leave blank to use the RupeeDial contact page"
+          />
+        </label>
+        <label className="block text-sm">
+          <span className="font-semibold text-[#390A5D]">Extra links</span>
+          <textarea
+            rows={3}
+            value={themeText("links")}
+            onChange={(e) => setTheme("links", e.target.value)}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            placeholder={"One per line: Instagram | https://instagram.com/…"}
+          />
+        </label>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Pincode</span>
+            <input
+              value={themeText("pincode")}
+              onChange={(e) => setTheme("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
+              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              inputMode="numeric"
+              placeholder="201301"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Designation</span>
+            <input
+              value={themeText("designation")}
+              onChange={(e) => setTheme("designation", e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              placeholder="Loan advisor"
+            />
+          </label>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">WhatsApp</span>
+            <input
+              value={themeText("whatsapp")}
+              onChange={(e) => setTheme("whatsapp", e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Languages</span>
+            <input
+              value={themeText("languages")}
+              onChange={(e) => setTheme("languages", e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              placeholder="Hindi, English"
+            />
+          </label>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-3">
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Years of experience</span>
+            <input
+              value={themeText("years")}
+              onChange={(e) => setTheme("years", e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              placeholder="8"
+            />
+          </label>
+          <label className="block text-sm">
+            <span className="font-semibold text-[#390A5D]">Working since</span>
+            <input
+              value={themeText("since")}
+              onChange={(e) => setTheme("since", e.target.value)}
+              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              placeholder="2016"
             />
           </label>
         </div>
@@ -197,6 +345,30 @@ function ProfilePage() {
         </label>
 
         <div className="flex flex-wrap gap-4 pt-2">
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
+            <input
+              type="checkbox"
+              checked={theme.show_phone !== false}
+              onChange={(e) => setTheme("show_phone", e.target.checked)}
+            />
+            Show phone on the page
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
+            <input
+              type="checkbox"
+              checked={theme.show_email !== false}
+              onChange={(e) => setTheme("show_email", e.target.checked)}
+            />
+            Show email on the page
+          </label>
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
+            <input
+              type="checkbox"
+              checked={theme.show_whatsapp === true}
+              onChange={(e) => setTheme("show_whatsapp", e.target.checked)}
+            />
+            Show WhatsApp on the page
+          </label>
           <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
             <input
               type="checkbox"
@@ -226,17 +398,14 @@ function ProfilePage() {
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             Save profile
           </button>
-          {form.published && form.slug && (
+          {form.slug && (
             <a
-              href={
-                form.public_url ||
-                `${(import.meta.env.VITE_PUBLIC_SITE_URL as string | undefined)?.replace(/\/$/, "") || "https://rupeedial.com"}/p/${form.slug}`
-              }
+              href={import.meta.env.DEV ? `http://127.0.0.1:5173/p/${previewSlug}` : previewHref}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-[#d8ecdd] px-4 py-2 text-sm font-semibold text-[#390A5D]"
             >
-              <ExternalLink className="size-4" /> Preview
+              <ExternalLink className="size-4" /> Open page
             </a>
           )}
           <Link

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import re
+from datetime import date, datetime, timezone
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -12,10 +13,21 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.entitlements import has_module
-from app.models import Lead, LeadPurchase, PayoutRequest, User
+from app.models import InvoiceApproval, Lead, LeadPurchase, PayoutRequest, User
 from app.plans import PAYOUT_MIN
 from app.services.audit import write_audit
 from app.services.commission import get_percent, rate_fraction
+from app.services.invoice_flow import (
+    STAGE_LABELS,
+    STAGES,
+    is_staff,
+    log_step,
+    notify_stage,
+    status_for,
+    tax_breakup,
+)
+
+GSTIN_RE = re.compile(r"^[0-9]{2}[A-Z0-9]{13}$")
 
 router = APIRouter(prefix="/api/payouts", tags=["payouts"])
 
@@ -95,6 +107,7 @@ class BankIn(BaseModel):
     ifsc: str = ""
     bank_name: str = ""
     pan: str = ""
+    gstin: str = ""
 
 
 class BankOut(BaseModel):
@@ -103,6 +116,7 @@ class BankOut(BaseModel):
     ifsc: str = ""
     bank_name: str = ""
     pan: str = ""
+    gstin: str = ""
     complete: bool = False
 
 
@@ -136,8 +150,31 @@ class RequestOut(BaseModel):
     reviewed_at: datetime | None = None
     user_email: str | None = None
     user_name: str | None = None
+    stage: str | None = None
+    stage_label: str | None = None
+    queried_stage: str | None = None
+    gst_amount: float | None = None
+    tds_amount: float | None = None
+    net_payable: float | None = None
+    payment_mode: str | None = None
+    payment_bank: str | None = None
+    payment_date: date | None = None
+    paid_amount: float | None = None
 
     model_config = {"from_attributes": True}
+
+
+class HistoryOut(BaseModel):
+    stage: str
+    stage_label: str
+    action: str
+    comment: str | None = None
+    actor_name: str | None = None
+    created_at: datetime | None = None
+
+
+class ResubmitIn(BaseModel):
+    comment: str | None = Field(default=None, max_length=2000)
 
 
 class AdminActionIn(BaseModel):
@@ -183,7 +220,37 @@ def _to_out(r: PayoutRequest, user: User | None = None) -> RequestOut:
         reviewed_at=r.reviewed_at,
         user_email=user.email if user else None,
         user_name=user.full_name if user else None,
+        stage=r.stage,
+        stage_label=STAGE_LABELS.get(r.stage or "") if r.stage else None,
+        queried_stage=r.queried_stage,
+        gst_amount=r.gst_amount,
+        tds_amount=r.tds_amount,
+        net_payable=r.net_payable,
+        payment_mode=r.payment_mode,
+        payment_bank=r.payment_bank,
+        payment_date=r.payment_date,
+        paid_amount=r.paid_amount,
     )
+
+
+def history_out(db: Session, request_id: UUID) -> list[HistoryOut]:
+    rows = (
+        db.query(InvoiceApproval)
+        .filter(InvoiceApproval.request_id == request_id)
+        .order_by(InvoiceApproval.created_at.asc())
+        .all()
+    )
+    return [
+        HistoryOut(
+            stage=h.stage,
+            stage_label=STAGE_LABELS.get(h.stage, h.stage),
+            action=h.action,
+            comment=h.comment,
+            actor_name=h.actor_name,
+            created_at=h.created_at,
+        )
+        for h in rows
+    ]
 
 
 @router.get("/summary", response_model=SummaryOut)
@@ -221,6 +288,7 @@ def payout_summary(db: Session = Depends(get_db), user: User = Depends(get_curre
             ifsc=bank.get("ifsc") or "",
             bank_name=bank.get("bank_name") or "",
             pan=bank.get("pan") or "",
+            gstin=bank.get("gstin") or "",
             complete=complete,
         ),
         can_request=can,
@@ -238,6 +306,7 @@ def get_bank(user: User = Depends(get_current_user)) -> BankOut:
         ifsc=bank.get("ifsc") or "",
         bank_name=bank.get("bank_name") or "",
         pan=bank.get("pan") or "",
+        gstin=bank.get("gstin") or "",
         complete=_bank_complete(bank),
     )
 
@@ -255,7 +324,10 @@ def put_bank(
         "ifsc": ifsc,
         "bank_name": (body.bank_name or "").strip(),
         "pan": (body.pan or "").strip().upper(),
+        "gstin": (body.gstin or "").strip().upper().replace(" ", ""),
     }
+    if data["gstin"] and not GSTIN_RE.match(data["gstin"]):
+        raise HTTPException(status_code=400, detail="GSTIN must be 15 characters, e.g. 07ABCDE1234F1Z5")
     user.payout_bank = data
     db.commit()
     db.refresh(user)
@@ -385,11 +457,11 @@ def raise_invoice(
         raise HTTPException(status_code=400, detail="Add bank details before raising an invoice")
     pending = (
         db.query(PayoutRequest)
-        .filter(PayoutRequest.user_id == user.id, PayoutRequest.status == "pending")
+        .filter(PayoutRequest.user_id == user.id, PayoutRequest.status.in_(("pending", "query")))
         .first()
     )
     if pending:
-        raise HTTPException(status_code=400, detail="An invoice is already waiting for admin review")
+        raise HTTPException(status_code=400, detail="An invoice is already in approval. Wait for it, or answer its query first.")
 
     taken = _taken_case_ids(db, user.id)
     selected = [row for row in _disbursed_purchases(db, user.id) if str(row.id) not in taken]
@@ -407,15 +479,22 @@ def raise_invoice(
     snapshot["case_ids"] = [str(row.id) for row in selected]
     snapshot["disbursed_total"] = disbursed_total
     snapshot["commission_rate"] = rate
+    gst, tds, net = tax_breakup(db, amount, bank.get("gstin"))
     row = PayoutRequest(
         id=uuid4(),
         user_id=user.id,
         amount=amount,
         status="pending",
+        stage="rm1",
+        gst_amount=gst,
+        tds_amount=tds,
+        net_payable=net,
         bank_snapshot=snapshot,
         note=f"Invoice {invoice_number}",
     )
     db.add(row)
+    log_step(db, row, "rm1", "submitted", user)
+    notify_stage(db, row, user)
     write_audit(
         db,
         action="invoice_raised",
@@ -424,6 +503,48 @@ def raise_invoice(
         entity_id=str(row.id),
         detail={"amount": amount, "invoice_number": invoice_number, "cases": len(selected)},
     )
+    db.commit()
+    db.refresh(row)
+    return _to_out(row, user)
+
+
+@router.get("/invoices/{request_id}/history", response_model=list[HistoryOut])
+def invoice_history(
+    request_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> list[HistoryOut]:
+    row = db.query(PayoutRequest).filter(PayoutRequest.id == request_id).first()
+    if not row or (row.user_id != user.id and not is_staff(user)):
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    return history_out(db, row.id)
+
+
+@router.post("/invoices/{request_id}/resubmit", response_model=RequestOut)
+def resubmit_invoice(
+    request_id: UUID,
+    body: ResubmitIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> RequestOut:
+    row = db.query(PayoutRequest).filter(PayoutRequest.id == request_id, PayoutRequest.user_id == user.id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    if row.stage != "query":
+        raise HTTPException(status_code=400, detail="Only an invoice with a query can be resubmitted")
+    bank = dict(user.payout_bank or {})
+    if not _bank_complete(bank):
+        raise HTTPException(status_code=400, detail="Add bank details before resubmitting")
+    snapshot = dict(row.bank_snapshot or {})
+    snapshot.update({k: bank.get(k) or "" for k in ("account_holder", "account_number", "ifsc", "bank_name", "pan", "gstin")})
+    row.bank_snapshot = snapshot
+    row.gst_amount, row.tds_amount, row.net_payable = tax_breakup(db, float(row.amount or 0), bank.get("gstin"))
+    stage = row.queried_stage if row.queried_stage in STAGES else "rm1"
+    row.stage = stage
+    row.status = status_for(stage)
+    row.queried_stage = None
+    log_step(db, row, stage, "resubmitted", user, body.comment)
+    notify_stage(db, row, user)
     db.commit()
     db.refresh(row)
     return _to_out(row, user)
@@ -460,6 +581,8 @@ def admin_action(
     row = db.query(PayoutRequest).filter(PayoutRequest.id == request_id).first()
     if not row:
         raise HTTPException(status_code=404, detail="Request not found")
+    if row.stage:
+        raise HTTPException(status_code=409, detail="This invoice follows the approval chain. Open Invoice approvals.")
     if body.action == "approve":
         if row.status not in {"pending", "query"}:
             raise HTTPException(status_code=400, detail="Only a raised or queried invoice can be approved")

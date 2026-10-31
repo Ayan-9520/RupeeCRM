@@ -181,7 +181,7 @@ export function partnerBrandingFrom(
   const code = user?.dsa_id || profile?.slug || "partner";
   const link =
     profile?.public_url ||
-    (profile?.slug ? `https://rupeedial.com/p/${profile.slug}` : buildReferralLink(code));
+    (profile?.slug ? `https://pro.rupeedial.com/${profile.slug}` : buildReferralLink(code));
   return {
     name: user?.full_name || "Partner",
     phone: user?.phone || "+91",

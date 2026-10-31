@@ -35,6 +35,7 @@ import { Route as DashboardLosAnalyticsRouteImport } from './routes/dashboard.lo
 import { Route as DashboardLearnRouteImport } from './routes/dashboard.learn'
 import { Route as DashboardLeaderboardRouteImport } from './routes/dashboard.leaderboard'
 import { Route as DashboardLeadboardRouteImport } from './routes/dashboard.leadboard'
+import { Route as DashboardInvoiceApprovalsRouteImport } from './routes/dashboard.invoice-approvals'
 import { Route as DashboardHrmsRouteImport } from './routes/dashboard.hrms'
 import { Route as DashboardEarningsRouteImport } from './routes/dashboard.earnings'
 import { Route as DashboardCommunityRouteImport } from './routes/dashboard.community'
@@ -66,6 +67,7 @@ import { Route as DashboardAdminTrustRouteImport } from './routes/dashboard.admi
 import { Route as DashboardAdminPricingRouteImport } from './routes/dashboard.admin.pricing'
 import { Route as DashboardAdminPipelineRouteImport } from './routes/dashboard.admin.pipeline'
 import { Route as DashboardAdminPayoutsRouteImport } from './routes/dashboard.admin.payouts'
+import { Route as DashboardAdminPayoutGridsRouteImport } from './routes/dashboard.admin.payout-grids'
 import { Route as DashboardAdminPartnersRouteImport } from './routes/dashboard.admin.partners'
 import { Route as DashboardAdminNetworkRouteImport } from './routes/dashboard.admin.network'
 import { Route as DashboardAdminMarketingMediaRouteImport } from './routes/dashboard.admin.marketing-media'
@@ -209,6 +211,12 @@ const DashboardLeadboardRoute = DashboardLeadboardRouteImport.update({
   path: '/leadboard',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardInvoiceApprovalsRoute =
+  DashboardInvoiceApprovalsRouteImport.update({
+    id: '/invoice-approvals',
+    path: '/invoice-approvals',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardHrmsRoute = DashboardHrmsRouteImport.update({
   id: '/hrms',
   path: '/hrms',
@@ -367,6 +375,12 @@ const DashboardAdminPayoutsRoute = DashboardAdminPayoutsRouteImport.update({
   path: '/admin/payouts',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardAdminPayoutGridsRoute =
+  DashboardAdminPayoutGridsRouteImport.update({
+    id: '/admin/payout-grids',
+    path: '/admin/payout-grids',
+    getParentRoute: () => DashboardRoute,
+  } as any)
 const DashboardAdminPartnersRoute = DashboardAdminPartnersRouteImport.update({
   id: '/admin/partners',
   path: '/admin/partners',
@@ -448,6 +462,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
+  '/dashboard/invoice-approvals': typeof DashboardInvoiceApprovalsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
   '/dashboard/learn': typeof DashboardLearnRoute
@@ -477,6 +492,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
   '/dashboard/admin/network': typeof DashboardAdminNetworkRoute
   '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
+  '/dashboard/admin/payout-grids': typeof DashboardAdminPayoutGridsRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pipeline': typeof DashboardAdminPipelineRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
@@ -517,6 +533,7 @@ export interface FileRoutesByTo {
   '/dashboard/commissions': typeof DashboardCommissionsRoute
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
+  '/dashboard/invoice-approvals': typeof DashboardInvoiceApprovalsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
   '/dashboard/learn': typeof DashboardLearnRoute
@@ -545,6 +562,7 @@ export interface FileRoutesByTo {
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
   '/dashboard/admin/network': typeof DashboardAdminNetworkRoute
   '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
+  '/dashboard/admin/payout-grids': typeof DashboardAdminPayoutGridsRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pipeline': typeof DashboardAdminPipelineRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
@@ -588,6 +606,7 @@ export interface FileRoutesById {
   '/dashboard/community': typeof DashboardCommunityRoute
   '/dashboard/earnings': typeof DashboardEarningsRoute
   '/dashboard/hrms': typeof DashboardHrmsRouteWithChildren
+  '/dashboard/invoice-approvals': typeof DashboardInvoiceApprovalsRoute
   '/dashboard/leadboard': typeof DashboardLeadboardRoute
   '/dashboard/leaderboard': typeof DashboardLeaderboardRoute
   '/dashboard/learn': typeof DashboardLearnRoute
@@ -617,6 +636,7 @@ export interface FileRoutesById {
   '/dashboard/admin/marketing-media': typeof DashboardAdminMarketingMediaRoute
   '/dashboard/admin/network': typeof DashboardAdminNetworkRoute
   '/dashboard/admin/partners': typeof DashboardAdminPartnersRoute
+  '/dashboard/admin/payout-grids': typeof DashboardAdminPayoutGridsRoute
   '/dashboard/admin/payouts': typeof DashboardAdminPayoutsRoute
   '/dashboard/admin/pipeline': typeof DashboardAdminPipelineRoute
   '/dashboard/admin/pricing': typeof DashboardAdminPricingRoute
@@ -661,6 +681,7 @@ export interface FileRouteTypes {
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/hrms'
+    | '/dashboard/invoice-approvals'
     | '/dashboard/leadboard'
     | '/dashboard/leaderboard'
     | '/dashboard/learn'
@@ -690,6 +711,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/marketing-media'
     | '/dashboard/admin/network'
     | '/dashboard/admin/partners'
+    | '/dashboard/admin/payout-grids'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pipeline'
     | '/dashboard/admin/pricing'
@@ -730,6 +752,7 @@ export interface FileRouteTypes {
     | '/dashboard/commissions'
     | '/dashboard/community'
     | '/dashboard/earnings'
+    | '/dashboard/invoice-approvals'
     | '/dashboard/leadboard'
     | '/dashboard/leaderboard'
     | '/dashboard/learn'
@@ -758,6 +781,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/marketing-media'
     | '/dashboard/admin/network'
     | '/dashboard/admin/partners'
+    | '/dashboard/admin/payout-grids'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pipeline'
     | '/dashboard/admin/pricing'
@@ -800,6 +824,7 @@ export interface FileRouteTypes {
     | '/dashboard/community'
     | '/dashboard/earnings'
     | '/dashboard/hrms'
+    | '/dashboard/invoice-approvals'
     | '/dashboard/leadboard'
     | '/dashboard/leaderboard'
     | '/dashboard/learn'
@@ -829,6 +854,7 @@ export interface FileRouteTypes {
     | '/dashboard/admin/marketing-media'
     | '/dashboard/admin/network'
     | '/dashboard/admin/partners'
+    | '/dashboard/admin/payout-grids'
     | '/dashboard/admin/payouts'
     | '/dashboard/admin/pipeline'
     | '/dashboard/admin/pricing'
@@ -1053,6 +1079,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardLeadboardRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/invoice-approvals': {
+      id: '/dashboard/invoice-approvals'
+      path: '/invoice-approvals'
+      fullPath: '/dashboard/invoice-approvals'
+      preLoaderRoute: typeof DashboardInvoiceApprovalsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/hrms': {
       id: '/dashboard/hrms'
       path: '/hrms'
@@ -1270,6 +1303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAdminPayoutsRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/admin/payout-grids': {
+      id: '/dashboard/admin/payout-grids'
+      path: '/admin/payout-grids'
+      fullPath: '/dashboard/admin/payout-grids'
+      preLoaderRoute: typeof DashboardAdminPayoutGridsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/admin/partners': {
       id: '/dashboard/admin/partners'
       path: '/admin/partners'
@@ -1429,6 +1469,7 @@ interface DashboardRouteChildren {
   DashboardCommunityRoute: typeof DashboardCommunityRoute
   DashboardEarningsRoute: typeof DashboardEarningsRoute
   DashboardHrmsRoute: typeof DashboardHrmsRouteWithChildren
+  DashboardInvoiceApprovalsRoute: typeof DashboardInvoiceApprovalsRoute
   DashboardLeadboardRoute: typeof DashboardLeadboardRoute
   DashboardLeaderboardRoute: typeof DashboardLeaderboardRoute
   DashboardLearnRoute: typeof DashboardLearnRoute
@@ -1454,6 +1495,7 @@ interface DashboardRouteChildren {
   DashboardAdminMarketingMediaRoute: typeof DashboardAdminMarketingMediaRoute
   DashboardAdminNetworkRoute: typeof DashboardAdminNetworkRoute
   DashboardAdminPartnersRoute: typeof DashboardAdminPartnersRoute
+  DashboardAdminPayoutGridsRoute: typeof DashboardAdminPayoutGridsRoute
   DashboardAdminPayoutsRoute: typeof DashboardAdminPayoutsRoute
   DashboardAdminPipelineRoute: typeof DashboardAdminPipelineRoute
   DashboardAdminPricingRoute: typeof DashboardAdminPricingRoute
@@ -1474,6 +1516,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardCommunityRoute: DashboardCommunityRoute,
   DashboardEarningsRoute: DashboardEarningsRoute,
   DashboardHrmsRoute: DashboardHrmsRouteWithChildren,
+  DashboardInvoiceApprovalsRoute: DashboardInvoiceApprovalsRoute,
   DashboardLeadboardRoute: DashboardLeadboardRoute,
   DashboardLeaderboardRoute: DashboardLeaderboardRoute,
   DashboardLearnRoute: DashboardLearnRoute,
@@ -1499,6 +1542,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAdminMarketingMediaRoute: DashboardAdminMarketingMediaRoute,
   DashboardAdminNetworkRoute: DashboardAdminNetworkRoute,
   DashboardAdminPartnersRoute: DashboardAdminPartnersRoute,
+  DashboardAdminPayoutGridsRoute: DashboardAdminPayoutGridsRoute,
   DashboardAdminPayoutsRoute: DashboardAdminPayoutsRoute,
   DashboardAdminPipelineRoute: DashboardAdminPipelineRoute,
   DashboardAdminPricingRoute: DashboardAdminPricingRoute,

@@ -123,6 +123,9 @@ def reset_password_with_token(body: ResetPasswordIn, request: Request, db: Sessi
     if not user or not user.is_active or payload.get("pwf") != password_fingerprint(user.password_hash):
         raise invalid
     user.password_hash = hash_password(body.new_password)
+    from app.services.partners import remember_issued_password
+
+    remember_issued_password(db, user, body.new_password)
     db.commit()
     return {"success": True, "message": "Password updated. Sign in with your new password."}
 

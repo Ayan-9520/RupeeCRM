@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -17,7 +17,7 @@ ADMIN_ROLES = {"admin", "ceo", "super_admin"}
 
 class UserAdminOut(BaseModel):
     id: UUID
-    email: EmailStr
+    email: str
     full_name: str
     role: str
     phone: str | None = None
@@ -87,5 +87,8 @@ def reset_password(
     temp = generate_temp_password()
     user.password_hash = hash_password(temp)
     user.is_active = True
+    from app.services.partners import remember_issued_password
+
+    remember_issued_password(db, user, temp)
     db.commit()
     return ResetPasswordOut(email=user.email, temporary_password=temp)

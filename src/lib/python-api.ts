@@ -284,6 +284,7 @@ export async function approveCrmPartner(
   user_id: string;
   email: string;
   temporary_password: string;
+  reset_email_sent?: boolean;
   message: string;
 }> {
   return request(`/api/partners/${id}/approve`, {
@@ -444,7 +445,7 @@ export type PartnerProfile = {
   logo_url?: string | null;
   cover_url?: string | null;
   products: string[];
-  theme: Record<string, string>;
+  theme: Record<string, string | boolean>;
   published: boolean;
   directory_featured: boolean;
   public_url?: string | null;
@@ -1051,7 +1052,7 @@ export async function adminCreditWallet(
   userId: string,
   amount: number,
   note: string,
-): Promise<{ message: string; wallet_balance: number }> {
+): Promise<{ message: string; wallet_balance: number; paid?: number; bonus?: number; credited?: number }> {
   return request("/api/billing/admin/wallet-credit", {
     method: "POST",
     body: JSON.stringify({ user_id: userId, amount, note }),
@@ -1122,6 +1123,98 @@ export async function createCaseFile(body: Partial<LoanCaseFile>): Promise<LoanC
 
 export async function saveCaseFile(id: string, body: Partial<LoanCaseFile>): Promise<LoanCaseFile> {
   return request(`/api/cases/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+
+export type PayoutGridRow = {
+  id: string;
+  channel_name: string;
+  product: string;
+  effective_from: string;
+  receivable_percent: number;
+  payable_percent: number;
+  note: string;
+  status: string;
+  created_by_name: string | null;
+  approved_by_name: string | null;
+  created_at: string | null;
+};
+
+export type PayoutQuote = {
+  amount: number;
+  effective_percent: number;
+  gross_commission: number;
+  dsa_payout: number;
+  left_before_split: number;
+  agent_share: number;
+  company_net: number;
+};
+
+export type PayoutAdjustmentRow = {
+  id: string;
+  deal_no: string;
+  kind: string;
+  subvention_points: number;
+  other_points: number;
+  payable_percent: number | null;
+  reason: string;
+  before_receivable: number | null;
+  before_payable: number | null;
+  after_receivable: number | null;
+  after_payable: number | null;
+  status: string;
+  created_by_name: string | null;
+  approved_by_name: string | null;
+};
+
+export async function listPayoutGrids(): Promise<{ items: PayoutGridRow[] }> {
+  return request("/api/admin/payout-grids");
+}
+
+export async function createPayoutGrid(body: {
+  channel_name: string;
+  product: string;
+  effective_from: string;
+  receivable_percent: number;
+  payable_percent: number;
+  note: string;
+}): Promise<PayoutGridRow> {
+  return request("/api/admin/payout-grids", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function decidePayoutGrid(id: string, approve: boolean): Promise<PayoutGridRow> {
+  return request(`/api/admin/payout-grids/${id}/decide`, { method: "POST", body: JSON.stringify({ approve }) });
+}
+
+export async function quotePayout(body: {
+  amount: number;
+  receivable_percent: number;
+  payable_percent: number;
+  subvention_points: number;
+  other_points: number;
+}): Promise<PayoutQuote> {
+  return request("/api/admin/payout-grids/quote", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function listPayoutAdjustments(): Promise<{ items: PayoutAdjustmentRow[] }> {
+  return request("/api/admin/payout-grids/adjustments");
+}
+
+export async function createPayoutAdjustment(body: {
+  deal_no: string;
+  kind: string;
+  subvention_points: number;
+  other_points: number;
+  payable_percent: number | null;
+  reason: string;
+}): Promise<PayoutAdjustmentRow> {
+  return request("/api/admin/payout-grids/adjustments", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function decidePayoutAdjustment(id: string, approve: boolean): Promise<PayoutAdjustmentRow> {
+  return request(`/api/admin/payout-grids/adjustments/${id}/decide`, {
+    method: "POST",
+    body: JSON.stringify({ approve }),
+  });
 }
 
 export async function openSampleCase(): Promise<LoanCaseFile> {
