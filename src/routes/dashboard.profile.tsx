@@ -109,23 +109,20 @@ function ProfilePage() {
           <input
             required
             value={form.firm_name}
-            onChange={(e) => setForm({ ...form, firm_name: e.target.value })}
+            onChange={(e) => {
+              const firm_name = e.target.value;
+              const slug = firm_name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
+              setForm({ ...form, firm_name, slug });
+            }}
             className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
           />
         </label>
         <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Slug (URL)</span>
+          <span className="font-semibold text-[#390A5D]">Public link</span>
           <input
-            required
-            value={form.slug}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                slug: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ""),
-              })
-            }
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2 font-mono text-sm"
-            placeholder="kesarenterprises"
+            readOnly
+            value={previewHref}
+            className="mt-1 w-full rounded-lg border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 font-mono text-sm text-[#10662A]"
           />
         </label>
         <label className="block text-sm">

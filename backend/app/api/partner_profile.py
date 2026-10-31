@@ -38,6 +38,21 @@ def _slugify(raw: str) -> str:
     return (s or "partner")[:40]
 
 
+def _unique_slug(db: Session, owner_id: UUID, raw: str) -> str:
+    base = _slugify(raw)
+    slug = base
+    n = 2
+    while (
+        db.query(PartnerProfile)
+        .filter(PartnerProfile.slug == slug, PartnerProfile.owner_user_id != owner_id)
+        .first()
+    ):
+        suffix = str(n)
+        slug = f"{base[: 40 - len(suffix)]}{suffix}"
+        n += 1
+    return slug
+
+
 class ProfileOut(BaseModel):
     id: UUID | None = None
     firm_name: str = ""
@@ -166,11 +181,12 @@ def upsert_profile(
     row = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == owner.id).first()
     data = body.model_dump(exclude_unset=True)
 
-    if "slug" in data and data["slug"] is not None:
-        data["slug"] = _slugify(str(data["slug"]))
-    elif not row:
-        base = _slugify(data.get("firm_name") or owner.full_name or "partner")
-        data["slug"] = base
+    # The public link is pro.rupeedial.com/{name}. A new firm name replaces the slug.
+    if "firm_name" in data or not row:
+        source = data.get("firm_name") or (row.firm_name if row else None) or owner.full_name or "partner"
+        data["slug"] = _unique_slug(db, owner.id, str(source))
+    elif data.get("slug"):
+        data["slug"] = _unique_slug(db, owner.id, str(data["slug"]))
 
     if data.get("published"):
         if not _can_publish_profile(owner):
@@ -180,16 +196,6 @@ def upsert_profile(
     if data.get("directory_featured"):
         if not (has_module(owner, "directory_featured") or owner.role in {"admin", "ceo", "super_admin"}):
             raise HTTPException(status_code=403, detail="Featured listing requires Pro plan")
-
-    slug = data.get("slug") or (row.slug if row else None)
-    if slug:
-        clash = (
-            db.query(PartnerProfile)
-            .filter(PartnerProfile.slug == slug, PartnerProfile.owner_user_id != owner.id)
-            .first()
-        )
-        if clash:
-            raise HTTPException(status_code=400, detail="Slug already taken")
 
     if not row:
         if not data.get("firm_name"):
@@ -216,6 +222,11 @@ def upsert_profile(
     if row.suspended:
         row.published = False
         row.directory_featured = False
+
+    page = f"{PROFILE_ORIGIN}/{row.slug}"
+    for card in db.query(VisitingCard).filter(VisitingCard.user_id == owner.id).all():
+        if not card.qr_target_url or str(card.qr_target_url).startswith(PROFILE_ORIGIN):
+            card.qr_target_url = page
 
     db.commit()
     db.refresh(row)
