@@ -119,10 +119,22 @@ function CasesPage() {
     }
   };
 
+  const dealFromUrl = typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("deal") ?? "";
+
   useEffect(() => {
+    if (dealFromUrl) {
+      void refresh("all", "", "");
+      return;
+    }
     void refresh("all", dateFrom, dateTo);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (!dealFromUrl) return;
+    const hit = items.find((row) => row.deal_no.toLowerCase() === dealFromUrl.toLowerCase());
+    if (hit) setActive(hit);
+  }, [items, dealFromUrl]);
 
   useEffect(() => {
     if (desk !== "payout") return;

@@ -185,6 +185,7 @@ class AdminActionIn(BaseModel):
 
 class InvoiceCaseOut(BaseModel):
     purchase_id: UUID
+    lead_id: UUID | None = None
     applicant_name: str
     product: str
     city: str
@@ -412,6 +413,7 @@ def invoice_centre(db: Session = Depends(get_db), user: User = Depends(get_curre
         cases.append(
             InvoiceCaseOut(
                 purchase_id=purchase.id,
+                lead_id=purchase.lead_id,
                 applicant_name=lead.applicant_name if lead else "Case",
                 product=(lead.product_subtype if lead and lead.product_subtype else "Loan"),
                 city=lead.city if lead else "",

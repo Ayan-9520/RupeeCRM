@@ -526,6 +526,12 @@ export type PayoutRequest = {
   note?: string | null;
   rejection_reason?: string | null;
   utr?: string | null;
+  stage?: string | null;
+  stage_label?: string | null;
+  queried_stage?: string | null;
+  gst_amount?: number | null;
+  tds_amount?: number | null;
+  net_payable?: number | null;
   created_at?: string | null;
   reviewed_at?: string | null;
   user_email?: string | null;
@@ -562,6 +568,7 @@ export async function listAdminPayoutRequests(status?: string): Promise<PayoutRe
 
 export type InvoiceCase = {
   purchase_id: string;
+  lead_id?: string | null;
   applicant_name: string;
   product: string;
   city: string;

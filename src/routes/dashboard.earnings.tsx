@@ -13,6 +13,7 @@ import {
 } from "@/lib/python-api";
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
+import { InvoiceSteps } from "@/components/invoices/InvoiceSteps";
 
 export const Route = createFileRoute("/dashboard/earnings")({
   head: () => ({ meta: [{ title: "Invoices — RupeeDial One" }] }),
@@ -147,7 +148,9 @@ function InvoiceCentrePage() {
             {files.map((row) => (
               <li key={row.id} className="grid gap-1 py-3 text-sm sm:grid-cols-5">
                 <div>
-                  <div className="font-medium text-[#390A5D]">{row.deal_no}</div>
+                  <a href={`/dashboard/cases?deal=${encodeURIComponent(row.deal_no)}`} className="font-medium text-[#10662A] hover:underline">
+                    {row.deal_no}
+                  </a>
                   <div className="text-xs text-[#5c4d72]">{row.status_label} · {row.loan_type}</div>
                 </div>
                 <div>Receivable {inr(row.receivable_amount)}</div>
@@ -225,7 +228,9 @@ function InvoiceCentrePage() {
             {centre.cases.map((item) => (
               <li key={item.purchase_id} className="flex items-center justify-between gap-3 py-3 text-sm">
                 <div>
-                  <div className="font-medium text-[#390A5D]">{item.applicant_name}</div>
+                  <Link to="/dashboard/customer/$id" params={{ id: item.purchase_id }} className="font-medium text-[#390A5D] hover:underline">
+                    {item.applicant_name}
+                  </Link>
                   <div className="text-xs text-[#5c4d72]">{item.product} · {item.city || "—"} · Disbursed {inr(item.disbursed)}</div>
                 </div>
                 <div className="text-right">
@@ -239,7 +244,14 @@ function InvoiceCentrePage() {
       </section>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white">
-        <h2 className="border-b border-[#d8ecdd] px-4 py-3 font-semibold text-[#390A5D]">Invoices</h2>
+        <div className="flex items-center justify-between gap-3 border-b border-[#d8ecdd] px-4 py-3">
+          <h2 className="font-semibold text-[#390A5D]">Invoices</h2>
+          {isAdmin ? (
+            <Link to="/dashboard/invoice-approvals" className="text-sm font-semibold text-[#10662A]">
+              Approval queue
+            </Link>
+          ) : null}
+        </div>
         {centre.requests.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-[#5c4d72]">No invoice raised yet.</p>
         ) : (
@@ -248,17 +260,21 @@ function InvoiceCentrePage() {
               const number = String(row.bank_snapshot?.invoice_number || row.note || "Payout");
               return (
                 <li key={row.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
-                  <div>
+                  <div className="min-w-0">
                     <div className="font-medium text-[#390A5D]">{number}</div>
-                    <div className="text-xs text-[#5c4d72]">
-                      {row.created_at ? new Date(row.created_at).toLocaleString("en-IN") : ""}
+                    <div className="mt-1">
+                      <InvoiceSteps stage={row.stage || row.status} queriedStage={row.queried_stage} />
+                    </div>
+                    <div className="mt-1 text-xs text-[#5c4d72]">
+                      {row.stage_label || row.status}
+                      {row.created_at ? ` · ${new Date(row.created_at).toLocaleString("en-IN")}` : ""}
                       {row.utr ? ` · UTR ${row.utr}` : ""}
                       {row.rejection_reason ? ` · ${row.rejection_reason}` : ""}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="font-bold text-[#10662A]">{inr(row.amount)}</div>
-                    <div className="text-[10px] font-bold uppercase text-[#5c4d72]">{row.status}</div>
+                    <div className="font-bold text-[#10662A]">{inr(row.net_payable ?? row.amount)}</div>
+                    <div className="text-[10px] text-[#5c4d72]">Gross {inr(row.amount)}</div>
                   </div>
                 </li>
               );
