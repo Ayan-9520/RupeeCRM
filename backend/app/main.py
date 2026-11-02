@@ -16,6 +16,7 @@ from app.api import (
     customer_los,
     customer_ops,
     customer_workspace,
+    invoice_approvals,
     leads,
     learn,
     loan_cases,
@@ -54,6 +55,7 @@ app.include_router(users.router)
 app.include_router(billing.router)
 app.include_router(partner_profile.router)
 app.include_router(payouts.router)
+app.include_router(invoice_approvals.router)
 app.include_router(payout_grids.router)
 app.include_router(network.router)
 app.include_router(customer.router)
