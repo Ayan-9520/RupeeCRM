@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, ChevronDown, ChevronRight, Download, FileCheck2, Loader2, Settings2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronRight, Download, FileCheck2, FileDown, Loader2, Settings2 } from "lucide-react";
 import {
   downloadInvoiceExcel,
   getFinanceSetup,
@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { InvoiceSteps, STAGE_FILTERS, actionLabel, inr } from "@/components/invoices/InvoiceSteps";
+import { downloadInvoicePdf } from "@/lib/invoice-pdf";
 
 export const Route = createFileRoute("/dashboard/invoice-approvals")({
   head: () => ({ meta: [{ title: "Invoice approvals — RupeeDial One" }] }),
@@ -181,6 +182,7 @@ function InvoiceApprovalsPage() {
 }
 
 function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (row: InvoiceApprovalRow) => void }) {
+  // Partner invoice PDF is generated from the saved payout figures.
   const [open, setOpen] = useState(row.can_act);
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -240,7 +242,7 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
 
   return (
     <div className={`overflow-hidden rounded-2xl border bg-white ${row.can_act ? "border-[#10662A]/40 shadow-[0_6px_20px_rgba(16,102,42,0.08)]" : "border-[#d8ecdd]"}`}>
-      <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-[#f7fbf8]">
+      <div role="button" tabIndex={0} onClick={() => setOpen((o) => !o)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") setOpen((o) => !o); }} className="flex w-full cursor-pointer flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-[#f7fbf8]">
         {open ? <ChevronDown className="size-4 text-[#10662A]" /> : <ChevronRight className="size-4 text-[#10662A]" />}
         <div className="min-w-[12rem] flex-1">
           <div className="font-semibold text-[#390A5D]">{number}</div>
@@ -253,6 +255,37 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
           <div className="font-bold text-[#10662A]">{inr(row.net_payable ?? row.amount)}</div>
           <div className="text-[10px] uppercase text-[#5c4d72]">Net payable</div>
         </div>
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            const disbursed = Number(snap.disbursed_total || 0);
+            downloadInvoicePdf({
+              number,
+              createdAt: row.created_at,
+              partnerName: String(snap.account_holder || row.user_name || "Partner"),
+              partnerEmail: row.user_email,
+              statusLabel: row.stage_label,
+              amount: row.amount,
+              gstAmount: row.gst_amount,
+              tdsAmount: row.tds_amount,
+              netPayable: row.net_payable,
+              utr: row.utr,
+              paymentMode: row.payment_mode,
+              bank: snap,
+              lines: [
+                {
+                  description: `${(snap.case_ids as unknown[] | undefined)?.length || 0} disbursed case(s)`,
+                  disbursed,
+                  commission: row.amount,
+                },
+              ],
+            });
+          }}
+          className="inline-flex items-center gap-1 rounded-lg border border-[#d8ecdd] bg-white px-2.5 py-1.5 text-xs font-semibold text-[#10662A]"
+        >
+          <FileDown className="size-3.5" /> PDF
+        </button>
         <span
           className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
             row.stage === "paid"
@@ -267,7 +300,7 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
           {row.stage_label}
           {row.status === "processing" ? " · processing" : ""}
         </span>
-      </button>
+      </div>
       <div className="px-4 pb-3">
         <InvoiceSteps stage={row.stage} queriedStage={row.queried_stage} />
       </div>

@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Building2, CheckCircle2, Loader2, Receipt } from "lucide-react";
+import { AlertTriangle, Building2, CheckCircle2, Download, Loader2, Receipt } from "lucide-react";
 import {
   getInvoiceCentre,
   getPayoutSummary,
@@ -14,6 +14,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { InvoiceSteps } from "@/components/invoices/InvoiceSteps";
+import { downloadInvoicePdf, invoiceLines } from "@/lib/invoice-pdf";
 
 export const Route = createFileRoute("/dashboard/earnings")({
   head: () => ({ meta: [{ title: "Invoices — RupeeDial One" }] }),
@@ -32,7 +33,7 @@ function InvoiceCentrePage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [summary, setSummary] = useState<PayoutSummary | null>(null);
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const isAdmin = isPlatformAdmin(role);
 
   const load = useCallback(async () => {
@@ -272,9 +273,33 @@ function InvoiceCentrePage() {
                       {row.rejection_reason ? ` · ${row.rejection_reason}` : ""}
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-bold text-[#10662A]">{inr(row.net_payable ?? row.amount)}</div>
-                    <div className="text-[10px] text-[#5c4d72]">Gross {inr(row.amount)}</div>
+                  <div className="flex items-center gap-3 text-right">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        downloadInvoicePdf({
+                          number,
+                          createdAt: row.created_at,
+                          partnerName: String(row.bank_snapshot?.account_holder || user?.full_name || "Partner"),
+                          partnerEmail: user?.email,
+                          statusLabel: row.stage_label || row.status,
+                          amount: row.amount,
+                          gstAmount: row.gst_amount,
+                          tdsAmount: row.tds_amount,
+                          netPayable: row.net_payable,
+                          utr: row.utr,
+                          bank: row.bank_snapshot || {},
+                          lines: invoiceLines(row, centre.cases),
+                        })
+                      }
+                      className="inline-flex items-center gap-1 rounded-lg border border-[#d8ecdd] px-2.5 py-1.5 text-xs font-semibold text-[#10662A] hover:bg-[#E8F7EC]"
+                    >
+                      <Download className="size-3.5" /> PDF
+                    </button>
+                    <div>
+                      <div className="font-bold text-[#10662A]">{inr(row.net_payable ?? row.amount)}</div>
+                      <div className="text-[10px] text-[#5c4d72]">Gross {inr(row.amount)}</div>
+                    </div>
                   </div>
                 </li>
               );
