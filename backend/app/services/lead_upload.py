@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
 
-from app.models import Lead, LeadPurchase
+from app.models import Lead, LeadPurchase, User
 from app.plans import default_lead_price
 from app.services.leads import mask_phone, normalize_phone
 
@@ -99,10 +99,44 @@ def parse_csv(raw: bytes) -> list[dict[str, str]]:
     return rows
 
 
+def publish_admin_leads(db: Session) -> int:
+    """Admin uploads belong on the leadboard for every partner, not in the admin's private list."""
+    admin_ids = [row[0] for row in db.query(User.id).filter(User.role.in_(tuple(ADMIN_ROLES))).all()]
+    if not admin_ids:
+        return 0
+    purchases = (
+        db.query(LeadPurchase)
+        .join(Lead, Lead.id == LeadPurchase.lead_id)
+        .filter(
+            LeadPurchase.buyer_user_id.in_(admin_ids),
+            Lead.source.in_(("upload", "manual")),
+            Lead.is_marketplace.is_(False),
+        )
+        .all()
+    )
+    moved = 0
+    for purchase in purchases:
+        lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()
+        if not lead:
+            continue
+        lead.is_marketplace = True
+        lead.sale_available = True
+        lead.status = "available"
+        if not float(lead.price or 0):
+            lead.price = default_lead_price(lead.product_category)
+        db.delete(purchase)
+        moved += 1
+    if moved:
+        db.commit()
+    return moved
+
+
 def upload_csv(db: Session, user, raw: bytes, campaign: str, publish: bool) -> dict:
     if user.role not in UPLOAD_ROLES:
         raise PermissionError("Only an admin, partner, or telecaller can upload leads.")
-    if publish and user.role not in ADMIN_ROLES:
+    if user.role in ADMIN_ROLES:
+        publish = True
+    elif publish:
         raise PermissionError("Only an admin can put an uploaded file on the leadboard.")
     rows = parse_csv(raw)
     if not rows:

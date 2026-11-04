@@ -33,7 +33,6 @@ function UploadLeadsPage() {
   const admin = isPlatformAdmin(role);
   const [file, setFile] = useState<File | null>(null);
   const [campaign, setCampaign] = useState("");
-  const [publish, setPublish] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ added: number; skipped: { row: number; reason: string }[]; published: boolean; campaign: string } | null>(null);
 
@@ -44,7 +43,7 @@ function UploadLeadsPage() {
     }
     setBusy(true);
     try {
-      const data = await uploadCrmLeads(file, campaign.trim(), admin && publish);
+      const data = await uploadCrmLeads(file, campaign.trim(), admin);
       setResult(data);
       toast.success(data.added ? `${data.added} lead${data.added === 1 ? "" : "s"} added` : "No new leads were added");
     } catch (error) {
@@ -59,7 +58,9 @@ function UploadLeadsPage() {
       <div>
         <h1 className="font-display text-2xl font-bold text-[#390A5D]">Upload leads</h1>
         <p className="mt-1 text-sm text-[#5c4d72]">
-          These rows are marked <span className="font-semibold">upload</span>, not a campaign form. A campaign name only groups the sheet. They open in My Leads for follow-up, and the wallet is not charged.
+          {admin
+            ? "An admin upload goes on the Leadboard for every partner. It is not kept in your private My Leads."
+            : "These rows are marked upload, not a campaign form. A campaign name only groups the sheet. They open in your My Leads, and the wallet is not charged."}
         </p>
       </div>
 
@@ -93,12 +94,6 @@ function UploadLeadsPage() {
             className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm"
           />
         </label>
-        {admin ? (
-          <label className="flex items-start gap-2 text-sm text-[#14281c]">
-            <input type="checkbox" checked={publish} onChange={(event) => setPublish(event.target.checked)} className="mt-1" />
-            <span>Put this file on the leadboard for partners to buy. Leave this off to keep the leads in your own My Leads.</span>
-          </label>
-        ) : null}
         <button
           type="button"
           onClick={() => void submit()}

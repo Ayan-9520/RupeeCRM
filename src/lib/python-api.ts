@@ -182,11 +182,13 @@ export async function listCrmLeads(params?: {
   q?: string;
   source?: string;
   limit?: number;
+  board?: boolean;
 }): Promise<{ items: CrmLead[]; total: number }> {
   const qs = new URLSearchParams();
   if (params?.q) qs.set("q", params.q);
   if (params?.source) qs.set("source", params.source);
   if (params?.limit) qs.set("limit", String(params.limit));
+  if (params?.board) qs.set("board", "true");
   const suffix = qs.toString() ? `?${qs}` : "";
   return request(`/api/leads${suffix}`);
 }

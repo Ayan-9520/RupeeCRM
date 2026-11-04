@@ -5,6 +5,7 @@ from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models import User
 from app.services.joining_credit import grant_pending_joining_credits
+from app.services.lead_upload import publish_admin_leads
 
 
 def main() -> None:
@@ -15,7 +16,8 @@ def main() -> None:
         if existing:
             print(f"Admin already exists: {email}")
             credited = grant_pending_joining_credits(db)
-            print(f"joining_credits={credited}")
+            moved = publish_admin_leads(db)
+            print(f"joining_credits={credited} admin_board={moved}")
             return
         user = User(
             email=email,
@@ -28,7 +30,8 @@ def main() -> None:
         db.commit()
         print(f"Seeded admin: {email}")
         credited = grant_pending_joining_credits(db)
-        print(f"joining_credits={credited}")
+        moved = publish_admin_leads(db)
+        print(f"joining_credits={credited} admin_board={moved}")
     finally:
         db.close()
 

@@ -24,10 +24,13 @@ def list_leads(
     product_category: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
+    board: bool = Query(default=False),
     db: Session = Depends(get_db),
     _: User = Depends(get_current_user),
 ) -> LeadListOut:
     query = db.query(Lead)
+    if board:
+        query = query.filter(Lead.is_marketplace.is_(True), Lead.sale_available.is_(True), Lead.status == "available")
     if source:
         query = query.filter(Lead.source == source)
     if product_category:

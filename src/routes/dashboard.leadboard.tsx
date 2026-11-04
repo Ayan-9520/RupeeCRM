@@ -159,7 +159,7 @@ function Leadboard() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await listCrmLeads({ limit: 200 });
+      const data = await listCrmLeads({ limit: 200, board: true });
       let rows = data.items.map(mapCrmLead);
 
       if (city.trim()) {
