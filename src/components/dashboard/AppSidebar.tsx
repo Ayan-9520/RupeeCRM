@@ -79,6 +79,7 @@ const SECTION_OF: Record<string, SectionId> = {
   "/dashboard/hrms": "home",
   "/dashboard/website-leads": "leads",
   "/dashboard/leadboard": "leads",
+  "/dashboard/upload-leads": "leads",
   "/dashboard/my-leads": "leads",
   "/dashboard/business": "leads",
   "/dashboard/admin/partners": "leads",

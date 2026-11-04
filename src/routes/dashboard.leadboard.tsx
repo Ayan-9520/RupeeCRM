@@ -26,7 +26,8 @@ import {
 import { CATEGORY_META, type ProductCategory, type ProductType } from "@/lib/products";
 import { Link } from "@tanstack/react-router";
 import { PlanQuotaBanner } from "@/components/dashboard/PlanQuotaBanner";
-import { getBillingMe, getCrmUser, listCrmLeads, purchaseCrmLead, type BillingMe, type CrmLead } from "@/lib/python-api";
+import { createCrmLead, getBillingMe, getCrmUser, listCrmLeads, purchaseCrmLead, uploadCrmLeads, type BillingMe, type CrmLead } from "@/lib/python-api";
+import { isPlatformAdmin } from "@/lib/role-access";
 import { ageLabel, gradeCode, gradeText, listingType } from "@/lib/lead-grades";
 
 export const Route = createFileRoute("/dashboard/leadboard")({
@@ -108,8 +109,24 @@ type TimeRangeKey = (typeof TIME_RANGES)[number]["key"];
 const QUICK_RECHARGE = [500, 1000, 2500, 5000];
 const LOW_BALANCE_THRESHOLD = 300;
 
+const BOARD_PRODUCTS = [
+  ["personal-loan", "Personal loan", "loan", "loan_personal", "personal"],
+  ["home-loan", "Home loan", "loan", "home_loan", "home"],
+  ["lap-loan", "Loan against property", "loan", "loan_lap", "lap"],
+  ["auto-loan", "Auto loan", "loan", "loan_auto_new", "auto"],
+  ["business-loan", "Business loan", "loan", "business-loan", "business"],
+  ["credit-card", "Credit card", "credit_card", "credit_card", "credit_card"],
+  ["insurance", "Insurance", "insurance", "insurance", "insurance"],
+  ["investment", "Investment", "investment", "investment", "investment"],
+] as const;
+
 function Leadboard() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const admin = isPlatformAdmin(role);
+  const [one, setOne] = useState({ name: "", phone: "", city: "", product: "personal-loan", amount: "" });
+  const [sheet, setSheet] = useState<File | null>(null);
+  const [campaign, setCampaign] = useState("");
+  const [saving, setSaving] = useState<"one" | "sheet" | null>(null);
   const [billing, setBilling] = useState<BillingMe | null>(null);
   const [billingLoading, setBillingLoading] = useState(true);
   const [billingError, setBillingError] = useState<string | null>(null);
@@ -187,6 +204,55 @@ function Leadboard() {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, category, productTypeId, score, maxBudget, sort, timeRange]);
+
+  const saveOne = async () => {
+    const product = BOARD_PRODUCTS.find((item) => item[0] === one.product) ?? BOARD_PRODUCTS[0];
+    if (!one.name.trim() || one.phone.replace(/\D/g, "").length < 10 || !one.city.trim()) {
+      toast.error("Name, a 10-digit phone, and city are required");
+      return;
+    }
+    setSaving("one");
+    try {
+      await createCrmLead({
+        applicant_name: one.name.trim(),
+        full_phone: one.phone.trim(),
+        city: one.city.trim(),
+        loan_amount: Number(one.amount.replace(/[^\d.]/g, "")) || 0,
+        product_category: product[2],
+        product_subtype: product[3],
+        loan_type: product[4],
+        source: "manual",
+        is_marketplace: true,
+        sale_available: true,
+      });
+      setOne({ name: "", phone: "", city: "", product: one.product, amount: "" });
+      toast.success("Lead saved on the leadboard");
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save the lead");
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const saveSheet = async () => {
+    if (!sheet) {
+      toast.error("Choose a CSV file");
+      return;
+    }
+    setSaving("sheet");
+    try {
+      const result = await uploadCrmLeads(sheet, campaign.trim(), true);
+      toast.success(`${result.added} lead${result.added === 1 ? "" : "s"} saved on the leadboard`);
+      setSheet(null);
+      setCampaign("");
+      await load();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not upload the sheet");
+    } finally {
+      setSaving(null);
+    }
+  };
 
   const loadBilling = async () => {
     try {
@@ -291,6 +357,37 @@ function Leadboard() {
           </Link>
         </div>
       </div>
+
+      {admin ? (
+        <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4 space-y-4">
+          <div>
+            <h2 className="font-semibold text-[#390A5D]">Add leads</h2>
+            <p className="text-xs text-[#5c4d72]">Admin only. A single lead or a CSV is saved in the database and appears on this board for partners to buy.</p>
+          </div>
+          <div className="grid gap-2 md:grid-cols-6">
+            <input value={one.name} onChange={(event) => setOne((row) => ({ ...row, name: event.target.value }))} placeholder="Name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+            <input value={one.phone} onChange={(event) => setOne((row) => ({ ...row, phone: event.target.value }))} placeholder="Phone" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+            <input value={one.city} onChange={(event) => setOne((row) => ({ ...row, city: event.target.value }))} placeholder="City" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+            <select value={one.product} onChange={(event) => setOne((row) => ({ ...row, product: event.target.value }))} className="h-10 rounded-xl border border-[#d8ecdd] bg-white px-3 text-sm">
+              {BOARD_PRODUCTS.map((item) => (
+                <option key={item[0]} value={item[0]}>{item[1]}</option>
+              ))}
+            </select>
+            <input value={one.amount} onChange={(event) => setOne((row) => ({ ...row, amount: event.target.value }))} placeholder="Amount" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+            <button type="button" onClick={() => void saveOne()} disabled={saving !== null} className="h-10 rounded-xl bg-[#10662A] text-sm font-semibold text-white disabled:opacity-60">
+              {saving === "one" ? "Saving…" : "Save one"}
+            </button>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <input type="file" accept=".csv,text/csv" onChange={(event) => setSheet(event.target.files?.[0] ?? null)} className="text-sm text-[#14281c] file:mr-2 file:rounded-xl file:border-0 file:bg-[#E8F7EC] file:px-3 file:py-2 file:text-sm file:font-semibold file:text-[#0e4d28]" />
+            <input value={campaign} onChange={(event) => setCampaign(event.target.value)} placeholder="Campaign name, optional" maxLength={120} className="h-10 w-52 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+            <button type="button" onClick={() => void saveSheet()} disabled={saving !== null} className="h-10 rounded-xl border border-[#10662A] px-4 text-sm font-semibold text-[#10662A] disabled:opacity-60">
+              {saving === "sheet" ? "Uploading…" : "Upload CSV"}
+            </button>
+            <Link to="/dashboard/upload-leads" className="text-sm font-semibold text-[#10662A] underline">Sample format</Link>
+          </div>
+        </section>
+      ) : null}
 
       {lowBalance && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-800 px-3.5 py-2.5 flex items-center gap-3 flex-wrap text-sm">

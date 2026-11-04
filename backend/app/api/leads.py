@@ -8,8 +8,11 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models import Lead, User
 from app.schemas import LeadCreate, LeadListOut, LeadOut
+from app.plans import default_lead_price
 from app.services.lead_upload import upload_csv
 from app.services.leads import mask_phone, normalize_phone
+
+ADMIN_ROLES = {"ceo", "super_admin", "admin"}
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
 
@@ -79,9 +82,12 @@ def get_lead(
 def create_lead(
     body: LeadCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    user: User = Depends(get_current_user),
 ) -> Lead:
+    if body.is_marketplace and user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Only an admin can add a lead to the leadboard")
     phone = normalize_phone(body.full_phone)
+    price = float(body.price or 0) or default_lead_price(body.product_category)
     lead = Lead(
         applicant_name=body.applicant_name.strip() or "Unknown",
         full_phone=phone,
@@ -97,7 +103,7 @@ def create_lead(
         loan_type=body.loan_type or "personal",
         source=body.source or "manual",
         score=body.score or "cold",
-        price=float(body.price or 0),
+        price=price,
         is_marketplace=body.is_marketplace,
         sale_available=body.sale_available,
         product_details=body.product_details or {},
