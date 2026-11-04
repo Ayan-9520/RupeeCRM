@@ -114,7 +114,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { role, signOut, user } = useAuth();
 
-  const items = getNavForRole(role);
+  const items = getNavForRole(role, user?.finance_level);
 
   const isActive = (path: string) =>
     path === "/dashboard" ? location.pathname === path : location.pathname.startsWith(path);
@@ -161,7 +161,7 @@ export function AppSidebar() {
           <Link
             to="/dashboard"
             className="mb-3 grid size-10 place-items-center rounded-xl bg-[#10662A] font-display text-base font-bold text-white shadow-[0_6px_16px_rgba(16,102,42,0.3)]"
-            title="RupeeDial One"
+            title="RupeeOne"
           >
             R
           </Link>
@@ -197,7 +197,7 @@ export function AppSidebar() {
         {!collapsed && current ? (
           <div className="flex min-w-0 flex-1 flex-col bg-[#F7FAF8]">
             <div className="px-4 pb-2 pt-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#10662A]">RupeeDial One</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#10662A]">RupeeOne</div>
               <div className="mt-0.5 text-base font-bold text-[#1f1a2e]">{current.title}</div>
             </div>
             <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-3">

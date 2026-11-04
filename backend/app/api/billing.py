@@ -81,8 +81,11 @@ class TeamMemberOut(BaseModel):
     email: EmailStr
     full_name: str
     role: str
+    phone: str | None = None
     is_owner: bool
     is_active: bool
+    rm2_name: str | None = None
+    rm2_status: str = "Not set"
 
 
 class BillingMeOut(BaseModel):
@@ -108,14 +111,22 @@ def billing_me(db: Session = Depends(get_db), user: User = Depends(get_current_u
         .order_by(User.created_at.asc())
         .all()
     )
+    rm_ids = {m.rm2_user_id for m in members if m.rm2_user_id}
+    rm_names = {
+        u.id: u.full_name
+        for u in (db.query(User).filter(User.id.in_(rm_ids)).all() if rm_ids else [])
+    }
     team = [
         TeamMemberOut(
             id=m.id,
             email=m.email,
             full_name=m.full_name,
             role=m.role,
+            phone=m.phone,
             is_owner=m.id == owner.id,
             is_active=m.is_active,
+            rm2_name=rm_names.get(m.rm2_user_id) if m.rm2_user_id else None,
+            rm2_status="Assigned" if m.rm2_user_id else "Not set",
         )
         for m in members
     ]

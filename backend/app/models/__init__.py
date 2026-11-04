@@ -34,6 +34,8 @@ class User(Base):
     finance_level: Mapped[str | None] = mapped_column(String(30), nullable=True)
     rm1_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     rm2_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    sales_grade: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)
+    reports_to_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

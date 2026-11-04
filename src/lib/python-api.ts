@@ -73,6 +73,20 @@ export function clearCrmSession() {
   localStorage.removeItem(USER_KEY);
 }
 
+/** Website sign-in hands the CRM a token in the URL hash. It never hits the server. */
+export function takeAuthHandoff(): void {
+  if (typeof window === "undefined") return;
+  const token = new URLSearchParams(window.location.hash.replace(/^#/, "")).get("access_token");
+  if (!token || token.length < 20) return;
+  localStorage.setItem(TOKEN_KEY, token);
+  localStorage.removeItem(USER_KEY);
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+}
+
+export function rememberCrmUser(user: CrmUser): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
 export async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
@@ -221,6 +235,22 @@ export type CrmPurchase = {
   lead: CrmLead | null;
 };
 
+export async function listReservedLeads(): Promise<{
+  items: {
+    id: string;
+    applicant_name: string;
+    masked_phone: string;
+    city: string;
+    product_category: string;
+    price: number;
+    created_at: string;
+  }[];
+  total: number;
+  profile_visits: number;
+}> {
+  return request("/api/reserved-leads");
+}
+
 export async function listMyLeads(): Promise<{
   items: CrmPurchase[];
   total: number;
@@ -343,12 +373,47 @@ export async function listCrmUsers(): Promise<{
     dsa_id: string | null;
     is_active: boolean;
     kyc_verified?: boolean;
+    rm2_name?: string | null;
+    rm2_status?: string;
+    sales_grade?: string | null;
+    sales_title?: string | null;
+    reports_to_user_id?: string | null;
+    reports_to_name?: string | null;
     created_at: string | null;
   }[];
   total: number;
   pending_partners: number;
 }> {
   return request("/api/users");
+}
+
+export async function listSalesGrades(): Promise<{ items: { code: string; title: string }[] }> {
+  return request("/api/users/grades");
+}
+
+export async function listMyDownline(): Promise<{
+  items: {
+    id: string;
+    email: string;
+    full_name: string;
+    role: string;
+    phone: string | null;
+    is_active: boolean;
+    sales_grade?: string | null;
+    sales_title?: string | null;
+    reports_to_user_id?: string | null;
+    reports_to_name?: string | null;
+  }[];
+  total: number;
+}> {
+  return request("/api/users/downline");
+}
+
+export async function setUserDesignation(
+  userId: string,
+  body: { sales_grade: string | null; reports_to_user_id: string | null },
+): Promise<void> {
+  return request(`/api/users/${userId}/designation`, { method: "PUT", body: JSON.stringify(body) });
 }
 
 export async function resetCrmUserPassword(userId: string): Promise<{
@@ -380,8 +445,11 @@ export type BillingMe = {
     email: string;
     full_name: string;
     role: string;
+    phone?: string | null;
     is_owner: boolean;
     is_active: boolean;
+    rm2_name?: string | null;
+    rm2_status?: string;
   }[];
   available_plans: {
     id: string;

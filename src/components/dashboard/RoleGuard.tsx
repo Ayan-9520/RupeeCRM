@@ -6,7 +6,7 @@ import { canAccessPath, getRoleLabel } from "@/lib/role-access";
 import { Button } from "@/components/ui/button";
 
 export function RoleGuard({ children }: { children: ReactNode }) {
-  const { role, loading } = useAuth();
+  const { role, loading, user } = useAuth();
   const { pathname } = useLocation();
 
   if (loading) {
@@ -17,7 +17,7 @@ export function RoleGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!role || !canAccessPath(role, pathname)) {
+  if (!role || !canAccessPath(role, pathname, user?.finance_level)) {
     return (
       <div className="max-w-md mx-auto mt-16 rounded-2xl border border-border bg-card p-8 text-center shadow-card">
         <ShieldAlert className="size-10 text-amber-500 mx-auto mb-3" />

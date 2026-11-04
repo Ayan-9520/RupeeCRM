@@ -25,23 +25,23 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { title: "CEO Overview", url: "/ceo", roles: ADMIN_ROLES, group: "main" },
   { title: "Dashboard", url: "/dashboard", roles: ALL_ROLES, group: "main" },
-  { title: "Workspace", url: "/dashboard/workspace", roles: ALL_ROLES, group: "main" },
+  { title: "Workspace", url: "/dashboard/workspace", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "coordinator"], group: "main" },
   {
     title: "Billing",
     url: "/dashboard/billing",
-    roles: ["ceo", "super_admin", "admin", "dsa", "lender", "coordinator", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   {
     title: "Public profile",
     url: "/dashboard/profile",
-    roles: ["ceo", "super_admin", "admin", "dsa", "coordinator", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   {
     title: "HRMS & Payroll",
     url: "/dashboard/hrms",
-    roles: ["ceo", "super_admin", "admin", "dsa", "lender", "coordinator"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"],
     group: "main",
   },
   { title: "Website Leads", url: "/dashboard/website-leads", roles: ADMIN_ROLES, group: "main" },
@@ -107,13 +107,13 @@ export const NAV_ITEMS: NavItem[] = [
   {
     title: "Marketing",
     url: "/dashboard/marketing",
-    roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   {
     title: "Community",
     url: "/dashboard/community",
-    roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   {
@@ -125,25 +125,25 @@ export const NAV_ITEMS: NavItem[] = [
   {
     title: "Certificates",
     url: "/dashboard/certificates",
-    roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   {
     title: "Academy",
     url: "/dashboard/training",
-    roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   {
     title: "Leaderboard",
     url: "/dashboard/leaderboard",
-    roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   {
     title: "Rewards",
     url: "/dashboard/rewards",
-    roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "affiliate"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
   { title: "Control Centre", url: "/dashboard/admin/control", roles: ADMIN_ROLES, group: "admin" },
@@ -167,10 +167,10 @@ const EXTRA_ROUTE_RULES: { prefix: string; roles: AppRole[] }[] = [
   { prefix: "/dashboard/customer", roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator"] },
   { prefix: "/dashboard/my-leads/", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"] },
   { prefix: "/dashboard/settings", roles: ALL_ROLES },
-  { prefix: "/dashboard/invoice-approvals", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator", "caller"] },
-  { prefix: "/dashboard/profile", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator", "affiliate"] },
-  { prefix: "/dashboard/marketing/", roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "lender", "affiliate"] },
-  { prefix: "/dashboard/hrms/", roles: ["ceo", "super_admin", "admin", "dsa", "lender", "coordinator"] },
+  { prefix: "/dashboard/invoice-approvals", roles: ["ceo", "super_admin", "admin", "coordinator"] },
+  { prefix: "/dashboard/profile", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"] },
+  { prefix: "/dashboard/marketing/", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"] },
+  { prefix: "/dashboard/hrms/", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"] },
 ];
 
 export function isPlatformAdmin(role: AppRole | null): boolean {
@@ -182,8 +182,11 @@ export function hasRole(role: AppRole | null, allowed: AppRole[]): boolean {
   return allowed.includes(role);
 }
 
-export function canAccessPath(role: AppRole | null, pathname: string): boolean {
+export function canAccessPath(role: AppRole | null, pathname: string, financeLevel?: string | null): boolean {
   if (!role) return false;
+  const level = financeLevel || "";
+  if (level && (pathname === "/dashboard/invoice-approvals" || pathname.startsWith("/dashboard/invoice-approvals/"))) return true;
+  if ((level === "accounts" || level === "business_head") && (pathname === "/dashboard/admin/payouts" || pathname.startsWith("/dashboard/admin/payouts/"))) return true;
 
   const path = pathname.replace(/\/$/, "") || "/";
 
@@ -219,9 +222,14 @@ export function canAccessPath(role: AppRole | null, pathname: string): boolean {
   return path === "/dashboard" || path.startsWith("/dashboard/settings");
 }
 
-export function getNavForRole(role: AppRole | null): NavItem[] {
+export function getNavForRole(role: AppRole | null, financeLevel?: string | null): NavItem[] {
   if (!role) return [];
-  return NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  if (!financeLevel || isPlatformAdmin(role)) return items;
+  const allowed = new Set<string>(["/dashboard/invoice-approvals"]);
+  if (financeLevel === "accounts" || financeLevel === "business_head") allowed.add("/dashboard/admin/payouts");
+  const extra = NAV_ITEMS.filter((item) => allowed.has(item.url) && !items.some((have) => have.url === item.url));
+  return [...items, ...extra];
 }
 
 export function getRoleLabel(role: AppRole): string {
@@ -250,53 +258,60 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
   switch (role) {
     case "ceo":
     case "super_admin":
+      return {
+        title: "Company view",
+        subtitle: "Every lead, partner, invoice and payout. You approve the last step.",
+        stats: ["leads_available", "leads_purchased", "earnings", "spent"],
+        quickLinks: [
+          { title: "CEO Overview", desc: "Company totals, sales and disbursed value.", url: "/ceo", roles: ["ceo", "super_admin"] },
+          { title: "Invoice approvals", desc: "Final authority after RM1, RM2 and Accounts.", url: "/dashboard/invoice-approvals", roles: ["ceo", "super_admin"] },
+          { title: "Payouts", desc: "Paid and pending partner payouts.", url: "/dashboard/admin/payouts", roles: ["ceo", "super_admin"] },
+          { title: "Partners", desc: "Who is approved to buy and work leads.", url: "/dashboard/admin/partners", roles: ["ceo", "super_admin"] },
+        ],
+      };
     case "admin":
       return {
-        title: "Platform overview",
-        subtitle: "Leads · DSAs · Revenue · Operations across RupeeDial One.",
-        stats: ["wallet", "leads_available", "leads_purchased", "spent"],
+        title: "Operations",
+        subtitle: "Approve partners, price leads, and move invoices to the right team.",
+        stats: ["leads_available", "leads_purchased", "spent", "earnings"],
         quickLinks: [
-          { title: "Website Leads", desc: "rupeedial.com form leads from CRM API.", url: "/dashboard/website-leads", roles: ADMIN_ROLES },
-          { title: "CEO Overview", desc: "Workspaces, revenue & top performers.", url: "/ceo", roles: ADMIN_ROLES },
-          { title: "Partner Applications", desc: "Approve website partners → DSA login.", url: "/dashboard/admin/partners", roles: ADMIN_ROLES },
-          { title: "Admin — Users", desc: "CRM logins after partner approve.", url: "/dashboard/admin/users", roles: ADMIN_ROLES },
-          { title: "Leadboard", desc: "Marketplace inventory & pricing.", url: "/dashboard/leadboard", roles: ["ceo", "super_admin", "admin", "dsa"] },
-          { title: "My Leads", desc: "Pipeline CRM · New → Disbursed.", url: "/dashboard/my-leads", roles: ["ceo", "super_admin", "admin", "dsa"] },
-          { title: "Executive Analytics", desc: "LOS funnel, TAT & conversion.", url: "/dashboard/los-executive", roles: ADMIN_ROLES },
+          { title: "Partner applications", desc: "Approve a partner, then their login is created.", url: "/dashboard/admin/partners", roles: ["admin"] },
+          { title: "Website leads", desc: "Forms from rupeedial.com.", url: "/dashboard/website-leads", roles: ["admin"] },
+          { title: "Invoice approvals", desc: "RM1, RM2, then Accounts.", url: "/dashboard/invoice-approvals", roles: ["admin"] },
+          { title: "Users", desc: "Staff and partner logins.", url: "/dashboard/admin/users", roles: ["admin"] },
         ],
       };
     case "dsa":
       return {
-        title: "DSA command center",
-        subtitle: "Buy leads, run CRM pipeline, close to disbursal.",
-        stats: ["wallet", "leads_available", "leads_purchased", "spent"],
+        title: "Partner desk",
+        subtitle: "Buy a lead, call the customer, send the file to the bank, then raise the invoice.",
+        stats: ["wallet", "leads_available", "leads_purchased", "earnings"],
         quickLinks: [
-          { title: "Browse Leadboard", desc: "AI-verified leads by product & city.", url: "/dashboard/leadboard", roles: ["dsa"] },
-          { title: "My Leads CRM", desc: "Kanban pipeline & customer workspaces.", url: "/dashboard/my-leads", roles: ["dsa"] },
-          { title: "Recharge Wallet", desc: "Add funds via Razorpay.", url: "/dashboard/wallet", roles: ["dsa"] },
-          { title: "LOS Analytics", desc: "Login, sanction & disbursal metrics.", url: "/dashboard/los-analytics", roles: ["dsa"] },
+          { title: "Leadboard", desc: "Leads from RupeeDial. Identity stays masked until you buy.", url: "/dashboard/leadboard", roles: ["dsa"] },
+          { title: "My Leads", desc: "Call, documents, bank, sanction, disbursed.", url: "/dashboard/my-leads", roles: ["dsa"] },
+          { title: "Wallet", desc: "Lead credits and earnings, kept separate.", url: "/dashboard/wallet", roles: ["dsa"] },
+          { title: "Invoices", desc: "Raise after disbursement. Track payout date and transaction ID.", url: "/dashboard/earnings", roles: ["dsa"] },
         ],
       };
     case "caller":
       return {
-        title: "TeleSales",
-        subtitle: "Call queue, follow-ups, scripts and dispositions.",
-        stats: ["calls", "leads_purchased"],
+        title: "Call desk",
+        subtitle: "Mark each lead: interested, not interested, switched off, not reachable, sent to bank, or forwarded.",
+        stats: ["calls"],
         quickLinks: [
-          { title: "TeleSales", desc: "Queue, callbacks, scripts and conversion.", url: "/dashboard/calls", roles: ["caller"] },
-          { title: "Learn & Earn", desc: "Scripts, product training & quizzes.", url: "/dashboard/learn", roles: ["caller"] },
-          { title: "Community", desc: "Tips from top-performing DSAs.", url: "/dashboard/community", roles: ["caller"] },
+          { title: "TeleSales", desc: "Today's call queue and dispositions.", url: "/dashboard/calls", roles: ["caller"] },
+          { title: "Scripts", desc: "What to say for each loan.", url: "/dashboard/learn", roles: ["caller"] },
         ],
       };
     case "coordinator":
       return {
-        title: "Sales coordination",
-        subtitle: "Collect documents, verify profiles, route to lenders.",
-        stats: ["cases", "leads_purchased"],
+        title: "Bank desk",
+        subtitle: "Files sent by sales. Move them through login, WIP, sanction, disbursed, or rejected.",
+        stats: ["cases"],
         quickLinks: [
-          { title: "Submissions", desc: "Pending doc packs & lender routing.", url: "/dashboard/submissions", roles: ["coordinator"] },
-          { title: "My Leads", desc: "Cases you're coordinating.", url: "/dashboard/my-leads", roles: ["coordinator", "ceo", "super_admin", "admin", "dsa"] },
-          { title: "Cases", desc: "Track lender decisions.", url: "/dashboard/cases", roles: ["coordinator"] },
+          { title: "Case files", desc: "Login, WIP, sanction, disbursed, rejected.", url: "/dashboard/cases", roles: ["coordinator"] },
+          { title: "Submissions", desc: "Files forwarded from the call desk.", url: "/dashboard/submissions", roles: ["coordinator"] },
+          { title: "Invoices", desc: "Shown when you are RM1, RM2, or Accounts.", url: "/dashboard/invoice-approvals", roles: ["coordinator"] },
         ],
       };
     case "lender":
@@ -334,7 +349,7 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
     default:
       return {
         title: "Welcome",
-        subtitle: "Your RupeeDial One workspace.",
+        subtitle: "Your RupeeOne workspace.",
         stats: [],
         quickLinks: [{ title: "Settings", desc: "Profile & preferences.", url: "/dashboard/settings", roles: ALL_ROLES }],
       };

@@ -9,6 +9,7 @@ from app.core.security import hash_password
 from app.db.session import get_db
 from app.models import PartnerApplication, User
 from app.services.partners import generate_temp_password
+from app.services.sales_grades import GRADES, downline_ids, grade_rank, grade_title
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -24,6 +25,12 @@ class UserAdminOut(BaseModel):
     dsa_id: str | None = None
     is_active: bool
     kyc_verified: bool = False
+    rm2_name: str | None = None
+    rm2_status: str = "Not set"
+    sales_grade: str | None = None
+    sales_title: str | None = None
+    reports_to_user_id: UUID | None = None
+    reports_to_name: str | None = None
     created_at: str | None = None
 
     model_config = {"from_attributes": True}
@@ -53,6 +60,11 @@ def list_users(
     _admin: User = Depends(require_admin),
 ) -> UserListOut:
     rows = db.query(User).order_by(User.created_at.desc()).limit(500).all()
+    rm_ids = {u.rm2_user_id for u in rows if u.rm2_user_id} | {u.reports_to_user_id for u in rows if u.reports_to_user_id}
+    rm_names = {
+        u.id: u.full_name
+        for u in (db.query(User).filter(User.id.in_(rm_ids)).all() if rm_ids else [])
+    }
     pending = (
         db.query(PartnerApplication)
         .filter(PartnerApplication.status.in_(["pending", "under_review"]))
@@ -68,11 +80,104 @@ def list_users(
             dsa_id=u.dsa_id,
             is_active=u.is_active,
             kyc_verified=bool(u.kyc_verified),
+            rm2_name=rm_names.get(u.rm2_user_id) if u.rm2_user_id else None,
+            rm2_status="Assigned" if u.rm2_user_id else "Not set",
+            sales_grade=u.sales_grade,
+            sales_title=grade_title(u.sales_grade),
+            reports_to_user_id=u.reports_to_user_id,
+            reports_to_name=rm_names.get(u.reports_to_user_id) if u.reports_to_user_id else None,
             created_at=u.created_at.isoformat() if u.created_at else None,
         )
         for u in rows
     ]
     return UserListOut(items=items, total=len(items), pending_partners=pending)
+
+
+class GradeListOut(BaseModel):
+    items: list[dict]
+
+
+class DesignationIn(BaseModel):
+    sales_grade: str | None = None
+    reports_to_user_id: UUID | None = None
+
+
+@router.get("/grades", response_model=GradeListOut)
+def list_grades(_user: User = Depends(get_current_user)) -> GradeListOut:
+    return GradeListOut(items=[{"code": code, "title": title} for code, title in GRADES.items()])
+
+
+@router.get("/downline", response_model=UserListOut)
+def my_downline(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> UserListOut:
+    if user.role in ADMIN_ROLES:
+        return list_users(db, user)
+    allowed = downline_ids(db, user.id) | {user.id}
+    rows = db.query(User).filter(User.id.in_(allowed)).order_by(User.full_name.asc()).all()
+    names = {u.id: u.full_name for u in rows}
+    items = [
+        UserAdminOut(
+            id=u.id,
+            email=u.email,
+            full_name=u.full_name,
+            role=u.role,
+            phone=u.phone,
+            dsa_id=u.dsa_id,
+            is_active=u.is_active,
+            kyc_verified=bool(u.kyc_verified),
+            sales_grade=u.sales_grade,
+            sales_title=grade_title(u.sales_grade),
+            reports_to_user_id=u.reports_to_user_id,
+            reports_to_name=names.get(u.reports_to_user_id) if u.reports_to_user_id else None,
+            created_at=u.created_at.isoformat() if u.created_at else None,
+        )
+        for u in rows
+    ]
+    return UserListOut(items=items, total=len(items), pending_partners=0)
+
+
+@router.put("/{user_id}/designation", response_model=UserAdminOut)
+def set_designation(
+    user_id: UUID,
+    body: DesignationIn,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+) -> UserAdminOut:
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if body.sales_grade and body.sales_grade not in GRADES:
+        raise HTTPException(status_code=400, detail="Unknown designation")
+    manager = None
+    if body.reports_to_user_id:
+        if body.reports_to_user_id == user.id:
+            raise HTTPException(status_code=400, detail="A person cannot report to themselves")
+        manager = db.query(User).filter(User.id == body.reports_to_user_id).first()
+        if not manager:
+            raise HTTPException(status_code=404, detail="Manager not found")
+        their_rank = grade_rank(body.sales_grade or user.sales_grade)
+        manager_rank = grade_rank(manager.sales_grade)
+        if their_rank and manager_rank and manager_rank >= their_rank:
+            raise HTTPException(status_code=400, detail="Reports to a higher grade. T1 is the top and T10 is the caller.")
+        if manager.id in downline_ids(db, user.id):
+            raise HTTPException(status_code=400, detail="That person already reports up to this user")
+    user.sales_grade = body.sales_grade or None
+    user.reports_to_user_id = manager.id if manager else None
+    db.commit()
+    db.refresh(user)
+    return UserAdminOut(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        phone=user.phone,
+        is_active=user.is_active,
+        kyc_verified=bool(user.kyc_verified),
+        sales_grade=user.sales_grade,
+        sales_title=grade_title(user.sales_grade),
+        reports_to_user_id=user.reports_to_user_id,
+        reports_to_name=manager.full_name if manager else None,
+        created_at=user.created_at.isoformat() if user.created_at else None,
+    )
 
 
 @router.post("/{user_id}/reset-password", response_model=ResetPasswordOut)
