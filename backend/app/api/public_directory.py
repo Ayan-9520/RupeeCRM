@@ -27,6 +27,9 @@ class DirectoryItem(BaseModel):
     featured: bool = False
     contact_name: str | None = None
     designation: str | None = None
+    years: str | None = None
+    phone: str | None = None
+    whatsapp: str | None = None
     public_url: str
 
 
@@ -51,6 +54,8 @@ class PublicProfileOut(BaseModel):
     years: str | None = None
     since: str | None = None
     logo_url: str | None = None
+    photo_url: str | None = None
+    firm_logo_url: str | None = None
     cover_url: str | None = None
     products: list = Field(default_factory=list)
     theme: dict = Field(default_factory=dict)
@@ -73,7 +78,14 @@ def _card_bits(row: PartnerProfile, card: VisitingCard | None) -> dict:
     show_whatsapp = theme.get("show_whatsapp") is True
     whatsapp = _text(theme, "whatsapp") or ((card.whatsapp or "").strip() if card else "")
     designation = _text(theme, "designation") or ((card.designation or "").strip() if card else "")
-    photo = row.logo_url or (card.photo_url if card and card.photo_url else None)
+    photo = (card.photo_url if card and card.photo_url else None) or row.logo_url
+    firm_logo = row.logo_url or (card.logo_url if card and card.logo_url else None)
+    website = _text(theme, "website") or ((card.website or "").strip() if card else "")
+    if website and not theme.get("website"):
+        theme = {**theme, "website": website}
+    products = list(row.products or [])
+    if not products and card and card.products:
+        products = list(card.products)
     return {
         "pincode": _text(theme, "pincode") or None,
         "languages": _text(theme, "languages") or None,
@@ -83,6 +95,9 @@ def _card_bits(row: PartnerProfile, card: VisitingCard | None) -> dict:
         "whatsapp": whatsapp if show_whatsapp and whatsapp else None,
         "phone": row.phone if show_phone else None,
         "logo_url": photo,
+        "photo_url": photo,
+        "firm_logo_url": firm_logo,
+        "products": products,
         "theme": theme,
     }
 
@@ -140,10 +155,13 @@ def list_directory(
                 state=row.state,
                 pincode=bits["pincode"],
                 logo_url=bits["logo_url"],
-                products=row.products or [],
+                products=bits["products"],
                 featured=bool(row.directory_featured),
                 contact_name=owner.full_name,
                 designation=bits["designation"],
+                years=bits["years"],
+                phone=None,
+                whatsapp=None,
                 public_url=f"{PROFILE_ORIGIN}/{row.slug}",
             )
         )
@@ -168,7 +186,11 @@ def get_public_profile(slug: str, db: Session = Depends(get_db)) -> PublicProfil
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Partner not found")
     card = db.query(VisitingCard).filter(VisitingCard.user_id == owner.id).first()
     bits = _card_bits(row, card)
-    show_email = bits["theme"].get("show_email", True) is not False
+    public_theme = {
+        key: value
+        for key, value in (bits["theme"] or {}).items()
+        if key not in {"whatsapp", "phone", "email"}
+    }
     return PublicProfileOut(
         firm_name=row.firm_name,
         slug=row.slug,
@@ -177,17 +199,19 @@ def get_public_profile(slug: str, db: Session = Depends(get_db)) -> PublicProfil
         city=row.city,
         state=row.state,
         pincode=bits["pincode"],
-        phone=bits["phone"],
-        email=row.email if show_email else None,
-        whatsapp=bits["whatsapp"],
+        phone=None,
+        email=None,
+        whatsapp=None,
         designation=bits["designation"],
         languages=bits["languages"],
         years=bits["years"],
         since=bits["since"],
         logo_url=bits["logo_url"],
+        photo_url=bits["photo_url"],
+        firm_logo_url=bits["firm_logo_url"],
         cover_url=row.cover_url,
-        products=row.products or [],
-        theme=bits["theme"],
+        products=bits["products"],
+        theme=public_theme,
         featured=bool(row.directory_featured),
         contact_name=owner.full_name,
         public_url=f"{PROFILE_ORIGIN}/{row.slug}",

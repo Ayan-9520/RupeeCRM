@@ -14,6 +14,8 @@ from app.plans import CATEGORY_LEAD_PRICES, PLANS, cycle_price, default_lead_pri
 from app.schemas import PublicLeadIn, PublicLeadOut
 from app.services.commission import get_percent
 from app.services.lead_grades import grade_code, grade_label, listing_type, property_label
+from app.services.campaign_leads import campaign_to_lead_payload
+from app.services.expert_leads import capture_expert_lead, record_profile_visit
 from app.services.leads import create_lead_from_website_payload, mask_phone, normalize_phone
 
 router = APIRouter(prefix="/api/public", tags=["public"])
@@ -161,6 +163,24 @@ def list_public_plans(db: Session = Depends(get_db)) -> PublicPlansOut:
     )
 
 
+@router.post("/campaign-leads", response_model=PublicLeadOut, dependencies=[Depends(require_public_api_key)])
+def ingest_campaign_lead(
+    body: dict[str, Any],
+    request: Request,
+    db: Session = Depends(get_db),
+) -> PublicLeadOut:
+    """Short ad lead. Same marketplace row the website LeadBoard and CRM LeadBoard read."""
+    check_rate_limit(request, limit=40, window_sec=60, scope="campaign_lead")
+    try:
+        payload = campaign_to_lead_payload(body)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    if not payload.get("price"):
+        payload["price"] = default_lead_price(str(payload.get("product_category") or "loan"))
+    lead = create_lead_from_website_payload(db, payload)
+    return PublicLeadOut(id=lead.id, message="Campaign lead is on the LeadBoard")
+
+
 @router.post("/leads", response_model=PublicLeadOut, dependencies=[Depends(require_public_api_key)])
 def ingest_public_lead(
     body: PublicLeadIn,
@@ -208,3 +228,59 @@ def patch_public_lead(lead_id: UUID, body: PublicLeadIn, db: Session = Depends(g
     db.commit()
     db.refresh(lead)
     return PublicLeadOut(id=lead.id, message="Lead updated")
+
+
+class ExpertLeadIn(BaseModel):
+    slug: str
+    name: str
+    mobile: str
+    loan_type: str = "personal"
+    city: str = ""
+    pincode: str = ""
+    note: str = ""
+
+
+class ExpertLeadOut(BaseModel):
+    lead_id: str
+    price: float
+    charged: bool
+    expert_name: str
+    message: str
+
+
+class ProfileVisitIn(BaseModel):
+    slug: str
+    session_key: str
+
+
+@router.post("/expert-leads", response_model=ExpertLeadOut)
+def submit_expert_lead(body: ExpertLeadIn, request: Request, db: Session = Depends(get_db)) -> ExpertLeadOut:
+    """Customer picked one expert. The lead is exclusive and billed to that partner's wallet."""
+    check_rate_limit(request, limit=20, window_sec=60, scope="expert-lead")
+    try:
+        result = capture_expert_lead(
+            db,
+            slug=body.slug,
+            name=body.name,
+            mobile=body.mobile,
+            loan_type=body.loan_type,
+            city=body.city,
+            pincode=body.pincode,
+            note=body.note,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return ExpertLeadOut(
+        lead_id=result["lead_id"],
+        price=result["price"],
+        charged=result["charged"],
+        expert_name=result["expert_name"],
+        message=f"Request sent to {result['expert_name']}. They will contact you from RupeeDial.",
+    )
+
+
+@router.post("/profile-visits")
+def mark_profile_visit(body: ProfileVisitIn, request: Request, db: Session = Depends(get_db)) -> dict:
+    check_rate_limit(request, limit=60, window_sec=60, scope="profile-visit")
+    ok = record_profile_visit(db, body.slug, body.session_key)
+    return {"ok": ok}
