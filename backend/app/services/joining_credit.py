@@ -1,4 +1,4 @@
-"""Give a partner ₹500 lead credit once, the first time they sign in."""
+"""Give every partner ₹500 lead credit once, including accounts created earlier."""
 
 from __future__ import annotations
 
@@ -36,3 +36,31 @@ def grant_joining_credit(db: Session, user: User) -> bool:
     if owner.id != user.id:
         db.refresh(user)
     return True
+
+
+def grant_pending_joining_credits(db: Session) -> int:
+    """Credit every existing partner who has not received the joining offer yet."""
+    rows = (
+        db.query(User)
+        .filter(
+            User.role.in_(tuple(PARTNER_ROLES)),
+            User.joining_credit_at.is_(None),
+            (User.seat_owner_id.is_(None)) | (User.seat_owner_id == User.id),
+        )
+        .all()
+    )
+    now = datetime.now(timezone.utc)
+    for owner in rows:
+        owner.wallet_balance = float(owner.wallet_balance or 0) + JOINING_CREDIT
+        owner.joining_credit_at = now
+        write_audit(
+            db,
+            action="joining_credit",
+            actor_user_id=owner.id,
+            entity_type="user",
+            entity_id=str(owner.id),
+            detail={"amount": JOINING_CREDIT, "existing": True},
+        )
+    if rows:
+        db.commit()
+    return len(rows)
