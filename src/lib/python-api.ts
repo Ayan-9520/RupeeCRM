@@ -31,6 +31,8 @@ export type CrmLead = {
   price: number;
   source: string | null;
   utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
   is_marketplace: boolean;
   sale_available?: boolean;
   phone_verified?: boolean;
@@ -197,6 +199,24 @@ export async function purchaseCrmLead(leadId: string): Promise<{
   message: string;
 }> {
   return request(`/api/leads/${leadId}/purchase`, { method: "POST" });
+}
+
+export async function uploadCrmLeads(
+  file: File,
+  campaign: string,
+  publish: boolean,
+): Promise<{
+  added: number;
+  skipped: { row: number; reason: string }[];
+  published: boolean;
+  campaign: string;
+  source: string;
+}> {
+  const body = new FormData();
+  body.set("file", file);
+  body.set("campaign", campaign);
+  body.set("publish", publish ? "true" : "false");
+  return request("/api/leads/upload", { method: "POST", body });
 }
 
 export async function createCrmLead(body: {

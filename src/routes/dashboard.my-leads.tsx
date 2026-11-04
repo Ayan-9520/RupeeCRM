@@ -27,7 +27,7 @@ import {
   Activity,
   FolderOpen,
 } from "lucide-react";
-import { listMyLeads, patchMyLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
+import { listMyLeads, listReservedLeads, patchMyLead, purchaseCrmLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
 import { gradeCode, gradeFromPipeline, gradeText } from "@/lib/lead-grades";
 import {
   CRM_FORM_SECTIONS,
@@ -38,7 +38,7 @@ import {
 } from "@/lib/crm-form-sections";
 
 export const Route = createFileRoute("/dashboard/my-leads")({
-  head: () => ({ meta: [{ title: "My Leads — RupeeDial CRM" }] }),
+  head: () => ({ meta: [{ title: "My Leads — RupeeOne" }] }),
   component: MyLeadsPage,
 });
 
@@ -206,6 +206,8 @@ const textareaClass =
 
 function MyLeadsPage() {
   const navigate = useNavigate();
+  const [reserved, setReserved] = useState<Awaited<ReturnType<typeof listReservedLeads>> | null>(null);
+  const [unlocking, setUnlocking] = useState<string | null>(null);
   const [items, setItems] = useState<CrmPurchase[]>([]);
   const [stages, setStages] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -220,7 +222,8 @@ function MyLeadsPage() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await listMyLeads();
+      const [data, held] = await Promise.all([listMyLeads(), listReservedLeads().catch(() => null)]);
+      setReserved(held);
       setItems(data.items);
       setStages(data.stages);
       if (selected) {
@@ -468,6 +471,43 @@ function MyLeadsPage() {
         })}
       </div>
 
+      {reserved && (reserved.profile_visits > 0 || reserved.total > 0) ? (
+        <div className="mb-4 rounded-xl border border-[#d8ecdd] bg-white p-4">
+          <p className="text-sm font-semibold text-[#390A5D]">
+            Profile opened {reserved.profile_visits} time{reserved.profile_visits === 1 ? "" : "s"}
+          </p>
+          {reserved.total > 0 ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {reserved.items.map((lead) => (
+                <div key={lead.id} className="rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] p-3">
+                  <p className="font-semibold text-[#14281c]">{lead.applicant_name}</p>
+                  <p className="text-xs text-[#5c4d72]">{lead.city} · {lead.masked_phone} · {lead.product_category}</p>
+                  <button
+                    type="button"
+                    disabled={unlocking === lead.id}
+                    onClick={() => {
+                      setUnlocking(lead.id);
+                      void purchaseCrmLead(lead.id)
+                        .then(() => {
+                          toast.success("Lead unlocked");
+                          return load();
+                        })
+                        .catch((err) => toast.error(err instanceof Error ? err.message : "Could not unlock"))
+                        .finally(() => setUnlocking(null));
+                    }}
+                    className="mt-2 rounded-full bg-[#10662A] px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                  >
+                    {unlocking === lead.id ? "Unlocking…" : `Pay ₹${Math.round(lead.price)} to unlock`}
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-1 text-xs text-[#5c4d72]">No profile lead is waiting for payment.</p>
+          )}
+        </div>
+      ) : null}
+
       {loading ? (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -515,6 +555,14 @@ function MyLeadsPage() {
                       <span className="inline-flex items-center gap-0.5">
                         <MapPin className="size-3" /> {lead?.city || "—"}
                       </span>
+                      {lead?.source === "upload" ? (
+                        <>
+                          <span className="text-[#d8ecdd]">·</span>
+                          <span className="font-semibold text-[#10662A]">
+                            Upload{lead.utm_campaign ? ` · ${lead.utm_campaign}` : ""}
+                          </span>
+                        </>
+                      ) : null}
                       <span className="text-[#d8ecdd]">·</span>
                       <span className="inline-flex items-center gap-0.5 font-medium text-[#390A5D]">
                         <Phone className="size-3" /> {lead?.full_phone || "—"}

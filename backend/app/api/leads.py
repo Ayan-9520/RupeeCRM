@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
@@ -8,6 +8,7 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models import Lead, User
 from app.schemas import LeadCreate, LeadListOut, LeadOut
+from app.services.lead_upload import upload_csv
 from app.services.leads import mask_phone, normalize_phone
 
 router = APIRouter(prefix="/api/leads", tags=["leads"])
@@ -41,6 +42,25 @@ def list_leads(
     total = query.with_entities(func.count(Lead.id)).scalar() or 0
     items = query.order_by(Lead.created_at.desc()).offset(offset).limit(limit).all()
     return LeadListOut(items=items, total=total)
+
+
+@router.post("/upload")
+async def upload_leads(
+    file: UploadFile = File(...),
+    campaign: str = Form(default=""),
+    publish: str = Form(default="false"),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    raw = await file.read()
+    if len(raw) > 1_000_000:
+        raise HTTPException(status_code=400, detail="The file is larger than 1 MB.")
+    try:
+        return upload_csv(db, user, raw, campaign, publish.strip().lower() in {"1", "true", "yes", "on"})
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
 @router.get("/{lead_id}", response_model=LeadOut)

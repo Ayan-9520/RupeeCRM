@@ -22,6 +22,7 @@ import { Route as LearnEarnSlugRouteImport } from './routes/learn-earn.$slug'
 import { Route as DashboardWorkspaceRouteImport } from './routes/dashboard.workspace'
 import { Route as DashboardWebsiteLeadsRouteImport } from './routes/dashboard.website-leads'
 import { Route as DashboardWalletRouteImport } from './routes/dashboard.wallet'
+import { Route as DashboardUploadLeadsRouteImport } from './routes/dashboard.upload-leads'
 import { Route as DashboardTrainingRouteImport } from './routes/dashboard.training'
 import { Route as DashboardSubmissionsRouteImport } from './routes/dashboard.submissions'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard.settings'
@@ -144,6 +145,11 @@ const DashboardWebsiteLeadsRoute = DashboardWebsiteLeadsRouteImport.update({
 const DashboardWalletRoute = DashboardWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardUploadLeadsRoute = DashboardUploadLeadsRouteImport.update({
+  id: '/upload-leads',
+  path: '/upload-leads',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardTrainingRoute = DashboardTrainingRouteImport.update({
@@ -476,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
+  '/dashboard/upload-leads': typeof DashboardUploadLeadsRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/website-leads': typeof DashboardWebsiteLeadsRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
@@ -546,6 +553,7 @@ export interface FileRoutesByTo {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
+  '/dashboard/upload-leads': typeof DashboardUploadLeadsRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/website-leads': typeof DashboardWebsiteLeadsRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
@@ -620,6 +628,7 @@ export interface FileRoutesById {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/submissions': typeof DashboardSubmissionsRoute
   '/dashboard/training': typeof DashboardTrainingRoute
+  '/dashboard/upload-leads': typeof DashboardUploadLeadsRoute
   '/dashboard/wallet': typeof DashboardWalletRoute
   '/dashboard/website-leads': typeof DashboardWebsiteLeadsRoute
   '/dashboard/workspace': typeof DashboardWorkspaceRoute
@@ -695,6 +704,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
+    | '/dashboard/upload-leads'
     | '/dashboard/wallet'
     | '/dashboard/website-leads'
     | '/dashboard/workspace'
@@ -765,6 +775,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
+    | '/dashboard/upload-leads'
     | '/dashboard/wallet'
     | '/dashboard/website-leads'
     | '/dashboard/workspace'
@@ -838,6 +849,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/submissions'
     | '/dashboard/training'
+    | '/dashboard/upload-leads'
     | '/dashboard/wallet'
     | '/dashboard/website-leads'
     | '/dashboard/workspace'
@@ -986,6 +998,13 @@ declare module '@tanstack/react-router' {
       path: '/wallet'
       fullPath: '/dashboard/wallet'
       preLoaderRoute: typeof DashboardWalletRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/upload-leads': {
+      id: '/dashboard/upload-leads'
+      path: '/upload-leads'
+      fullPath: '/dashboard/upload-leads'
+      preLoaderRoute: typeof DashboardUploadLeadsRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/training': {
@@ -1483,6 +1502,7 @@ interface DashboardRouteChildren {
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardSubmissionsRoute: typeof DashboardSubmissionsRoute
   DashboardTrainingRoute: typeof DashboardTrainingRoute
+  DashboardUploadLeadsRoute: typeof DashboardUploadLeadsRoute
   DashboardWalletRoute: typeof DashboardWalletRoute
   DashboardWebsiteLeadsRoute: typeof DashboardWebsiteLeadsRoute
   DashboardWorkspaceRoute: typeof DashboardWorkspaceRoute
@@ -1530,6 +1550,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardSubmissionsRoute: DashboardSubmissionsRoute,
   DashboardTrainingRoute: DashboardTrainingRoute,
+  DashboardUploadLeadsRoute: DashboardUploadLeadsRoute,
   DashboardWalletRoute: DashboardWalletRoute,
   DashboardWebsiteLeadsRoute: DashboardWebsiteLeadsRoute,
   DashboardWorkspaceRoute: DashboardWorkspaceRoute,

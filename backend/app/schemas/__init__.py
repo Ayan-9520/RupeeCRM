@@ -58,6 +58,8 @@ class LeadOut(BaseModel):
     price: float
     source: str | None = None
     utm_source: str | None = None
+    utm_medium: str | None = None
+    utm_campaign: str | None = None
     is_marketplace: bool
     sale_available: bool
     phone_verified: bool

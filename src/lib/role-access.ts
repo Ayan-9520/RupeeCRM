@@ -56,7 +56,13 @@ export const NAV_ITEMS: NavItem[] = [
   {
     title: "My Leads",
     url: "/dashboard/my-leads",
-    roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"],
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller", "coordinator"],
+    group: "main",
+  },
+  {
+    title: "Upload leads",
+    url: "/dashboard/upload-leads",
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller"],
     group: "main",
   },
   {
@@ -165,7 +171,7 @@ export const NAV_ITEMS: NavItem[] = [
 /** Routes not listed in sidebar but need explicit access */
 const EXTRA_ROUTE_RULES: { prefix: string; roles: AppRole[] }[] = [
   { prefix: "/dashboard/customer", roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator"] },
-  { prefix: "/dashboard/my-leads/", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"] },
+  { prefix: "/dashboard/my-leads/", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller", "coordinator"] },
   { prefix: "/dashboard/settings", roles: ALL_ROLES },
   { prefix: "/dashboard/invoice-approvals", roles: ["ceo", "super_admin", "admin", "coordinator"] },
   { prefix: "/dashboard/profile", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"] },

@@ -11,7 +11,7 @@ import { CATEGORIES, CATEGORY_META, type ProductCategory } from "@/lib/products"
 import { createCrmLead, listCrmLeads, type CrmLead } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/admin/leads")({
-  head: () => ({ meta: [{ title: "Admin · Leads — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Admin · Leads — RupeeOne" }] }),
   component: AdminLeadsPage,
 });
 
@@ -70,13 +70,12 @@ function AdminLeadsPage() {
           <p className="text-muted-foreground mt-1">CRM marketplace leads — create one-by-one or via website forms.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => toast.info("Import via website forms or add one-by-one")}
+          <Link
+            to="/dashboard/upload-leads"
             className="inline-flex items-center gap-2 border border-border bg-card rounded-xl px-4 py-2.5 font-semibold text-sm hover:bg-secondary transition"
           >
-            <Upload className="size-4" /> Bulk import
-          </button>
+            <Upload className="size-4" /> Upload sheet
+          </Link>
           <button
             type="button"
             onClick={() => setOpenForm(true)}
