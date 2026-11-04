@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
-from app.models import DEFAULT_PIPELINE_STAGES, CustomerProfile, Lead, LeadPurchase, User
+from app.models import DEFAULT_PIPELINE_STAGES, CustomerProfile, Lead, LeadPurchase, ProfileVisit, User
 from app.schemas import LeadOut
 from app.services.audit import write_audit
 from app.services.leads import mask_phone, normalize_phone
@@ -164,6 +164,13 @@ def purchase_lead(
             message="Already purchased",
         )
 
+    reserved = str((lead.product_details or {}).get("reserved_for_user_id") or "")
+    owner_ids = {str(user.id)}
+    if user.seat_owner_id:
+        owner_ids.add(str(user.seat_owner_id))
+    if reserved and reserved not in owner_ids and user.role not in {"admin", "ceo", "super_admin"}:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This lead is reserved for another partner")
+
     if lead.status == "sold" and user.role != "admin":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Lead no longer available")
 
@@ -215,14 +222,69 @@ def purchase_lead(
     )
 
 
+class ReservedLeadOut(BaseModel):
+    id: UUID
+    applicant_name: str
+    masked_phone: str
+    city: str
+    product_category: str
+    price: float
+    created_at: datetime
+
+
+class ReservedListOut(BaseModel):
+    items: list[ReservedLeadOut]
+    total: int
+    profile_visits: int
+
+
+@router.get("/reserved-leads", response_model=ReservedListOut)
+def reserved_leads(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> ReservedListOut:
+    """Profile leads waiting for this partner to pay. Phone stays masked until purchase."""
+    owner_ids = {str(user.id)}
+    if user.seat_owner_id:
+        owner_ids.add(str(user.seat_owner_id))
+    rows = (
+        db.query(Lead)
+        .filter(Lead.source == "expert_profile", Lead.status == "reserved")
+        .order_by(Lead.created_at.desc())
+        .limit(200)
+        .all()
+    )
+    mine = [row for row in rows if str((row.product_details or {}).get("reserved_for_user_id") or "") in owner_ids]
+    visit_ids = {user.id}
+    if user.seat_owner_id:
+        visit_ids.add(user.seat_owner_id)
+    visits = (
+        db.query(ProfileVisit).filter(ProfileVisit.partner_user_id.in_(visit_ids)).count()
+    )
+    return ReservedListOut(
+        items=[
+            ReservedLeadOut(
+                id=row.id,
+                applicant_name=row.applicant_name,
+                masked_phone=row.masked_phone or mask_phone(row.full_phone),
+                city=row.city,
+                product_category=row.product_category,
+                price=float(row.price or 0),
+                created_at=row.created_at,
+            )
+            for row in mine[:100]
+        ],
+        total=len(mine),
+        profile_visits=visits,
+    )
+
+
 @router.get("/my-leads", response_model=PurchaseListOut)
 def my_leads(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> PurchaseListOut:
-    q = db.query(LeadPurchase)
-    if user.role != "admin":
-        q = q.filter(LeadPurchase.buyer_user_id == user.id)
+    q = db.query(LeadPurchase).filter(LeadPurchase.buyer_user_id == user.id)
     rows = q.order_by(LeadPurchase.created_at.desc()).limit(300).all()
     items = [_purchase_out(db, p) for p in rows]
     return PurchaseListOut(items=items, total=len(items), stages=DEFAULT_PIPELINE_STAGES)
@@ -238,7 +300,7 @@ def patch_my_lead(
     p = db.query(LeadPurchase).filter(LeadPurchase.id == purchase_id).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Purchase not found")
-    if user.role != "admin" and p.buyer_user_id != user.id:
+    if p.buyer_user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your lead")
 
     notes = list(p.notes or [])
