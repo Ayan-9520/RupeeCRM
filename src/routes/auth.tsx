@@ -171,8 +171,8 @@ function AuthPage() {
 
   return (
     <div className="auth-page relative grid min-h-svh place-items-center overflow-hidden bg-[#f7f4ee] px-4 py-8">
-      <img src="/rupeeone-loan-bg.jpg" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
-      <div className="pointer-events-none absolute inset-0 bg-white/25" />
+      <img src="/rupeeone-login-bg.jpg" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+      <div className="pointer-events-none absolute inset-0 bg-white/10" />
       <div className="relative w-full max-w-[940px]">
         <p className="mb-4 text-center text-[11px] font-semibold uppercase tracking-[0.22em] text-[#0e4d28]">RupeeOne</p>
         <div className="relative min-h-[640px] overflow-hidden rounded-[28px] bg-[#f6f5f1] shadow-[0_24px_60px_rgba(16,102,42,0.12)]">
