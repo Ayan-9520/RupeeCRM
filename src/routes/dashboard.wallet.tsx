@@ -5,7 +5,7 @@ import { Wallet as WalletIcon, Loader2, Plus, Store, KanbanSquare, CreditCard } 
 import { getBillingMe, listMyLeads, type CrmPurchase } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/wallet")({
-  head: () => ({ meta: [{ title: "Wallet — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Wallet — RupeeOne" }] }),
   component: WalletPage,
 });
 
@@ -138,7 +138,7 @@ function WalletPage() {
             <Plus className="size-4 text-[#10662A]" /> Actions
           </h3>
           <p className="text-xs text-[#5c4d72]">
-            Pay by UPI or bank transfer, then RupeeDial adds the credit. ₹5,000 or more gets 5% extra lead credit. ₹10,000 or more gets 10%. Bonus credit is not cash and cannot be withdrawn.
+            A new partner gets ₹500 once, to learn how a lead purchase works. When that credit is finished, pay by UPI or bank transfer and RupeeDial adds the next amount. ₹5,000 or more gets 5% extra lead credit. ₹10,000 or more gets 10%. This credit cannot be withdrawn.
           </p>
           <Link
             to="/dashboard/billing"

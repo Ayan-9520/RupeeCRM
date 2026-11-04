@@ -103,6 +103,9 @@ class ActivateOut(BaseModel):
 
 @router.get("/me", response_model=BillingMeOut)
 def billing_me(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> BillingMeOut:
+    from app.services.joining_credit import grant_joining_credit
+
+    grant_joining_credit(db, user)
     owner = _get_owner(db, user)
     used = _seat_count(db, owner.id)
     members = (

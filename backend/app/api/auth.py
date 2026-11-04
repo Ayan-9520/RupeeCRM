@@ -30,6 +30,9 @@ def login(body: LoginIn, db: Session = Depends(get_db)) -> TokenOut:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account disabled")
+    from app.services.joining_credit import grant_joining_credit
+
+    grant_joining_credit(db, user)
     allowed = {
         "admin",
         "ceo",
