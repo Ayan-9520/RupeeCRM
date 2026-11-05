@@ -111,6 +111,29 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   return res.json() as Promise<T>;
 }
 
+export type CommunityPost = {
+  id: string;
+  author_name: string;
+  author_role: string;
+  topic: string;
+  body: string;
+  like_count: number;
+  liked: boolean;
+  created_at: string;
+};
+
+export async function listCommunityPosts(): Promise<CommunityPost[]> {
+  return request("/api/public/community/posts");
+}
+
+export async function createCommunityPost(body: string, topic = ""): Promise<CommunityPost> {
+  return request("/api/public/community/posts", { method: "POST", body: JSON.stringify({ body, topic }) });
+}
+
+export async function toggleCommunityLike(id: string): Promise<{ liked: boolean; like_count: number }> {
+  return request(`/api/public/community/posts/${id}/like`, { method: "POST" });
+}
+
 export async function requestBlob(path: string): Promise<Blob> {
   const headers = new Headers();
   const token = getToken();

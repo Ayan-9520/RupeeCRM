@@ -26,6 +26,7 @@ from app.api import (
     pipeline,
     payout_grids,
     payouts,
+    public_community,
     public_directory,
     public_leads,
     public_partners,
@@ -49,6 +50,7 @@ app.include_router(leads.router)
 app.include_router(public_leads.router)
 app.include_router(public_partners.router)
 app.include_router(public_directory.router)
+app.include_router(public_community.router)
 app.include_router(purchases.router)
 app.include_router(partners.router)
 app.include_router(users.router)

@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -803,6 +803,36 @@ class CustomerCasePayout(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
+
+
+class CommunityPost(Base):
+    """One public community note. No customer phone numbers."""
+
+    __tablename__ = "community_posts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    author_name: Mapped[str] = mapped_column(String(80), nullable=False)
+    author_role: Mapped[str] = mapped_column(String(40), nullable=False, default="partner")
+    topic: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    like_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class CommunityPostLike(Base):
+    """One like from a logged-in user. A person can like a post only once."""
+
+    __tablename__ = "community_post_likes"
+    __table_args__ = (UniqueConstraint("post_id", "user_id", name="uq_community_post_like"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    post_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("community_posts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class UserNotification(Base):
