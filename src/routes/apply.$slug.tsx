@@ -63,37 +63,37 @@ const PRODUCTS: Record<string, ProductMeta> = {
     slug: "personal-loan", loan_type: "personal", product_category: "loan",
     title: "Personal Loan", tagline: "Up to ₹50 lakh • Disbursal in 24 hours",
     amountLabel: "Loan amount needed", amountMin: 50000, amountMax: 5000000, showIncome: true,
-    accent: "from-blue-500/20 to-indigo-500/10",
+    accent: "from-[#10662A]/15 to-[#E8F7EC]",
   },
   "home-loan": {
     slug: "home-loan", loan_type: "home", product_category: "loan",
     title: "Home Loan", tagline: "Lowest rates from top banks • Up to ₹5 Cr",
     amountLabel: "Property loan amount", amountMin: 500000, amountMax: 50000000, showIncome: true,
-    accent: "from-emerald-500/20 to-teal-500/10",
+    accent: "from-[#0D4F20]/12 to-[#F4FBF6]",
   },
   "business-loan": {
     slug: "business-loan", loan_type: "business", product_category: "loan",
     title: "Business Loan", tagline: "Collateral-free • Up to ₹2 Cr",
     amountLabel: "Business loan amount", amountMin: 100000, amountMax: 20000000, showIncome: true,
-    accent: "from-orange-500/20 to-amber-500/10",
+    accent: "from-[#10662A]/12 to-[#F4F0FA]",
   },
   "credit-card": {
     slug: "credit-card", loan_type: "credit_card", product_category: "credit_card",
     title: "Credit Card", tagline: "Premium cards from leading banks • Lifetime free options",
     amountLabel: "Desired credit limit", amountMin: 25000, amountMax: 2000000, showIncome: true,
-    accent: "from-rose-500/20 to-pink-500/10",
+    accent: "from-[#390A5D]/12 to-[#F4F0FA]",
   },
   "insurance": {
     slug: "insurance", loan_type: "insurance", product_category: "insurance",
     title: "Insurance", tagline: "Health, life & general — best premiums",
     amountLabel: "Sum insured", amountMin: 100000, amountMax: 10000000, showIncome: false,
-    accent: "from-cyan-500/20 to-sky-500/10",
+    accent: "from-[#10662A]/14 to-[#E8F7EC]",
   },
   "mutual-fund": {
     slug: "mutual-fund", loan_type: "mutual_fund", product_category: "investment",
     title: "Mutual Funds & Investments", tagline: "SIP, Lumpsum & wealth planning",
     amountLabel: "Investment amount", amountMin: 5000, amountMax: 10000000, showIncome: false,
-    accent: "from-violet-500/20 to-fuchsia-500/10",
+    accent: "from-[#390A5D]/10 to-[#F4FBF6]",
   },
 };
 

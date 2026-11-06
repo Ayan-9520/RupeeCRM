@@ -8,7 +8,7 @@ export type Pipeline = Omit<Database["public"]["Tables"]["product_pipelines"]["R
 };
 
 export const CATEGORIES: { key: ProductCategory; label: string; color: string; icon: string; tagline: string }[] = [
-  { key: "loan", label: "Loans", color: "blue", icon: "Banknote", tagline: "Every retail & SME loan product" },
+  { key: "loan", label: "Loans", color: "green", icon: "Banknote", tagline: "Every retail & SME loan product" },
   { key: "insurance", label: "Insurance", color: "green", icon: "ShieldCheck", tagline: "Life, Health & General" },
   { key: "credit_card", label: "Credit Cards", color: "orange", icon: "CreditCard", tagline: "All major issuers" },
   { key: "investment", label: "Investments", color: "purple", icon: "LineChart", tagline: "Wealth & savings products" },
@@ -17,10 +17,10 @@ export const CATEGORIES: { key: ProductCategory; label: string; color: string; i
 export const CATEGORY_META: Record<ProductCategory, { label: string; color: string; chipBg: string; chipText: string; cardAccent: string }> = {
   loan: {
     label: "Loan",
-    color: "blue",
-    chipBg: "bg-blue-500/15",
-    chipText: "text-blue-700 dark:text-blue-300",
-    cardAccent: "from-blue-500/20 to-blue-500/5",
+    color: "green",
+    chipBg: "bg-[#E8F7EC]",
+    chipText: "text-[#0e4d28]",
+    cardAccent: "from-[#10662A]/15 to-[#E8F7EC]",
   },
   insurance: {
     label: "Insurance",
@@ -39,9 +39,9 @@ export const CATEGORY_META: Record<ProductCategory, { label: string; color: stri
   investment: {
     label: "Investment",
     color: "purple",
-    chipBg: "bg-violet-500/15",
-    chipText: "text-violet-700 dark:text-violet-300",
-    cardAccent: "from-violet-500/20 to-violet-500/5",
+    chipBg: "bg-[#F4F0FA]",
+    chipText: "text-[#390A5D]",
+    cardAccent: "from-[#390A5D]/12 to-[#F4F0FA]",
   },
 };
 

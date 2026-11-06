@@ -89,7 +89,7 @@ export const COURSES: Course[] = [
     reward_points: 250,
     unlock: "PL Certified badge + downloadable certificate",
     badge: "PL Certified",
-    hero_color: "from-blue-500/30 to-blue-500/5",
+    hero_color: "from-[#10662A]/15 to-[#E8F7EC]",
     outcomes: [
       "Qualify any salaried/self-employed customer in under 60 seconds",
       "Match the right lender by CIBIL band & income slab",
@@ -108,7 +108,7 @@ export const COURSES: Course[] = [
     reward_points: 300,
     unlock: "BL Certified badge + downloadable certificate",
     badge: "BL Certified",
-    hero_color: "from-cyan-500/30 to-cyan-500/5",
+    hero_color: "from-[#0D4F20]/12 to-[#F4FBF6]",
     outcomes: [
       "Read GST returns, bank statements & ITRs in 2 minutes",
       "Pick BL vs OD vs MSME for the right customer",
@@ -127,7 +127,7 @@ export const COURSES: Course[] = [
     reward_points: 400,
     unlock: "HL Certified badge + downloadable certificate",
     badge: "HL Certified",
-    hero_color: "from-indigo-500/30 to-indigo-500/5",
+    hero_color: "from-[#10662A]/18 to-[#E8F7EC]",
     outcomes: [
       "Master legal/technical valuation timelines",
       "Pitch BT + Top-up to existing HL customers",
@@ -146,7 +146,7 @@ export const COURSES: Course[] = [
     reward_points: 350,
     unlock: "LAP Certified badge + downloadable certificate",
     badge: "LAP Certified",
-    hero_color: "from-violet-500/30 to-violet-500/5",
+    hero_color: "from-[#390A5D]/12 to-[#F4F0FA]",
     outcomes: [
       "Calculate LTV across residential, commercial & industrial",
       "Spot title issues before lender legal does",
@@ -165,7 +165,7 @@ export const COURSES: Course[] = [
     reward_points: 280,
     unlock: "Health Certified badge + downloadable certificate",
     badge: "Health Certified",
-    hero_color: "from-emerald-500/30 to-emerald-500/5",
+    hero_color: "from-[#10662A]/14 to-[#F4FBF6]",
     outcomes: [
       "Compare sum insured, room rent, co-pay across insurers",
       "Explain PED, waiting period & no-claim bonus simply",
@@ -184,7 +184,7 @@ export const COURSES: Course[] = [
     reward_points: 200,
     unlock: "Card Certified badge + downloadable certificate",
     badge: "Card Certified",
-    hero_color: "from-orange-500/30 to-orange-500/5",
+    hero_color: "from-[#390A5D]/10 to-[#F4FBF6]",
     outcomes: [
       "Pick the right card for every income & spend pattern",
       "Reduce rejections with pre-screening questions",
@@ -203,7 +203,7 @@ export const COURSES: Course[] = [
     reward_points: 150,
     unlock: "Compliance Verified badge + downloadable certificate",
     badge: "Compliance Verified",
-    hero_color: "from-slate-500/30 to-slate-500/5",
+    hero_color: "from-[#0D4F20]/10 to-[#E8F7EC]",
     outcomes: [
       "Understand DNC, do-not-disturb & call recording rules",
       "Handle PII (Aadhaar, PAN, bank) safely",
@@ -222,7 +222,7 @@ export const COURSES: Course[] = [
     reward_points: 180,
     unlock: "Sales Pro badge + downloadable certificate",
     badge: "Sales Pro",
-    hero_color: "from-amber-500/30 to-amber-500/5",
+    hero_color: "from-[#10662A]/12 to-[#F4F0FA]",
     outcomes: [
       "Build a daily call discipline that converts",
       "Use the 3-touch follow-up framework",
