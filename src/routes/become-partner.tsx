@@ -2,16 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, ArrowRight, ShieldCheck, IndianRupee, GraduationCap, Sparkles, CheckCircle2, Upload, FileText } from "lucide-react";
+import { Loader2, ArrowRight, ShieldCheck, IndianRupee, GraduationCap, CheckCircle2, Upload, FileText } from "lucide-react";
 import { submitPartnerApplication, uploadKycDoc, PRODUCT_OPTIONS } from "@/lib/partners";
 
 export const Route = createFileRoute("/become-partner")({
   head: () => ({
     meta: [
       { title: "Become a Partner — RupeeDial Partner Network" },
-      { name: "description", content: "Join 10,000+ DSAs earning lakhs every month. Apply in 3 minutes — get verified, get leads, get paid." },
+      { name: "description", content: "Join the RupeeDial partner network. Apply in a few minutes — get verified, get leads, get paid." },
       { property: "og:title", content: "Become a RupeeDial Partner" },
-      { property: "og:description", content: "Verified leads, daily payouts, marketing tools and AI training. Apply now." },
+      { property: "og:description", content: "Verified leads, payouts, and training. Apply now." },
     ],
   }),
   component: BecomePartnerPage,
@@ -30,12 +30,13 @@ const schema = z.object({
   consent: z.literal(true, { errorMap: () => ({ message: "You must accept the terms" }) }),
 });
 
+const STEP_LABEL = ["You", "Work", "KYC"];
+
 function BecomePartnerPage() {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState<{ id: string } | null>(null);
 
-  // form state
   const [dsaType, setDsaType] = useState("dsa");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -54,7 +55,6 @@ function BecomePartnerPage() {
   const [accountHolder, setAccountHolder] = useState("");
   const [consent, setConsent] = useState(false);
 
-  // doc uploads
   const [panDocUrl, setPanDocUrl] = useState<string | null>(null);
   const [aadhaarDocUrl, setAadhaarDocUrl] = useState<string | null>(null);
   const [bankProofUrl, setBankProofUrl] = useState<string | null>(null);
@@ -136,97 +136,93 @@ function BecomePartnerPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-mint-100/20 grid place-items-center px-4 py-12">
-        <div className="max-w-lg w-full bg-card border border-border rounded-3xl p-8 md:p-10 shadow-elegant text-center">
-          <div className="size-16 mx-auto rounded-2xl bg-emerald-500/15 grid place-items-center">
-            <CheckCircle2 className="size-8 text-emerald-600" />
+      <div className="min-h-screen bg-[#F4FBF6] text-[#14281c]">
+        <PartnerHeader />
+        <div className="mx-auto grid min-h-[70vh] max-w-lg place-items-center px-4 py-12">
+          <div className="w-full rounded-3xl border border-[#d8ecdd] bg-white p-8 shadow-[0_20px_50px_rgba(16,102,42,0.08)] md:p-10">
+            <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#E8F7EC]">
+              <CheckCircle2 className="size-7 text-[#10662A]" />
+            </div>
+            <h1 className="mt-5 text-center font-display text-3xl font-bold text-[#390A5D]">Application received</h1>
+            <p className="mt-3 text-center text-sm leading-6 text-[#5c4d72]">
+              Thanks <strong className="text-[#14281c]">{fullName}</strong>. RupeeDial will verify your KYC and reply within 24 hours.
+            </p>
+            <div className="mt-6 rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] p-4 text-left text-sm">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-[#10662A]">Application ID</div>
+              <div className="mt-1 break-all font-mono text-[#14281c]">{done.id}</div>
+            </div>
+            <ol className="mt-6 space-y-3 text-sm">
+              {["PAN, bank and documents are reviewed", "Your DSA ID arrives on email and WhatsApp", "Sign in, finish training, and start on leads"].map((line, i) => (
+                <li key={line} className="flex items-start gap-3">
+                  <span className="mt-0.5 grid size-5 place-items-center rounded-full bg-[#10662A] text-[11px] font-bold text-white">{i + 1}</span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ol>
+            <Link to="/auth" className="mt-8 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#10662A] px-6 py-3 font-semibold text-white">
+              Partner sign in <ArrowRight className="size-4" />
+            </Link>
           </div>
-          <h1 className="font-display text-3xl font-bold mt-5">Application received! 🎉</h1>
-          <p className="text-muted-foreground mt-3">
-            Thanks <strong className="text-foreground">{fullName}</strong>. Our team will verify your KYC and get back within <strong>24 hours</strong>.
-          </p>
-          <div className="mt-6 rounded-2xl bg-muted/40 border border-border p-4 text-left text-sm">
-            <div className="text-muted-foreground text-xs uppercase tracking-wide font-semibold">Application ID</div>
-            <div className="font-mono text-foreground mt-1 break-all">{done.id}</div>
-          </div>
-          <div className="mt-6 space-y-3 text-sm text-left">
-            <div className="flex items-start gap-3"><div className="size-5 rounded-full bg-accent/20 grid place-items-center text-accent text-xs font-bold mt-0.5">1</div><span>Our team reviews your PAN, bank & documents</span></div>
-            <div className="flex items-start gap-3"><div className="size-5 rounded-full bg-accent/20 grid place-items-center text-accent text-xs font-bold mt-0.5">2</div><span>You receive your <strong>DSA ID</strong> on email & WhatsApp</span></div>
-            <div className="flex items-start gap-3"><div className="size-5 rounded-full bg-accent/20 grid place-items-center text-accent text-xs font-bold mt-0.5">3</div><span>Login, complete training, and start buying leads</span></div>
-          </div>
-          <Link to="/" className="mt-8 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-foreground text-background font-bold hover:opacity-90 transition-smooth">
-            Back to home <ArrowRight className="size-4" />
-          </Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-mint-100/20">
-      <header className="border-b border-border bg-card/60 backdrop-blur sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2.5">
-            <div className="size-8 rounded-lg bg-mint-gradient grid place-items-center shadow-mint">
-              <Sparkles className="size-4 text-primary" strokeWidth={2.5} />
-            </div>
-            <div className="leading-tight">
-              <div className="font-display font-bold text-sm">RupeeDial</div>
-              <div className="text-[9px] uppercase tracking-[0.16em] text-muted-foreground -mt-0.5">Partner network</div>
-            </div>
-          </Link>
-          <Link to="/auth" className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-smooth">
-            Already a partner? Sign in →
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#F4FBF6] text-[#14281c]">
+      <PartnerHeader />
 
-      <div className="max-w-6xl mx-auto px-4 py-10 md:py-14 grid lg:grid-cols-[1.2fr_2fr] gap-10">
-        {/* Left: pitch */}
-        <aside className="lg:sticky lg:top-24 lg:self-start space-y-6">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent/15 border border-accent/30 text-xs font-bold text-accent uppercase tracking-wide">
-              <ShieldCheck className="size-3.5" /> Verified DSA Network
-            </span>
-            <h1 className="font-display text-3xl md:text-4xl font-bold mt-3 leading-tight">Become a <span className="text-accent">RupeeDial</span> Financial Partner</h1>
-            <p className="text-muted-foreground mt-3">Join 10,000+ DSAs earning lakhs every month. Verified leads, daily payouts, AI tools.</p>
-          </div>
-
-          <div className="grid gap-3">
+      <div className="mx-auto grid max-w-6xl items-start gap-8 px-4 py-8 md:py-12 lg:grid-cols-[0.9fr_1.2fr] lg:gap-10">
+        <aside className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0D4F20] to-[#10662A] p-7 text-white shadow-[0_24px_50px_rgba(13,79,32,0.25)] lg:sticky lg:top-24">
+          <img src="/rupeediallogo.png" alt="RupeeDial" className="h-16 w-auto rounded-xl bg-white object-contain px-2" />
+          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-[#B7E4C7]">Partner network</p>
+          <h1 className="mt-2 font-display text-3xl font-bold leading-tight md:text-4xl">
+            Become a RupeeDial financial partner
+          </h1>
+          <p className="mt-3 text-sm leading-6 text-white/85">
+            One application for DSAs, consultants and callers. Verified leads, payouts, and training on the same desk customers already use.
+          </p>
+          <div className="mt-7 space-y-3">
             {[
-              { icon: IndianRupee, title: "Earn ₹50k–₹5L/month", desc: "Upto 2.5% commission on disbursals" },
-              { icon: ShieldCheck, title: "Verified leads only", desc: "Phone verified + CIBIL checked" },
-              { icon: GraduationCap, title: "Free training & certs", desc: "Become certified in 7 days" },
+              { icon: IndianRupee, title: "Earn on disbursals", desc: "Commission on loans, cards and policies you close" },
+              { icon: ShieldCheck, title: "Verified leads only", desc: "Phone checked before a lead reaches your desk" },
+              { icon: GraduationCap, title: "Training and certificate", desc: "Learn the product, then carry the badge on your profile" },
             ].map((b) => (
-              <div key={b.title} className="flex items-start gap-3 p-4 rounded-2xl border border-border bg-card">
-                <div className="size-10 rounded-xl bg-accent/15 grid place-items-center shrink-0"><b.icon className="size-5 text-accent" /></div>
+              <div key={b.title} className="flex items-start gap-3 rounded-2xl bg-white/10 p-3.5">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-[#10662A]">
+                  <b.icon className="size-5" />
+                </span>
                 <div>
-                  <div className="font-semibold text-sm">{b.title}</div>
-                  <div className="text-xs text-muted-foreground mt-0.5">{b.desc}</div>
+                  <div className="text-sm font-semibold">{b.title}</div>
+                  <div className="mt-0.5 text-xs leading-5 text-white/75">{b.desc}</div>
                 </div>
               </div>
             ))}
           </div>
         </aside>
 
-        {/* Right: form */}
-        <form onSubmit={onSubmit} className="bg-card border border-border rounded-3xl p-6 md:p-8 shadow-elegant space-y-6">
-          {/* Stepper */}
-          <div className="flex items-center gap-2">
+        <form onSubmit={onSubmit} className="rounded-3xl border border-[#d8ecdd] bg-white p-6 shadow-[0_16px_40px_rgba(16,102,42,0.06)] md:p-8">
+          <div className="mb-6 flex items-center gap-2">
             {[1, 2, 3].map((s) => (
-              <div key={s} className="flex-1 flex items-center gap-2">
-                <div className={`size-7 rounded-full grid place-items-center text-xs font-bold transition-smooth ${step >= s ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground"}`}>{s}</div>
-                <div className={`flex-1 h-0.5 rounded ${step > s ? "bg-accent" : "bg-border"} ${s === 3 ? "hidden" : ""}`} />
+              <div key={s} className="flex flex-1 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => s < step && setStep(s)}
+                  className={`grid size-8 place-items-center rounded-full text-xs font-bold ${step >= s ? "bg-[#10662A] text-white" : "bg-[#E8F7EC] text-[#5c4d72]"}`}
+                >
+                  {s}
+                </button>
+                <span className={`hidden text-xs font-semibold sm:inline ${step >= s ? "text-[#10662A]" : "text-[#5c4d72]"}`}>{STEP_LABEL[s - 1]}</span>
+                {s < 3 && <div className={`h-0.5 flex-1 rounded ${step > s ? "bg-[#10662A]" : "bg-[#d8ecdd]"}`} />}
               </div>
             ))}
           </div>
 
-          {/* STEP 1: Personal */}
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <h2 className="font-display text-xl font-bold">Tell us about you</h2>
-                <p className="text-xs text-muted-foreground mt-1">Step 1 of 3 · Personal details</p>
+                <h2 className="font-display text-2xl font-bold text-[#390A5D]">Tell us about you</h2>
+                <p className="mt-1 text-sm text-[#5c4d72]">Step 1 of 3 · Personal details</p>
               </div>
               <Field label="Partner type *">
                 <select className="input-base" value={dsaType} onChange={(e) => setDsaType(e.target.value)}>
@@ -246,7 +242,7 @@ function BecomePartnerPage() {
               <Field label="Full name *">
                 <input className="input-base" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Rahul Sharma" required />
               </Field>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Email *">
                   <input type="email" className="input-base" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="rahul@example.com" required />
                 </Field>
@@ -254,7 +250,7 @@ function BecomePartnerPage() {
                   <input className="input-base" value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} placeholder="9876543210" required />
                 </Field>
               </div>
-              <div className="grid sm:grid-cols-3 gap-4">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <Field label="City *"><input className="input-base" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Delhi" required /></Field>
                 <Field label="State"><input className="input-base" value={stateField} onChange={(e) => setStateField(e.target.value)} placeholder="Delhi" /></Field>
                 <Field label="Pincode"><input className="input-base" value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="110001" /></Field>
@@ -262,30 +258,29 @@ function BecomePartnerPage() {
               <Field label="Company name (if any)">
                 <input className="input-base" value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Sharma Finance Services" />
               </Field>
-              <button type="button" onClick={() => setStep(2)} className="w-full py-3 rounded-xl bg-foreground text-background font-bold hover:opacity-90 transition-smooth flex items-center justify-center gap-2">
+              <button type="button" onClick={() => setStep(2)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#10662A] py-3 font-semibold text-white hover:bg-[#0D4F20]">
                 Continue <ArrowRight className="size-4" />
               </button>
             </div>
           )}
 
-          {/* STEP 2: Business */}
           {step === 2 && (
             <div className="space-y-4">
               <div>
-                <h2 className="font-display text-xl font-bold">What do you sell?</h2>
-                <p className="text-xs text-muted-foreground mt-1">Step 2 of 3 · Products & experience</p>
+                <h2 className="font-display text-2xl font-bold text-[#390A5D]">What do you sell?</h2>
+                <p className="mt-1 text-sm text-[#5c4d72]">Step 2 of 3 · Products and experience</p>
               </div>
               <Field label="Products you want to sell *">
-                <div className="grid sm:grid-cols-2 gap-2">
+                <div className="grid gap-2 sm:grid-cols-2">
                   {PRODUCT_OPTIONS.map((p) => (
-                    <label key={p.value} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border cursor-pointer transition-smooth ${products.includes(p.value) ? "border-accent bg-accent/10" : "border-border hover:border-accent/40"}`}>
-                      <input type="checkbox" className="accent-accent" checked={products.includes(p.value)} onChange={() => toggleProduct(p.value)} />
-                      <span className="text-sm font-medium">{p.label}</span>
+                    <label key={p.value} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium ${products.includes(p.value) ? "border-[#10662A] bg-[#E8F7EC] text-[#0D4F20]" : "border-[#d8ecdd] hover:border-[#10662A]/40"}`}>
+                      <input type="checkbox" className="accent-[#10662A]" checked={products.includes(p.value)} onChange={() => toggleProduct(p.value)} />
+                      {p.label}
                     </label>
                   ))}
                 </div>
               </Field>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Years of experience">
                   <input type="number" min={0} max={40} className="input-base" value={experience} onChange={(e) => setExperience(parseInt(e.target.value) || 0)} />
                 </Field>
@@ -294,22 +289,21 @@ function BecomePartnerPage() {
                 </Field>
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 rounded-xl border border-border font-semibold hover:bg-muted transition-smooth">Back</button>
-                <button type="button" onClick={() => setStep(3)} disabled={products.length === 0} className="flex-1 py-3 rounded-xl bg-foreground text-background font-bold hover:opacity-90 transition-smooth flex items-center justify-center gap-2 disabled:opacity-50">
+                <button type="button" onClick={() => setStep(1)} className="flex-1 rounded-xl border border-[#d8ecdd] py-3 font-semibold text-[#390A5D] hover:bg-[#F4FBF6]">Back</button>
+                <button type="button" onClick={() => setStep(3)} disabled={products.length === 0} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#10662A] py-3 font-semibold text-white hover:bg-[#0D4F20] disabled:opacity-50">
                   Continue <ArrowRight className="size-4" />
                 </button>
               </div>
             </div>
           )}
 
-          {/* STEP 3: KYC */}
           {step === 3 && (
             <div className="space-y-4">
               <div>
-                <h2 className="font-display text-xl font-bold">KYC & Bank Details</h2>
-                <p className="text-xs text-muted-foreground mt-1">Step 3 of 3 · For payouts & verification</p>
+                <h2 className="font-display text-2xl font-bold text-[#390A5D]">KYC and bank</h2>
+                <p className="mt-1 text-sm text-[#5c4d72]">Step 3 of 3 · For payouts and verification</p>
               </div>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="PAN number *">
                   <input className="input-base uppercase" value={pan} onChange={(e) => setPan(e.target.value.toUpperCase().slice(0, 10))} placeholder="ABCDE1234F" required />
                 </Field>
@@ -317,32 +311,27 @@ function BecomePartnerPage() {
                   <input className="input-base" value={aadhaarLast4} onChange={(e) => setAadhaarLast4(e.target.value.replace(/\D/g, "").slice(0, 4))} placeholder="1234" />
                 </Field>
               </div>
-
-              {/* Document uploads */}
               <div className="space-y-3">
                 <DocUpload label="PAN card (image/PDF)" accept="image/*,.pdf" url={panDocUrl} uploading={uploading === "pan"} onChange={(f) => handleUpload(f, "pan", setPanDocUrl)} />
                 <DocUpload label="Aadhaar (front/back)" accept="image/*,.pdf" url={aadhaarDocUrl} uploading={uploading === "aadhaar"} onChange={(f) => handleUpload(f, "aadhaar", setAadhaarDocUrl)} />
                 <DocUpload label="Bank passbook / cheque" accept="image/*,.pdf" url={bankProofUrl} uploading={uploading === "bank"} onChange={(f) => handleUpload(f, "bank", setBankProofUrl)} />
               </div>
-
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Account holder name"><input className="input-base" value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="Rahul Sharma" /></Field>
                 <Field label="Bank account no."><input className="input-base" value={bankAccount} onChange={(e) => setBankAccount(e.target.value.replace(/\D/g, ""))} placeholder="123456789012" /></Field>
               </div>
               <Field label="IFSC code">
                 <input className="input-base uppercase" value={ifsc} onChange={(e) => setIfsc(e.target.value.toUpperCase().slice(0, 11))} placeholder="HDFC0001234" />
               </Field>
-
-              <label className="flex items-start gap-2.5 text-xs text-muted-foreground cursor-pointer">
-                <input type="checkbox" className="mt-0.5 accent-accent" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-                <span>I agree to the <Link to="/" className="text-accent underline">Terms</Link> and consent to KYC verification. I confirm all details are accurate.</span>
+              <label className="flex cursor-pointer items-start gap-2.5 text-xs leading-5 text-[#5c4d72]">
+                <input type="checkbox" className="mt-0.5 accent-[#10662A]" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+                <span>I agree to the terms and consent to KYC verification. The details above are accurate.</span>
               </label>
-
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(2)} className="flex-1 py-3 rounded-xl border border-border font-semibold hover:bg-muted transition-smooth">Back</button>
-                <button type="submit" disabled={submitting || !consent} className="flex-1 py-3 rounded-xl bg-mint-gradient text-foreground font-bold shadow-mint hover:opacity-90 transition-smooth flex items-center justify-center gap-2 disabled:opacity-50">
+                <button type="button" onClick={() => setStep(2)} className="flex-1 rounded-xl border border-[#d8ecdd] py-3 font-semibold text-[#390A5D] hover:bg-[#F4FBF6]">Back</button>
+                <button type="submit" disabled={submitting || !consent} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#10662A] py-3 font-semibold text-white hover:bg-[#0D4F20] disabled:opacity-50">
                   {submitting ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
-                  {submitting ? "Submitting..." : "Submit Application"}
+                  {submitting ? "Submitting..." : "Submit application"}
                 </button>
               </div>
             </div>
@@ -353,10 +342,25 @@ function BecomePartnerPage() {
   );
 }
 
+function PartnerHeader() {
+  return (
+    <header className="sticky top-0 z-30 border-b border-[#d8ecdd] bg-white/95 backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
+        <Link to="/" className="flex items-center">
+          <img src="/rupeediallogo.png" alt="RupeeDial" className="h-12 w-auto object-contain" />
+        </Link>
+        <Link to="/auth" className="text-sm font-semibold text-[#10662A] hover:text-[#0D4F20]">
+          Already a partner? Sign in
+        </Link>
+      </div>
+    </header>
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <div className="text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wide">{label}</div>
+      <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</div>
       {children}
     </label>
   );
@@ -364,13 +368,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function DocUpload({ label, accept, url, uploading, onChange }: { label: string; accept: string; url: string | null; uploading: boolean; onChange: (f: File | undefined) => void }) {
   return (
-    <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed cursor-pointer transition-smooth ${url ? "border-emerald-500/40 bg-emerald-500/5" : "border-border hover:border-accent/40"}`}>
-      <div className={`size-10 rounded-xl grid place-items-center shrink-0 ${url ? "bg-emerald-500/15 text-emerald-600" : "bg-muted text-muted-foreground"}`}>
+    <label className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed px-4 py-3 ${url ? "border-[#10662A]/40 bg-[#F4FBF6]" : "border-[#d8ecdd] hover:border-[#10662A]/40"}`}>
+      <div className={`grid size-10 shrink-0 place-items-center rounded-xl ${url ? "bg-[#E8F7EC] text-[#10662A]" : "bg-[#F4FBF6] text-[#5c4d72]"}`}>
         {uploading ? <Loader2 className="size-5 animate-spin" /> : url ? <FileText className="size-5" /> : <Upload className="size-5" />}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="font-semibold text-sm">{label}</div>
-        <div className="text-xs text-muted-foreground truncate">{url ? "Uploaded ✓ click to replace" : "Tap to upload (max 5MB)"}</div>
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-[#14281c]">{label}</div>
+        <div className="truncate text-xs text-[#5c4d72]">{url ? "Uploaded. Click to replace." : "Tap to upload (max 5MB)"}</div>
       </div>
       <input type="file" accept={accept} className="hidden" onChange={(e) => onChange(e.target.files?.[0])} />
     </label>
