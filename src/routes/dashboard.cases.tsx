@@ -15,7 +15,7 @@ import {
 } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/cases")({
-  head: () => ({ meta: [{ title: "Case Files — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Case Files — RupeeOne" }] }),
   component: CasesPage,
 });
 
@@ -29,32 +29,34 @@ const STAGES = [
   ["collected", "Collected"],
 ] as const;
 
-const CHIPS: { id: string; label: string; className: string }[] = [
-  { id: "draft", label: "Draft", className: "bg-orange-500" },
-  { id: "submitted", label: "Submitted", className: "bg-indigo-500" },
-  { id: "logged_in", label: "Logged In", className: "bg-slate-800" },
-  { id: "sanctioned", label: "Sanctioned", className: "bg-pink-600" },
-  { id: "disbursed", label: "Disbursed", className: "bg-blue-600" },
-  { id: "disbursed_hold", label: "Disbursed Hold", className: "bg-green-600" },
-  { id: "disbursed_confirmed", label: "Disbursed Confirmed", className: "bg-violet-700" },
-  { id: "partially_collected", label: "Partially Collected", className: "bg-sky-600" },
-  { id: "banker_pending", label: "Banker Pending", className: "bg-cyan-500" },
-  { id: "not_counted", label: "Not Counted", className: "bg-lime-600" },
-  { id: "counted", label: "Counted", className: "bg-fuchsia-600" },
-  { id: "counted_pod_pending", label: "Counted POD Pending", className: "bg-amber-500" },
-  { id: "movement", label: "Movement", className: "bg-slate-700" },
-  { id: "cancelled", label: "Cancelled", className: "bg-red-600" },
-  { id: "collected", label: "Collected", className: "bg-[#10662A]" },
+const CHIPS: { id: string; label: string }[] = [
+  { id: "draft", label: "Draft" },
+  { id: "submitted", label: "Submitted" },
+  { id: "logged_in", label: "Logged In" },
+  { id: "sanctioned", label: "Sanctioned" },
+  { id: "disbursed", label: "Disbursed" },
+  { id: "disbursed_hold", label: "Disbursed Hold" },
+  { id: "disbursed_confirmed", label: "Disbursed Confirmed" },
+  { id: "partially_collected", label: "Partially Collected" },
+  { id: "banker_pending", label: "Banker Pending" },
+  { id: "not_counted", label: "Not Counted" },
+  { id: "counted", label: "Counted" },
+  { id: "counted_pod_pending", label: "Counted POD Pending" },
+  { id: "movement", label: "Movement" },
+  { id: "cancelled", label: "Cancelled" },
+  { id: "collected", label: "Collected" },
 ];
+
+function statusButton(on: boolean) {
+  return `rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
+    on
+      ? "border-[#0D4F20] bg-[#0D4F20] text-white"
+      : "border-[#d8ecdd] bg-white text-[#0D4F20] hover:border-[#0D4F20] hover:bg-[#0D4F20] hover:text-white"
+  }`;
+}
 
 function inr(value: number) {
   return Math.round(value || 0).toLocaleString("en-IN");
-}
-
-function statusChip(row: LoanCaseFile) {
-  const label = row.status_label.toLowerCase();
-  const hit = CHIPS.find((item) => item.label.toLowerCase() === label);
-  return hit?.id ?? "collected";
 }
 
 function liveMoney(row: Pick<LoanCaseFile, "loan_amount" | "sanctioned_amount" | "receivable_percent" | "payable_percent" | "loyalty_amount">) {
@@ -189,7 +191,6 @@ function CasesPage() {
 
   const money = active ? liveMoney(active) : null;
 
-  const tone = (id: string) => CHIPS.find((item) => item.id === id)?.className ?? "bg-[#10662A]";
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
@@ -275,11 +276,11 @@ function CasesPage() {
               ) : null}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-              <button className={`rounded-lg px-3 py-2 text-xs font-bold text-white ${chip === "all" ? "bg-[#390A5D] ring-2 ring-[#390A5D] ring-offset-1" : "bg-slate-500"}`} onClick={() => { setChip("all"); void refresh("all", dateFrom, dateTo); }}>All{dateFrom && dateTo ? ` (${counts.all ?? 0})` : ""}</button>
+              <button className={statusButton(chip === "all")} onClick={() => { setChip("all"); void refresh("all", dateFrom, dateTo); }}>All{dateFrom && dateTo ? ` (${counts.all ?? 0})` : ""}</button>
               {CHIPS.map((item) => (
                 <button
                   key={item.id}
-                  className={`rounded-lg px-3 py-2 text-xs font-bold text-white ${item.className} ${chip === item.id ? "ring-2 ring-[#390A5D] ring-offset-1" : ""}`}
+                  className={statusButton(chip === item.id)}
                   onClick={() => { setChip(item.id); void refresh(item.id, dateFrom, dateTo); }}
                 >
                   {item.label}
@@ -314,7 +315,7 @@ function CasesPage() {
                   <tr><td colSpan={12} className="px-3 py-10 text-center"><Loader2 className="mx-auto size-5 animate-spin text-[#10662A]" /></td></tr>
                 ) : items.map((row) => (
                   <tr key={row.id} className="cursor-pointer border-t border-[#eef6f0] hover:bg-[#f7fdf8]" onClick={() => setActive(row)}>
-                    <td className="px-3 py-3"><span className={`inline-flex whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold text-white ${tone(statusChip(row))}`}>{row.status_label}</span></td>
+                    <td className="px-3 py-3"><span className="inline-flex whitespace-nowrap rounded-full border border-[#d8ecdd] bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{row.status_label}</span></td>
                     <td className="whitespace-nowrap px-3 py-3 font-semibold text-[#10662A]">{row.deal_no}</td>
                     <td className="whitespace-nowrap px-3 py-3">{row.loan_type}</td>
                     <td className="px-3 py-3">{row.bank_name || "—"}</td>
