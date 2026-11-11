@@ -6,7 +6,7 @@ Bought leads and case files stay. Partners and payouts stay.
 from __future__ import annotations
 
 from app.db.session import SessionLocal
-from app.models import Lead, LeadPurchase, LoanCase
+from app.models import Lead, LeadPurchase
 from app.plans import default_lead_price
 
 # key, name, category, subtype, loan_type, amount, income, employment, company, city, state, property, purpose
@@ -46,7 +46,6 @@ def main() -> None:
     db = SessionLocal()
     try:
         protected = {row[0] for row in db.query(LeadPurchase.lead_id).distinct()}
-        protected.update(row[0] for row in db.query(LoanCase.lead_id).distinct())
         query = db.query(Lead).filter(Lead.is_marketplace.is_(True))
         if protected:
             query = query.filter(~Lead.id.in_(protected))
