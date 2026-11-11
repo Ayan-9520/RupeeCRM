@@ -32,11 +32,12 @@ function MarketingLayout() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">Growth</p>
           <h1 className="text-3xl font-display font-bold tracking-tight text-[#390A5D]">
-            Marketing Tools
+            Marketing desk
           </h1>
           <p className="text-sm text-[#5c4d72] mt-1">
-            Branded creatives with your name, phone & profile link.
+            Creatives a customer can see: a post, a WhatsApp message, a card, or your link.
           </p>
         </div>
         <Link
@@ -51,10 +52,10 @@ function MarketingLayout() {
       </div>
 
       {!entitlements.has_active_plan && !loading && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Activate a plan to unlock marketing.{" "}
-          <Link to="/dashboard/billing" className="font-semibold underline">
-            Billing
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] px-4 py-3 text-sm text-[#14281c]">
+          <span>A plan turns these creatives on for your name and phone.</span>
+          <Link to="/dashboard/billing" className="rounded-full bg-[#10662A] px-3 py-1.5 text-xs font-semibold text-white">
+            Open billing
           </Link>
         </div>
       )}
