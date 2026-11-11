@@ -74,7 +74,6 @@ function NetworkPage() {
     );
   }
 
-  const cards = [
   const admin = role === "ceo" || role === "super_admin" || role === "admin";
   const cards = [
     ["Connectors", String(data.connector_count), "People who joined on your code"],
