@@ -129,16 +129,16 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
   }, []);
 
   const metrics = [
-    { label: "Today's leads", value: loading ? "…" : String(cards.today), hint: "New or due today" },
-    { label: "Active cases", value: loading ? "…" : String(cards.active), hint: "Not closed" },
-    { label: "Login amount", value: loading ? "…" : inr(cards.login), hint: "Sent to lender" },
-    { label: "Sanction amount", value: loading ? "…" : inr(cards.sanction), hint: "Approved cases" },
-    { label: "Disbursement", value: loading ? "…" : inr(cards.disburse), hint: "Money released" },
-    { label: "Pending payout", value: loading ? "…" : payoutError ? "—" : inr(cards.pending), hint: payoutError ? "Could not load" : "Waiting review" },
-    { label: "Approved payout", value: loading ? "…" : payoutError ? "—" : inr(cards.approved), hint: payoutError ? "Could not load" : "Approved or processing" },
-    { label: "Paid payout", value: loading ? "…" : payoutError ? "—" : inr(cards.paid), hint: payoutError ? "Could not load" : "Marked paid by admin" },
-    { label: "Lead wallet", value: loading ? "…" : inr(cards.wallet), hint: "Marketplace balance" },
-    { label: "Conversion", value: loading ? "…" : `${cards.conversion}%`, hint: "Disbursed / all leads" },
+    { label: "Today's leads", value: loading ? "…" : String(cards.today), hint: "New or due today", to: "/dashboard/my-leads" as const },
+    { label: "Active cases", value: loading ? "…" : String(cards.active), hint: "Not closed", to: "/dashboard/my-leads" as const },
+    { label: "Login amount", value: loading ? "…" : inr(cards.login), hint: "Sent to lender", to: "/dashboard/cases" as const },
+    { label: "Sanction amount", value: loading ? "…" : inr(cards.sanction), hint: "Approved cases", to: "/dashboard/cases" as const },
+    { label: "Disbursement", value: loading ? "…" : inr(cards.disburse), hint: "Money released", to: "/dashboard/cases" as const },
+    { label: "Pending payout", value: loading ? "…" : payoutError ? "—" : inr(cards.pending), hint: payoutError ? "Could not load" : "Waiting review", to: "/dashboard/earnings" as const },
+    { label: "Approved payout", value: loading ? "…" : payoutError ? "—" : inr(cards.approved), hint: payoutError ? "Could not load" : "Approved or processing", to: "/dashboard/earnings" as const },
+    { label: "Paid payout", value: loading ? "…" : payoutError ? "—" : inr(cards.paid), hint: payoutError ? "Could not load" : "Marked paid by admin", to: "/dashboard/earnings" as const },
+    { label: "Lead wallet", value: loading ? "…" : inr(cards.wallet), hint: "Marketplace balance", to: "/dashboard/wallet" as const },
+    { label: "Conversion", value: loading ? "…" : `${cards.conversion}%`, hint: "Disbursed / all leads", to: "/dashboard/cases" as const },
   ];
 
   const pipeline = metrics.slice(0, 4);
@@ -153,19 +153,19 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
             <h1 className="mt-2 font-display text-3xl font-bold">{firstName ? `${firstName}'s business` : "Your partner business"}</h1>
             <p className="mt-2 max-w-md text-sm leading-6 text-white/75">Disbursed cases, open pipeline and the payout still with RupeeDial.</p>
           </div>
-          <div className="lg:text-right">
+          <Link to="/dashboard/cases" className="rounded-2xl px-4 py-3 transition hover:bg-white/10 lg:text-right">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Disbursement</p>
             <p className="mt-1 font-display text-4xl font-bold">{loading ? "…" : inr(cards.disburse)}</p>
-            <p className="mt-1 text-sm text-white/75">{loading ? "…" : `${cards.conversion}% of leads disbursed`}</p>
-          </div>
+            <p className="mt-1 text-sm text-white/75">{loading ? "…" : `${cards.conversion}% of leads disbursed`} · Open cases</p>
+          </Link>
         </div>
         <div className="grid border-t border-white/15 sm:grid-cols-3">
           {payouts.map((item) => (
-            <div key={item.label} className="border-white/15 px-6 py-4 sm:border-l sm:first:border-l-0">
+            <Link key={item.label} to={item.to} className="border-white/15 px-6 py-4 transition hover:bg-black/15 sm:border-l sm:first:border-l-0">
               <p className="text-xs text-white/70">{item.label}</p>
               <p className="mt-1 text-xl font-semibold">{item.value}</p>
-              <p className="text-xs text-white/60">{item.hint}</p>
-            </div>
+              <p className="text-xs text-white/60">{item.hint} · Open</p>
+            </Link>
           ))}
         </div>
       </section>
@@ -178,17 +178,20 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {pipeline.map((item) => (
-          <div key={item.label} className="rounded-2xl border border-[#d8ecdd] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(16,102,42,0.05)]">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#5c4d72]">{item.label}</p>
-            <p className="mt-2 font-display text-2xl font-bold text-[#390A5D]">{item.value}</p>
-            <p className="mt-1 text-sm text-[#5c4d72]">{item.hint}</p>
-          </div>
+          <Link key={item.label} to={item.to} className="group rounded-2xl border border-[#d8ecdd] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(16,102,42,0.05)] transition hover:border-[#0D4F20] hover:bg-[#0D4F20]">
+            <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-[#5c4d72] group-hover:text-[#B7E4C7]">
+              {item.label}
+              <ArrowRight className="size-3.5" />
+            </span>
+            <span className="mt-2 block font-display text-2xl font-bold text-[#390A5D] group-hover:text-white">{item.value}</span>
+            <span className="mt-1 block text-sm text-[#5c4d72] group-hover:text-white/75">{item.hint}</span>
+          </Link>
         ))}
       </div>
-      <div className="rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] px-4 py-3 text-sm text-[#14281c]">
-        Lead wallet <span className="font-semibold text-[#390A5D]">{loading ? "…" : inr(cards.wallet)}</span>
-        <span className="text-[#5c4d72]"> · marketplace balance</span>
-      </div>
+      <Link to="/dashboard/wallet" className="flex items-center justify-between rounded-2xl border border-[#d8ecdd] bg-white px-4 py-4 text-sm text-[#14281c] shadow-[0_10px_24px_rgba(16,102,42,0.05)] transition hover:border-[#0D4F20] hover:bg-[#0D4F20] hover:text-white">
+        <span>Lead wallet <span className="font-semibold">{loading ? "…" : inr(cards.wallet)}</span> · marketplace balance</span>
+        <ArrowRight className="size-4 shrink-0" />
+      </Link>
 
       {GROUPS.map((group) => (
         <section key={group.title}>
@@ -200,16 +203,16 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
                 <Link
                   key={item.title}
                   to={item.to}
-                  className="group flex items-center gap-3 rounded-2xl border border-[#d8ecdd] bg-white px-4 py-3.5 shadow-[0_8px_20px_rgba(16,102,42,0.04)] transition hover:border-[#10662A] hover:bg-[#F7FBF8]"
+                  className="group flex items-center gap-3 rounded-2xl border border-[#d8ecdd] bg-white px-4 py-3.5 shadow-[0_8px_20px_rgba(16,102,42,0.04)] transition hover:border-[#0D4F20] hover:bg-[#0D4F20]"
                 >
-                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A]">
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A] group-hover:bg-white/15 group-hover:text-white">
                     <Icon className="size-4" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-semibold text-[#390A5D]">{item.title}</span>
-                    <span className="block text-sm text-[#5c4d72]">{item.desc}</span>
+                    <span className="block text-sm font-semibold text-[#390A5D] group-hover:text-white">{item.title}</span>
+                    <span className="block text-sm text-[#5c4d72] group-hover:text-white/75">{item.desc}</span>
                   </span>
-                  <ArrowRight className="size-4 shrink-0 text-[#10662A] opacity-0 transition group-hover:opacity-100" />
+                  <ArrowRight className="size-4 shrink-0 text-[#10662A] group-hover:text-white" />
                 </Link>
               );
             })}
