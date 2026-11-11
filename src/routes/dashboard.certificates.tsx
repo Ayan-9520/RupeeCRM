@@ -166,34 +166,38 @@ function CertificatesPage() {
       </div>
 
       <div className="grid items-stretch gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="flex min-h-[280px] flex-col justify-between rounded-3xl bg-white p-6 shadow-[0_12px_30px_rgba(16,102,42,0.06)] ring-1 ring-[#d8ecdd]">
-          {safeSlide < STEPS.length ? (
-            <div key={STEPS[safeSlide].title}>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Step {safeSlide + 1} of {STEPS.length}</p>
-              <span className="mt-4 grid size-14 place-items-center rounded-full bg-[#0D4F20] text-white">
-                {(() => {
-                  const Icon = STEPS[safeSlide].icon;
-                  return <Icon className="size-6" />;
-                })()}
-              </span>
-              <h2 className="mt-4 font-display text-2xl font-bold text-[#390A5D]">{STEPS[safeSlide].title}</h2>
-              <p className="mt-2 text-sm leading-6 text-[#5c4d72]">{STEPS[safeSlide].detail}</p>
-            </div>
-          ) : featured ? (
-            <div key={featured.slug}>
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Badge</p>
-              <h2 className="mt-4 font-display text-2xl font-bold text-[#390A5D]">{featured.title}</h2>
-              <p className="mt-1 text-sm font-semibold text-[#10662A]">{featured.badge}</p>
-              <p className="mt-2 text-sm leading-6 text-[#5c4d72]">+{featured.points} points after a quiz of 70% or more.</p>
-              <div className="mt-4 flex gap-2 text-sm font-semibold">
-                <Link to="/learn-earn/$slug" params={{ slug: featured.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D]">Lessons</Link>
-                <Link to="/learn-quiz/$slug" params={{ slug: featured.slug }} className="rounded-lg bg-[#10662A] px-3 py-1.5 text-white">Take quiz</Link>
+        <div className="relative flex min-h-[280px] flex-col justify-between overflow-hidden rounded-3xl bg-[#0D4F20] p-6 text-white shadow-[0_18px_40px_rgba(13,79,32,0.22)]">
+          <span className="pointer-events-none absolute -right-10 -top-12 size-44 rounded-full bg-white/10" />
+          <span className="pointer-events-none absolute -bottom-16 -left-10 size-40 rounded-full bg-[#10662A]" />
+          <div className="relative">
+            {safeSlide < STEPS.length ? (
+              <div key={STEPS[safeSlide].title}>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#B7E4C7]">Step {safeSlide + 1} of {STEPS.length}</p>
+                <span className="mt-5 grid size-14 place-items-center rounded-full bg-white text-[#0D4F20]">
+                  {(() => {
+                    const Icon = STEPS[safeSlide].icon;
+                    return <Icon className="size-6" />;
+                  })()}
+                </span>
+                <h2 className="mt-4 font-display text-2xl font-bold text-white">{STEPS[safeSlide].title}</h2>
+                <p className="mt-2 max-w-xs text-sm leading-6 text-[#d7f3df]">{STEPS[safeSlide].detail}</p>
               </div>
-            </div>
-          ) : null}
-          <div className="mt-6 flex flex-wrap gap-1.5">
+            ) : featured ? (
+              <div key={featured.slug}>
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#B7E4C7]">Badge</p>
+                <h2 className="mt-4 font-display text-2xl font-bold text-white">{featured.title}</h2>
+                <p className="mt-1 text-sm font-semibold text-[#B7E4C7]">{featured.badge}</p>
+                <p className="mt-2 max-w-xs text-sm leading-6 text-[#d7f3df]">+{featured.points} points after a quiz of 70% or more.</p>
+                <div className="mt-5 flex gap-2 text-sm font-semibold">
+                  <Link to="/learn-earn/$slug" params={{ slug: featured.slug }} className="rounded-lg border border-white/30 px-3 py-1.5 text-white hover:bg-white/10">Lessons</Link>
+                  <Link to="/learn-quiz/$slug" params={{ slug: featured.slug }} className="rounded-lg bg-white px-3 py-1.5 text-[#0D4F20] hover:bg-[#E8F7EC]">Take quiz</Link>
+                </div>
+              </div>
+            ) : null}
+          </div>
+          <div className="relative mt-6 flex flex-wrap gap-1.5">
             {Array.from({ length: slideCount }, (_, index) => (
-              <button key={index} type="button" aria-label={`Show item ${index + 1}`} onClick={() => setSlide(index)} className={`h-1.5 rounded-full ${index === safeSlide ? "w-6 bg-[#0D4F20]" : "w-1.5 bg-[#d8ecdd]"}`} />
+              <button key={index} type="button" aria-label={`Show item ${index + 1}`} onClick={() => setSlide(index)} className={`h-1.5 rounded-full ${index === safeSlide ? "w-6 bg-white" : "w-1.5 bg-white/35"}`} />
             ))}
           </div>
         </div>
@@ -227,7 +231,7 @@ function CertificatesPage() {
                 ? source[0].toUpperCase()
                 : source.map((word) => word[0]).join("").slice(0, 3).toUpperCase();
               return (
-                <article key={course.slug} className="flex flex-col rounded-3xl bg-gradient-to-b from-[#F7F3FB] to-white p-4 shadow-[0_12px_28px_rgba(57,10,93,0.06)] ring-1 ring-[#e4d7ef]">
+                <article key={course.slug} className="flex flex-col rounded-3xl bg-gradient-to-br from-[#E8F7EC] via-white to-[#F4FBF6] p-4 shadow-[0_12px_28px_rgba(16,102,42,0.08)] ring-1 ring-[#B7E4C7]">
                   <div className="flex items-center gap-3">
                     <span className="relative grid size-16 shrink-0 place-items-center">
                       <span className="absolute inset-0 rounded-full bg-[#0D4F20]" />
