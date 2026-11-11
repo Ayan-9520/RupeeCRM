@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { TrendingUp } from "lucide-react";
 import { crmMe, listMyLeads, type CrmPurchase } from "@/lib/python-api";
 import { productivitySeries, type ProductivityMode } from "@/lib/productivity";
 
@@ -63,85 +64,73 @@ export function ProductivityChart() {
   );
   const current = points[points.length - 1];
 
+  const pie = current ? pieSlices(current.disbursed, current.target, "#10662A").map((slice, index) => ({
+    ...slice,
+    fill: index === 0 && slice.name === "Done" ? "#10662A" : slice.fill === "#E4F6EA" ? "#c5e6cf" : slice.fill,
+  })) : [];
+
   return (
-    <section className="rounded-3xl border border-[#d8ecdd] bg-white p-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-lg font-bold text-[#390A5D]">Performance</h2>
-          <p className="mt-1 max-w-xl text-xs text-[#5c4d72]">
-            Login is the amount sent to a bank. Disbursement is the amount marked Disbursed. Admin sets both monthly targets.
-            A sample for a PL/BL caller on ₹20,000 salary is about ₹25 lakh disbursement a month.
-          </p>
+    <div className="grid gap-4 lg:grid-cols-3">
+      <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)] lg:col-span-2">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="size-4 text-[#10662A]" />
+            <h3 className="text-sm font-semibold text-[#14281c]">Login vs target</h3>
+          </div>
+          <div className="flex rounded-full bg-[#E8F7EC] p-1">
+            {(["month", "quarter", "year"] as const).map((item) => (
+              <button
+                key={item}
+                type="button"
+                onClick={() => setMode(item)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${mode === item ? "bg-[#10662A] text-white" : "text-[#0D4F20]"}`}
+              >
+                {item}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="flex rounded-full bg-[#E8F7EC] p-1">
-          {(["month", "quarter", "year"] as const).map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => setMode(item)}
-              className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${mode === item ? "bg-[#0D4F20] text-white" : "text-[#0D4F20]"}`}
-            >
-              {item}
-            </button>
-          ))}
-        </div>
+        {loading ? (
+          <div className="grid h-64 place-items-center text-sm text-[#5c4d72]">Loading login…</div>
+        ) : (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={points}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="label" fontSize={11} />
+                <YAxis fontSize={11} tickFormatter={compact} width={48} />
+                <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="login" name="Login" fill="#10662A" radius={[4, 4, 0, 0]} />
+                {loginTarget > 0 ? <Bar dataKey="loginTarget" name="Target" fill="#7dcea0" radius={[4, 4, 0, 0]} /> : null}
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </div>
 
-      {loading || !current ? (
-        <p className="mt-3 text-sm text-[#5c4d72]">{loading ? "Loading performance…" : "No period yet."}</p>
-      ) : (
-        <div className="mt-3 grid gap-2 sm:grid-cols-3">
-          {[
-            ["Login", current.login, current.loginTarget],
-            ["Disbursement", current.disbursed, current.target],
-            ["Login to disbursement", current.disbursed, current.login],
-          ].map(([label, actual, goal]) => (
-            <div key={String(label)} className="rounded-2xl bg-[#F4FBF6] px-3 py-2.5 ring-1 ring-[#d8ecdd]">
-              <p className="text-[10px] font-bold uppercase tracking-wide text-[#5c4d72]">{label}</p>
-              <p className="mt-1 font-display text-lg font-bold text-[#0D4F20]">{pct(Number(actual), Number(goal))}</p>
-              <p className="text-xs text-[#14281c]">
-                {inr(Number(actual))}
-                {label === "Login to disbursement" ? ` of ${inr(Number(goal))} login` : ` / ${Number(goal) ? inr(Number(goal)) : "no target"}`}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {!loading && current ? (
-        <div className="mt-3 grid items-center gap-3 lg:grid-cols-[1.4fr_0.8fr]">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wide text-[#390A5D]">Login</p>
-            <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={points} barGap={2}>
-                  <CartesianGrid stroke="#e7f5eb" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: "#5c4d72", fontSize: 10 }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={compact} tick={{ fill: "#5c4d72", fontSize: 10 }} axisLine={false} tickLine={false} width={42} />
-                  <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
-                  <Bar dataKey="login" name="Login" fill="#390A5D" radius={[4, 4, 0, 0]} />
-                  {loginTarget > 0 ? <Bar dataKey="loginTarget" name="Login target" fill="#d4c4e4" radius={[4, 4, 0, 0]} /> : null}
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+      <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
+        <h3 className="mb-1 text-sm font-semibold text-[#14281c]">Disbursement {current ? `· ${current.label}` : ""}</h3>
+        <p className="mb-2 text-xs text-[#5c4d72]">
+          {current ? `${inr(current.disbursed)} · ${pct(current.disbursed, current.target)} of target` : "Marked Disbursed"}
+        </p>
+        {loading || pie.length === 0 || (current && current.disbursed <= 0 && current.target <= 0) ? (
+          <div className="grid h-64 place-items-center text-sm text-[#5c4d72]">{loading ? "Loading…" : "No disbursement yet."}</div>
+        ) : (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={pie} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={78} label>
+                  {pie.map((slice) => (
+                    <Cell key={slice.name} fill={slice.fill} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          <div>
-            <p className="text-center text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Disbursement · {current.label}</p>
-            <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieSlices(current.disbursed, current.target, "#10662A")} dataKey="value" nameKey="name" innerRadius={46} outerRadius={68} paddingAngle={2} stroke="none">
-                    {pieSlices(current.disbursed, current.target, "#10662A").map((slice) => (
-                      <Cell key={slice.name} fill={slice.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      ) : null}
-    </section>
+        )}
+      </div>
+    </div>
   );
 }
