@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { crmMe, listMyLeads, type CrmPurchase } from "@/lib/python-api";
 import { productivitySeries, type ProductivityMode } from "@/lib/productivity";
 
@@ -7,11 +7,15 @@ function inr(n: number) {
   return `₹${Math.round(n || 0).toLocaleString("en-IN")}`;
 }
 
-function compact(n: number) {
-  if (n >= 10000000) return `${(n / 10000000).toFixed(1)}Cr`;
-  if (n >= 100000) return `${(n / 100000).toFixed(1)}L`;
-  if (n >= 1000) return `${Math.round(n / 1000)}k`;
-  return String(Math.round(n));
+function pieSlices(done: number, goal: number, color: string) {
+  const achieved = Math.max(0, done);
+  const left = Math.max(0, goal - achieved);
+  if (goal <= 0) return [{ name: "Done", value: achieved || 1, fill: color }];
+  if (achieved <= 0) return [{ name: "Left", value: left, fill: "#E4F6EA" }];
+  return [
+    { name: "Done", value: achieved, fill: color },
+    { name: "Left", value: left, fill: "#E4F6EA" },
+  ];
 }
 
 function pct(actual: number, target: number) {
@@ -97,23 +101,25 @@ export function ProductivityChart() {
         </div>
       )}
 
-      {!loading && points.length > 0 ? (
-        <div className="mt-3 overflow-x-auto">
-          <div className="h-40 min-w-[520px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={points} barGap={2}>
-                <CartesianGrid stroke="#e7f5eb" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: "#5c4d72", fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tickFormatter={compact} tick={{ fill: "#5c4d72", fontSize: 10 }} axisLine={false} tickLine={false} width={42} />
-                <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="login" name="Login" fill="#390A5D" radius={[4, 4, 0, 0]} />
-                {loginTarget > 0 ? <Bar dataKey="loginTarget" name="Login target" fill="#d4c4e4" radius={[4, 4, 0, 0]} /> : null}
-                <Bar dataKey="disbursed" name="Disbursed" fill="#10662A" radius={[4, 4, 0, 0]} />
-                {target > 0 ? <Bar dataKey="target" name="Disbursement target" fill="#B7E4C7" radius={[4, 4, 0, 0]} /> : null}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {!loading && current ? (
+        <div className="mt-2 grid gap-2 sm:grid-cols-2">
+          {[
+            { title: "Login", done: current.login, goal: current.loginTarget, color: "#390A5D" },
+            { title: "Disbursement", done: current.disbursed, goal: current.target, color: "#10662A" },
+          ].map((item) => (
+            <div key={item.title} className="h-44">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={pieSlices(item.done, item.goal, item.color)} dataKey="value" nameKey="name" innerRadius={42} outerRadius={68} paddingAngle={2} stroke="none">
+                    {pieSlices(item.done, item.goal, item.color).map((slice) => (
+                      <Cell key={slice.name} fill={slice.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          ))}
         </div>
       ) : null}
     </section>
