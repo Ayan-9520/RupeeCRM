@@ -895,3 +895,16 @@ class NetworkLink(Base):
     invite_code: Mapped[str] = mapped_column(String(40), nullable=False, unique=True, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="invited", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+class AutomationRulePref(Base):
+    """Whether one user has a built-in case rule turned on. Missing row means on."""
+
+    __tablename__ = "automation_rule_prefs"
+    __table_args__ = (UniqueConstraint("user_id", "rule_key", name="uq_automation_rule_pref"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    rule_key: Mapped[str] = mapped_column(String(60), nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

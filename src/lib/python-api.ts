@@ -408,6 +408,20 @@ export async function importCrmPartner(payload: {
   return res.json();
 }
 
+export async function listLeaderboard(): Promise<{
+  items: {
+    name: string;
+    dsa_id: string;
+    role: string;
+    sales_title: string;
+    purchases: number;
+    conversions: number;
+    disbursed_value: number;
+  }[];
+}> {
+  return request("/api/leaderboard");
+}
+
 export async function listCrmUsers(): Promise<{
   items: {
     id: string;

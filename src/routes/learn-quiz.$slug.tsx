@@ -5,6 +5,7 @@ import {
   RotateCcw, Loader2, Sparkles, Download,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 import { getCourse } from "@/lib/courses";
 import { downloadCertificate } from "@/lib/certificate-pdf";
 import { getQuiz, submitQuiz, type CrmQuiz, type CrmQuizResult } from "@/lib/python-api";
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/learn-quiz/$slug")({
   },
   head: ({ params }) => {
     const c = getCourse(params.slug);
-    return { meta: [{ title: c ? `Quiz: ${c.title} — RupeeDial One` : "Quiz — RupeeDial One" }] };
+    return { meta: [{ title: c ? `Quiz: ${c.title} — RupeeOne` : "Quiz — RupeeOne" }] };
   },
   component: QuizRunner,
 });
@@ -25,7 +26,8 @@ export const Route = createFileRoute("/learn-quiz/$slug")({
 function QuizRunner() {
   const { slug } = Route.useParams();
   const course = getCourse(slug)!;
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
+  const canCertificates = canAccessPath(role, "/dashboard/certificates", user?.finance_level);
   const navigate = useNavigate();
 
   const [quiz, setQuiz] = useState<CrmQuiz | null>(null);
@@ -173,12 +175,14 @@ function QuizRunner() {
                     <Download className="size-4" /> Download certificate
                   </button>
                 )}
-                <Link
-                  to="/dashboard/certificates"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border font-medium hover:border-foreground/30 transition-smooth"
-                >
-                  <Award className="size-4" /> My certificates
-                </Link>
+                {canCertificates && (
+                  <Link
+                    to="/dashboard/certificates"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-card border border-border font-medium hover:border-foreground/30 transition-smooth"
+                  >
+                    <Award className="size-4" /> My certificates
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="mt-7 flex flex-wrap gap-3 justify-center">
@@ -352,7 +356,7 @@ function QuizRunner() {
               <button
                 onClick={handleSubmit}
                 disabled={!allAnswered || submitting}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-mint-gradient text-primary text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] transition-smooth shadow-mint"
+                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#10662A] text-white text-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed hover:scale-[1.02] transition-smooth shadow-mint"
               >
                 {submitting ? (
                   <>

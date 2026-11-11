@@ -327,7 +327,6 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
         stats: ["cases"],
         quickLinks: [
           { title: "Cases", desc: "Applications assigned to your bank.", url: "/dashboard/cases", roles: ["lender"] },
-          { title: "Billing", desc: "Payouts & commission statements.", url: "/dashboard/billing", roles: ["lender"] },
         ],
       };
     case "affiliate":

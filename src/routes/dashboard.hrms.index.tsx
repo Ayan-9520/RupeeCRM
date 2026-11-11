@@ -7,7 +7,7 @@ import { Plus, Loader2, Search, Users, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { getBillingMe, listCrmUsers, listMyDownline, listSalesGrades, setUserDesignation } from "@/lib/python-api";
 import { useAuth } from "@/lib/auth-context";
-import { isPlatformAdmin } from "@/lib/role-access";
+import { canAccessPath, isPlatformAdmin } from "@/lib/role-access";
 import { useBillingEntitlements } from "@/hooks/use-billing-entitlements";
 import { MarketingUpgradeGate } from "@/components/marketing/MarketingUpgradeGate";
 
@@ -44,7 +44,8 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 function EmployeesPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
+  const canBill = canAccessPath(role, "/dashboard/billing", user?.finance_level);
   const admin = isPlatformAdmin(role);
   const { hrmsSoft, entitlements, loading: entLoading } = useBillingEntitlements();
   const [list, setList] = useState<Member[]>([]);
@@ -138,21 +139,25 @@ function EmployeesPage() {
         <div className="text-xs text-[#5c4d72]">
           Seats {seats.used} / {seats.limit} · {entitlements.plan_name || "plan"}
         </div>
-        <Button asChild className="gap-2 bg-[#10662A] hover:bg-[#0d5222]">
-          <Link to="/dashboard/billing">
-            <Plus className="size-4" /> Invite seat
-          </Link>
-        </Button>
+        {canBill && (
+          <Button asChild className="gap-2 bg-[#10662A] hover:bg-[#0d5222]">
+            <Link to="/dashboard/billing">
+              <Plus className="size-4" /> Invite seat
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_16px_40px_rgba(16,102,42,0.06)]">
         {filtered.length === 0 ? (
           <div className="py-16 text-center">
             <Users className="size-10 mx-auto text-[#10662A]/30" />
-            <p className="mt-3 text-sm text-[#5c4d72]">No people yet. Invite from Billing.</p>
-            <Link to="/dashboard/billing" className="text-sm font-semibold text-[#10662A] hover:underline mt-2 inline-block">
-              Open Billing
-            </Link>
+            <p className="mt-3 text-sm text-[#5c4d72]">{canBill ? "No people yet. Invite from Billing." : "No people on this roster yet."}</p>
+            {canBill && (
+              <Link to="/dashboard/billing" className="text-sm font-semibold text-[#10662A] hover:underline mt-2 inline-block">
+                Open Billing
+              </Link>
+            )}
           </div>
         ) : (
           <Table>

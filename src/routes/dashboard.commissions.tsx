@@ -3,13 +3,17 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Percent, Loader2, ArrowRight } from "lucide-react";
 import { listMyLeads, type CrmPurchase } from "@/lib/python-api";
+import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 
 export const Route = createFileRoute("/dashboard/commissions")({
-  head: () => ({ meta: [{ title: "Commissions — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Commissions — RupeeOne" }] }),
   component: CommissionsPage,
 });
 
 function CommissionsPage() {
+  const { role, user } = useAuth();
+  const canBoard = canAccessPath(role, "/dashboard/leadboard", user?.finance_level);
   const [rows, setRows] = useState<CrmPurchase[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,9 +52,11 @@ function CommissionsPage() {
             <Link to="/dashboard/my-leads" className="text-[#10662A] font-semibold hover:underline inline-flex items-center gap-1">
               My Leads <ArrowRight className="size-3.5" />
             </Link>
-            <Link to="/dashboard/leadboard" className="text-[#10662A] font-semibold hover:underline inline-flex items-center gap-1">
-              Leadboard <ArrowRight className="size-3.5" />
-            </Link>
+            {canBoard && (
+              <Link to="/dashboard/leadboard" className="text-[#10662A] font-semibold hover:underline inline-flex items-center gap-1">
+                Leadboard <ArrowRight className="size-3.5" />
+              </Link>
+            )}
           </div>
         </div>
       ) : (

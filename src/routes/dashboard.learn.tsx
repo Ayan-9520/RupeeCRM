@@ -4,19 +4,21 @@ import { toast } from "sonner";
 import { Award, ArrowRight, Star, Clock, BookOpen, CheckCircle2, Crown, Download, Loader2 } from "lucide-react";
 import { COURSES, CATEGORY_LABEL, LEVEL_LABEL } from "@/lib/courses";
 import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 import { listCertificates, type CrmCertificate } from "@/lib/python-api";
 import { downloadCertificate } from "@/lib/certificate-pdf";
 import { AskRupeeDial } from "@/components/dashboard/AskRupeeDial";
 
 export const Route = createFileRoute("/dashboard/learn")({
-  head: () => ({ meta: [{ title: "Learn & Earn — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Learn & Earn — RupeeOne" }] }),
   component: LearnDashboard,
 });
 
 const TOTAL_POINTS = COURSES.reduce((sum, c) => sum + c.reward_points, 0);
 
 function LearnDashboard() {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const canCertificates = canAccessPath(role, "/dashboard/certificates", user?.finance_level);
   const firstName = user?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "Partner";
   const [certs, setCerts] = useState<CrmCertificate[]>([]);
   const [points, setPoints] = useState(0);
@@ -113,9 +115,11 @@ function LearnDashboard() {
       <section>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display text-lg font-bold text-[#390A5D]">All courses</h2>
-          <Link to="/dashboard/certificates" className="text-sm text-[#10662A] font-semibold inline-flex items-center gap-1">
-            My certificates <ArrowRight className="size-3.5" />
-          </Link>
+          {canCertificates && (
+            <Link to="/dashboard/certificates" className="text-sm text-[#10662A] font-semibold inline-flex items-center gap-1">
+              My certificates <ArrowRight className="size-3.5" />
+            </Link>
+          )}
         </div>
         {loading ? (
           <div className="grid place-items-center py-10">

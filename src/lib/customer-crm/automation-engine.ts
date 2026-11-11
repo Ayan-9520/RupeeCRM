@@ -1,4 +1,5 @@
 import { request } from "@/lib/python-api";
+import { DEFAULT_AUTOMATION_RULES } from "@/lib/customer-crm/phase6-constants";
 import { insertLosTask, loadLosTasks } from "./phase4-api";
 import { createNotification } from "./notifications-service";
 import type { CustomerWorkspaceData } from "./types";
@@ -57,8 +58,12 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
   const pid = workspace.profile.lead_purchase_id;
   const profId = workspace.profile.id;
   const dsaId = workspace.profile.dsa_id;
+  const rules = await loadAutomationRules(userId);
+  const enabled = new Set(
+    (rules.rows.length ? rules.rows.filter((row) => row.enabled) : DEFAULT_ON).map((row) => row.rule_key),
+  );
 
-  if (ctx.pendingDocsCount > 0 && (ctx.pendingDocsDays ?? 0) >= 3) {
+  if (enabled.has("docs_pending_reminder") && ctx.pendingDocsCount > 0 && (ctx.pendingDocsDays ?? 0) >= 3) {
     const title = "Reminder: pending documents";
     if (!(await taskExists(pid, title))) {
       const { data, error } = await insertLosTask({
@@ -81,7 +86,7 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
     }
   }
 
-  if (ctx.hasSanction && ctx.pipelineStage === "sanctioned") {
+  if (enabled.has("sanction_disbursal_task") && ctx.hasSanction && ctx.pipelineStage === "sanctioned") {
     const title = "Coordinate disbursal";
     if (!(await taskExists(pid, title))) {
       const { data, error } = await insertLosTask({
@@ -103,7 +108,7 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
     }
   }
 
-  if ((ctx.payoutPendingDays ?? 0) >= 7) {
+  if (enabled.has("payout_followup") && (ctx.payoutPendingDays ?? 0) >= 7) {
     const title = "Payout follow-up";
     if (!(await taskExists(pid, title))) {
       const { data, error } = await insertLosTask({
@@ -125,7 +130,7 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
     }
   }
 
-  if (ctx.unreachableFollowup) {
+  if (enabled.has("unreachable_retry") && ctx.unreachableFollowup) {
     const retryAt = new Date(Date.now() + 2 * 86400_000).toISOString();
     const title = "Retry: customer unreachable";
     if (!(await taskExists(pid, title))) {
@@ -149,7 +154,7 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
     }
   }
 
-  if (ctx.rejectedLenderCount > 0) {
+  if (enabled.has("rejected_lender_alt") && ctx.rejectedLenderCount > 0) {
     await logAutomation(
       "rejected_lender_alt",
       dsaId,
@@ -164,8 +169,22 @@ export async function runAutomationForCase(ctx: AutomationContext): Promise<{ tr
   return { triggered };
 }
 
+const DEFAULT_ON = DEFAULT_AUTOMATION_RULES.map((rule) => ({
+  id: rule.rule_key,
+  rule_key: rule.rule_key,
+  name: rule.name,
+  enabled: true,
+}));
+
 export async function loadAutomationRules(_dsaId: string) {
-  return { rows: [] as { id: string; rule_key: string; name: string; enabled: boolean }[] };
+  try {
+    const data = await request<{ rows: { id: string; rule_key: string; name: string; enabled: boolean }[] }>(
+      "/api/automation-rules",
+    );
+    return { rows: data.rows ?? [] };
+  } catch (err) {
+    return { rows: [] as { id: string; rule_key: string; name: string; enabled: boolean }[], error: err instanceof Error ? err.message : "Could not load rules" };
+  }
 }
 
 export async function loadAutomationLogs(_dsaId: string, _limit = 50) {
@@ -179,6 +198,14 @@ export async function loadAutomationLogs(_dsaId: string, _limit = 50) {
   }
 }
 
-export async function toggleAutomationRule(_ruleId: string, _enabled: boolean) {
-  return { error: { message: "These rules are part of the product and cannot be turned off here." } };
+export async function toggleAutomationRule(ruleKey: string, enabled: boolean) {
+  try {
+    await request(`/api/automation-rules/${ruleKey}`, {
+      method: "PUT",
+      body: JSON.stringify({ enabled }),
+    });
+    return { error: null };
+  } catch (err) {
+    return { error: { message: err instanceof Error ? err.message : "Could not save the rule" } };
+  }
 }

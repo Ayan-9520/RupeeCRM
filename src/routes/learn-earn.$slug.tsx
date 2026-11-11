@@ -178,14 +178,16 @@ function CourseDetail() {
               })}
             </div>
 
-            <div className="mt-10 rounded-3xl bg-mint-gradient text-primary p-8 text-center shadow-mint">
-              <Award className="size-8 mx-auto" strokeWidth={2.5} />
-              <h3 className="font-display text-xl font-bold mt-3">Pass the quiz with ≥ 70% to earn</h3>
-              <div className="font-display text-3xl font-bold mt-1">{course.badge}</div>
+            <div className="mt-10 rounded-3xl bg-gradient-to-br from-[#0D4F20] to-[#10662A] p-8 text-center text-white shadow-[0_18px_40px_rgba(13,79,32,0.28)]">
+              <span className="mx-auto grid size-12 place-items-center rounded-2xl bg-white/15">
+                <Award className="size-6 text-white" strokeWidth={2.5} />
+              </span>
+              <p className="mt-4 text-sm font-medium text-white/80">Pass the quiz with 70% or more to earn</p>
+              <h3 className="mt-1 font-display text-3xl font-bold text-white">{course.badge}</h3>
               <Link
                 to="/learn-quiz/$slug"
                 params={{ slug: course.slug }}
-                className="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-full bg-primary text-primary-foreground font-semibold hover:scale-[1.02] transition-smooth"
+                className="mt-5 inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 font-semibold text-[#0D4F20] hover:bg-[#E8F7EC]"
               >
                 Take the quiz <ArrowRight className="size-4" />
               </Link>

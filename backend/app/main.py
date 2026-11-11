@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import (
     admin_overview,
+    automation_rules,
     admin_trust,
     assistant,
     auth,
@@ -18,6 +19,7 @@ from app.api import (
     customer_workspace,
     invoice_approvals,
     leads,
+    leaderboard,
     learn,
     loan_cases,
     partner_profile,
@@ -76,6 +78,8 @@ app.include_router(business.router)
 app.include_router(learn.router)
 app.include_router(loan_cases.router)
 app.include_router(admin_overview.router)
+app.include_router(leaderboard.router)
+app.include_router(automation_rules.router)
 
 
 @app.get("/health")

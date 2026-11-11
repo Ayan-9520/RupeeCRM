@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -206,6 +208,8 @@ const textareaClass =
 
 function MyLeadsPage() {
   const navigate = useNavigate();
+  const { role, user } = useAuth();
+  const canBoard = canAccessPath(role, "/dashboard/leadboard", user?.finance_level);
   const [reserved, setReserved] = useState<Awaited<ReturnType<typeof listReservedLeads>> | null>(null);
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [items, setItems] = useState<CrmPurchase[]>([]);
@@ -423,12 +427,12 @@ function MyLeadsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
+          {canBoard && <Link
             to="/dashboard/leadboard"
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#d8ecdd] bg-white text-[#390A5D] text-sm font-semibold hover:bg-[#E8F7EC] hover:border-[#10662A]/35"
           >
             Leadboard
-          </Link>
+          </Link>}
           <button
             type="button"
             onClick={() => void load()}
@@ -523,11 +527,16 @@ function MyLeadsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[#d8ecdd] bg-white p-10 text-center text-[#5c4d72] text-sm">
-          No purchased leads yet. Go to{" "}
-          <Link to="/dashboard/leadboard" className="text-[#10662A] font-bold hover:underline">
-            Leadboard
-          </Link>{" "}
-          and click Buy.
+          No purchased leads yet.
+          {canBoard ? (
+            <>
+              {" "}Go to{" "}
+              <Link to="/dashboard/leadboard" className="text-[#10662A] font-bold hover:underline">
+                Leadboard
+              </Link>{" "}
+              and click Buy.
+            </>
+          ) : null}
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">

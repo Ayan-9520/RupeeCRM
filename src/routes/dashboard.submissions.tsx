@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Loader2, MapPin, Building2, ArrowRight, ShoppingBag } from "lucide-react";
 import { listMyLeads, patchMyLead } from "@/lib/python-api";
+import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 
 export const Route = createFileRoute("/dashboard/submissions")({
-  head: () => ({ meta: [{ title: "Submissions — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Submissions — RupeeOne" }] }),
   component: Submissions,
 });
 
@@ -197,14 +199,18 @@ function SubmissionRow({ row, onAdvance }: { row: Row; onAdvance: (r: Row, next:
 }
 
 function EmptyState() {
+  const { role, user } = useAuth();
+  const canCalls = canAccessPath(role, "/dashboard/calls", user?.finance_level);
   return (
     <div className="rounded-3xl bg-card border border-dashed border-border p-12 text-center">
       <div className="size-14 mx-auto rounded-2xl bg-accent/15 grid place-items-center"><FileText className="size-6 text-accent" /></div>
       <h2 className="font-display text-xl font-bold mt-4">No submissions yet</h2>
-      <p className="text-muted-foreground mt-2 max-w-md mx-auto">Move leads to the "Docs" stage from the Call Queue or My Leads to start tracking lender submissions here.</p>
-      <Link to="/dashboard/calls" className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold hover:opacity-90">
-        <ShoppingBag className="size-4" /> Open Call Queue <ArrowRight className="size-4" />
-      </Link>
+      <p className="text-muted-foreground mt-2 max-w-md mx-auto">Files appear here after a lead is marked docs collected.</p>
+      {canCalls && (
+        <Link to="/dashboard/calls" className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold hover:opacity-90">
+          <ShoppingBag className="size-4" /> Open Call Queue <ArrowRight className="size-4" />
+        </Link>
+      )}
     </div>
   );
 }

@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { PLAN_LABEL, PLAN_SEATS, isUnlimited, formatSeats } from "@/lib/plans";
-import { isPlatformAdmin } from "@/lib/role-access";
+import { canAccessPath, isPlatformAdmin } from "@/lib/role-access";
 
 export const Route = createFileRoute("/dashboard/workspace")({
-  head: () => ({ meta: [{ title: "Workspace — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Workspace — RupeeOne" }] }),
   component: WorkspaceSettings,
 });
 
@@ -42,7 +42,7 @@ function WorkspaceSettings() {
       <div className="max-w-lg mx-auto mt-16 text-center space-y-3">
         <Building2 className="size-10 mx-auto text-[#10662A]" />
         <h1 className="font-display text-xl font-bold text-[#390A5D]">No workspace</h1>
-        <p className="text-sm text-[#5c4d72]">Sign in again to load RupeeDial One CRM workspace.</p>
+        <p className="text-sm text-[#5c4d72]">Sign in again to load RupeeOne CRM workspace.</p>
         <Link to="/auth" className="text-[#10662A] font-semibold text-sm hover:underline">
           Go to login
         </Link>
@@ -116,12 +116,14 @@ function WorkspaceSettings() {
             <QuickLink to="/dashboard/website-leads" icon={Globe} label="Website Leads" desc="Forms → CRM pipeline" />
           </>
         )}
-        {!admin && (
-          <>
-            <QuickLink to="/dashboard/billing" icon={Sparkles} label="Billing & seats" desc="Plan and team invite" />
-            <QuickLink to="/dashboard/leadboard" icon={Globe} label="Leadboard" desc="Buy marketplace leads" />
-            <QuickLink to="/dashboard/profile" icon={UserCheck} label="Public profile" desc="Firm page & QR" />
-          </>
+        {!admin && canAccessPath(role, "/dashboard/billing", user?.finance_level) && (
+          <QuickLink to="/dashboard/billing" icon={Sparkles} label="Billing & seats" desc="Plan and team invite" />
+        )}
+        {!admin && canAccessPath(role, "/dashboard/leadboard", user?.finance_level) && (
+          <QuickLink to="/dashboard/leadboard" icon={Globe} label="Leadboard" desc="Buy marketplace leads" />
+        )}
+        {!admin && canAccessPath(role, "/dashboard/profile", user?.finance_level) && (
+          <QuickLink to="/dashboard/profile" icon={UserCheck} label="Public profile" desc="Firm page & QR" />
         )}
       </div>
 

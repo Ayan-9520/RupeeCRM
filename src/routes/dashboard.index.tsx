@@ -9,6 +9,7 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import { CATEGORY_META, type ProductCategory } from "@/lib/products";
 import {
+  canAccessPath,
   getDashboardConfig,
   getRoleLabel,
   hasRole,
@@ -244,7 +245,7 @@ function DashboardHome() {
           <div className="min-w-0">
             <div className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ring-1 ring-white/20">
               <Sparkles className="size-3.5" />
-              {role ? getRoleLabel(role) : "Member"} · RupeeDial One
+              {role ? getRoleLabel(role) : "Member"} · RupeeOne
             </div>
             <h1 className="mt-3 font-display text-2xl font-extrabold tracking-tight sm:text-3xl">
               Welcome back{firstName ? `, ${firstName}` : ""}
@@ -260,18 +261,22 @@ function DashboardHome() {
                   <Globe className="size-4" /> Website Leads
                 </Link>
               )}
-              <Link
-                to="/dashboard/leadboard"
-                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 transition-colors"
-              >
-                <Store className="size-4" /> Leadboard
-              </Link>
-              <Link
-                to="/dashboard/my-leads"
-                className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 transition-colors"
-              >
-                <KanbanSquare className="size-4" /> My Leads
-              </Link>
+              {canAccessPath(role, "/dashboard/leadboard", user?.finance_level) && (
+                <Link
+                  to="/dashboard/leadboard"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 transition-colors"
+                >
+                  <Store className="size-4" /> Leadboard
+                </Link>
+              )}
+              {canAccessPath(role, "/dashboard/my-leads", user?.finance_level) && (
+                <Link
+                  to="/dashboard/my-leads"
+                  className="inline-flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-semibold text-white ring-1 ring-white/25 hover:bg-white/20 transition-colors"
+                >
+                  <KanbanSquare className="size-4" /> My Leads
+                </Link>
+              )}
             </div>
           </div>
           <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:min-w-[420px]">

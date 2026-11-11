@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Wallet as WalletIcon, Loader2, Plus, Store, KanbanSquare, CreditCard } from "lucide-react";
 import { getBillingMe, listMyLeads, type CrmPurchase } from "@/lib/python-api";
+import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 
 export const Route = createFileRoute("/dashboard/wallet")({
   head: () => ({ meta: [{ title: "Wallet — RupeeOne" }] }),
@@ -19,6 +21,8 @@ type Txn = {
 };
 
 function WalletPage() {
+  const { role, user } = useAuth();
+  const canBoard = canAccessPath(role, "/dashboard/leadboard", user?.finance_level);
   const [wallet, setWallet] = useState({ balance: 0, total_recharged: 0, total_spent: 0 });
   const [txns, setTxns] = useState<Txn[]>([]);
   const [planLabel, setPlanLabel] = useState<string>("—");
@@ -90,12 +94,14 @@ function WalletPage() {
           >
             <CreditCard className="size-4 text-[#10662A]" /> Billing
           </Link>
-          <Link
-            to="/dashboard/leadboard"
-            className="inline-flex items-center gap-2 rounded-xl border border-[#d8ecdd] bg-white px-4 py-2 text-sm font-semibold text-[#390A5D] hover:bg-[#E8F7EC]"
-          >
-            <Store className="size-4 text-[#10662A]" /> Leadboard
-          </Link>
+          {canBoard && (
+            <Link
+              to="/dashboard/leadboard"
+              className="inline-flex items-center gap-2 rounded-xl border border-[#d8ecdd] bg-white px-4 py-2 text-sm font-semibold text-[#390A5D] hover:bg-[#E8F7EC]"
+            >
+              <Store className="size-4 text-[#10662A]" /> Leadboard
+            </Link>
+          )}
           <Link
             to="/dashboard/my-leads"
             className="inline-flex items-center gap-2 rounded-xl border border-[#d8ecdd] bg-white px-4 py-2 text-sm font-semibold text-[#390A5D] hover:bg-[#E8F7EC]"

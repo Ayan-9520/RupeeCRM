@@ -185,7 +185,7 @@ export function AITrainerChat() {
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center px-2">
-            <div className="size-14 rounded-3xl bg-mint-gradient text-primary grid place-items-center mb-4 shadow-mint">
+            <div className="size-14 rounded-3xl bg-[#10662A] text-white grid place-items-center mb-4 shadow-mint">
               <Bot className="size-7" strokeWidth={2.2} />
             </div>
             <h3 className="font-display text-lg font-bold">Ask anything about the products you sell.</h3>
@@ -275,7 +275,7 @@ function MessageBubble({ msg }: { msg: Msg }) {
 
   return (
     <div className="flex gap-3">
-      <div className="size-8 rounded-full bg-mint-gradient text-primary grid place-items-center shrink-0 shadow-mint">
+      <div className="size-8 rounded-full bg-[#10662A] text-white grid place-items-center shrink-0 shadow-mint">
         <Sparkles className="size-4" />
       </div>
       <div className="flex-1 min-w-0 max-w-[85%]">

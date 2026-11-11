@@ -10,11 +10,13 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 import { useBillingEntitlements } from "@/hooks/use-billing-entitlements";
 import { MarketingUpgradeGate } from "@/components/marketing/MarketingUpgradeGate";
 
 export const Route = createFileRoute("/dashboard/hrms")({
-  head: () => ({ meta: [{ title: "HRMS — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "HRMS — RupeeOne" }] }),
   component: HrmsLayout,
 });
 
@@ -30,6 +32,9 @@ const TABS = [
 
 function HrmsLayout() {
   const loc = useLocation();
+  const { role, user } = useAuth();
+  const canBill = canAccessPath(role, "/dashboard/billing", user?.finance_level);
+  const tabs = TABS.filter((tab) => tab.to !== "/dashboard/billing" || canBill);
   const { entitlements, loading, hrmsSoft, hrmsFull } = useBillingEntitlements();
   const planLabel = entitlements.plan_name
     ? `${entitlements.plan_name} · ${entitlements.plan_status}`
@@ -67,15 +72,21 @@ function HrmsLayout() {
             Team roster from your plan seats. {hrmsFull ? "Payroll light unlocked." : "Upgrade to Pro for payroll."}
           </p>
         </div>
-        <Link
-          to="/dashboard/billing"
-          className="rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 text-xs font-semibold text-[#390A5D]"
-        >
-          Plan: {planLabel}
-        </Link>
+        {canBill ? (
+          <Link
+            to="/dashboard/billing"
+            className="rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 text-xs font-semibold text-[#390A5D]"
+          >
+            Plan: {planLabel}
+          </Link>
+        ) : (
+          <span className="rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 text-xs font-semibold text-[#390A5D]">
+            Plan: {planLabel}
+          </span>
+        )}
       </div>
       <div className="flex gap-1 border-b border-[#d8ecdd] overflow-x-auto">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           const active = t.exact
             ? loc.pathname === t.to
             : t.to !== "/dashboard/billing" && loc.pathname.startsWith(t.to);

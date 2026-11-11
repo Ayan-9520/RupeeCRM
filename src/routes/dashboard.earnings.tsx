@@ -12,12 +12,13 @@ import {
   type PayoutSummary,
 } from "@/lib/python-api";
 import { useAuth } from "@/lib/auth-context";
+import { canAccessPath } from "@/lib/role-access";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { InvoiceSteps } from "@/components/invoices/InvoiceSteps";
 import { downloadInvoicePdf, invoiceLines } from "@/lib/invoice-pdf";
 
 export const Route = createFileRoute("/dashboard/earnings")({
-  head: () => ({ meta: [{ title: "Invoices — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Invoices — RupeeOne" }] }),
   component: InvoiceCentrePage,
 });
 
@@ -138,7 +139,9 @@ function InvoiceCentrePage() {
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold text-[#390A5D]">Closure payout</h2>
-          <Link to="/dashboard/cases" className="text-sm font-semibold text-[#10662A]">Open case files</Link>
+          {canAccessPath(role, "/dashboard/cases", user?.finance_level) && (
+            <Link to="/dashboard/cases" className="text-sm font-semibold text-[#10662A]">Open case files</Link>
+          )}
         </div>
         {filesError ? (
           <p className="py-6 text-sm text-destructive">{filesError}</p>

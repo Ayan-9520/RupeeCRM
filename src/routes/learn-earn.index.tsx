@@ -81,7 +81,7 @@ function LearnEarnLanding() {
                 Free training for loan, insurance and card distributors. Read short courses, pass the quiz, and download a certificate with your name on it.
               </p>
               <div className="mt-8 flex flex-wrap gap-3 animate-fade-up">
-                <a href="#courses" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-mint-gradient text-primary font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
+                <a href="#courses" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#10662A] text-white font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
                   Start learning <ArrowRight className="size-4" />
                 </a>
                 <Link to="/become-partner" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium hover:bg-white/20 transition-smooth">
@@ -281,7 +281,7 @@ function LearnEarnLanding() {
                   Join as a partner, take your first course tonight, and walk into tomorrow's call as a Certified Partner.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3 justify-center">
-                  <Link to="/become-partner" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-mint-gradient text-primary font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
+                  <Link to="/become-partner" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#10662A] text-white font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
                     Become a partner <ArrowRight className="size-4" />
                   </Link>
                   <a href="#courses" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium hover:bg-white/20 transition-smooth">
