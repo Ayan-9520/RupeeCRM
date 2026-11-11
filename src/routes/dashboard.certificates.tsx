@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Award, Download, Loader2, X } from "lucide-react";
+import { Award, BookOpen, CircleCheck, Download, Loader2, X } from "lucide-react";
 import { listCertificates, type CrmCertificate } from "@/lib/python-api";
 import { downloadCertificate } from "@/lib/certificate-pdf";
 import { useAuth } from "@/lib/auth-context";
@@ -163,28 +163,64 @@ function CertificatesPage() {
         ))}
       </div>
 
+      <section className="grid gap-3 md:grid-cols-3">
+        {[
+          { icon: BookOpen, title: "Read the lessons", detail: "Six short modules on that product." },
+          { icon: CircleCheck, title: "Pass the quiz", detail: "70% or more. One attempt is enough." },
+          { icon: Award, title: "The PDF is yours", detail: "Your name, score and a certificate number." },
+        ].map((step, index) => (
+          <div key={step.title} className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-[0_8px_20px_rgba(16,102,42,0.05)] ring-1 ring-[#d8ecdd]">
+            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#0D4F20] text-white">
+              <step.icon className="size-5" />
+            </span>
+            <span>
+              <span className="block text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Step {index + 1}</span>
+              <span className="block font-semibold text-[#390A5D]">{step.title}</span>
+              <span className="block text-sm text-[#5c4d72]">{step.detail}</span>
+            </span>
+          </div>
+        ))}
+      </section>
+
       {available.length > 0 && (
         <section>
           <div className="flex items-end justify-between gap-3">
-            <h2 className="font-display text-xl font-bold text-[#390A5D]">Courses</h2>
+            <h2 className="font-display text-xl font-bold text-[#390A5D]">Badges you can earn</h2>
             <p className="text-sm text-[#5c4d72]">{available.length} open</p>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            {available.map((course) => (
-              <article key={course.slug} className="flex min-h-[168px] flex-col rounded-2xl border border-[#e4d7ef] bg-white p-4 shadow-[0_10px_24px_rgba(57,10,93,0.04)]">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">{course.badge}</p>
-                <h3 className="mt-2 font-display text-lg font-bold leading-snug text-[#390A5D]">{course.title}</h3>
-                <p className="mt-1 text-sm text-[#5c4d72]">+{course.points} points · quiz 70%</p>
-                <div className="mt-auto flex gap-2 pt-4 text-sm font-semibold">
-                  <Link to="/learn-earn/$slug" params={{ slug: course.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D] hover:border-[#10662A]">
-                    Lessons
-                  </Link>
-                  <Link to="/learn-quiz/$slug" params={{ slug: course.slug }} className="rounded-lg bg-[#10662A] px-3 py-1.5 text-white hover:bg-[#0D4F20]">
-                    Take quiz
-                  </Link>
-                </div>
-              </article>
-            ))}
+            {available.map((course) => {
+              const words = course.badge.split(/\s+/).filter((word) => !/certified|verified|pro|advisor|closer|expert|mastery|specialist|fundamentals/i.test(word));
+              const source = words.length ? words : course.badge.split(/\s+/);
+              const mark = source.length === 1 && source[0].length <= 4
+                ? source[0].toUpperCase()
+                : source.map((word) => word[0]).join("").slice(0, 3).toUpperCase();
+              return (
+                <article key={course.slug} className="flex flex-col rounded-3xl bg-gradient-to-b from-[#F7F3FB] to-white p-4 shadow-[0_12px_28px_rgba(57,10,93,0.06)] ring-1 ring-[#e4d7ef]">
+                  <div className="flex items-center gap-3">
+                    <span className="relative grid size-16 shrink-0 place-items-center">
+                      <span className="absolute inset-0 rounded-full bg-[#0D4F20]" />
+                      <span className="absolute inset-[5px] rounded-full border border-[#B7E4C7]" />
+                      <span className="absolute inset-[9px] rounded-full border border-white/40" />
+                      <span className="relative px-1 text-center text-[10px] font-bold uppercase leading-tight text-white">{mark}</span>
+                    </span>
+                    <span>
+                      <span className="block text-[11px] font-bold uppercase tracking-wide text-[#10662A]">{course.badge}</span>
+                      <span className="mt-1 block font-display text-base font-bold leading-snug text-[#390A5D]">{course.title}</span>
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-[#5c4d72]">+{course.points} points after a quiz of 70% or more.</p>
+                  <div className="mt-4 flex gap-2 text-sm font-semibold">
+                    <Link to="/learn-earn/$slug" params={{ slug: course.slug }} className="rounded-lg border border-[#d8ecdd] bg-white px-3 py-1.5 text-[#390A5D] hover:border-[#10662A]">
+                      Lessons
+                    </Link>
+                    <Link to="/learn-quiz/$slug" params={{ slug: course.slug }} className="rounded-lg bg-[#10662A] px-3 py-1.5 text-white hover:bg-[#0D4F20]">
+                      Take quiz
+                    </Link>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
       )}
