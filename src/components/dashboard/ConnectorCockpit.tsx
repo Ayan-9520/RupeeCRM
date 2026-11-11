@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
   ArrowRight,
   BadgeIndianRupee,
+  Calculator,
   FileText,
   GraduationCap,
   KanbanSquare,
@@ -41,19 +42,35 @@ function amountOf(row: CrmPurchase) {
   return Number(row.deal_value || row.lead?.loan_amount || 0);
 }
 
-const MODULES = [
-  { title: "Leads", desc: "Pipeline and follow-ups", to: "/dashboard/my-leads", icon: KanbanSquare },
-  { title: "Customers", desc: "People on your cases", to: "/dashboard/my-leads", icon: Users },
-  { title: "Applications", desc: "Login to disbursal", to: "/dashboard/cases", icon: FileText },
-  { title: "Documents", desc: "Open a case to collect docs", to: "/dashboard/my-leads", icon: FileText },
-  { title: "Lender match", desc: "Cases with lenders", to: "/dashboard/cases", icon: Landmark },
-  { title: "Payout", desc: "Commission and requests", to: "/dashboard/earnings", icon: BadgeIndianRupee },
-  { title: "Invoice", desc: "Raise and track commission invoices", to: "/dashboard/earnings", icon: Receipt },
-  { title: "Network", desc: "Connectors, invites and revenue share", to: "/dashboard/network", icon: Network },
-  { title: "Academy", desc: "Products, scripts and the assistant", to: "/dashboard/training", icon: GraduationCap },
-  { title: "Learn & Earn", desc: "Courses, quizzes and points", to: "/dashboard/learn", icon: GraduationCap },
-  { title: "Support", desc: "Community and help", to: "/dashboard/community", icon: LifeBuoy },
-  { title: "Lead wallet", desc: "Buy from the marketplace", to: "/dashboard/wallet", icon: Wallet },
+const GROUPS = [
+  {
+    title: "Pipeline",
+    items: [
+      { title: "Leads", desc: "Pipeline and follow-ups", to: "/dashboard/my-leads", icon: KanbanSquare },
+      { title: "Customers", desc: "People on your cases", to: "/dashboard/my-leads", icon: Users },
+      { title: "Applications", desc: "Login to disbursal", to: "/dashboard/cases", icon: FileText },
+      { title: "Documents", desc: "Open a case to collect docs", to: "/dashboard/my-leads", icon: FileText },
+      { title: "Lender match", desc: "Cases with lenders", to: "/dashboard/cases", icon: Landmark },
+      { title: "EMI calculator", desc: "Quote an instalment on a call", to: "/dashboard/emi", icon: Calculator },
+    ],
+  },
+  {
+    title: "Money",
+    items: [
+      { title: "Payout", desc: "Commission and requests", to: "/dashboard/earnings", icon: BadgeIndianRupee },
+      { title: "Invoice", desc: "Raise and track commission invoices", to: "/dashboard/earnings", icon: Receipt },
+      { title: "Lead wallet", desc: "Buy from the marketplace", to: "/dashboard/wallet", icon: Wallet },
+    ],
+  },
+  {
+    title: "Grow",
+    items: [
+      { title: "Network", desc: "Connectors, invites and revenue share", to: "/dashboard/network", icon: Network },
+      { title: "Academy", desc: "Products, scripts and the assistant", to: "/dashboard/training", icon: GraduationCap },
+      { title: "Learn & Earn", desc: "Courses, quizzes and points", to: "/dashboard/learn", icon: GraduationCap },
+      { title: "Support", desc: "Community and help", to: "/dashboard/community", icon: LifeBuoy },
+    ],
+  },
 ] as const;
 
 export function ConnectorCockpit({ firstName }: { firstName: string }) {
@@ -124,60 +141,81 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
     { label: "Conversion", value: loading ? "…" : `${cards.conversion}%`, hint: "Disbursed / all leads" },
   ];
 
+  const pipeline = metrics.slice(0, 4);
+  const payouts = metrics.slice(5, 8);
+
   return (
-    <div className="max-w-7xl space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Connector cockpit</p>
-          <h1 className="font-display text-xl font-extrabold text-[#390A5D] lg:text-2xl">
-            {firstName ? `${firstName}'s business` : "Your partner business"}
-          </h1>
-          <p className="max-w-xl text-xs text-[#5c4d72]">
-            Leads, cases, lender movement and payouts in one place.
-          </p>
+    <div className="mx-auto max-w-6xl space-y-6">
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0D4F20] to-[#10662A] text-white shadow-[0_18px_40px_rgba(13,79,32,0.2)]">
+        <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Partner desk</p>
+            <h1 className="mt-2 font-display text-3xl font-bold">{firstName ? `${firstName}'s business` : "Your partner business"}</h1>
+            <p className="mt-2 max-w-md text-sm leading-6 text-white/75">Disbursed cases, open pipeline and the payout still with RupeeDial.</p>
+          </div>
+          <div className="lg:text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Disbursement</p>
+            <p className="mt-1 font-display text-4xl font-bold">{loading ? "…" : inr(cards.disburse)}</p>
+            <p className="mt-1 text-sm text-white/75">{loading ? "…" : `${cards.conversion}% of leads disbursed`}</p>
+          </div>
         </div>
-        <Link
-          to="/dashboard/leadboard"
-          className="inline-flex items-center gap-2 self-start rounded-xl bg-[#10662A] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(16,102,42,0.22)] sm:self-auto"
-        >
+        <div className="grid border-t border-white/15 sm:grid-cols-3">
+          {payouts.map((item) => (
+            <div key={item.label} className="border-white/15 px-6 py-4 sm:border-l sm:first:border-l-0">
+              <p className="text-xs text-white/70">{item.label}</p>
+              <p className="mt-1 text-xl font-semibold">{item.value}</p>
+              <p className="text-xs text-white/60">{item.hint}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="font-display text-lg font-bold text-[#390A5D]">Open pipeline</h2>
+        <Link to="/dashboard/leadboard" className="inline-flex items-center gap-2 rounded-xl bg-[#10662A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0D4F20]">
           <Store className="size-4" /> Browse leads
         </Link>
       </div>
-
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-5">
-        {metrics.map((m) => (
-          <div key={m.label} className="rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 shadow-[0_4px_14px_rgba(16,102,42,0.04)]">
-            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{m.label}</p>
-            <p className="font-display text-lg font-extrabold leading-tight text-[#390A5D]">{m.value}</p>
-            <p className="truncate text-[10px] text-slate-500">{m.hint}</p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {pipeline.map((item) => (
+          <div key={item.label} className="rounded-2xl border border-[#d8ecdd] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(16,102,42,0.05)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#5c4d72]">{item.label}</p>
+            <p className="mt-2 font-display text-2xl font-bold text-[#390A5D]">{item.value}</p>
+            <p className="mt-1 text-sm text-[#5c4d72]">{item.hint}</p>
           </div>
         ))}
       </div>
-
-      <div>
-        <h2 className="font-display text-base font-bold text-[#390A5D]">Work from here</h2>
-        <div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-4">
-          {MODULES.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.title}
-                to={item.to}
-                className="group flex items-center gap-2.5 rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 transition hover:border-[#10662A]/40 hover:bg-[#f5fcf7]"
-              >
-                <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-[#E8F7EC] text-[#10662A]">
-                  <Icon className="size-4" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-[#390A5D]">{item.title}</span>
-                  <span className="block truncate text-[11px] text-[#5c4d72]">{item.desc}</span>
-                </span>
-                <ArrowRight className="size-3.5 shrink-0 text-[#10662A] opacity-0 transition group-hover:opacity-100" />
-              </Link>
-            );
-          })}
-        </div>
+      <div className="rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] px-4 py-3 text-sm text-[#14281c]">
+        Lead wallet <span className="font-semibold text-[#390A5D]">{loading ? "…" : inr(cards.wallet)}</span>
+        <span className="text-[#5c4d72]"> · marketplace balance</span>
       </div>
+
+      {GROUPS.map((group) => (
+        <section key={group.title}>
+          <h2 className="font-display text-lg font-bold text-[#390A5D]">{group.title}</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {group.items.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  className="group flex items-center gap-3 rounded-2xl border border-[#d8ecdd] bg-white px-4 py-3.5 shadow-[0_8px_20px_rgba(16,102,42,0.04)] transition hover:border-[#10662A] hover:bg-[#F7FBF8]"
+                >
+                  <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A]">
+                    <Icon className="size-4" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold text-[#390A5D]">{item.title}</span>
+                    <span className="block text-sm text-[#5c4d72]">{item.desc}</span>
+                  </span>
+                  <ArrowRight className="size-4 shrink-0 text-[#10662A] opacity-0 transition group-hover:opacity-100" />
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
