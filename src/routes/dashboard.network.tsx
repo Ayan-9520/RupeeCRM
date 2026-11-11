@@ -22,6 +22,7 @@ function inviteUrl(code: string) {
 }
 
 function NetworkPage() {
+  const { role } = useAuth();
   const [data, setData] = useState<NetworkMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
