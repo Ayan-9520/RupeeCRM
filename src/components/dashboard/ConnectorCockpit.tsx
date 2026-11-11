@@ -102,8 +102,12 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
   const pipeline = metrics.slice(0, 4);
   const payouts = metrics.slice(5, 8);
 
-  const greenPayouts = [payouts[0], payouts[2]];
-  const whitePayouts = [payouts[1], metrics[8]];
+  const moneyRow = [
+    { ...payouts[0], tone: "green" as const },
+    { ...payouts[1], tone: "white" as const },
+    { ...payouts[2], tone: "green" as const },
+    { ...metrics[8], tone: "white" as const },
+  ];
 
   return (
     <div className="mx-auto max-w-6xl space-y-3">
@@ -119,25 +123,21 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
             <p className="text-xs text-white/70">{loading ? "…" : `${cards.conversion}% of leads`}</p>
           </Link>
         </div>
-        <div className="grid border-t border-white/15 sm:grid-cols-2">
-          {greenPayouts.map((item) => (
-            <Link key={item.label} to={item.to} className="px-4 py-2.5 transition hover:bg-black/15 sm:border-l sm:border-white/15 sm:first:border-l-0">
-              <p className="text-[11px] text-white/70">{item.label}</p>
-              <p className="text-base font-semibold">{item.value}</p>
+        <div className="grid grid-cols-2 gap-2 border-t border-white/15 p-2 sm:grid-cols-4">
+          {moneyRow.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              className={item.tone === "green"
+                ? "rounded-xl px-3 py-2 transition hover:bg-black/15"
+                : "rounded-xl bg-white px-3 py-2 text-[#14281c] shadow-[0_8px_18px_rgba(0,0,0,0.12)] transition hover:bg-[#F4FBF6]"}
+            >
+              <p className={`text-[10px] font-semibold uppercase tracking-wide ${item.tone === "green" ? "text-white/70" : "text-[#5c4d72]"}`}>{item.label}</p>
+              <p className={`text-base font-semibold ${item.tone === "white" ? "text-[#10662A]" : ""}`}>{item.value}</p>
             </Link>
           ))}
         </div>
       </section>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {whitePayouts.map((item) => (
-          <Link key={item.label} to={item.to} className="rounded-2xl border border-[#d8ecdd] bg-white px-4 py-3 shadow-[0_10px_24px_rgba(16,102,42,0.06)] transition hover:border-[#10662A]">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{item.label}</p>
-            <p className="mt-0.5 font-display text-xl font-bold text-[#10662A]">{item.value}</p>
-            <p className="text-xs text-[#5c4d72]">{item.hint}</p>
-          </Link>
-        ))}
-      </div>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white px-3 py-2.5 shadow-[0_8px_20px_rgba(16,102,42,0.04)]">
         <div className="flex items-center justify-between gap-2">
