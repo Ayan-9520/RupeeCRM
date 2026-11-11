@@ -75,7 +75,7 @@ export function ProductivityChart() {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <TrendingUp className="size-4 text-[#10662A]" />
-            <h3 className="text-sm font-semibold text-[#14281c]">Login vs target</h3>
+            <h3 className="text-sm font-semibold text-[#14281c]">Login vs disbursement</h3>
           </div>
           <div className="flex rounded-full bg-[#E8F7EC] p-1">
             {(["month", "quarter", "year"] as const).map((item) => (
@@ -102,7 +102,7 @@ export function ProductivityChart() {
                 <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 <Bar dataKey="login" name="Login" fill="#10662A" radius={[4, 4, 0, 0]} />
-                {loginTarget > 0 ? <Bar dataKey="loginTarget" name="Target" fill="#7dcea0" radius={[4, 4, 0, 0]} /> : null}
+                <Bar dataKey="disbursed" name="Disbursed" fill="#7dcea0" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
