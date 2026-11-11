@@ -13,6 +13,12 @@ export const Route = createFileRoute("/dashboard/certificates")({
 
 type Available = { slug: string; title: string; badge: string; points: number };
 
+const STEPS = [
+  { icon: BookOpen, title: "Read the lessons", detail: "Six short modules on that product." },
+  { icon: CircleCheck, title: "Pass the quiz", detail: "70% or more. One attempt is enough." },
+  { icon: Award, title: "The PDF is yours", detail: "Your name, score and a certificate number." },
+];
+
 type Sheet = {
   key: string;
   name: string;
@@ -76,6 +82,7 @@ function CertificatesPage() {
   const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<Sheet | null>(null);
+  const [slide, setSlide] = useState(0);
   const name = user?.full_name || "Your name";
 
   useEffect(() => {
@@ -97,6 +104,13 @@ function CertificatesPage() {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
+
+  const slideCount = STEPS.length + available.length;
+  useEffect(() => {
+    if (slideCount < 2) return;
+    const timer = window.setInterval(() => setSlide((current) => (current + 1) % slideCount), 3200);
+    return () => window.clearInterval(timer);
+  }, [slideCount]);
 
   if (loading) {
     return (
@@ -130,6 +144,13 @@ function CertificatesPage() {
         },
       ];
 
+  const safeSlide = slideCount === 0 ? 0 : slide % slideCount;
+  const featured = safeSlide >= STEPS.length ? available[safeSlide - STEPS.length] : null;
+  const shown = sheets[0];
+  const preview: Sheet = featured && shown && !shown.real
+    ? { ...shown, course: featured.title, badge: featured.badge }
+    : shown;
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -144,43 +165,53 @@ function CertificatesPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {sheets.map((sheet) => (
-          <button
-            key={sheet.key}
-            type="button"
-            onClick={() => setOpen(sheet)}
-            className="group rounded-2xl bg-white p-3 text-left shadow-[0_10px_28px_rgba(16,102,42,0.06)] ring-1 ring-[#d8ecdd] transition hover:-translate-y-0.5 hover:ring-[#10662A] [container-type:inline-size]"
-          >
-            <div className="pointer-events-none overflow-hidden rounded-xl">
-              <CertificateCard {...sheet} />
+      <div className="grid items-stretch gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <div className="flex min-h-[280px] flex-col justify-between rounded-3xl bg-white p-6 shadow-[0_12px_30px_rgba(16,102,42,0.06)] ring-1 ring-[#d8ecdd]">
+          {safeSlide < STEPS.length ? (
+            <div key={STEPS[safeSlide].title}>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Step {safeSlide + 1} of {STEPS.length}</p>
+              <span className="mt-4 grid size-14 place-items-center rounded-full bg-[#0D4F20] text-white">
+                {(() => {
+                  const Icon = STEPS[safeSlide].icon;
+                  return <Icon className="size-6" />;
+                })()}
+              </span>
+              <h2 className="mt-4 font-display text-2xl font-bold text-[#390A5D]">{STEPS[safeSlide].title}</h2>
+              <p className="mt-2 text-sm leading-6 text-[#5c4d72]">{STEPS[safeSlide].detail}</p>
             </div>
-            <span className="mt-3 flex items-center justify-between text-sm font-semibold text-[#390A5D]">
-              {sheet.real ? sheet.course : "Preview"}
-              <span className="text-xs font-semibold text-[#10662A]">{sheet.real ? "Open" : "Tap to enlarge"}</span>
-            </span>
-          </button>
-        ))}
-      </div>
-
-      <section className="grid gap-3 md:grid-cols-3">
-        {[
-          { icon: BookOpen, title: "Read the lessons", detail: "Six short modules on that product." },
-          { icon: CircleCheck, title: "Pass the quiz", detail: "70% or more. One attempt is enough." },
-          { icon: Award, title: "The PDF is yours", detail: "Your name, score and a certificate number." },
-        ].map((step, index) => (
-          <div key={step.title} className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-[0_8px_20px_rgba(16,102,42,0.05)] ring-1 ring-[#d8ecdd]">
-            <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#0D4F20] text-white">
-              <step.icon className="size-5" />
-            </span>
-            <span>
-              <span className="block text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Step {index + 1}</span>
-              <span className="block font-semibold text-[#390A5D]">{step.title}</span>
-              <span className="block text-sm text-[#5c4d72]">{step.detail}</span>
-            </span>
+          ) : featured ? (
+            <div key={featured.slug}>
+              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Badge</p>
+              <h2 className="mt-4 font-display text-2xl font-bold text-[#390A5D]">{featured.title}</h2>
+              <p className="mt-1 text-sm font-semibold text-[#10662A]">{featured.badge}</p>
+              <p className="mt-2 text-sm leading-6 text-[#5c4d72]">+{featured.points} points after a quiz of 70% or more.</p>
+              <div className="mt-4 flex gap-2 text-sm font-semibold">
+                <Link to="/learn-earn/$slug" params={{ slug: featured.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D]">Lessons</Link>
+                <Link to="/learn-quiz/$slug" params={{ slug: featured.slug }} className="rounded-lg bg-[#10662A] px-3 py-1.5 text-white">Take quiz</Link>
+              </div>
+            </div>
+          ) : null}
+          <div className="mt-6 flex flex-wrap gap-1.5">
+            {Array.from({ length: slideCount }, (_, index) => (
+              <button key={index} type="button" aria-label={`Show item ${index + 1}`} onClick={() => setSlide(index)} className={`h-1.5 rounded-full ${index === safeSlide ? "w-6 bg-[#0D4F20]" : "w-1.5 bg-[#d8ecdd]"}`} />
+            ))}
           </div>
-        ))}
-      </section>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen(preview)}
+          className="rounded-3xl bg-white p-4 text-left shadow-[0_12px_30px_rgba(16,102,42,0.06)] ring-1 ring-[#d8ecdd] [container-type:inline-size]"
+        >
+          <div className="pointer-events-none overflow-hidden rounded-xl">
+            <CertificateCard {...preview} />
+          </div>
+          <span className="mt-3 flex items-center justify-between text-sm font-semibold text-[#390A5D]">
+            {preview.real ? preview.course : "Preview"}
+            <span className="text-xs font-semibold text-[#10662A]">Tap to enlarge</span>
+          </span>
+        </button>
+      </div>
 
       {available.length > 0 && (
         <section>
