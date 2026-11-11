@@ -32,12 +32,12 @@ function MarketingLayout() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">Growth</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">Marketing</p>
           <h1 className="text-3xl font-display font-bold tracking-tight text-[#390A5D]">
             Marketing desk
           </h1>
-          <p className="text-sm text-[#5c4d72] mt-1">
-            Creatives a customer can see: a post, a WhatsApp message, a card, or your link.
+          <p className="mt-1 max-w-xl text-sm leading-6 text-[#5c4d72]">
+            Six tools. Each one puts your name and phone on something a customer can open.
           </p>
         </div>
         <Link
