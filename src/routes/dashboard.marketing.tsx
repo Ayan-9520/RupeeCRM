@@ -37,7 +37,7 @@ function MarketingLayout() {
             Marketing desk
           </h1>
           <p className="mt-1 max-w-xl text-sm leading-6 text-[#5c4d72]">
-            Six tools. Each one puts your name and phone on something a customer can open.
+            A partner uses this to put their name and phone in front of a customer. An admin sees the same desk. A caller does not sell from here.
           </p>
         </div>
         <Link
@@ -49,6 +49,20 @@ function MarketingLayout() {
             <span className="ml-2 text-[#10662A]">· Upgrade for Reels</span>
           )}
         </Link>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-3">
+        {[
+          ["1", "Pick one tool", "A finished post, a WhatsApp line, a card, a reel, or your own link."],
+          ["2", "Your name goes on it", "The creative uses the phone and profile on this login."],
+          ["3", "The customer opens it", "Without a plan, the file stays locked. Billing turns it on."],
+        ].map(([n, title, detail]) => (
+          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <p className="text-xs font-bold text-[#10662A]">{n}</p>
+            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
+            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          </div>
+        ))}
       </div>
 
       {!entitlements.has_active_plan && !loading && (

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Heart, Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
+import { getRoleLabel } from "@/lib/role-access";
 import {
   createCommunityPost,
   listCommunityPosts,
@@ -94,14 +95,28 @@ function Community() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-[#390A5D]">Community</h1>
-          <p className="mt-1 text-sm text-[#5c4d72]">
-            {posts.length} posts on the public board. A like is saved to your login.
-          </p>
-        </div>
+    <div className="mx-auto max-w-3xl space-y-4">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">{role ? getRoleLabel(role) : "Community"}</p>
+        <h1 className="mt-1 font-display text-2xl font-bold text-[#390A5D]">Community</h1>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-[#5c4d72]">
+          {canPost
+            ? `${posts.length} posts on the public board. A partner or admin writes a tip. A like stays on this login.`
+            : `${posts.length} posts. This login can read the board. Posting is open to partners and admins.`}
+        </p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["1", "Pick a topic", "Home loan, personal loan, cards, insurance, a city, or a partner tip."],
+          ["2", "Write what you know", "One useful note. Do not put a customer’s phone or PAN here."],
+          ["3", "Others can like it", "The count is saved. It is not a lead and it does not pay a commission."],
+        ].map(([n, title, detail]) => (
+          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <p className="text-xs font-bold text-[#10662A]">{n}</p>
+            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
+            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          </div>
+        ))}
       </div>
 
       {canPost ? (
@@ -189,10 +204,7 @@ function Community() {
                     <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#10662A] to-[#0b4d1f] font-display text-lg font-bold text-white">
                       {post.author_name.slice(0, 1).toUpperCase()}
                     </span>
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-[#14281c]">{post.author_name}</p>
-                      <p className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">{post.author_role}</p>
-                    </div>
+                    <p className="truncate text-sm font-semibold text-[#14281c]">{post.author_name}</p>
                   </div>
                   <button
                     type="button"

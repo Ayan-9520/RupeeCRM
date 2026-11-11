@@ -103,9 +103,22 @@ function CertificatesPage() {
             <Award className="size-6 text-[#10662A]" /> Certificates
           </h1>
           <p className="mt-1 max-w-xl text-sm leading-6 text-[#5c4d72]">
-            {items.length} earned · {points.toLocaleString("en-IN")} points. Pass a quiz with 70% or more and this page adds your real certificate.
+            {items.length} earned · {points.toLocaleString("en-IN")} points. A partner or affiliate earns this. An admin can open the same academy. A caller learns on Learn & Earn and does not get this PDF.
           </p>
         </div>
+      </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {[
+          ["1", "Open the lessons", "Each course below is a product you can sell."],
+          ["2", "Pass at 70% or more", "The quiz is the only way a certificate is issued."],
+          ["3", "Download the PDF", "It uses your name, the score, and a certificate number."],
+        ].map(([n, title, detail]) => (
+          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <p className="text-xs font-bold text-[#10662A]">{n}</p>
+            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
+            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          </div>
+        ))}
       </div>
 
       {items.length === 0 ? (

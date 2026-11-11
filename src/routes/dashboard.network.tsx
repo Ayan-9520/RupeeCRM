@@ -2,10 +2,12 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Copy, Loader2 } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
+import { getRoleLabel } from "@/lib/role-access";
 import { getMyNetwork, inviteNetworkPartner, type NetworkMe } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/network")({
-  head: () => ({ meta: [{ title: "Network — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Network — RupeeOne" }] }),
   component: NetworkPage,
 });
 
@@ -20,6 +22,7 @@ function inviteUrl(code: string) {
 }
 
 function NetworkPage() {
+  const { role } = useAuth();
   const [data, setData] = useState<NetworkMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -72,31 +75,46 @@ function NetworkPage() {
     );
   }
 
+  const admin = role === "ceo" || role === "super_admin" || role === "admin";
   const cards = [
-    ["My Network", String(data.connector_count), "Invited and joined"],
-    ["My Connectors", String(data.connector_count), "People on your code"],
-    ["Active Connectors", String(data.active_count), "Joined and active"],
-    ["Business Generated", inr(data.business), "Disbursed in the downline"],
-    ["Network Revenue", inr(data.revenue), "From admin share rules"],
+    ["Connectors", String(data.connector_count), "People who joined on your code"],
+    ["Active", String(data.active_count), "Joined and still active"],
+    ["Business generated", inr(data.business), "Disbursed in this downline"],
+    ["Your share", inr(data.revenue), "From the levels an admin published"],
     ["Performance", `${data.performance}%`, "Disbursed cases / purchases"],
-    ["Rewards", inr(data.revenue), "Same share, by level"],
   ] as const;
 
   return (
     <div className="max-w-5xl space-y-5">
       <div>
-        <h1 className="font-display text-2xl font-bold text-[#390A5D]">Network</h1>
-        <p className="mt-1 text-sm text-[#5c4d72]">
-          Invite connectors. Revenue share follows the levels set by admin, not a fixed rate in the product.
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">{role ? getRoleLabel(role) : "Network"}</p>
+        <h1 className="mt-1 font-display text-2xl font-bold text-[#390A5D]">Network</h1>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-[#5c4d72]">
+          {admin
+            ? "This is the same desk a partner uses to invite connectors. The share percent is not chosen here. You publish levels under Admin, Network Rules."
+            : "Invite someone who will sell under you. When their case disburses, your share is the percent an admin set for that level. This page does not let you pick the rate."}
         </p>
       </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {[
+          ["1", "Create the invite", "Name and mobile are enough. Copy the link and send it on WhatsApp."],
+          ["2", "They join on your code", "The new partner is counted under you once the application is approved."],
+          ["3", "Share follows the level", "Direct, and deeper levels, pay the percent published by admin."],
+        ].map(([n, title, detail]) => (
+          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <p className="text-xs font-bold text-[#10662A]">{n}</p>
+            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
+            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          </div>
+        ))}
+      </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map(([label, value, hint]) => (
-          <div key={label} className="rounded-2xl border border-[#d8ecdd] bg-white px-3 py-3">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</p>
-            <p className="mt-1 font-display text-lg font-bold text-[#10662A]">{value}</p>
-            <p className="mt-0.5 text-[10px] text-slate-500">{hint}</p>
+          <div key={label} className="rounded-2xl border border-[#d8ecdd] bg-white px-4 py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</p>
+            <p className="mt-2 font-display text-2xl font-bold text-[#390A5D]">{value}</p>
+            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{hint}</p>
           </div>
         ))}
       </div>

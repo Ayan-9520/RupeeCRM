@@ -26,6 +26,7 @@ import {
   type CrmLead,
   type CrmPurchase,
 } from "@/lib/python-api";
+import { DeskGuide } from "@/components/dashboard/DeskGuide";
 import { ConnectorCockpit } from "@/components/dashboard/ConnectorCockpit";
 import { TeleSalesCockpit } from "@/components/dashboard/TeleSalesCockpit";
 import { CustomerHome } from "@/components/dashboard/CustomerHome";
@@ -291,6 +292,8 @@ function DashboardHome() {
       </section>
 
       <RoleStats role={role} config={config} stats={stats} webTotal={admin ? webTotal : undefined} loading={statsLoading} />
+
+      <DeskGuide audience="partner" />
 
       {hasRole(role, ["dsa", "ceo", "super_admin", "admin"]) && (
         <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 shadow-[0_4px_24px_rgba(16,102,42,0.05)]">
