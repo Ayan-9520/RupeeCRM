@@ -27,6 +27,7 @@ import {
   type CrmPurchase,
 } from "@/lib/python-api";
 import { DeskGuide } from "@/components/dashboard/DeskGuide";
+import { RecallList } from "@/components/dashboard/RecallList";
 import { ConnectorCockpit } from "@/components/dashboard/ConnectorCockpit";
 import { TeleSalesCockpit } from "@/components/dashboard/TeleSalesCockpit";
 import { CustomerHome } from "@/components/dashboard/CustomerHome";
@@ -292,6 +293,8 @@ function DashboardHome() {
       </section>
 
       <RoleStats role={role} config={config} stats={stats} webTotal={admin ? webTotal : undefined} loading={statsLoading} />
+
+      <RecallList />
 
       <DeskGuide audience="partner" />
 

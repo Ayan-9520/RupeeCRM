@@ -71,14 +71,19 @@ class PurchasePatch(BaseModel):
 # Call outcome → optional pipeline move. None keeps the current stage.
 DISPOSITIONS: dict[str, tuple[str, str | None]] = {
     "connected": ("Connected", "contacted"),
-    "not_reachable": ("Not reachable", None),
     "interested": ("Interested", "contacted"),
+    "callback": ("Callback", None),
+    "docs_pending": ("Documents pending", "docs_collected"),
+    "login_sent": ("Login sent to bank", "bank_submitted"),
+    "not_reachable": ("Not reachable", None),
     "not_interested": ("Not interested", "rejected"),
-    "callback": ("Callback scheduled", None),
     "wrong_number": ("Wrong number", "rejected"),
     "eligible": ("Eligible", None),
     "converted": ("Converted to case", "docs_collected"),
 }
+
+NEEDS_RECALL = {"callback", "docs_pending", "not_reachable"}
+RECALL_STAFF = {"admin", "ceo", "super_admin", "caller", "coordinator"}
 
 _STAGE_RANK = {
     "new": 0,
@@ -300,7 +305,7 @@ def patch_my_lead(
     p = db.query(LeadPurchase).filter(LeadPurchase.id == purchase_id).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Purchase not found")
-    if p.buyer_user_id != user.id:
+    if p.buyer_user_id != user.id and user.role not in RECALL_STAFF:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your lead")
 
     notes = list(p.notes or [])
@@ -313,8 +318,8 @@ def patch_my_lead(
         if spec is None:
             raise HTTPException(status_code=400, detail="Invalid disposition")
         label, target = spec
-        if code == "callback" and body.next_followup_at is None:
-            raise HTTPException(status_code=400, detail="Callback needs a follow-up time")
+        if code in NEEDS_RECALL and body.next_followup_at is None:
+            raise HTTPException(status_code=400, detail="This status needs the date to call again")
         notes.append(
             {
                 "at": datetime.now(timezone.utc).isoformat(),

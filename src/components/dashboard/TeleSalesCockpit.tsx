@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Phone } from "lucide-react";
 import { DeskGuide } from "@/components/dashboard/DeskGuide";
+import { RecallList } from "@/components/dashboard/RecallList";
 import { listMyLeads, type CrmPurchase } from "@/lib/python-api";
 import { TELE_SECTIONS, telesalesStats } from "@/lib/telesales";
 
@@ -64,6 +65,8 @@ export function TeleSalesCockpit({ firstName }: { firstName: string }) {
           </div>
         ))}
       </div>
+
+      <RecallList />
 
       <DeskGuide audience="caller" />
 

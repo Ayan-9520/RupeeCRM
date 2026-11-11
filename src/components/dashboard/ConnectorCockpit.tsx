@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, Store } from "lucide-react";
 import { DeskGuide } from "@/components/dashboard/DeskGuide";
+import { RecallList } from "@/components/dashboard/RecallList";
 import {
   getBillingMe,
   listMyLeads,
@@ -123,6 +124,8 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
           ))}
         </div>
       </section>
+
+      <RecallList />
 
       <DeskGuide audience="partner" />
 
