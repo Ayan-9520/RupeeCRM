@@ -1,13 +1,60 @@
-"""Replace unsold marketplace leads with one filled lead per RupeeDial product.
+"""Replace the board and Ayan's My Leads with one filled lead per product.
 
-Bought leads and case files stay. Partners and payouts stay.
+Old unsold board leads go. Ayan's old purchased leads and their customer files go.
+The new leads are already on Ayan's account, priced from ₹500. Wallet is not charged.
+Other partners' purchases are left alone.
 """
 
 from __future__ import annotations
 
 from app.db.session import SessionLocal
-from app.models import Lead, LeadPurchase
-from app.plans import default_lead_price
+from app.models import (
+    CustomerAutomationLog,
+    CustomerBankAccount,
+    CustomerBankLogin,
+    CustomerCasePayout,
+    CustomerCoApplicant,
+    CustomerDisbursal,
+    CustomerDocument,
+    CustomerDocumentEvent,
+    CustomerFollowup,
+    CustomerLenderCase,
+    CustomerLoanRequirement,
+    CustomerLosPipeline,
+    CustomerObligation,
+    CustomerPipelineHistory,
+    CustomerProfile,
+    CustomerSanctionDisbursal,
+    CustomerTask,
+    Lead,
+    LeadPurchase,
+    LoanCase,
+    User,
+)
+
+AYAN_EMAIL = "ayanofficial610@gmail.com"
+PRICE_START = 500
+
+FILE_ROWS = (
+    CustomerAutomationLog,
+    CustomerCasePayout,
+    CustomerDisbursal,
+    CustomerSanctionDisbursal,
+    CustomerTask,
+    CustomerLenderCase,
+    CustomerPipelineHistory,
+    CustomerLosPipeline,
+    CustomerBankLogin,
+    CustomerFollowup,
+    CustomerDocumentEvent,
+    CustomerDocument,
+    CustomerLoanRequirement,
+    CustomerCoApplicant,
+    CustomerObligation,
+    CustomerBankAccount,
+    CustomerProfile,
+    LoanCase,
+)
 
 # key, name, category, subtype, loan_type, amount, income, employment, company, city, state, property, purpose
 LEADS = [
@@ -42,60 +89,112 @@ def _mask(phone: str) -> str:
     return f"{digits[:2]}XXXXXX{digits[-2:]}"
 
 
+def _clear(db, purchase_ids: list) -> None:
+    if not purchase_ids:
+        return
+    for model in FILE_ROWS:
+        db.query(model).filter(model.lead_purchase_id.in_(purchase_ids)).delete(synchronize_session=False)
+    lead_ids = [row[0] for row in db.query(LeadPurchase.lead_id).filter(LeadPurchase.id.in_(purchase_ids))]
+    db.query(LeadPurchase).filter(LeadPurchase.id.in_(purchase_ids)).delete(synchronize_session=False)
+    if lead_ids:
+        still = {row[0] for row in db.query(LeadPurchase.lead_id).filter(LeadPurchase.lead_id.in_(lead_ids))}
+        orphan = [item for item in lead_ids if item not in still]
+        if orphan:
+            db.query(Lead).filter(Lead.id.in_(orphan)).delete(synchronize_session=False)
+
+
 def main() -> None:
     db = SessionLocal()
     try:
-        protected = {row[0] for row in db.query(LeadPurchase.lead_id).distinct()}
-        query = db.query(Lead).filter(Lead.is_marketplace.is_(True))
-        if protected:
-            query = query.filter(~Lead.id.in_(protected))
-        removed = query.delete(synchronize_session=False)
+        ayan = db.query(User).filter(User.email.ilike(AYAN_EMAIL)).first()
+        if ayan is None:
+            raise SystemExit("Ayan login was not found")
+
+        owned = [row[0] for row in db.query(LeadPurchase.id).filter(LeadPurchase.buyer_user_id == ayan.id)]
+        _clear(db, owned)
+
+        board_ids = [row[0] for row in db.query(Lead.id).filter(Lead.website_lead_id.like("BOARD-%"))]
+        if board_ids:
+            extra = [row[0] for row in db.query(LeadPurchase.id).filter(LeadPurchase.lead_id.in_(board_ids))]
+            _clear(db, extra)
+            db.query(Lead).filter(Lead.id.in_(board_ids)).delete(synchronize_session=False)
+
+        unsold = db.query(Lead).filter(Lead.is_marketplace.is_(True), Lead.sale_available.is_(True), Lead.status == "available")
+        bought = db.query(LeadPurchase.lead_id)
+        removed_board = unsold.filter(~Lead.id.in_(bought)).delete(synchronize_session=False)
+
         added = 0
         for index, row in enumerate(LEADS, start=1):
             key, name, category, subtype, loan_type, amount, income, employment, company, city, state, property, purpose = row
-            phone = f"98120{index:05d}"
+            phone = f"98{52000000 + index:08d}"
+            price = PRICE_START + (index - 1) * 50
+            lead = Lead(
+                applicant_name=name,
+                full_phone=phone,
+                masked_phone=_mask(phone),
+                email=f"{name.split()[0].lower()}.{key.split('-')[0]}@mail.test",
+                city=city,
+                state=state,
+                loan_amount=amount,
+                monthly_income=income or None,
+                employment_type=employment,
+                company_name=company,
+                loan_type=loan_type[:40],
+                product_category=category,
+                product_subtype=subtype,
+                status="sold",
+                score="hot" if index % 3 == 0 else "warm",
+                price=price,
+                source="website",
+                utm_source="rupeedial",
+                utm_medium="product-page",
+                utm_campaign=key,
+                is_marketplace=False,
+                sale_available=False,
+                phone_verified=True,
+                fraud_risk="low",
+                website_lead_id=f"BOARD-{key}",
+                product_details={
+                    "product": key,
+                    "purpose": purpose,
+                    "property_type": property,
+                    "cibil_band": "750+" if index % 2 == 0 else "700-749",
+                    "existing_emi": 0 if index % 4 else 8500,
+                    "tenure_months": 60 if amount < 2000000 else 180,
+                },
+                quality_factors={"phone": True, "income": bool(income), "city": True},
+                quality_score=78 if income else 64,
+            )
+            db.add(lead)
+            db.flush()
+            purchase = LeadPurchase(
+                lead_id=lead.id,
+                buyer_user_id=ayan.id,
+                price_paid=price,
+                pipeline_stage="new",
+                notes=[],
+                converted=False,
+                deal_value=amount,
+            )
+            db.add(purchase)
+            db.flush()
             db.add(
-                Lead(
-                    applicant_name=name,
-                    full_phone=phone,
-                    masked_phone=_mask(phone),
-                    email=f"{name.split()[0].lower()}.{key.split('-')[0]}@mail.test",
+                CustomerProfile(
+                    lead_purchase_id=purchase.id,
+                    lead_id=lead.id,
+                    dsa_id=ayan.id,
+                    full_name=name,
+                    mobile=phone,
+                    email=lead.email,
                     city=city,
                     state=state,
-                    loan_amount=amount,
-                    monthly_income=income or None,
                     employment_type=employment,
                     company_name=company,
-                    loan_type=loan_type[:40],
-                    product_category=category,
-                    product_subtype=subtype,
-                    status="available",
-                    score="hot" if index % 3 == 0 else "warm",
-                    price=default_lead_price(category),
-                    source="website",
-                    utm_source="rupeedial",
-                    utm_medium="product-page",
-                    utm_campaign=key,
-                    is_marketplace=True,
-                    sale_available=True,
-                    phone_verified=True,
-                    fraud_risk="low",
-                    website_lead_id=f"BOARD-{key}",
-                    product_details={
-                        "product": key,
-                        "purpose": purpose,
-                        "property_type": property,
-                        "cibil_band": "750+" if index % 2 == 0 else "700-749",
-                        "existing_emi": 0 if index % 4 else 8500,
-                        "tenure_months": 60 if amount < 2000000 else 180,
-                    },
-                    quality_factors={"phone": True, "income": bool(income), "city": True},
-                    quality_score=78 if income else 64,
                 )
             )
             added += 1
         db.commit()
-        print(f"removed_unsold={removed} added={added} kept_bought_or_cased={len(protected)}")
+        print(f"removed_my_leads={len(owned)} removed_unsold={removed_board} added={added} price_from={PRICE_START}")
     finally:
         db.close()
 
