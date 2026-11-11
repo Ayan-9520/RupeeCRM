@@ -15,6 +15,13 @@ export const Route = createFileRoute("/dashboard/learn")({
 });
 
 const TOTAL_POINTS = COURSES.reduce((sum, c) => sum + c.reward_points, 0);
+const LEVELS = [
+  { name: "Starter", min: 0 },
+  { name: "Bronze", min: 300 },
+  { name: "Silver", min: 800 },
+  { name: "Gold", min: 1400 },
+  { name: "Platinum", min: 2110 },
+] as const;
 
 function LearnDashboard() {
   const { user, role } = useAuth();
@@ -35,6 +42,8 @@ function LearnDashboard() {
   }, []);
 
   const earned = useMemo(() => new Map(certs.map((c) => [c.course_slug, c])), [certs]);
+  const levelIndex = LEVELS.reduce((acc, level, index) => (points >= level.min ? index : acc), 0);
+  const nextLevel = LEVELS[levelIndex + 1];
   const nextCourse = COURSES.find((c) => !earned.has(c.slug));
   const progress = TOTAL_POINTS ? Math.round((points / TOTAL_POINTS) * 100) : 0;
 
@@ -82,6 +91,20 @@ function LearnDashboard() {
             ))}
           </div>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+        {LEVELS.map((item, index) => (
+          <div
+            key={item.name}
+            className={`rounded-xl border px-3 py-2 text-center text-xs ${
+              index <= levelIndex ? "border-[#10662A]/30 bg-[#E8F7EC] text-[#0D4F20]" : "border-[#d8ecdd] bg-white text-[#5c4d72]"
+            }`}
+          >
+            <p className="font-bold">{item.name}</p>
+            <p>{index === levelIndex && nextLevel ? `${nextLevel.min - points} pts to ${nextLevel.name}` : `${item.min}+ pts`}</p>
+          </div>
+        ))}
       </div>
 
       {nextCourse && (

@@ -51,7 +51,7 @@ const MODULES = [
   { title: "Invoice", desc: "Raise and track commission invoices", to: "/dashboard/earnings", icon: Receipt },
   { title: "Network", desc: "Connectors, invites and revenue share", to: "/dashboard/network", icon: Network },
   { title: "Academy", desc: "Products, scripts and the assistant", to: "/dashboard/training", icon: GraduationCap },
-  { title: "Rewards", desc: "Points and targets", to: "/dashboard/rewards", icon: BadgeIndianRupee },
+  { title: "Learn & Earn", desc: "Courses, quizzes and points", to: "/dashboard/learn", icon: GraduationCap },
   { title: "Support", desc: "Community and help", to: "/dashboard/community", icon: LifeBuoy },
   { title: "Lead wallet", desc: "Buy from the marketplace", to: "/dashboard/wallet", icon: Wallet },
 ] as const;

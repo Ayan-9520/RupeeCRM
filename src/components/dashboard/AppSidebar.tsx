@@ -6,7 +6,7 @@ import {
   LayoutDashboard, Store, Wallet, Users, Phone, FileText, Building2,
   Settings, LogOut, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
-  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Gift, Percent, Cog, Globe, Network, Database, SlidersHorizontal,
+  Palette, Image as ImageIcon, Award, UserCheck, Trophy, Percent, Cog, Globe, Network, Database, SlidersHorizontal,
   Home, Target, FolderKanban, IndianRupee, Rocket, ShieldCheck, UserCircle, MessagesSquare, ScrollText, Receipt,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
@@ -39,7 +39,6 @@ const ICONS: Record<string, IconType> = {
   "/dashboard/certificates": Award,
   "/dashboard/training": GraduationCap,
   "/dashboard/leaderboard": Trophy,
-  "/dashboard/rewards": Gift,
   "/dashboard/admin/users": Users,
   "/dashboard/admin/leads": ListPlus,
   "/dashboard/website-leads": Globe,
@@ -98,7 +97,6 @@ const SECTION_OF: Record<string, SectionId> = {
   "/dashboard/marketing": "growth",
   "/dashboard/community": "growth",
   "/dashboard/leaderboard": "growth",
-  "/dashboard/rewards": "growth",
   "/dashboard/learn": "learn",
   "/dashboard/training": "learn",
   "/dashboard/certificates": "learn",

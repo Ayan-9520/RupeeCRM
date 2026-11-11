@@ -146,12 +146,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",
   },
-  {
-    title: "Rewards",
-    url: "/dashboard/rewards",
-    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
-    group: "main",
-  },
   { title: "Control Centre", url: "/dashboard/admin/control", roles: ADMIN_ROLES, group: "admin" },
   { title: "Data Pipeline", url: "/dashboard/admin/pipeline", roles: ADMIN_ROLES, group: "admin" },
   { title: "Users", url: "/dashboard/admin/users", roles: ADMIN_ROLES, group: "admin" },

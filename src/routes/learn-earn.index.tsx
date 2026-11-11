@@ -251,7 +251,7 @@ function LearnEarnLanding() {
             <div className="text-center max-w-2xl mx-auto">
               <div className="text-xs uppercase tracking-[0.18em] text-accent font-semibold">Levels</div>
               <h2 className="mt-3 font-display text-3xl lg:text-4xl font-bold">Points add up as you certify.</h2>
-              <p className="mt-3 text-muted-foreground">Each course quiz you pass adds its points once. Your level shows on your Rewards page inside the CRM.</p>
+              <p className="mt-3 text-muted-foreground">Each course quiz you pass adds its points once. Your level and badges stay on Learn & Earn inside the CRM.</p>
             </div>
             <div className="mt-10 grid grid-cols-2 sm:grid-cols-5 gap-4">
               {LEVELS.map((l, i) => (

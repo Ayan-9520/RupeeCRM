@@ -20,7 +20,7 @@ const MODULES = [
   { title: "Campaigns", to: "/dashboard/admin/marketing", note: "Marketing templates." },
   { title: "Network", to: "/dashboard/admin/network", note: "Connector share is edited here, not hardcoded." },
   { title: "Training", to: "/dashboard/training", note: "Academy, scripts, and Ask RupeeDial." },
-  { title: "Rewards", to: "/dashboard/rewards", note: "Partner rewards." },
+  { title: "Learn & Earn", to: "/dashboard/learn", note: "Courses, quizzes, points and certificates." },
   { title: "Reports", to: "/dashboard/los-executive", note: "Funnel and conversion." },
   { title: "Compliance", to: "/dashboard/training", note: "Consent and no bank promise, on the Academy page." },
   { title: "Audit Logs", to: "/dashboard/admin/trust", note: "Trust events, including pipeline import and allocation." },
