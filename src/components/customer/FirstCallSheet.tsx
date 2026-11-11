@@ -49,7 +49,7 @@ export function FirstCallSheet({ purchase, profile, loans, obligations, document
   const [employment, setEmployment] = useState(profile.employment_type || lead?.employment_type || "Salaried");
   const [income, setIncome] = useState(String(profile.monthly_income || profile.net_salary || lead?.monthly_income || ""));
   const [salaryMode, setSalaryMode] = useState(profile.salary_mode || "Bank transfer");
-  const [emi, setEmi] = useState(String(callEmi?.emi ?? obligations.reduce((sum, row) => sum + (Number(row.emi) || 0), 0) || ""));
+  const [emi, setEmi] = useState(String((callEmi?.emi ?? obligations.reduce((sum, row) => sum + (Number(row.emi) || 0), 0)) || ""));
   const [cibil, setCibil] = useState(String((loan?.extra_fields as { cibil_band?: string } | undefined)?.cibil_band || "unknown"));
   const [propertyValue, setPropertyValue] = useState(String(loan?.property_value || ""));
   const [saving, setSaving] = useState(false);
@@ -89,7 +89,7 @@ export function FirstCallSheet({ purchase, profile, loans, obligations, document
       const loanPatch = {
         product_type: product,
         loan_amount: Number(amount) || null,
-        property_value: product.toLowerCase().includes("home") ? Number(propertyValue) || null : loan?.property_value ?? null,
+        property_value: product.toLowerCase().includes("home") ? (Number(propertyValue) || null) : (loan?.property_value ?? null),
         extra_fields: { ...(loan?.extra_fields || {}), cibil_band: cibil },
       };
       if (loan) {
