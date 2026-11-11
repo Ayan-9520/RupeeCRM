@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowRight, Store } from "lucide-react";
 import { DeskGuide } from "@/components/dashboard/DeskGuide";
+import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { RecallList } from "@/components/dashboard/RecallList";
 import {
   getBillingMe,
@@ -124,6 +125,8 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
           ))}
         </div>
       </section>
+
+      <ProductivityChart />
 
       <RecallList />
 

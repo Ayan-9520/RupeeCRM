@@ -9,6 +9,8 @@ export type CrmUser = {
   id?: string;
   phone?: string | null;
   dsa_id?: string | null;
+  created_at?: string | null;
+  monthly_target_inr?: number | null;
 };
 
 export type CrmLead = {
@@ -190,6 +192,7 @@ export async function crmMe(): Promise<CrmUser> {
 export async function updateCrmProfile(body: {
   full_name?: string;
   phone?: string;
+  monthly_target_inr?: number | null;
 }): Promise<CrmUser> {
   const user = await request<CrmUser>("/api/auth/me", {
     method: "PATCH",

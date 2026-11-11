@@ -162,6 +162,8 @@ def update_me(
     if body.phone is not None:
         phone = body.phone.strip()
         user.phone = phone or None
+    if "monthly_target_inr" in body.model_fields_set:
+        user.monthly_target_inr = body.monthly_target_inr or None
     db.add(user)
     db.commit()
     db.refresh(user)

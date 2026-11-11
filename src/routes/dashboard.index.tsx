@@ -27,6 +27,7 @@ import {
   type CrmPurchase,
 } from "@/lib/python-api";
 import { DeskGuide } from "@/components/dashboard/DeskGuide";
+import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { RecallList } from "@/components/dashboard/RecallList";
 import { ConnectorCockpit } from "@/components/dashboard/ConnectorCockpit";
 import { TeleSalesCockpit } from "@/components/dashboard/TeleSalesCockpit";
@@ -293,6 +294,8 @@ function DashboardHome() {
       </section>
 
       <RoleStats role={role} config={config} stats={stats} webTotal={admin ? webTotal : undefined} loading={statsLoading} />
+
+      <ProductivityChart />
 
       <RecallList />
 

@@ -28,6 +28,8 @@ class UserOut(BaseModel):
     is_active: bool = True
     kyc_verified: bool = False
     finance_level: str | None = None
+    created_at: datetime | None = None
+    monthly_target_inr: float | None = None
 
     model_config = {"from_attributes": True}
 
@@ -35,6 +37,7 @@ class UserOut(BaseModel):
 class UserUpdateIn(BaseModel):
     full_name: str | None = None
     phone: str | None = None
+    monthly_target_inr: float | None = Field(default=None, ge=0, le=100_000_000)
 
 
 class LeadOut(BaseModel):
