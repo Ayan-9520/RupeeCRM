@@ -11,6 +11,7 @@ export type CrmUser = {
   dsa_id?: string | null;
   created_at?: string | null;
   monthly_target_inr?: number | null;
+  monthly_login_target_inr?: number | null;
 };
 
 export type CrmLead = {
@@ -192,7 +193,6 @@ export async function crmMe(): Promise<CrmUser> {
 export async function updateCrmProfile(body: {
   full_name?: string;
   phone?: string;
-  monthly_target_inr?: number | null;
 }): Promise<CrmUser> {
   const user = await request<CrmUser>("/api/auth/me", {
     method: "PATCH",
@@ -441,6 +441,8 @@ export async function listCrmUsers(): Promise<{
     sales_title?: string | null;
     reports_to_user_id?: string | null;
     reports_to_name?: string | null;
+    monthly_target_inr?: number | null;
+    monthly_login_target_inr?: number | null;
     created_at: string | null;
   }[];
   total: number;
@@ -469,6 +471,13 @@ export async function listMyDownline(): Promise<{
   total: number;
 }> {
   return request("/api/users/downline");
+}
+
+export async function setUserTargets(
+  userId: string,
+  body: { monthly_target_inr?: number | null; monthly_login_target_inr?: number | null },
+): Promise<void> {
+  return request(`/api/users/${userId}/targets`, { method: "PUT", body: JSON.stringify(body) });
 }
 
 export async function setUserDesignation(

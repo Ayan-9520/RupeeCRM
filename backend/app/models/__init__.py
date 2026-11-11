@@ -27,6 +27,7 @@ class User(Base):
     plan_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     wallet_balance: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     monthly_target_inr: Mapped[float | None] = mapped_column(Float, nullable=True)
+    monthly_login_target_inr: Mapped[float | None] = mapped_column(Float, nullable=True)
     joining_credit_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     seat_owner_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), nullable=True, index=True

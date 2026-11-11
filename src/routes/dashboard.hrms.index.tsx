@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Loader2, Search, Users, Mail, Phone } from "lucide-react";
 import { toast } from "sonner";
-import { getBillingMe, listCrmUsers, listMyDownline, listSalesGrades, setUserDesignation } from "@/lib/python-api";
+import { getBillingMe, listCrmUsers, listMyDownline, listSalesGrades, setUserDesignation, setUserTargets } from "@/lib/python-api";
 import { useAuth } from "@/lib/auth-context";
 import { canAccessPath, isPlatformAdmin } from "@/lib/role-access";
 import { useBillingEntitlements } from "@/hooks/use-billing-entitlements";
@@ -29,7 +29,42 @@ type Member = {
   sales_title?: string | null;
   reports_to_user_id?: string | null;
   reports_to_name?: string | null;
+  monthly_target_inr?: number | null;
+  monthly_login_target_inr?: number | null;
 };
+
+function money(value: number | null | undefined) {
+  return value ? String(Math.round(value)) : "";
+}
+
+function TargetInputs({ member, onSaved }: { member: Member; onSaved: (login: number, disbursement: number) => void }) {
+  const [login, setLogin] = useState(money(member.monthly_login_target_inr));
+  const [disbursement, setDisbursement] = useState(money(member.monthly_target_inr));
+  const [busy, setBusy] = useState(false);
+  const save = async () => {
+    setBusy(true);
+    try {
+      const monthly_login_target_inr = Number(login || 0);
+      const monthly_target_inr = Number(disbursement || 0);
+      await setUserTargets(member.id, { monthly_login_target_inr, monthly_target_inr });
+      onSaved(monthly_login_target_inr, monthly_target_inr);
+      toast.success("Targets saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save targets");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex min-w-[220px] flex-col gap-1">
+      <input value={login} onChange={(event) => setLogin(event.target.value.replace(/[^\d]/g, ""))} placeholder="Login ₹ / month" className="h-7 rounded-lg border border-[#d8ecdd] px-2 text-xs" />
+      <input value={disbursement} onChange={(event) => setDisbursement(event.target.value.replace(/[^\d]/g, ""))} placeholder="Disbursement ₹ / month" className="h-7 rounded-lg border border-[#d8ecdd] px-2 text-xs" />
+      <button type="button" disabled={busy} onClick={() => void save()} className="h-7 rounded-lg bg-[#10662A] text-[11px] font-semibold text-white disabled:opacity-50">
+        {busy ? "Saving…" : "Save targets"}
+      </button>
+    </div>
+  );
+}
 
 const ROLE_LABEL: Record<string, string> = {
   ceo: "CEO",
@@ -55,7 +90,7 @@ function EmployeesPage() {
   const [grades, setGrades] = useState<{ code: string; title: string }[]>([]);
 
   useEffect(() => {
-    if (!hrmsSoft) {
+    if (!hrmsSoft && !admin) {
       setLoading(false);
       return;
     }
@@ -80,6 +115,8 @@ function EmployeesPage() {
             sales_title: u.sales_title,
             reports_to_user_id: u.reports_to_user_id,
             reports_to_name: u.reports_to_name,
+            monthly_target_inr: "monthly_target_inr" in u ? u.monthly_target_inr : null,
+            monthly_login_target_inr: "monthly_login_target_inr" in u ? u.monthly_login_target_inr : null,
           })),
         );
       } catch (e) {
@@ -99,7 +136,7 @@ function EmployeesPage() {
     );
   }
 
-  if (!hrmsSoft) {
+  if (!hrmsSoft && !admin) {
     return (
       <MarketingUpgradeGate
         title="Team roster"
@@ -126,6 +163,11 @@ function EmployeesPage() {
 
   return (
     <div className="space-y-4">
+      {admin ? (
+        <p className="text-sm text-[#5c4d72]">
+          Only an admin sets targets. Sample for a PL/BL caller on ₹20,000 salary: about ₹25,00,000 disbursement a month. Login target is entered separately.
+        </p>
+      ) : null}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative flex-1 max-w-sm">
           <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#5c4d72]" />
@@ -169,6 +211,7 @@ function EmployeesPage() {
                 <TableHead className="text-[#0e4d28]">Role</TableHead>
                 <TableHead className="text-[#0e4d28]">Number</TableHead>
                 <TableHead className="text-[#0e4d28]">Email</TableHead>
+                <TableHead className="text-[#0e4d28]">Monthly targets</TableHead>
                 <TableHead className="text-[#0e4d28]">RM2 status</TableHead>
               </TableRow>
             </TableHeader>
@@ -252,6 +295,22 @@ function EmployeesPage() {
                         <Mail className="size-3.5 text-[#0e4d28]" />
                         {e.email}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {admin ? (
+                        <TargetInputs
+                          member={e}
+                          onSaved={(loginAmount, disbursement) => {
+                            setList((prev) => prev.map((row) => (row.id === e.id ? { ...row, monthly_login_target_inr: loginAmount, monthly_target_inr: disbursement } : row)));
+                          }}
+                        />
+                      ) : (
+                        <span className="text-xs text-[#14281c]">
+                          Login {e.monthly_login_target_inr ? `₹${Math.round(e.monthly_login_target_inr).toLocaleString("en-IN")}` : "—"}
+                          <br />
+                          Disbursement {e.monthly_target_inr ? `₹${Math.round(e.monthly_target_inr).toLocaleString("en-IN")}` : "—"}
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${assigned ? "bg-[#E8F7EC] text-[#0e4d28]" : "bg-[#f4f1ea] text-[#6b645b]"}`}>

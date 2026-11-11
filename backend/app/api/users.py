@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -31,6 +31,8 @@ class UserAdminOut(BaseModel):
     sales_title: str | None = None
     reports_to_user_id: UUID | None = None
     reports_to_name: str | None = None
+    monthly_target_inr: float | None = None
+    monthly_login_target_inr: float | None = None
     created_at: str | None = None
 
     model_config = {"from_attributes": True}
@@ -86,6 +88,8 @@ def list_users(
             sales_title=grade_title(u.sales_grade),
             reports_to_user_id=u.reports_to_user_id,
             reports_to_name=rm_names.get(u.reports_to_user_id) if u.reports_to_user_id else None,
+            monthly_target_inr=u.monthly_target_inr,
+            monthly_login_target_inr=u.monthly_login_target_inr,
             created_at=u.created_at.isoformat() if u.created_at else None,
         )
         for u in rows
@@ -128,6 +132,8 @@ def my_downline(db: Session = Depends(get_db), user: User = Depends(get_current_
             sales_title=grade_title(u.sales_grade),
             reports_to_user_id=u.reports_to_user_id,
             reports_to_name=names.get(u.reports_to_user_id) if u.reports_to_user_id else None,
+            monthly_target_inr=u.monthly_target_inr,
+            monthly_login_target_inr=u.monthly_login_target_inr,
             created_at=u.created_at.isoformat() if u.created_at else None,
         )
         for u in rows
@@ -176,6 +182,48 @@ def set_designation(
         sales_title=grade_title(user.sales_grade),
         reports_to_user_id=user.reports_to_user_id,
         reports_to_name=manager.full_name if manager else None,
+        monthly_target_inr=user.monthly_target_inr,
+        monthly_login_target_inr=user.monthly_login_target_inr,
+        created_at=user.created_at.isoformat() if user.created_at else None,
+    )
+
+
+class TargetsIn(BaseModel):
+    monthly_target_inr: float | None = Field(default=None, ge=0, le=100_000_000)
+    monthly_login_target_inr: float | None = Field(default=None, ge=0, le=100_000_000)
+
+
+@router.put("/{user_id}/targets", response_model=UserAdminOut)
+def set_targets(
+    user_id: UUID,
+    body: TargetsIn,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+) -> UserAdminOut:
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if "monthly_target_inr" in body.model_fields_set:
+        user.monthly_target_inr = body.monthly_target_inr or None
+    if "monthly_login_target_inr" in body.model_fields_set:
+        user.monthly_login_target_inr = body.monthly_login_target_inr or None
+    db.commit()
+    db.refresh(user)
+    manager = db.query(User).filter(User.id == user.reports_to_user_id).first() if user.reports_to_user_id else None
+    return UserAdminOut(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        phone=user.phone,
+        is_active=user.is_active,
+        kyc_verified=bool(user.kyc_verified),
+        sales_grade=user.sales_grade,
+        sales_title=grade_title(user.sales_grade),
+        reports_to_user_id=user.reports_to_user_id,
+        reports_to_name=manager.full_name if manager else None,
+        monthly_target_inr=user.monthly_target_inr,
+        monthly_login_target_inr=user.monthly_login_target_inr,
         created_at=user.created_at.isoformat() if user.created_at else None,
     )
 

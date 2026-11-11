@@ -7,7 +7,9 @@ export type ProductivityPoint = {
   disbursed: number;
   cases: number;
   calls: number;
+  login: number;
   target: number;
+  loginTarget: number;
 };
 
 function monthStart(date: Date) {
@@ -41,10 +43,24 @@ export function disbursedAmount(row: CrmPurchase) {
   return Number(row.lead?.loan_amount || 0);
 }
 
+export function loginOn(row: CrmPurchase): Date | null {
+  const hit = (row.notes || []).find((note) => {
+    if (!note.at) return false;
+    if (note.kind === "disposition" && note.code === "login_sent") return true;
+    return note.kind === "stage" && /bank_submitted/i.test(note.text || "");
+  });
+  if (hit?.at) {
+    const date = new Date(hit.at);
+    if (!Number.isNaN(date.getTime())) return date;
+  }
+  return disbursedOn(row);
+}
+
 export function productivitySeries(
   rows: CrmPurchase[],
   joinedAt: Date,
   monthlyTarget: number,
+  monthlyLoginTarget: number,
   mode: ProductivityMode,
   now = new Date(),
 ): ProductivityPoint[] {
@@ -52,9 +68,9 @@ export function productivitySeries(
   const end = monthStart(now);
   if (start.getTime() > end.getTime()) return [];
 
-  const months: { key: string; label: string; date: Date; disbursed: number; cases: number; calls: number }[] = [];
+  const months: { key: string; label: string; date: Date; disbursed: number; cases: number; calls: number; login: number }[] = [];
   for (let cursor = start; cursor.getTime() <= end.getTime(); cursor = addMonths(cursor, 1)) {
-    months.push({ key: monthKey(cursor), label: monthLabel(cursor), date: cursor, disbursed: 0, cases: 0, calls: 0 });
+    months.push({ key: monthKey(cursor), label: monthLabel(cursor), date: cursor, disbursed: 0, cases: 0, calls: 0, login: 0 });
   }
   const index = new Map(months.map((month, position) => [month.key, position]));
 
@@ -67,6 +83,11 @@ export function productivitySeries(
         months[slot].cases += 1;
       }
     }
+    const logged = loginOn(row);
+    if (logged) {
+      const slot = index.get(monthKey(logged));
+      if (slot !== undefined) months[slot].login += disbursedAmount(row);
+    }
     for (const note of row.notes || []) {
       if (note.kind !== "disposition" || !note.at) continue;
       const called = new Date(note.at);
@@ -77,13 +98,16 @@ export function productivitySeries(
   }
 
   const target = Math.max(0, monthlyTarget || 0);
+  const loginTarget = Math.max(0, monthlyLoginTarget || 0);
   if (mode === "month") {
     return months.map((month) => ({
       label: month.label,
       disbursed: Math.round(month.disbursed),
       cases: month.cases,
       calls: month.calls,
+      login: Math.round(month.login),
       target,
+      loginTarget,
     }));
   }
 
@@ -92,19 +116,23 @@ export function productivitySeries(
     const year = month.date.getFullYear();
     const key = mode === "quarter" ? `${year}-Q${Math.floor(month.date.getMonth() / 3) + 1}` : String(year);
     const label = mode === "quarter" ? `Q${Math.floor(month.date.getMonth() / 3) + 1} ${year}` : String(year);
-    const group = groups.get(key) || { label, disbursed: 0, cases: 0, calls: 0, target: 0, months: 0 };
+    const group = groups.get(key) || { label, disbursed: 0, cases: 0, calls: 0, login: 0, target: 0, loginTarget: 0, months: 0 };
     group.disbursed += month.disbursed;
     group.cases += month.cases;
     group.calls += month.calls;
+    group.login += month.login;
     group.months += 1;
     group.target = Math.round(target * group.months);
+    group.loginTarget = Math.round(loginTarget * group.months);
     groups.set(key, group);
   }
-  return [...groups.values()].map(({ label, disbursed, cases, calls, target: periodTarget }) => ({
-    label,
-    disbursed: Math.round(disbursed),
-    cases,
-    calls,
-    target: periodTarget,
+  return [...groups.values()].map((group) => ({
+    label: group.label,
+    disbursed: Math.round(group.disbursed),
+    cases: group.cases,
+    calls: group.calls,
+    login: Math.round(group.login),
+    target: group.target,
+    loginTarget: group.loginTarget,
   }));
 }
