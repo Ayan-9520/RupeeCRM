@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Award, Download, Loader2 } from "lucide-react";
+import { Award, BookOpen, CircleCheck, Download, Loader2 } from "lucide-react";
 import { listCertificates, type CrmCertificate } from "@/lib/python-api";
 import { downloadCertificate } from "@/lib/certificate-pdf";
 import { useAuth } from "@/lib/auth-context";
@@ -109,14 +109,19 @@ function CertificatesPage() {
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         {[
-          ["1", "Open the lessons", "Each course below is a product you can sell."],
-          ["2", "Pass at 70% or more", "The quiz is the only way a certificate is issued."],
-          ["3", "Download the PDF", "It uses your name, the score, and a certificate number."],
-        ].map(([n, title, detail]) => (
-          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-            <p className="text-xs font-bold text-[#10662A]">{n}</p>
-            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
-            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          { n: "1", title: "Open the lessons", detail: "Each course below is a product you can sell.", icon: BookOpen },
+          { n: "2", title: "Pass at 70% or more", detail: "The quiz is the only way a certificate is issued.", icon: CircleCheck },
+          { n: "3", title: "Download the PDF", detail: "It uses your name, the score, and a certificate number.", icon: Download },
+        ].map((step) => (
+          <div key={step.n} className="flex gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A]">
+              <step.icon className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold text-[#10662A]">Step {step.n}</p>
+              <p className="mt-0.5 font-semibold text-[#390A5D]">{step.title}</p>
+              <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{step.detail}</p>
+            </div>
           </div>
         ))}
       </div>

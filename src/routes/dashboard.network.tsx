@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Loader2 } from "lucide-react";
+import { Copy, Link2, Loader2, Percent, UserPlus } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getRoleLabel } from "@/lib/role-access";
 import { getMyNetwork, inviteNetworkPartner, type NetworkMe } from "@/lib/python-api";
@@ -22,7 +22,6 @@ function inviteUrl(code: string) {
 }
 
 function NetworkPage() {
-  const { role } = useAuth();
   const [data, setData] = useState<NetworkMe | null>(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -75,6 +74,7 @@ function NetworkPage() {
     );
   }
 
+  const cards = [
   const admin = role === "ceo" || role === "super_admin" || role === "admin";
   const cards = [
     ["Connectors", String(data.connector_count), "People who joined on your code"],
@@ -97,14 +97,19 @@ function NetworkPage() {
       </div>
       <div className="grid gap-3 md:grid-cols-3">
         {[
-          ["1", "Create the invite", "Name and mobile are enough. Copy the link and send it on WhatsApp."],
-          ["2", "They join on your code", "The new partner is counted under you once the application is approved."],
-          ["3", "Share follows the level", "Direct, and deeper levels, pay the percent published by admin."],
-        ].map(([n, title, detail]) => (
-          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-            <p className="text-xs font-bold text-[#10662A]">{n}</p>
-            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
-            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          { n: "1", title: "Create the invite", detail: "Name and mobile are enough. Copy the link and send it on WhatsApp.", icon: UserPlus },
+          { n: "2", title: "They join on your code", detail: "The new partner is counted under you once the application is approved.", icon: Link2 },
+          { n: "3", title: "Share follows the level", detail: "Direct, and deeper levels, pay the percent published by admin.", icon: Percent },
+        ].map((step) => (
+          <div key={step.n} className="flex gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A]">
+              <step.icon className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold text-[#10662A]">Step {step.n}</p>
+              <p className="mt-0.5 font-semibold text-[#390A5D]">{step.title}</p>
+              <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{step.detail}</p>
+            </div>
           </div>
         ))}
       </div>

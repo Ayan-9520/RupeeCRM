@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Heart, Loader2, Send } from "lucide-react";
+import { Heart, Loader2, PenLine, Send, Tags } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/auth-context";
 import { getRoleLabel } from "@/lib/role-access";
@@ -107,14 +107,19 @@ function Community() {
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         {[
-          ["1", "Pick a topic", "Home loan, personal loan, cards, insurance, a city, or a partner tip."],
-          ["2", "Write what you know", "One useful note. Do not put a customer’s phone or PAN here."],
-          ["3", "Others can like it", "The count is saved. It is not a lead and it does not pay a commission."],
-        ].map(([n, title, detail]) => (
-          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-            <p className="text-xs font-bold text-[#10662A]">{n}</p>
-            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
-            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          { n: "1", title: "Pick a topic", detail: "Home loan, personal loan, cards, insurance, a city, or a partner tip.", icon: Tags },
+          { n: "2", title: "Write what you know", detail: "One useful note. Do not put a customer’s phone or PAN here.", icon: PenLine },
+          { n: "3", title: "Others can like it", detail: "The count is saved. It is not a lead and it does not pay a commission.", icon: Heart },
+        ].map((step) => (
+          <div key={step.n} className="flex gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A]">
+              <step.icon className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold text-[#10662A]">Step {step.n}</p>
+              <p className="mt-0.5 font-semibold text-[#390A5D]">{step.title}</p>
+              <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{step.detail}</p>
+            </div>
           </div>
         ))}
       </div>

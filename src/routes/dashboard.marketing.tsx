@@ -1,5 +1,5 @@
 import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
-import { Megaphone, Image as ImageIcon, MessageCircle, IdCard, Film, Link2, Zap } from "lucide-react";
+import { Megaphone, Image as ImageIcon, MessageCircle, IdCard, Film, Link2, Zap, MousePointerClick, BadgeCheck, Share2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBillingEntitlements } from "@/hooks/use-billing-entitlements";
 import { Loader2 } from "lucide-react";
@@ -53,14 +53,19 @@ function MarketingLayout() {
 
       <div className="grid gap-3 md:grid-cols-3">
         {[
-          ["1", "Pick one tool", "A finished post, a WhatsApp line, a card, a reel, or your own link."],
-          ["2", "Your name goes on it", "The creative uses the phone and profile on this login."],
-          ["3", "The customer opens it", "Without a plan, the file stays locked. Billing turns it on."],
-        ].map(([n, title, detail]) => (
-          <div key={n} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-            <p className="text-xs font-bold text-[#10662A]">{n}</p>
-            <p className="mt-1 font-semibold text-[#390A5D]">{title}</p>
-            <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{detail}</p>
+          { n: "1", title: "Pick one tool", detail: "A finished post, a WhatsApp line, a card, a reel, or your own link.", icon: MousePointerClick },
+          { n: "2", title: "Your name goes on it", detail: "The creative uses the phone and profile on this login.", icon: BadgeCheck },
+          { n: "3", title: "The customer opens it", detail: "Without a plan, the file stays locked. Billing turns it on.", icon: Share2 },
+        ].map((step) => (
+          <div key={step.n} className="flex gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <span className="grid size-11 shrink-0 place-items-center rounded-xl bg-[#E8F7EC] text-[#10662A]">
+              <step.icon className="size-5" />
+            </span>
+            <div>
+              <p className="text-xs font-bold text-[#10662A]">Step {step.n}</p>
+              <p className="mt-0.5 font-semibold text-[#390A5D]">{step.title}</p>
+              <p className="mt-1 text-sm leading-5 text-[#5c4d72]">{step.detail}</p>
+            </div>
           </div>
         ))}
       </div>
