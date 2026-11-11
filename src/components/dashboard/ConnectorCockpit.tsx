@@ -101,55 +101,51 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
   const payouts = metrics.slice(5, 8);
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
-      <DeskGuide audience="partner" />
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0D4F20] to-[#10662A] text-white shadow-[0_18px_40px_rgba(13,79,32,0.2)]">
-        <div className="flex flex-col gap-6 p-6 sm:p-8 lg:flex-row lg:items-end lg:justify-between">
+    <div className="mx-auto max-w-6xl space-y-4">
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0D4F20] via-[#10662A] to-[#16381f] text-white shadow-[0_18px_40px_rgba(13,79,32,0.18)]">
+        <div className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Partner desk</p>
-            <h1 className="mt-2 font-display text-3xl font-bold">{firstName ? `${firstName}'s business` : "Your partner business"}</h1>
-            <p className="mt-2 max-w-md text-sm leading-6 text-white/75">Disbursed cases, open pipeline and the payout still with RupeeDial.</p>
+            <h1 className="mt-1 font-display text-3xl font-bold">{firstName ? `${firstName}'s business` : "Your partner business"}</h1>
           </div>
-          <Link to="/dashboard/cases" className="rounded-2xl px-4 py-3 transition hover:bg-white/10 lg:text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Disbursement</p>
-            <p className="mt-1 font-display text-4xl font-bold">{loading ? "…" : inr(cards.disburse)}</p>
-            <p className="mt-1 text-sm text-white/75">{loading ? "…" : `${cards.conversion}% of leads disbursed`} · Open cases</p>
+          <Link to="/dashboard/cases" className="rounded-2xl px-3 py-2 transition hover:bg-white/10 sm:text-right">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Disbursed</p>
+            <p className="font-display text-3xl font-bold">{loading ? "…" : inr(cards.disburse)}</p>
+            <p className="text-sm text-white/70">{loading ? "…" : `${cards.conversion}% of leads`}</p>
           </Link>
         </div>
-        <div className="grid border-t border-white/15 sm:grid-cols-3">
-          {payouts.map((item) => (
-            <Link key={item.label} to={item.to} className="border-white/15 px-6 py-4 transition hover:bg-black/15 sm:border-l sm:first:border-l-0">
-              <p className="text-xs text-white/70">{item.label}</p>
-              <p className="mt-1 text-xl font-semibold">{item.value}</p>
-              <p className="text-xs text-white/60">{item.hint} · Open</p>
+        <div className="grid border-t border-white/15 sm:grid-cols-4">
+          {[...payouts, metrics[8]].map((item) => (
+            <Link key={item.label} to={item.to} className="px-5 py-3 transition hover:bg-black/15 sm:border-l sm:border-white/15 sm:first:border-l-0">
+              <p className="text-xs text-white/65">{item.label}</p>
+              <p className="mt-0.5 text-lg font-semibold">{item.value}</p>
             </Link>
           ))}
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-display text-lg font-bold text-[#390A5D]">Open pipeline</h2>
-        <Link to="/dashboard/leadboard" className="inline-flex items-center gap-2 rounded-xl bg-[#10662A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#0D4F20]">
-          <Store className="size-4" /> Browse leads
-        </Link>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {pipeline.map((item) => (
-          <Link key={item.label} to={item.to} className="group rounded-2xl border border-[#d8ecdd] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(16,102,42,0.05)] transition hover:border-[#0D4F20] hover:bg-[#0D4F20]">
-            <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-[#5c4d72] group-hover:text-[#B7E4C7]">
-              {item.label}
-              <ArrowRight className="size-3.5" />
-            </span>
-            <span className="mt-2 block font-display text-2xl font-bold text-[#390A5D] group-hover:text-white">{item.value}</span>
-            <span className="mt-1 block text-sm text-[#5c4d72] group-hover:text-white/75">{item.hint}</span>
-          </Link>
-        ))}
-      </div>
-      <Link to="/dashboard/wallet" className="flex items-center justify-between rounded-2xl border border-[#d8ecdd] bg-white px-4 py-4 text-sm text-[#14281c] shadow-[0_10px_24px_rgba(16,102,42,0.05)] transition hover:border-[#0D4F20] hover:bg-[#0D4F20] hover:text-white">
-        <span>Lead wallet <span className="font-semibold">{loading ? "…" : inr(cards.wallet)}</span> · marketplace balance</span>
-        <ArrowRight className="size-4 shrink-0" />
-      </Link>
+      <DeskGuide audience="partner" />
 
+      <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_10px_28px_rgba(16,102,42,0.04)]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-xl font-bold text-[#390A5D]">Open pipeline</h2>
+          <Link to="/dashboard/leadboard" className="inline-flex items-center gap-2 rounded-xl bg-[#10662A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0D4F20]">
+            <Store className="size-4" /> Browse leads
+          </Link>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {pipeline.map((item) => (
+            <Link key={item.label} to={item.to} className="group rounded-2xl bg-[#F4FBF6] px-4 py-3 transition hover:bg-[#0D4F20]">
+              <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-[#5c4d72] group-hover:text-[#B7E4C7]">
+                {item.label}
+                <ArrowRight className="size-3.5" />
+              </span>
+              <span className="mt-1 block font-display text-2xl font-bold text-[#390A5D] group-hover:text-white">{item.value}</span>
+              <span className="block text-sm text-[#5c4d72] group-hover:text-white/75">{item.hint}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }
