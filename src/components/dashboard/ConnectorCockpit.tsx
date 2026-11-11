@@ -102,25 +102,59 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
   const pipeline = metrics.slice(0, 4);
   const payouts = metrics.slice(5, 8);
 
+  const greenPayouts = [payouts[0], payouts[2]];
+  const whitePayouts = [payouts[1], metrics[8]];
+
   return (
-    <div className="mx-auto max-w-6xl space-y-4">
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0D4F20] via-[#10662A] to-[#16381f] text-white shadow-[0_18px_40px_rgba(13,79,32,0.18)]">
-        <div className="flex flex-col gap-4 px-6 py-5 sm:flex-row sm:items-end sm:justify-between">
+    <div className="mx-auto max-w-6xl space-y-3">
+      <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-[#0D4F20] to-[#10662A] text-white shadow-[0_10px_24px_rgba(13,79,32,0.16)]">
+        <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Partner desk</p>
-            <h1 className="mt-1 font-display text-3xl font-bold">{firstName ? `${firstName}'s business` : "Your partner business"}</h1>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Partner desk</p>
+            <h1 className="font-display text-xl font-bold">{firstName ? `${firstName}'s business` : "Your partner business"}</h1>
           </div>
-          <Link to="/dashboard/cases" className="rounded-2xl px-3 py-2 transition hover:bg-white/10 sm:text-right">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#B7E4C7]">Disbursed</p>
-            <p className="font-display text-3xl font-bold">{loading ? "…" : inr(cards.disburse)}</p>
-            <p className="text-sm text-white/70">{loading ? "…" : `${cards.conversion}% of leads`}</p>
+          <Link to="/dashboard/cases" className="rounded-xl px-2 py-1 transition hover:bg-white/10 sm:text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#B7E4C7]">Disbursed</p>
+            <p className="font-display text-xl font-bold leading-tight">{loading ? "…" : inr(cards.disburse)}</p>
+            <p className="text-xs text-white/70">{loading ? "…" : `${cards.conversion}% of leads`}</p>
           </Link>
         </div>
-        <div className="grid border-t border-white/15 sm:grid-cols-4">
-          {[...payouts, metrics[8]].map((item) => (
-            <Link key={item.label} to={item.to} className="px-5 py-3 transition hover:bg-black/15 sm:border-l sm:border-white/15 sm:first:border-l-0">
-              <p className="text-xs text-white/65">{item.label}</p>
-              <p className="mt-0.5 text-lg font-semibold">{item.value}</p>
+        <div className="grid border-t border-white/15 sm:grid-cols-2">
+          {greenPayouts.map((item) => (
+            <Link key={item.label} to={item.to} className="px-4 py-2.5 transition hover:bg-black/15 sm:border-l sm:border-white/15 sm:first:border-l-0">
+              <p className="text-[11px] text-white/70">{item.label}</p>
+              <p className="text-base font-semibold">{item.value}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {whitePayouts.map((item) => (
+          <Link key={item.label} to={item.to} className="rounded-2xl border border-[#d8ecdd] bg-white px-4 py-3 shadow-[0_10px_24px_rgba(16,102,42,0.06)] transition hover:border-[#10662A]">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{item.label}</p>
+            <p className="mt-0.5 font-display text-xl font-bold text-[#10662A]">{item.value}</p>
+            <p className="text-xs text-[#5c4d72]">{item.hint}</p>
+          </Link>
+        ))}
+      </div>
+
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white px-3 py-2.5 shadow-[0_8px_20px_rgba(16,102,42,0.04)]">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-[#390A5D]">Open pipeline</h2>
+          <Link to="/dashboard/leadboard" className="inline-flex items-center gap-1.5 rounded-lg bg-[#10662A] px-2.5 py-1 text-xs font-semibold text-white hover:bg-[#0D4F20]">
+            <Store className="size-3.5" /> Browse leads
+          </Link>
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-2 xl:grid-cols-4">
+          {pipeline.map((item) => (
+            <Link key={item.label} to={item.to} className="group rounded-xl bg-[#F4FBF6] px-3 py-2 transition hover:bg-[#0D4F20]">
+              <span className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72] group-hover:text-[#B7E4C7]">
+                {item.label}
+                <ArrowRight className="size-3" />
+              </span>
+              <span className="mt-0.5 block font-display text-lg font-bold leading-tight text-[#390A5D] group-hover:text-white">{item.value}</span>
+              <span className="block text-[11px] text-[#5c4d72] group-hover:text-white/75">{item.hint}</span>
             </Link>
           ))}
         </div>
@@ -131,27 +165,6 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
       <RecallList />
 
       <DeskGuide audience="partner" />
-
-      <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_10px_28px_rgba(16,102,42,0.04)]">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-xl font-bold text-[#390A5D]">Open pipeline</h2>
-          <Link to="/dashboard/leadboard" className="inline-flex items-center gap-2 rounded-xl bg-[#10662A] px-4 py-2 text-sm font-semibold text-white hover:bg-[#0D4F20]">
-            <Store className="size-4" /> Browse leads
-          </Link>
-        </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {pipeline.map((item) => (
-            <Link key={item.label} to={item.to} className="group rounded-2xl bg-[#F4FBF6] px-4 py-3 transition hover:bg-[#0D4F20]">
-              <span className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-[#5c4d72] group-hover:text-[#B7E4C7]">
-                {item.label}
-                <ArrowRight className="size-3.5" />
-              </span>
-              <span className="mt-1 block font-display text-2xl font-bold text-[#390A5D] group-hover:text-white">{item.value}</span>
-              <span className="block text-sm text-[#5c4d72] group-hover:text-white/75">{item.hint}</span>
-            </Link>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }
