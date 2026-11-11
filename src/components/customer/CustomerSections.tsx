@@ -75,7 +75,7 @@ export function BankingSection({
   return (
     <SectionShell
       title="Banking Details"
-      description="Add all active bank accounts"
+      description="Leave account number and average balance empty until the statement is on the file"
       icon={Landmark}
       completion={completion}
       action={

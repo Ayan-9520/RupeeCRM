@@ -12,6 +12,7 @@ import { computeCustomerRisk } from "@/lib/customer-crm/risk-scoring";
 import { buildAssistantReply } from "@/lib/customer-crm/ai-intelligence";
 import type { BankAccount, CoApplicant, CustomerProfile, LoanRequirement, Obligation } from "@/lib/customer-crm/types";
 import { useAuth } from "@/lib/auth-context";
+import { FirstCallSheet } from "./FirstCallSheet";
 import { ArrowLeft, Loader2, Save, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -42,7 +43,8 @@ import {
 } from "./CustomerSections";
 
 export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
+  const [showFullFile, setShowFullFile] = useState(role !== "caller");
   const ws = useCustomerWorkspace(purchaseId);
   const [navOverride, setNavOverride] = useState<string | null>(null);
   const [focusNote, setFocusNote] = useState(false);
@@ -59,10 +61,17 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
   const observedSection = useSectionObserver(sectionIds, sectionRefs, mainScrollRef);
   const active = navOverride ?? observedSection;
   const workflowInitialized = useRef(false);
+  const fileDefaulted = useRef(false);
 
   useEffect(() => {
     workflowInitialized.current = false;
   }, [purchaseId]);
+
+  useEffect(() => {
+    if (!role || fileDefaulted.current) return;
+    fileDefaulted.current = true;
+    setShowFullFile(role !== "caller");
+  }, [role]);
 
   const scrollTo = (id: string) => {
     setNavOverride(id);
@@ -278,6 +287,25 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
 
             <CaseSummaryPanel workspace={ws.data} eligibility={eligibility} pipelineStage={pipelineStage} />
           </div>
+          {user && (
+            <FirstCallSheet
+              purchase={purchase}
+              profile={profile}
+              loans={ws.data.loanRequirements}
+              obligations={ws.data.obligations}
+              documents={documents}
+              userId={user.id}
+              saveProfile={ws.saveProfile}
+              reload={ws.reload}
+            />
+          )}
+          {role === "caller" && (
+            <button type="button" onClick={() => setShowFullFile((open) => !open)} className="text-sm font-semibold text-[#10662A]">
+              {showFullFile ? "Hide the full file" : "Open the full file for documents and lender fields"}
+            </button>
+          )}
+          {showFullFile && (
+          <>
           <section ref={(el) => { sectionRefs.current.personal = el; }} id="personal" className="scroll-mt-28">
             <PersonalSection profile={profile} onFieldChange={onProfileField} completion={ws.completion.sections.personal ?? 0} />
           </section>
@@ -321,6 +349,8 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
               completion={ws.completion.sections["loan-requirements"] ?? 0}
             />
           </section>
+          </>
+          )}
           <section ref={(el) => { sectionRefs.current.eligibility = el; }} id="eligibility" className="scroll-mt-28">
             {eligibility && (
               <EligibilityDashboard
