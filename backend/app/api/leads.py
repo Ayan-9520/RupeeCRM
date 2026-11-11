@@ -62,7 +62,14 @@ async def upload_leads(
     if len(raw) > 1_000_000:
         raise HTTPException(status_code=400, detail="The file is larger than 1 MB.")
     try:
-        return upload_csv(db, user, raw, campaign, publish.strip().lower() in {"1", "true", "yes", "on"})
+        return upload_csv(
+            db,
+            user,
+            raw,
+            campaign,
+            publish.strip().lower() in {"1", "true", "yes", "on"},
+            file.filename or "",
+        )
     except PermissionError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
     except ValueError as exc:

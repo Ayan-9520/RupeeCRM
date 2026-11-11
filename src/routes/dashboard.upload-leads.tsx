@@ -28,6 +28,16 @@ function downloadSample() {
   URL.revokeObjectURL(url);
 }
 
+const MANUAL_PRODUCTS = [
+  ["personal-loan", "Personal loan"],
+  ["home-loan", "Home loan"],
+  ["lap-loan", "LAP"],
+  ["auto-loan", "Auto loan"],
+  ["business-loan", "Business loan"],
+  ["credit-card", "Credit card"],
+  ["insurance", "Insurance"],
+] as const;
+
 function UploadLeadsPage() {
   const { role } = useAuth();
   const admin = isPlatformAdmin(role);
@@ -35,6 +45,33 @@ function UploadLeadsPage() {
   const [campaign, setCampaign] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ added: number; skipped: { row: number; reason: string }[]; published: boolean; campaign: string } | null>(null);
+  const [manual, setManual] = useState({ name: "", phone: "", city: "", product: "personal-loan", amount: "", income: "" });
+
+  const addOne = async () => {
+    const phone = manual.phone.replace(/\D/g, "").slice(-10);
+    if (!manual.name.trim() || phone.length !== 10 || !manual.city.trim()) {
+      toast.error("Name, a 10-digit phone, and city are required");
+      return;
+    }
+    const cell = (value: string) => `"${value.replace(/"/g, '""')}"`;
+    const line = [manual.name.trim(), phone, manual.city.trim(), manual.product, manual.amount || "0", manual.income || "0", "", ""].map(cell).join(",");
+    const file = new File([`name,phone,city,product,loan_amount,monthly_income,employment,email\n${line}\n`], "one-lead.csv", { type: "text/csv" });
+    setBusy(true);
+    try {
+      const data = await uploadCrmLeads(file, "manual", admin);
+      setResult(data);
+      if (data.added) {
+        setManual({ name: "", phone: "", city: "", product: "personal-loan", amount: "", income: "" });
+        toast.success(data.published ? "Lead added to the leadboard" : "Lead added to My Leads");
+      } else {
+        toast.error(data.skipped[0]?.reason || "This lead was not added");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not add the lead");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const submit = async () => {
     if (!file) {
@@ -64,6 +101,23 @@ function UploadLeadsPage() {
         </p>
       </div>
 
+      <section className="space-y-3 rounded-2xl border border-[#d8ecdd] bg-white p-5">
+        <h2 className="font-semibold text-[#390A5D]">Add one lead</h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <input value={manual.name} onChange={(event) => setManual({ ...manual, name: event.target.value })} placeholder="Customer name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+          <input value={manual.phone} onChange={(event) => setManual({ ...manual, phone: event.target.value })} placeholder="10-digit phone" inputMode="numeric" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+          <input value={manual.city} onChange={(event) => setManual({ ...manual, city: event.target.value })} placeholder="City" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+          <select value={manual.product} onChange={(event) => setManual({ ...manual, product: event.target.value })} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm text-[#14281c]">
+            {MANUAL_PRODUCTS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+          <input value={manual.amount} onChange={(event) => setManual({ ...manual, amount: event.target.value.replace(/[^\d]/g, "") })} placeholder="Loan amount" inputMode="numeric" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+          <input value={manual.income} onChange={(event) => setManual({ ...manual, income: event.target.value.replace(/[^\d]/g, "") })} placeholder="Monthly income" inputMode="numeric" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+        </div>
+        <button type="button" disabled={busy} onClick={() => void addOne()} className="rounded-xl bg-[#0D4F20] px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+          {busy ? "Saving…" : "Add to My Leads"}
+        </button>
+      </section>
+
       <section className="space-y-4 rounded-2xl border border-[#d8ecdd] bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-semibold text-[#390A5D]">Sheet</h2>
@@ -72,11 +126,11 @@ function UploadLeadsPage() {
           </button>
         </div>
         <p className="text-xs text-[#5c4d72]">
-          Columns: name, phone, city, product, loan_amount, monthly_income, employment, email. Products: personal-loan, home-loan, lap-loan, auto-loan, msme-loan, mudra-loan, education-loan, machinery-loan, business-loan, bnpl, credit-card, insurance, investment. Up to 200 rows.
+          Excel (.xlsx) or CSV. Columns: name, phone, city, product, loan_amount, monthly_income, employment, email. Products: personal-loan, home-loan, lap-loan, auto-loan, msme-loan, mudra-loan, education-loan, machinery-loan, business-loan, bnpl, credit-card, insurance, investment. Up to 200 rows. A caller or partner file lands in My Leads. The wallet is not charged.
         </p>
         <input
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
           onChange={(event) => {
             setFile(event.target.files?.[0] ?? null);
             setResult(null);

@@ -82,6 +82,63 @@ def _product(value: str) -> tuple[str, str, str] | None:
     return None
 
 
+def _row_from_pairs(pairs: list[tuple[str, str]]) -> dict[str, str] | None:
+    item = {name: "" for name in ("name", "phone", "city", "product", "loan_amount", "monthly_income", "employment", "email")}
+    for header, value in pairs:
+        canonical = HEADER_ALIASES.get(re.sub(r"[^a-z0-9]+", "_", (header or "").strip().lower()).strip("_"))
+        if canonical:
+            item[canonical] = (value or "").strip()
+    if any(item.values()):
+        return item
+    return None
+
+
+def parse_xlsx(raw: bytes) -> list[dict[str, str]]:
+    from openpyxl import load_workbook
+
+    try:
+        book = load_workbook(io.BytesIO(raw), read_only=True, data_only=True)
+    except Exception as exc:
+        raise ValueError("This Excel file could not be read. Save it as .xlsx, or use the CSV sample.") from exc
+    sheet = book.active
+    if sheet is None:
+        raise ValueError("The Excel file has no sheet.")
+    rows_iter = sheet.iter_rows(values_only=True)
+    try:
+        header = next(rows_iter)
+    except StopIteration:
+        raise ValueError("The file needs a header row: name, phone, city, product.")
+    headers = ["" if cell is None else str(cell) for cell in header]
+    if not any(headers):
+        raise ValueError("The file needs a header row: name, phone, city, product.")
+    rows: list[dict[str, str]] = []
+    for raw_row in rows_iter:
+        pairs = []
+        for index, header_name in enumerate(headers):
+            cell = raw_row[index] if index < len(raw_row) else None
+            if isinstance(cell, bool):
+                text = ""
+            elif isinstance(cell, int):
+                text = str(cell)
+            elif isinstance(cell, float) and cell.is_integer():
+                text = str(int(cell))
+            else:
+                text = "" if cell is None else str(cell)
+            pairs.append((header_name, text))
+        item = _row_from_pairs(pairs)
+        if item:
+            rows.append(item)
+    book.close()
+    return rows
+
+
+def parse_sheet(raw: bytes, filename: str = "") -> list[dict[str, str]]:
+    name = (filename or "").lower()
+    if name.endswith(".xlsx") or raw[:2] == b"PK":
+        return parse_xlsx(raw)
+    return parse_csv(raw)
+
+
 def parse_csv(raw: bytes) -> list[dict[str, str]]:
     text = raw.decode("utf-8-sig", errors="replace")
     reader = csv.DictReader(io.StringIO(text))
@@ -89,12 +146,8 @@ def parse_csv(raw: bytes) -> list[dict[str, str]]:
         raise ValueError("The file needs a header row: name, phone, city, product.")
     rows: list[dict[str, str]] = []
     for raw_row in reader:
-        item = {name: "" for name in ("name", "phone", "city", "product", "loan_amount", "monthly_income", "employment", "email")}
-        for header, value in raw_row.items():
-            canonical = HEADER_ALIASES.get(re.sub(r"[^a-z0-9]+", "_", (header or "").strip().lower()).strip("_"))
-            if canonical:
-                item[canonical] = (value or "").strip()
-        if any(item.values()):
+        item = _row_from_pairs([(header or "", value or "") for header, value in raw_row.items()])
+        if item:
             rows.append(item)
     return rows
 
@@ -131,14 +184,14 @@ def publish_admin_leads(db: Session) -> int:
     return moved
 
 
-def upload_csv(db: Session, user, raw: bytes, campaign: str, publish: bool) -> dict:
+def upload_csv(db: Session, user, raw: bytes, campaign: str, publish: bool, filename: str = "") -> dict:
     if user.role not in UPLOAD_ROLES:
         raise PermissionError("Only an admin, partner, or telecaller can upload leads.")
     if user.role in ADMIN_ROLES:
         publish = True
     elif publish:
         raise PermissionError("Only an admin can put an uploaded file on the leadboard.")
-    rows = parse_csv(raw)
+    rows = parse_sheet(raw, filename)
     if not rows:
         raise ValueError("The file has no leads.")
     if len(rows) > MAX_ROWS:
@@ -216,7 +269,7 @@ def upload_csv(db: Session, user, raw: bytes, campaign: str, publish: bool) -> d
             price=default_lead_price(category) if on_board else 0,
             source="upload",
             utm_source=user.role,
-            utm_medium="csv",
+            utm_medium="sheet",
             utm_campaign=label or None,
             is_marketplace=on_board,
             sale_available=on_board,

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Phone, Copy, CheckCircle2 } from "lucide-react";
 import { EMPLOYMENT_TYPES, PRODUCT_TYPES } from "@/lib/customer-crm/constants";
+import { documentMessage, documentPack } from "@/lib/document-pack";
 import { insertLoanRequirement, insertObligation, updateLoanRequirement, updateObligation } from "@/lib/customer-crm/api";
 import type { CustomerDocument } from "@/lib/customer-crm/phase3-api";
 import type { CustomerProfile, LoanRequirement, Obligation, PurchaseContext } from "@/lib/customer-crm/types";
@@ -30,16 +31,6 @@ function hasFile(documents: CustomerDocument[], slug: string) {
   return documents.some((doc) => doc.doc_slug === slug && (doc.file_name || doc.file_url || doc.storage_path));
 }
 
-function docList(employment: string, product: string) {
-  const home = product.toLowerCase().includes("home");
-  const salaried = employment === "Salaried";
-  const rows = ["PAN card", "Aadhaar", salaried ? "6 month bank statement" : "12 month bank statement"];
-  if (salaried) rows.push("Last 3 salary slips");
-  else rows.push("Last ITR");
-  if (home) rows.push("Property city and rough property value");
-  return rows;
-}
-
 export function FirstCallSheet({ purchase, profile, loans, obligations, documents, userId, saveProfile, reload }: Props) {
   const lead = purchase.lead;
   const loan = loans[0];
@@ -62,14 +53,10 @@ export function FirstCallSheet({ purchase, profile, loans, obligations, document
   const panOnFile = hasFile(documents, "pan_card");
   const statementOnFile = hasFile(documents, "bank_statement");
   const ready = saved && panOnFile && statementOnFile;
-  const docs = useMemo(() => docList(employment, product), [employment, product]);
+  const groups = useMemo(() => documentPack(product, employment), [employment, product]);
   const phone = (lead?.full_phone || profile.mobile || "").replace(/\D/g, "").slice(-10);
-
-  const askText = [
-    `Hi ${lead?.applicant_name || profile.full_name || ""}, please send these on WhatsApp for the ${product} file:`,
-    ...docs.map((item, index) => `${index + 1}. ${item}`),
-    "Account number and IFSC will be read from the statement. No need to type them.",
-  ].join("\n");
+  const customerName = lead?.applicant_name || profile.full_name || "";
+  const askText = useMemo(() => documentMessage(customerName, product, groups), [customerName, product, groups]);
 
   const save = async () => {
     if (!product || !incomeNum) {
@@ -216,15 +203,27 @@ export function FirstCallSheet({ purchase, profile, loans, obligations, document
         )}
       </div>
 
-      {saved && (
-        <div className="mt-4 rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] p-4">
+      <div className="mt-4 rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-sm font-semibold text-[#0D4F20]">
-            <Phone className="size-4" /> Send this list. Do not ask it on the call.
+            <Phone className="size-4" /> {product} documents, arranged to send in one go
           </div>
-          <ul className="mt-2 space-y-1 text-sm text-[#14281c]">
-            {docs.map((item) => <li key={item}>{item}</li>)}
-          </ul>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-[#10662A] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#0D4F20]"
+              onClick={() => {
+                void navigator.clipboard.writeText(askText).catch(() => undefined);
+                if (phone.length === 10) {
+                  window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(askText)}`, "_blank", "noopener,noreferrer");
+                  toast.success("WhatsApp opened with the full list");
+                } else {
+                  toast.success("Full list copied. This lead has no 10-digit phone for WhatsApp.");
+                }
+              }}
+            >
+              Send this list
+            </button>
             <button
               type="button"
               className="inline-flex items-center gap-1.5 rounded-lg border border-[#d8ecdd] bg-white px-3 py-1.5 text-xs font-semibold text-[#390A5D]"
@@ -233,20 +232,25 @@ export function FirstCallSheet({ purchase, profile, loans, obligations, document
                 toast.success("Document list copied");
               }}
             >
-              <Copy className="size-3.5" /> Copy WhatsApp text
+              <Copy className="size-3.5" /> Copy
             </button>
-            {phone.length === 10 && (
-              <a className="inline-flex items-center gap-1.5 rounded-lg bg-[#10662A] px-3 py-1.5 text-xs font-semibold text-white" href={`https://wa.me/91${phone}?text=${encodeURIComponent(askText)}`} target="_blank" rel="noreferrer">
-                Open WhatsApp
-              </a>
-            )}
           </div>
-          <p className="mt-3 flex items-start gap-2 text-xs text-[#5c4d72]">
-            <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-[#10662A]" />
-            Upload PAN and the statement in Documents. Account number, IFSC and average balance stay blank until the statement is read. Forward to the backend team only after both files are on this case.
-          </p>
         </div>
-      )}
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          {groups.map((group) => (
+            <div key={group.title}>
+              <p className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">{group.title}</p>
+              <ul className="mt-1 space-y-1 text-sm text-[#14281c]">
+                {group.items.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 flex items-start gap-2 text-xs text-[#5c4d72]">
+          <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-[#10662A]" />
+          Do not ask for PAN or the account number on the call. Send this list, then upload PAN and the statement in Documents before the backend team forwards the file.
+        </p>
+      </div>
     </section>
   );
 }
