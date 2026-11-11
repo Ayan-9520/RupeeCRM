@@ -1,8 +1,7 @@
-"""Replace the board and Ayan's My Leads with one filled lead per product.
+"""Put one filled lead per product on the Leadboard only.
 
-Old unsold board leads go. Ayan's old purchased leads and their customer files go.
-The new leads are already on Ayan's account, priced from ₹500. Wallet is not charged.
-Other partners' purchases are left alone.
+Ayan's My Leads purchases are removed. His wallet is set to ₹500.
+The new leads stay available to buy. Wallet is not charged for them.
 """
 
 from __future__ import annotations
@@ -142,15 +141,15 @@ def main() -> None:
                 loan_type=loan_type[:40],
                 product_category=category,
                 product_subtype=subtype,
-                status="sold",
+                status="available",
                 score="hot" if index % 3 == 0 else "warm",
                 price=price,
                 source="website",
                 utm_source="rupeedial",
                 utm_medium="product-page",
                 utm_campaign=key,
-                is_marketplace=False,
-                sale_available=False,
+                is_marketplace=True,
+                sale_available=True,
                 phone_verified=True,
                 fraud_risk="low",
                 website_lead_id=f"BOARD-{key}",
@@ -166,35 +165,10 @@ def main() -> None:
                 quality_score=78 if income else 64,
             )
             db.add(lead)
-            db.flush()
-            purchase = LeadPurchase(
-                lead_id=lead.id,
-                buyer_user_id=ayan.id,
-                price_paid=price,
-                pipeline_stage="new",
-                notes=[],
-                converted=False,
-                deal_value=amount,
-            )
-            db.add(purchase)
-            db.flush()
-            db.add(
-                CustomerProfile(
-                    lead_purchase_id=purchase.id,
-                    lead_id=lead.id,
-                    dsa_id=ayan.id,
-                    full_name=name,
-                    mobile=phone,
-                    email=lead.email,
-                    city=city,
-                    state=state,
-                    employment_type=employment,
-                    company_name=company,
-                )
-            )
             added += 1
+        ayan.wallet_balance = 500
         db.commit()
-        print(f"removed_my_leads={len(owned)} removed_unsold={removed_board} added={added} price_from={PRICE_START}")
+        print(f"removed_my_leads={len(owned)} removed_unsold={removed_board} added={added} wallet=500")
     finally:
         db.close()
 
