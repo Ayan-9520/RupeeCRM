@@ -7,7 +7,7 @@ import {
   Settings, LogOut, BarChart3, GraduationCap, Megaphone,
   UserCog, KanbanSquare, Building, BriefcaseBusiness, CreditCard, Banknote, ListPlus,
   Palette, Image as ImageIcon, Award, UserCheck, Trophy, Percent, Cog, Globe, Network, Database, SlidersHorizontal,
-  Home, Target, FolderKanban, IndianRupee, Rocket, ShieldCheck, UserCircle, MessagesSquare, ScrollText, Receipt,
+  Home, Target, FolderKanban, IndianRupee, Rocket, ShieldCheck, UserCircle, MessagesSquare, ScrollText, Receipt, Calculator,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { getNavForRole, getRoleLabel, type NavItem } from "@/lib/role-access";
@@ -36,6 +36,7 @@ const ICONS: Record<string, IconType> = {
   "/dashboard/marketing": Megaphone,
   "/dashboard/community": MessagesSquare,
   "/dashboard/learn": GraduationCap,
+  "/dashboard/emi": Calculator,
   "/dashboard/certificates": Award,
   "/dashboard/training": GraduationCap,
   "/dashboard/leaderboard": Trophy,
@@ -98,6 +99,7 @@ const SECTION_OF: Record<string, SectionId> = {
   "/dashboard/community": "growth",
   "/dashboard/leaderboard": "growth",
   "/dashboard/learn": "learn",
+  "/dashboard/emi": "learn",
   "/dashboard/training": "learn",
   "/dashboard/certificates": "learn",
 };

@@ -129,6 +129,12 @@ export const NAV_ITEMS: NavItem[] = [
     group: "main",
   },
   {
+    title: "EMI calculator",
+    url: "/dashboard/emi",
+    roles: ["ceo", "super_admin", "admin", "dsa", "caller", "coordinator", "affiliate"],
+    group: "main",
+  },
+  {
     title: "Certificates",
     url: "/dashboard/certificates",
     roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
