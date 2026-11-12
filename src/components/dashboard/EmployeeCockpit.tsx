@@ -8,6 +8,13 @@ const LEVEL: Record<string, string> = {
   accounts: "Accounts",
 };
 
+const STEP: Record<string, string> = {
+  rm: "You check the partner invoice when you are named as RM 1 or RM 2.",
+  manager: "You approve after both RMs. It then goes to the Business Head.",
+  business_head: "You approve after the Manager. It then goes to Accounts.",
+  accounts: "You pay the invoice after the Business Head, with the bank reference.",
+};
+
 export function EmployeeCockpit({ firstName, financeLevel }: { firstName: string; financeLevel?: string | null }) {
   const level = financeLevel ? LEVEL[financeLevel] || financeLevel : "";
   const work = [
@@ -25,7 +32,8 @@ export function EmployeeCockpit({ firstName, financeLevel }: { firstName: string
         <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/70">Employee · RupeeOne</div>
         <h1 className="mt-1 font-display text-2xl font-bold">{firstName ? `${firstName}'s desk` : "Bank desk"}</h1>
         <p className="mt-1 text-sm text-white/75">
-          {level ? `${level}. ` : ""}Take the file from sales, talk to the bank, and move the invoice when it is your turn.
+          {level ? `${level}. ` : ""}
+          {financeLevel && STEP[financeLevel] ? STEP[financeLevel] : "Take the file from sales and talk to the bank."}
         </p>
       </section>
       <div className="grid gap-3 sm:grid-cols-2">
