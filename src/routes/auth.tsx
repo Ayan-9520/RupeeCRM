@@ -202,6 +202,40 @@ function AuthPage() {
     );
   }
 
+  if (door === "employee") {
+    return (
+      <div className="auth-page relative grid min-h-svh place-items-center overflow-hidden bg-[#f7f4ee] px-4 py-10">
+        <img src="/rupeeone-login-bg.jpg" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        <div className="pointer-events-none absolute inset-0 bg-white/25" />
+        <form onSubmit={(event) => void onSignIn(event)} className="relative w-full max-w-md rounded-[28px] bg-white p-8 shadow-[0_24px_60px_rgba(16,102,42,0.12)]">
+          <button type="button" onClick={() => navigate({ to: "/auth", search: next ? { next } : {} })} className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0e4d28]">
+            RupeeOne
+          </button>
+          <h1 className="mt-3 font-display text-2xl font-bold text-[#1c1915]">Employee sign in</h1>
+          <p className="mt-1 text-sm text-[#6b645b]">Caller, bank desk, RM, accounts and admin. There is no self signup here.</p>
+          <label className="mt-5 block text-xs font-semibold text-[#5c5348]">
+            Email
+            <input value={email} onChange={(e) => setEmail(e.target.value)} className={field} autoComplete="email" />
+          </label>
+          <label className="mt-3 block text-xs font-semibold text-[#5c5348]">
+            Password
+            <span className="relative block">
+              <input type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} className={`${field} pr-10`} autoComplete="current-password" />
+              <button type="button" onClick={() => setShowPassword((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6b645b]" aria-label={showPassword ? "Hide password" : "Show password"}>
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </span>
+          </label>
+          {formError ? <p className="mt-3 text-xs font-medium text-red-700">{formError}</p> : null}
+          <button type="submit" disabled={submitting} className="mt-4 h-11 w-full rounded-full bg-[#0e4d28] text-sm font-semibold text-white disabled:opacity-60">
+            {submitting ? "Signing in…" : "Sign in"}
+          </button>
+          <p className="mt-4 text-center text-xs text-[#6b645b]">Admin creates this login. Partners use Partner Login.</p>
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-page relative grid min-h-svh place-items-center overflow-hidden bg-[#f7f4ee] px-4 py-8">
       <img src="/rupeeone-login-bg.jpg" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
@@ -216,8 +250,8 @@ function AuthPage() {
             <button type="button" onClick={() => navigate({ to: "/auth", search: next ? { next } : {} })} className="mb-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0e4d28]">
               RupeeOne
             </button>
-            <h1 className="font-display text-2xl font-bold text-[#1c1915]">{door === "employee" ? "Employee sign in" : "Partner sign in"}</h1>
-            <p className="mt-1 text-xs text-[#6b645b]">{door === "employee" ? "Caller, bank desk, RM, accounts and admin." : "DSA and affiliate partners."}</p>
+            <h1 className="font-display text-2xl font-bold text-[#1c1915]">Partner sign in</h1>
+            <p className="mt-1 text-xs text-[#6b645b]">DSA and affiliate partners.</p>
             <label className="mt-5 block text-xs font-semibold text-[#5c5348]">
               Email
               <input value={email} onChange={(e) => setEmail(e.target.value)} className={field} autoComplete="email" />
@@ -271,16 +305,12 @@ function AuthPage() {
             <button type="submit" disabled={submitting} className="mt-4 h-11 w-full rounded-full bg-[#0e4d28] text-sm font-semibold text-white disabled:opacity-60">
               {submitting && mode === "signin" ? "Signing in…" : "Sign in"}
             </button>
-            {door === "partner" ? (
-              <p className="mt-4 text-center text-xs text-[#6b645b]">
-                New partner?{" "}
-                <button type="button" onClick={() => switchMode("signup")} className="font-semibold text-[#0e4d28]">
-                  Create an account
-                </button>
-              </p>
-            ) : (
-              <p className="mt-4 text-center text-xs text-[#6b645b]">Employees are created by admin. Partners use Partner Login.</p>
-            )}
+            <p className="mt-4 text-center text-xs text-[#6b645b]">
+              New partner?{" "}
+              <button type="button" onClick={() => switchMode("signup")} className="font-semibold text-[#0e4d28]">
+                Create an account
+              </button>
+            </p>
           </form>
 
           <form
