@@ -2,17 +2,21 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 from datetime import datetime, timedelta, timezone
-from uuid import UUID
+from uuid import UUID, uuid4
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import get_db
-from app.models import User
+from app.models import BillingPayment, User
 from app.plans import PLANS, cycle_price
 from app.services.audit import write_audit
 from app.services.partners import generate_temp_password
@@ -158,7 +162,7 @@ def billing_me(db: Session = Depends(get_db), user: User = Depends(get_current_u
     )
 
 
-def _apply_plan(db: Session, owner: User, plan_id: str, cycle: str) -> str:
+def _apply_plan(db: Session, owner: User, plan_id: str, cycle: str, record_payment: bool = True) -> str:
     plan = PLANS.get(plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail="Unknown plan")
@@ -175,6 +179,20 @@ def _apply_plan(db: Session, owner: User, plan_id: str, cycle: str) -> str:
     owner.plan_started_at = now
     owner.plan_ends_at = now + timedelta(days=days)
     owner.wallet_balance = float(owner.wallet_balance or 0) + credits
+    if record_payment:
+        db.add(
+            BillingPayment(
+                id=uuid4(),
+                user_id=owner.id,
+                description=f"{plan['name']} plan · {cycle}",
+                amount=float(amount),
+                status="paid",
+                provider="offline",
+                plan_id=plan_id,
+                cycle=cycle,
+                paid_at=now,
+            )
+        )
     db.commit()
     db.refresh(owner)
     return f"Activated {plan['name']} ({cycle}) · ₹{amount} · ₹{int(credits)} lead credits added"
@@ -307,6 +325,17 @@ def admin_wallet_credit(
     bonus, rate = recharge_bonus(paid)
     credited = round(paid + bonus, 2)
     owner.wallet_balance = float(owner.wallet_balance or 0) + credited
+    db.add(
+        BillingPayment(
+            id=uuid4(),
+            user_id=owner.id,
+            description="Wallet recharge",
+            amount=paid,
+            status="paid",
+            provider="offline",
+            paid_at=datetime.now(timezone.utc),
+        )
+    )
     write_audit(
         db,
         action="wallet_credit",
@@ -403,3 +432,157 @@ def invite_seat(
         "role": role,
         "message": "Seat created — share temp password with teammate",
     }
+
+
+class PaymentOut(BaseModel):
+    id: UUID
+    user_id: UUID
+    partner_name: str
+    email: str
+    description: str
+    amount: float
+    status: str
+    provider: str
+    created_at: datetime | None = None
+    paid_at: datetime | None = None
+
+
+def _payment_out(row: BillingPayment, user: User) -> PaymentOut:
+    return PaymentOut(
+        id=row.id,
+        user_id=row.user_id,
+        partner_name=user.full_name,
+        email=user.email,
+        description=row.description,
+        amount=float(row.amount or 0),
+        status=row.status,
+        provider=row.provider,
+        created_at=row.created_at,
+        paid_at=row.paid_at,
+    )
+
+
+@router.get("/payments", response_model=list[PaymentOut])
+def my_payments(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> list[PaymentOut]:
+    owner = _get_owner(db, user)
+    rows = (
+        db.query(BillingPayment)
+        .filter(BillingPayment.user_id == owner.id)
+        .order_by(BillingPayment.created_at.desc())
+        .limit(100)
+        .all()
+    )
+    return [_payment_out(row, owner) for row in rows]
+
+
+@router.get("/admin/payments", response_model=list[PaymentOut])
+def admin_payments(db: Session = Depends(get_db), _admin: User = Depends(require_admin)) -> list[PaymentOut]:
+    rows = db.query(BillingPayment).order_by(BillingPayment.created_at.desc()).limit(200).all()
+    ids = [row.user_id for row in rows]
+    users = {u.id: u for u in (db.query(User).filter(User.id.in_(ids)).all() if ids else [])}
+
+    class Missing:
+        full_name = "Partner"
+        email = ""
+
+    return [_payment_out(row, users.get(row.user_id) or Missing()) for row in rows]
+
+
+class RazorpayOrderIn(BaseModel):
+    plan_id: str
+    cycle: str = Field(pattern="^(monthly|quarterly|yearly)$")
+
+
+@router.get("/razorpay/status")
+def razorpay_status() -> dict:
+    return {"enabled": settings.razorpay_enabled}
+
+
+@router.post("/razorpay/order")
+def razorpay_order(
+    body: RazorpayOrderIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Creates a pending payment. Checkout starts only after Razorpay keys are set."""
+    if user.seat_owner_id and user.seat_owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the account owner can pay for a plan")
+    plan = PLANS.get(body.plan_id)
+    if not plan:
+        raise HTTPException(status_code=400, detail="Unknown plan")
+    amount = cycle_price(int(plan["monthly"]), body.cycle)
+    row = BillingPayment(
+        id=uuid4(),
+        user_id=user.id,
+        description=f"{plan['name']} plan · {body.cycle}",
+        amount=float(amount),
+        status="pending",
+        provider="razorpay",
+        plan_id=body.plan_id,
+        cycle=body.cycle,
+    )
+    db.add(row)
+    db.commit()
+    if not settings.razorpay_enabled:
+        return {
+            "ready": False,
+            "payment_id": str(row.id),
+            "message": "Razorpay is not connected yet. The request stays pending until keys are added.",
+        }
+    import base64
+    import urllib.request
+
+    payload = json.dumps({"amount": amount * 100, "currency": "INR", "receipt": str(row.id)}).encode()
+    token = base64.b64encode(f"{settings.razorpay_key_id}:{settings.razorpay_key_secret}".encode()).decode()
+    request = urllib.request.Request(
+        "https://api.razorpay.com/v1/orders",
+        data=payload,
+        headers={"Authorization": f"Basic {token}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            order = json.loads(response.read().decode())
+    except Exception as exc:
+        row.status = "failed"
+        db.commit()
+        raise HTTPException(status_code=502, detail="Razorpay did not create the order") from exc
+    row.provider_order_id = str(order.get("id") or "")
+    db.commit()
+    return {
+        "ready": True,
+        "payment_id": str(row.id),
+        "order_id": row.provider_order_id,
+        "key_id": settings.razorpay_key_id,
+        "amount": amount,
+        "currency": "INR",
+    }
+
+
+@router.post("/razorpay/webhook")
+async def razorpay_webhook(request: Request, db: Session = Depends(get_db)) -> dict:
+    raw = await request.body()
+    if not settings.razorpay_webhook_secret:
+        raise HTTPException(status_code=503, detail="Razorpay webhook secret is not set")
+    signature = request.headers.get("x-razorpay-signature") or ""
+    expected = hmac.new(settings.razorpay_webhook_secret.encode(), raw, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, signature):
+        raise HTTPException(status_code=400, detail="Invalid Razorpay signature")
+    event = json.loads(raw.decode() or "{}")
+    payment = ((event.get("payload") or {}).get("payment") or {}).get("entity") or {}
+    if event.get("event") != "payment.captured":
+        return {"ok": True}
+    order_id = str(payment.get("order_id") or "")
+    row = db.query(BillingPayment).filter(BillingPayment.provider_order_id == order_id).first()
+    if not row or row.status == "paid":
+        return {"ok": True}
+    row.status = "paid"
+    row.paid_at = datetime.now(timezone.utc)
+    row.provider_payment_id = str(payment.get("id") or "") or None
+    if row.plan_id:
+        owner = db.query(User).filter(User.id == row.user_id).first()
+        if owner:
+            _apply_plan(db, owner, row.plan_id, row.cycle or "monthly", record_payment=False)
+            return {"ok": True}
+    db.commit()
+    return {"ok": True}

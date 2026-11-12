@@ -536,6 +536,27 @@ export async function getBillingMe(): Promise<BillingMe> {
   return request("/api/billing/me");
 }
 
+export type BillingPaymentRow = {
+  id: string;
+  user_id: string;
+  partner_name: string;
+  email: string;
+  description: string;
+  amount: number;
+  status: string;
+  provider: string;
+  created_at: string | null;
+  paid_at: string | null;
+};
+
+export async function listMyBillingPayments(): Promise<BillingPaymentRow[]> {
+  return request("/api/billing/payments");
+}
+
+export async function listAdminBillingPayments(): Promise<BillingPaymentRow[]> {
+  return request("/api/billing/admin/payments");
+}
+
 export async function activateBillingPlan(
   planId: string,
   cycle: "monthly" | "quarterly" | "yearly" = "monthly",

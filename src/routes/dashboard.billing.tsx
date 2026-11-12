@@ -13,21 +13,35 @@ import {
 } from "lucide-react";
 import {
   getBillingMe,
+  listMyBillingPayments,
   activateBillingPlan,
   cancelBillingPlan,
   inviteBillingSeat,
   getCrmUser,
   type BillingMe,
+  type BillingPaymentRow,
 } from "@/lib/python-api";
 import { isPlatformAdmin } from "@/lib/role-access";
 import type { AppRole } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/dashboard/billing")({
-  head: () => ({ meta: [{ title: "Billing — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Billing — RupeeOne" }] }),
   component: BillingPage,
 });
 
 type Cycle = "monthly" | "quarterly" | "yearly";
+
+function when(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Kolkata",
+  });
+}
 
 function BillingPage() {
   const [data, setData] = useState<BillingMe | null>(null);
@@ -36,11 +50,13 @@ function BillingPage() {
   const [cycle, setCycle] = useState<Cycle>("monthly");
   const [busy, setBusy] = useState<string | null>(null);
   const [invite, setInvite] = useState({ email: "", full_name: "", role: "dsa" });
+  const [payments, setPayments] = useState<BillingPaymentRow[]>([]);
 
   const load = useCallback(async () => {
     try {
-      const me = await getBillingMe();
+      const [me, rows] = await Promise.all([getBillingMe(), listMyBillingPayments().catch(() => [])]);
       setData(me);
+      setPayments(rows);
       setLoadError(null);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Could not load billing";
@@ -260,6 +276,41 @@ function BillingPage() {
           );
         })}
       </div>
+
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+        <h2 className="font-semibold text-[#390A5D]">Payments</h2>
+        <p className="mt-1 text-xs text-[#5c4d72]">
+          Date and time are when the payment was confirmed. Razorpay will use this same list after the keys are added. Until then, a confirmed UPI payment is recorded when an admin activates the plan.
+        </p>
+        {payments.length === 0 ? (
+          <p className="py-6 text-sm text-[#5c4d72]">No payment recorded yet.</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#d8ecdd] text-[11px] font-bold uppercase tracking-wide text-[#5c4d72]">
+                  <th className="py-2 pr-3">Date</th>
+                  <th className="py-2 pr-3">Description</th>
+                  <th className="py-2 pr-3">Status</th>
+                  <th className="py-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((row) => (
+                  <tr key={row.id} className="border-b border-[#eef6f0]">
+                    <td className="py-2.5 pr-3 text-[#14281c]">{when(row.paid_at || row.created_at)}</td>
+                    <td className="py-2.5 pr-3 text-[#390A5D]">{row.description}</td>
+                    <td className="py-2.5 pr-3">
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${row.status === "paid" ? "bg-[#E8F7EC] text-[#10662A]" : row.status === "failed" ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-800"}`}>{row.status}</span>
+                    </td>
+                    <td className="py-2.5 text-right font-semibold text-[#14281c]">₹{Math.round(row.amount).toLocaleString("en-IN")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 space-y-4">
         <div className="font-semibold text-[#390A5D] flex items-center gap-2">

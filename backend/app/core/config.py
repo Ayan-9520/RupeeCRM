@@ -22,10 +22,17 @@ class Settings(BaseSettings):
     smtp_from_name: str = "RupeeDial"
     password_reset_minutes: int = 30
     document_storage_dir: str = ""
+    razorpay_key_id: str = ""
+    razorpay_key_secret: str = ""
+    razorpay_webhook_secret: str = ""
 
     @property
     def smtp_enabled(self) -> bool:
         return bool(self.smtp_host and self.smtp_user and self.smtp_password)
+
+    @property
+    def razorpay_enabled(self) -> bool:
+        return bool(self.razorpay_key_id and self.razorpay_key_secret)
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -7,11 +7,13 @@ import {
   adminCancelPlan,
   adminCreditWallet,
   getAdminSubscriptions,
+  listAdminBillingPayments,
   type AdminSubscription,
+  type BillingPaymentRow,
 } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/admin/billing")({
-  head: () => ({ meta: [{ title: "Admin Billing — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Admin Billing — RupeeOne" }] }),
   component: AdminBillingPage,
 });
 
@@ -19,6 +21,18 @@ type Cycle = "monthly" | "quarterly" | "yearly";
 
 function inr(n: number) {
   return `₹${Math.round(Number(n) || 0).toLocaleString("en-IN")}`;
+}
+
+function when(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Asia/Kolkata",
+  });
 }
 
 function shortDate(iso: string | null) {
@@ -35,11 +49,13 @@ function AdminBillingPage() {
   const [filter, setFilter] = useState<"all" | "active" | "none">("all");
   const [form, setForm] = useState<{ userId: string; planId: string; cycle: Cycle }>({ userId: "", planId: "", cycle: "monthly" });
   const [credit, setCredit] = useState({ userId: "", amount: "", note: "" });
+  const [payments, setPayments] = useState<BillingPaymentRow[]>([]);
 
   const load = useCallback(async () => {
     try {
-      const data = await getAdminSubscriptions();
+      const [data, paymentRows] = await Promise.all([getAdminSubscriptions(), listAdminBillingPayments().catch(() => [])]);
       setItems(data.items);
+      setPayments(paymentRows);
       setPlans(data.plans);
       setSummary({ active_count: data.active_count, active_value: data.active_value });
       setForm((f) => ({ ...f, planId: f.planId || data.plans[0]?.id || "" }));
@@ -181,6 +197,46 @@ function AdminBillingPage() {
             {busy === "activate" ? "Activating…" : "Activate"}
           </button>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+        <h2 className="font-semibold text-[#390A5D]">Payments</h2>
+        <p className="mt-1 text-xs text-[#5c4d72]">
+          Each confirmed payment shows the date and time. Razorpay will add rows here after the keys are connected. Activating a plan records the offline payment now.
+        </p>
+        {payments.length === 0 ? (
+          <p className="py-6 text-sm text-[#5c4d72]">No payment recorded yet.</p>
+        ) : (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#d8ecdd] text-[11px] font-bold uppercase tracking-wide text-[#5c4d72]">
+                  <th className="py-2 pr-3">Date</th>
+                  <th className="py-2 pr-3">Partner</th>
+                  <th className="py-2 pr-3">Description</th>
+                  <th className="py-2 pr-3">Status</th>
+                  <th className="py-2 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((row) => (
+                  <tr key={row.id} className="border-b border-[#eef6f0]">
+                    <td className="py-2.5 pr-3">{when(row.paid_at || row.created_at)}</td>
+                    <td className="py-2.5 pr-3">
+                      <div className="font-medium text-[#390A5D]">{row.partner_name}</div>
+                      <div className="text-xs text-[#5c4d72]">{row.email}</div>
+                    </td>
+                    <td className="py-2.5 pr-3">{row.description}</td>
+                    <td className="py-2.5 pr-3">
+                      <span className={`rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize ${row.status === "paid" ? "bg-[#E8F7EC] text-[#10662A]" : "bg-amber-50 text-amber-800"}`}>{row.status}</span>
+                    </td>
+                    <td className="py-2.5 text-right font-semibold">{inr(row.amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
