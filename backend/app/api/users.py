@@ -195,6 +195,87 @@ def my_downline(db: Session = Depends(get_db), user: User = Depends(get_current_
     return UserListOut(items=items, total=len(items), pending_partners=0)
 
 
+class DeskPerson(BaseModel):
+    id: UUID
+    full_name: str
+    email: str
+    phone: str | None = None
+    department: str | None = None
+    sales_grade: str | None = None
+    sales_title: str | None = None
+    finance_level: str | None = None
+    reports_to_name: str | None = None
+    joined_at: str | None = None
+
+
+class DeskNode(DeskPerson):
+    children: list["DeskNode"] = []
+
+
+DeskNode.model_rebuild()
+
+
+class DeskOut(BaseModel):
+    me: DeskPerson
+    chain: list[DeskPerson]
+    team: list[DeskNode]
+
+
+def _desk_person(row: User, names: dict) -> DeskPerson:
+    return DeskPerson(
+        id=row.id,
+        full_name=row.full_name,
+        email=row.email,
+        phone=row.phone,
+        department=row.department,
+        sales_grade=row.sales_grade,
+        sales_title=grade_title(row.sales_grade),
+        finance_level=row.finance_level,
+        reports_to_name=names.get(row.reports_to_user_id) if row.reports_to_user_id else None,
+        joined_at=row.created_at.isoformat() if row.created_at else None,
+    )
+
+
+@router.get("/me/desk", response_model=DeskOut)
+def my_desk(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> DeskOut:
+    rows = db.query(User).filter(User.is_active.is_(True)).all()
+    names = {row.id: row.full_name for row in rows}
+    by_manager: dict = {}
+    for row in rows:
+        if row.reports_to_user_id:
+            by_manager.setdefault(row.reports_to_user_id, []).append(row)
+
+    def node(row: User, seen: set) -> DeskNode | None:
+        if row.id in seen:
+            return None
+        seen.add(row.id)
+        children = []
+        for child in sorted(by_manager.get(row.id, []), key=lambda item: item.full_name.lower()):
+            built = node(child, seen)
+            if built:
+                children.append(built)
+        base = _desk_person(row, names)
+        return DeskNode(**base.model_dump(), children=children)
+
+    team: list[DeskNode] = []
+    for child in sorted(by_manager.get(user.id, []), key=lambda item: item.full_name.lower()):
+        built = node(child, {user.id})
+        if built:
+            team.append(built)
+
+    chain: list[DeskPerson] = []
+    seen_up: set = set()
+    cursor = user
+    while cursor.reports_to_user_id and cursor.reports_to_user_id not in seen_up and len(chain) < 12:
+        seen_up.add(cursor.id)
+        manager = next((row for row in rows if row.id == cursor.reports_to_user_id), None)
+        if not manager:
+            break
+        chain.append(_desk_person(manager, names))
+        cursor = manager
+    return DeskOut(me=_desk_person(user, names), chain=chain, team=team)
+
+
 @router.put("/{user_id}/designation", response_model=UserAdminOut)
 def set_designation(
     user_id: UUID,

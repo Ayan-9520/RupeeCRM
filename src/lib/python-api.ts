@@ -466,6 +466,25 @@ export async function listSalesGrades(): Promise<{ items: { code: string; title:
   return request("/api/users/grades");
 }
 
+export type DeskPerson = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  department: string | null;
+  sales_grade: string | null;
+  sales_title: string | null;
+  finance_level: string | null;
+  reports_to_name: string | null;
+  joined_at: string | null;
+};
+
+export type DeskNode = DeskPerson & { children: DeskNode[] };
+
+export async function getMyDesk(): Promise<{ me: DeskPerson; chain: DeskPerson[]; team: DeskNode[] }> {
+  return request("/api/users/me/desk");
+}
+
 export async function listMyDownline(): Promise<{
   items: {
     id: string;
