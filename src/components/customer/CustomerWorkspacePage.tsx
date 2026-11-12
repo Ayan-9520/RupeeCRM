@@ -345,7 +345,6 @@ export function CustomerWorkspacePage({ purchaseId }: { purchaseId: string }) {
               rows={ws.data.loanRequirements}
               onChange={onLoanChange}
               onAdd={ws.addLoan}
-              onRemove={ws.removeLoan}
               completion={ws.completion.sections["loan-requirements"] ?? 0}
             />
           </section>

@@ -349,13 +349,13 @@ export function useCustomerWorkspace(purchaseId: string) {
     setData((d) => (d ? { ...d, coApplicants: d.coApplicants.filter((c) => c.id !== id) } : d));
   };
 
-  const addLoan = async () => {
+  const addLoan = async (product?: string) => {
     if (!data || !user) return;
     const { data: row, error: e } = await insertLoanRequirement({
       customer_profile_id: data.profile.id,
       lead_purchase_id: purchaseId,
       dsa_id: user.id,
-      product_type: null,
+      product_type: product || null,
       loan_amount: null,
       tenure_months: null,
       purpose: null,

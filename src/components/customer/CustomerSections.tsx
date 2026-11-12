@@ -4,8 +4,8 @@ import { SectionShell } from "./shared/SectionShell";
 import { CrmFormGrid } from "./shared/CrmFormGrid";
 import { RepeatableBlock } from "./shared/RepeatableBlock";
 import { EmptyBlock } from "./shared/EmptyBlock";
-import { PERSONAL_FIELDS, employmentFields, productExtraFields } from "@/lib/customer-crm/field-config";
-import { ACCOUNT_TYPES, LOAN_TYPES, PRODUCT_TYPES, amountLabel } from "@/lib/customer-crm/constants";
+import { PERSONAL_FIELDS, employmentFields } from "@/lib/customer-crm/field-config";
+import { ACCOUNT_TYPES, LOAN_TYPES, PRODUCT_TYPES } from "@/lib/customer-crm/constants";
 import type { BankAccount, CoApplicant, CustomerProfile, LoanRequirement, Obligation } from "@/lib/customer-crm/types";
 import { User, Briefcase, Landmark, Scale, Users, FileStack, FolderOpen, Building2 } from "lucide-react";
 import type { CrmFieldConfig } from "./shared/CrmFormGrid";
@@ -208,83 +208,69 @@ export function CoApplicantsSection({
   );
 }
 
-function loanRowValues(row: LoanRequirement): Record<string, unknown> {
-  const extra = row.extra_fields ?? {};
-  return {
-    ...row,
-    extra_builder: extra.builder ?? "",
-    extra_occupancy: extra.occupancy ?? "",
-  };
-}
-
-function patchLoanRow(row: LoanRequirement, key: string, value: unknown): Partial<LoanRequirement> {
-  if (key.startsWith("extra_")) {
-    const field = key.replace("extra_", "");
-    return { extra_fields: { ...(row.extra_fields ?? {}), [field]: value } };
-  }
-  if (key === "loan_amount" || key === "property_value" || key === "tenure_months" || key === "roi_percent") {
-    const n = value === "" || value == null ? null : Number(String(value).replace(/,/g, ""));
-    return { [key]: Number.isFinite(n) ? n : null } as Partial<LoanRequirement>;
-  }
-  return { [key]: value } as Partial<LoanRequirement>;
+function listedProduct(value: string | null | undefined) {
+  const raw = (value || "").toLowerCase();
+  const exact = PRODUCT_TYPES.find((item) => item.toLowerCase() === raw);
+  if (exact) return exact;
+  if (raw.includes("personal")) return "Personal Loan";
+  if (raw.includes("home")) return "Home Loan";
+  if (raw.includes("business") || raw.includes("msme")) return "Business Loan";
+  if (raw.includes("lap") || raw.includes("property")) return "LAP";
+  if (raw.includes("auto") || raw.includes("car")) return "Auto Loan";
+  if (raw.includes("insurance")) return "Insurance";
+  if (raw.includes("card")) return "Credit Card";
+  if (raw === "od" || raw.includes("overdraft")) return "OD";
+  if (raw === "cc" || raw.includes("cash credit")) return "CC";
+  return "";
 }
 
 export function LoanRequirementsSection({
   rows,
   onChange,
   onAdd,
-  onRemove,
   completion,
 }: {
   rows: LoanRequirement[];
   onChange: (row: LoanRequirement, patch: Partial<LoanRequirement>) => void;
-  onAdd: () => void;
-  onRemove: (id: string) => void;
+  onAdd: (product?: string) => void;
   completion: number;
 }) {
+  const selected = listedProduct(rows[0]?.product_type);
+  const pick = (product: string) => {
+    const row = rows[0];
+    if (row) onChange(row, { product_type: product });
+    else onAdd(product);
+  };
+
   return (
     <SectionShell
-      title="Loan Requirements"
-      description="Product-wise requirements — use Requested Amount / Loan Amount"
+      title="Product"
+      description="Select one. It is saved on this case."
       icon={FileStack}
       completion={completion}
-      action={
-        <Button type="button" size="sm" onClick={onAdd}>
-          <Plus className="size-4 mr-1" /> Add Product Requirement
-        </Button>
-      }
     >
-      {rows.length === 0 ? (
-        <EmptyBlock message="No product requirements" hint="Add each product the customer needs" />
-      ) : (
-        <div className="space-y-6">
-          {rows.map((row, i) => {
-            const amtLabel = amountLabel(row.product_type);
-            const baseFields: CrmFieldConfig[] = [
-              { key: "product_type", label: "Product Type", type: "select", options: [...PRODUCT_TYPES] },
-              { key: "loan_amount", label: amtLabel, type: "number" },
-              { key: "tenure_months", label: "Tenure (months)", type: "number" },
-              { key: "roi_percent", label: "ROI (%)", type: "number" },
-              { key: "purpose", label: "Purpose", colSpan: 2 },
-              { key: "has_existing_loan", label: "Existing Loan?", type: "switch" },
-              { key: "balance_transfer", label: "Balance Transfer?", type: "switch" },
-              { key: "top_up_required", label: "Top-up Required?", type: "switch" },
-            ];
-            const extras = productExtraFields(row.product_type).map((f) =>
-              f.key.startsWith("extra_") ? f : { ...f, key: f.key === "property_value" ? "property_value" : f.key },
-            );
-            return (
-              <RepeatableBlock key={row.id} title="Product" index={i} onRemove={() => onRemove(row.id)}>
-                <CrmFormGrid
-                  fields={[...baseFields, ...extras]}
-                  values={loanRowValues(row)}
-                  onChange={(k, v) => onChange(row, patchLoanRow(row, k, v))}
-                />
-              </RepeatableBlock>
-            );
-          })}
-        </div>
-      )}
+      <div className="grid gap-2 sm:grid-cols-2">
+        {PRODUCT_TYPES.map((product) => {
+          const on = selected === product;
+          return (
+            <button
+              key={product}
+              type="button"
+              onClick={() => pick(product)}
+              className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
+                on
+                  ? "border-[#10662A] bg-[#E8F7EC] text-[#0D4F20]"
+                  : "border-[#d8ecdd] bg-white text-[#390A5D] hover:bg-[#F4FBF6]"
+              }`}
+            >
+              {product}
+              <span className={`text-[11px] font-bold uppercase ${on ? "text-[#10662A]" : "text-[#8a7aa0]"}`}>
+                {on ? "Selected" : "Select"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </SectionShell>
   );
 }
