@@ -32,7 +32,33 @@ from app.models import (
 )
 
 AYAN_EMAIL = "ayanofficial610@gmail.com"
-PRICE_START = 500
+
+# Exclusive fresh-lead prices a partner would actually pay. Not a +50 ladder.
+BOARD_PRICES = {
+    "personal-loan": 99,
+    "home-loan": 249,
+    "lap-loan": 299,
+    "auto-loan": 79,
+    "education-loan": 149,
+    "msme-loan": 199,
+    "mudra-loan": 99,
+    "machinery-loan": 349,
+    "business-loan": 249,
+    "startup-business-loan": 179,
+    "working-capital-loan": 199,
+    "cgtmse-loan": 199,
+    "pmegp-loan": 149,
+    "standup-india": 229,
+    "subsidy-linked-msme": 299,
+    "export-finance": 399,
+    "import-finance": 349,
+    "lc-bg": 279,
+    "invoice-financing": 129,
+    "cash-credit": 299,
+    "overdraft": 149,
+    "credit-cards": 49,
+    "insurance": 79,
+}
 
 FILE_ROWS = (
     CustomerAutomationLog,
@@ -126,7 +152,7 @@ def main() -> None:
         for index, row in enumerate(LEADS, start=1):
             key, name, category, subtype, loan_type, amount, income, employment, company, city, state, property, purpose = row
             phone = f"98{52000000 + index:08d}"
-            price = PRICE_START + (index - 1) * 50
+            price = BOARD_PRICES[key]
             lead = Lead(
                 applicant_name=name,
                 full_phone=phone,
