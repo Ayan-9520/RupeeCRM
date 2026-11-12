@@ -95,14 +95,14 @@ export function ProductivityChart() {
         ) : (
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={points}>
+              <BarChart data={points} barGap={6} barCategoryGap="62%">
                 <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
                 <XAxis dataKey="label" fontSize={11} />
                 <YAxis fontSize={11} tickFormatter={compact} width={48} />
                 <Tooltip formatter={(value, name) => [inr(Number(value || 0)), String(name)]} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="login" name="Login" fill="#10662A" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="disbursed" name="Disbursed" fill="#7dcea0" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="login" name="Login" fill="#10662A" radius={[3, 3, 0, 0]} maxBarSize={16} />
+                <Bar dataKey="disbursed" name="Disbursed" fill="#7dcea0" radius={[3, 3, 0, 0]} maxBarSize={16} />
               </BarChart>
             </ResponsiveContainer>
           </div>
