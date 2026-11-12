@@ -29,6 +29,7 @@ import {
 import { DeskGuide } from "@/components/dashboard/DeskGuide";
 import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { RecallList } from "@/components/dashboard/RecallList";
+import { AdminCockpit } from "@/components/dashboard/AdminCockpit";
 import { ConnectorCockpit } from "@/components/dashboard/ConnectorCockpit";
 import { TeleSalesCockpit } from "@/components/dashboard/TeleSalesCockpit";
 import { CustomerHome } from "@/components/dashboard/CustomerHome";
@@ -121,7 +122,7 @@ function DashboardHome() {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    if (!user || !role) return;
+    if (!user || !role || isPlatformAdmin(role)) return;
     const cached = getCrmUser();
     setProfileName(cached?.full_name ?? "");
 
@@ -199,6 +200,7 @@ function DashboardHome() {
   };
 
   useEffect(() => {
+    if (admin) return;
     void loadWebLeads();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [admin]);
@@ -217,6 +219,10 @@ function DashboardHome() {
   }, [webLeads]);
 
   const firstName = profileName ? profileName.split(" ")[0] : "";
+
+  if (admin) {
+    return <AdminCockpit firstName={firstName} />;
+  }
 
   if (role === "dsa") {
     return <ConnectorCockpit firstName={firstName} />;
