@@ -174,7 +174,7 @@ const EXTRA_ROUTE_RULES: { prefix: string; roles: AppRole[] }[] = [
   { prefix: "/dashboard/my-leads/", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller", "coordinator"] },
   { prefix: "/dashboard/settings", roles: ALL_ROLES },
   { prefix: "/dashboard/invoice-approvals", roles: ["ceo", "super_admin", "admin", "coordinator"] },
-  { prefix: "/dashboard/profile", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"] },
+  { prefix: "/dashboard/profile", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller", "coordinator", "lender", "customer"] },
   { prefix: "/dashboard/marketing/", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"] },
   { prefix: "/dashboard/hrms/", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"] },
 ];

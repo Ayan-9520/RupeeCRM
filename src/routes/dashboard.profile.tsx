@@ -7,13 +7,21 @@ import {
   savePartnerProfile,
   type PartnerProfile,
 } from "@/lib/python-api";
+import { useAuth } from "@/lib/auth-context";
+import { StaffProfile } from "@/components/dashboard/StaffProfile";
 
 export const Route = createFileRoute("/dashboard/profile")({
-  head: () => ({ meta: [{ title: "Public profile — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "My profile — RupeeOne" }] }),
   component: ProfilePage,
 });
 
 function ProfilePage() {
+  const { role } = useAuth();
+  if (role && role !== "dsa" && role !== "affiliate") return <StaffProfile />;
+  return <PartnerProfilePage />;
+}
+
+function PartnerProfilePage() {
   const [form, setForm] = useState<PartnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
