@@ -123,21 +123,20 @@ export function ConnectorCockpit({ firstName }: { firstName: string }) {
             <p className="text-xs text-white/70">{loading ? "…" : `${cards.conversion}% of leads`}</p>
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-2 border-t border-white/15 p-2 sm:grid-cols-4">
-          {moneyRow.map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className={item.tone === "green"
-                ? "rounded-xl px-3 py-2 transition hover:bg-black/15"
-                : "rounded-xl bg-white px-3 py-2 text-[#14281c] shadow-[0_8px_18px_rgba(0,0,0,0.12)] transition hover:bg-[#F4FBF6]"}
-            >
-              <p className={`text-[10px] font-semibold uppercase tracking-wide ${item.tone === "green" ? "text-white/70" : "text-[#5c4d72]"}`}>{item.label}</p>
-              <p className={`text-base font-semibold ${item.tone === "white" ? "text-[#10662A]" : ""}`}>{item.value}</p>
-            </Link>
-          ))}
-        </div>
       </section>
+
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {moneyRow.map((item) => (
+          <Link
+            key={item.label}
+            to={item.to}
+            className={`group rounded-2xl border bg-white px-3 py-2.5 shadow-[0_8px_20px_rgba(16,102,42,0.06)] transition hover:bg-[#0D4F20] ${item.tone === "green" ? "border-[#10662A]" : "border-[#d8ecdd]"}`}
+          >
+            <p className={`text-[10px] font-semibold uppercase tracking-[0.12em] group-hover:text-[#B7E4C7] ${item.tone === "green" ? "text-[#10662A]" : "text-[#5c4d72]"}`}>{item.label}</p>
+            <p className="mt-0.5 font-display text-xl font-bold leading-tight text-[#0D4F20] group-hover:text-white">{item.value}</p>
+          </Link>
+        ))}
+      </div>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white px-3 py-2.5 shadow-[0_8px_20px_rgba(16,102,42,0.04)]">
         <div className="flex items-center justify-between gap-2">
