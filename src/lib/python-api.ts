@@ -477,7 +477,13 @@ export type DeskPerson = {
   finance_level: string | null;
   reports_to_name: string | null;
   joined_at: string | null;
+  employee_code: string;
+  hr_profile: Record<string, string>;
 };
+
+export async function saveHrProfile(body: Record<string, string>): Promise<Record<string, string>> {
+  return request("/api/users/me/hr-profile", { method: "PUT", body: JSON.stringify(body) });
+}
 
 export type DeskNode = DeskPerson & { children: DeskNode[] };
 

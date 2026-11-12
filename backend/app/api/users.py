@@ -206,6 +206,8 @@ class DeskPerson(BaseModel):
     finance_level: str | None = None
     reports_to_name: str | None = None
     joined_at: str | None = None
+    employee_code: str = ""
+    hr_profile: dict = {}
 
 
 class DeskNode(DeskPerson):
@@ -221,6 +223,10 @@ class DeskOut(BaseModel):
     team: list[DeskNode]
 
 
+def _employee_code(row: User) -> str:
+    return "RD" + str(row.id).replace("-", "")[:8].upper()
+
+
 def _desk_person(row: User, names: dict) -> DeskPerson:
     return DeskPerson(
         id=row.id,
@@ -233,7 +239,60 @@ def _desk_person(row: User, names: dict) -> DeskPerson:
         finance_level=row.finance_level,
         reports_to_name=names.get(row.reports_to_user_id) if row.reports_to_user_id else None,
         joined_at=row.created_at.isoformat() if row.created_at else None,
+        employee_code=_employee_code(row),
+        hr_profile=dict(row.hr_profile or {}),
     )
+
+
+class HrProfileIn(BaseModel):
+    personal_email: str = ""
+    birthday: str = ""
+    gender: str = ""
+    address: str = ""
+    employment_status: str = ""
+    biometric_code: str = ""
+    office: str = ""
+    whatsapp: str = ""
+    facebook: str = ""
+    linkedin: str = ""
+    skype: str = ""
+    twitter: str = ""
+    about: str = ""
+    base_location: str = ""
+    region: str = ""
+    line_name: str = ""
+    regional_head: str = ""
+    confirmation_status: str = ""
+    blood_group: str = ""
+    father_name: str = ""
+    spouse_name: str = ""
+    marital_status: str = ""
+    marriage_date: str = ""
+    nationality: str = ""
+    bank_name: str = ""
+    account_number: str = ""
+    ifsc: str = ""
+    pan: str = ""
+    uan: str = ""
+    agent_code: str = ""
+    visa_country: str = ""
+    visa_type: str = ""
+    visa_expiry: str = ""
+
+
+@router.put("/me/hr-profile")
+def save_hr_profile(
+    body: HrProfileIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    saved: dict[str, str] = {}
+    for key, value in body.model_dump().items():
+        text = " ".join(str(value or "").split())
+        saved[key] = text[:1000] if key == "about" else text[:180]
+    user.hr_profile = saved
+    db.commit()
+    return saved
 
 
 @router.get("/me/desk", response_model=DeskOut)
