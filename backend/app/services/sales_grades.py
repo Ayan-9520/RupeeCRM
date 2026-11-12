@@ -1,4 +1,9 @@
-"""Sales ladder T1 (Business Head) to T10 (Sales Executive), plus department heads."""
+"""Company ladder.
+
+Sales: Telecaller, RM, Team Leader, Sales Manager, ASM, RSM, ZSM, Business Head, CEO.
+Other departments: Executive, Team Leader, Manager, Head, then Business Head, then CEO.
+A lower rank number is more senior.
+"""
 
 from __future__ import annotations
 
@@ -9,24 +14,59 @@ from sqlalchemy.orm import Session
 from app.models import User
 
 GRADES: dict[str, str] = {
-    "T1": "Business Head",
-    "T2": "VP",
+    "T1": "CEO",
+    "T2": "Business Head",
     "T3": "ZSM",
     "T4": "RSM",
     "T5": "ASM",
     "T6": "Sales Manager",
-    "T7": "RM2",
-    "T8": "RM1",
-    "T9": "Senior Sales Executive",
-    "T10": "Sales Executive",
+    "T7": "Team Leader",
+    "T8": "RM",
+    "T9": "Telecaller",
+    "HR-H": "HR Head",
     "HR-M": "HR Manager",
+    "HR-L": "HR Team Leader",
     "HR-E": "HR Executive",
-    "AC-M": "Accounts Manager",
-    "AC-E": "Accounts Executive",
-    "MK-M": "Marketing Manager",
-    "MK-E": "Marketing Executive",
+    "OP-H": "Operations Head",
     "OP-M": "Operations Manager",
+    "OP-L": "Operations Team Leader",
     "OP-E": "Operations Executive",
+    "MK-H": "IT & Marketing Head",
+    "MK-M": "IT & Marketing Manager",
+    "MK-L": "IT & Marketing Team Leader",
+    "MK-E": "IT & Marketing Executive",
+    "AC-H": "Accounts Head",
+    "AC-M": "Accounts Manager",
+    "AC-L": "Accounts Team Leader",
+    "AC-E": "Accounts Executive",
+}
+
+RANK: dict[str, int] = {
+    "T1": 1,
+    "T2": 2,
+    "T3": 3,
+    "T4": 4,
+    "T5": 5,
+    "T6": 6,
+    "T7": 7,
+    "T8": 8,
+    "T9": 9,
+    "HR-H": 3,
+    "OP-H": 3,
+    "MK-H": 3,
+    "AC-H": 3,
+    "HR-M": 6,
+    "OP-M": 6,
+    "MK-M": 6,
+    "AC-M": 6,
+    "HR-L": 7,
+    "OP-L": 7,
+    "MK-L": 7,
+    "AC-L": 7,
+    "HR-E": 9,
+    "OP-E": 9,
+    "MK-E": 9,
+    "AC-E": 9,
 }
 
 
@@ -37,12 +77,9 @@ def grade_title(code: str | None) -> str | None:
 
 
 def grade_rank(code: str | None) -> int | None:
-    if not code or not code.startswith("T"):
+    if not code:
         return None
-    try:
-        return int(code[1:])
-    except ValueError:
-        return None
+    return RANK.get(code)
 
 
 def downline_ids(db: Session, user_id: UUID) -> set[UUID]:

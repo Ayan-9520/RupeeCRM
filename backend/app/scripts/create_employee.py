@@ -20,7 +20,8 @@ def main() -> None:
             user.role = "coordinator"
             user.is_active = True
             user.finance_level = None
-            user.department = "operation"
+            user.department = "OPS"
+            user.sales_grade = "OP-E"
             user.password_hash = hash_password(PASSWORD)
             db.commit()
             print(f"ready {EMAIL} password {PASSWORD}")
@@ -33,7 +34,8 @@ def main() -> None:
                 role="coordinator",
                 is_active=True,
                 finance_level=None,
-                department="operation",
+                department="OPS",
+                sales_grade="OP-E",
             )
         )
         db.commit()

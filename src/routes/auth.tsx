@@ -5,7 +5,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { forgotPassword } from "@/lib/python-api";
-import { LOGIN_TYPES, type LoginDoor } from "@/lib/login-door";
+import type { LoginDoor } from "@/lib/login-door";
 
 const onLocal =
   typeof window !== "undefined" &&
@@ -80,17 +80,11 @@ function AuthPage() {
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotBusy, setForgotBusy] = useState(false);
   const [forgotState, setForgotState] = useState<"idle" | "sent" | "unavailable">("idle");
-  const [loginType, setLoginType] = useState("dsa");
   const destination = next ?? "/dashboard";
 
   useEffect(() => {
     if (!loading && user) navigate({ to: destination as "/dashboard" });
   }, [user, loading, navigate, destination]);
-
-  useEffect(() => {
-    if (!door) return;
-    setLoginType(door === "employee" ? "sales" : "dsa");
-  }, [door]);
 
   const switchMode = (nextMode: "signin" | "signup") => {
     setMode(nextMode);
@@ -127,7 +121,7 @@ function AuthPage() {
         setFormError(parsed.error.issues[0].message);
         return;
       }
-      await signIn(parsed.data.email.trim().toLowerCase(), parsed.data.password, door, loginType);
+      await signIn(parsed.data.email.trim().toLowerCase(), parsed.data.password, door);
       toast.success("Welcome to RupeeOne");
       setTimeout(() => navigate({ to: destination as "/dashboard" }), 300);
     } catch (err) {
@@ -218,16 +212,8 @@ function AuthPage() {
             RupeeOne
           </button>
           <h1 className="mt-3 font-display text-2xl font-bold text-[#1c1915]">Employee sign in</h1>
-          <p className="mt-1 text-sm text-[#6b645b]">RM, Manager and Business Head sign in as Sales. Accounts signs in as Accounts.</p>
+          <p className="mt-1 text-sm text-[#6b645b]">Use the email and password from admin. Your department opens after sign in.</p>
           <label className="mt-5 block text-xs font-semibold text-[#5c5348]">
-            User type
-            <select value={loginType} onChange={(e) => setLoginType(e.target.value)} className={field}>
-              {LOGIN_TYPES.employee.map((item) => (
-                <option key={item.id} value={item.id}>{item.label}</option>
-              ))}
-            </select>
-          </label>
-          <label className="mt-3 block text-xs font-semibold text-[#5c5348]">
             Email
             <input value={email} onChange={(e) => setEmail(e.target.value)} className={field} autoComplete="email" />
           </label>
@@ -265,16 +251,8 @@ function AuthPage() {
               RupeeOne
             </button>
             <h1 className="font-display text-2xl font-bold text-[#1c1915]">Partner sign in</h1>
-            <p className="mt-1 text-xs text-[#6b645b]">Choose the account type, then sign in.</p>
+            <p className="mt-1 text-xs text-[#6b645b]">DSA, affiliate, and customer accounts.</p>
             <label className="mt-5 block text-xs font-semibold text-[#5c5348]">
-              User type
-              <select value={loginType} onChange={(e) => setLoginType(e.target.value)} className={field}>
-                {LOGIN_TYPES.partner.map((item) => (
-                  <option key={item.id} value={item.id}>{item.label}</option>
-                ))}
-              </select>
-            </label>
-            <label className="mt-3 block text-xs font-semibold text-[#5c5348]">
               Email
               <input value={email} onChange={(e) => setEmail(e.target.value)} className={field} autoComplete="email" />
             </label>

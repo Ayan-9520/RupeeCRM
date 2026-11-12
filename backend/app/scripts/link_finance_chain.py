@@ -67,23 +67,46 @@ def main() -> None:
             partner.rm2_user_id = ramesh.id
             linked += 1
 
+        old_department = {
+            "sales": "SALES",
+            "operation": "OPS",
+            "it_marketing": "ITM",
+            "hr": "HR",
+            "accounts": "ACC",
+            "associate": None,
+        }
+        for row in db.query(User).all():
+            if row.department in old_department:
+                row.department = old_department[row.department]
+
+        neeraj.department, neeraj.sales_grade = "SALES", "T8"
+        ramesh.department, ramesh.sales_grade = "SALES", "T8"
+        sumit.department, sumit.sales_grade = "SALES", "T6"
+        arvind.department, arvind.sales_grade = None, "T2"
+        naveen.department, naveen.sales_grade = "ACC", "AC-H"
         neeraj.reports_to_user_id = sumit.id
         ramesh.reports_to_user_id = sumit.id
         sumit.reports_to_user_id = arvind.id
         naveen.reports_to_user_id = arvind.id
         arvind.reports_to_user_id = None
-        for person in (neeraj, ramesh, sumit, arvind):
-            person.department = "sales"
-        naveen.department = "accounts"
         narender = db.query(User).filter(User.email == "narender@rupeedial.com").first()
         if narender:
-            narender.department = "operation"
+            narender.department = "OPS"
+            narender.sales_grade = "OP-E"
+            narender.reports_to_user_id = arvind.id
+        callers = 0
+        for caller in db.query(User).filter(User.role == "caller", User.is_active.is_(True)).all():
+            caller.department = caller.department or "SALES"
+            caller.sales_grade = caller.sales_grade or "T9"
+            if caller.reports_to_user_id is None:
+                caller.reports_to_user_id = sumit.id
+                callers += 1
         db.commit()
         print(
             "chain "
             f"rm1 {neeraj.email} rm2 {ramesh.email} "
             f"manager {sumit.email} business_head {arvind.email} accounts {naveen.email} "
-            f"partners {linked} cleared {','.join(cleared) or 'none'}"
+            f"partners {linked} callers_linked {callers} cleared {','.join(cleared) or 'none'}"
         )
     finally:
         db.close()

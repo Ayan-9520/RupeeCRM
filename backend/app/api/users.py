@@ -84,11 +84,14 @@ def create_employee(
         raise HTTPException(status_code=400, detail="Enter a valid email")
     if db.query(User).filter(User.email == email).first():
         raise HTTPException(status_code=400, detail="This email already has a login")
-    department = None
-    if body.role == "coordinator":
+    starter = {"SALES": "T8", "OPS": "OP-E", "HR": "HR-E", "ITM": "MK-E", "ACC": "AC-E"}
+    if body.role == "caller":
+        department, grade = "SALES", "T9"
+    else:
         department = (body.department or "").strip()
         if department not in DEPARTMENTS:
             raise HTTPException(status_code=400, detail="Pick a department")
+        grade = starter[department]
     temp = generate_temp_password()
     db.add(
         User(
@@ -98,6 +101,7 @@ def create_employee(
             role=body.role,
             is_active=True,
             department=department,
+            sales_grade=grade,
         )
     )
     db.commit()
@@ -213,7 +217,7 @@ def set_designation(
         their_rank = grade_rank(body.sales_grade or user.sales_grade)
         manager_rank = grade_rank(manager.sales_grade)
         if their_rank and manager_rank and manager_rank >= their_rank:
-            raise HTTPException(status_code=400, detail="Reports to a higher grade. T1 is the top and T10 is the caller.")
+            raise HTTPException(status_code=400, detail="A person reports to someone more senior. The CEO is the top.")
         if manager.id in downline_ids(db, user.id):
             raise HTTPException(status_code=400, detail="That person already reports up to this user")
     user.sales_grade = body.sales_grade or None

@@ -7,7 +7,7 @@ import {
   takeAuthHandoff,
   type CrmUser,
 } from "@/lib/python-api";
-import { doorAllows, loginTypeLabel, loginTypeMatches, wrongDoorMessage, type LoginDoor } from "@/lib/login-door";
+import { doorAllows, wrongDoorMessage, type LoginDoor } from "@/lib/login-door";
 
 export type AppRole =
   | "ceo"
@@ -34,7 +34,7 @@ interface AuthContextValue {
   role: AppRole | null;
   loading: boolean;
   authMode: "python";
-  signIn: (email: string, password: string, door?: "partner" | "employee", loginType?: string) => Promise<void>;
+  signIn: (email: string, password: string, door?: "partner" | "employee") => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
 }
@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, [applyCrmUser]);
 
-  const signIn = async (email: string, password: string, door?: LoginDoor, loginType?: string) => {
+  const signIn = async (email: string, password: string, door?: LoginDoor) => {
     clearLegacySupabaseKeys();
     const u = await crmLogin(email.trim().toLowerCase(), password);
     if (door && !doorAllows(door, u.role)) {
@@ -120,11 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) throw new Error("Login succeeded but no token stored");
     const me = await fetchMe(token);
-    if (door && loginType && !loginTypeMatches(door, loginType, u.role, me?.department)) {
-      clearCrmSession();
-      const label = loginTypeLabel(door, u.role, me?.department);
-      throw new Error(label ? `This account signs in as ${label}.` : "This account has no department yet. Ask an admin to set it.");
-    }
     applyCrmUser(u, token, me?.id, me?.finance_level);
   };
 

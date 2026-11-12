@@ -1,10 +1,9 @@
-"""Departments an employee picks on the login door."""
+"""Department ids. Associate is a grade, not a department."""
 
 DEPARTMENTS: dict[str, str] = {
-    "associate": "Associate",
-    "operation": "Operation",
-    "it_marketing": "IT & Marketing",
-    "sales": "Sales",
-    "hr": "Human Resource",
-    "accounts": "Accounts",
+    "SALES": "Sales",
+    "OPS": "Operations",
+    "HR": "Human Resource",
+    "ITM": "IT & Marketing",
+    "ACC": "Accounts",
 }

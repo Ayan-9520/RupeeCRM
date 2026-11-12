@@ -51,7 +51,7 @@ function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [staff, setStaff] = useState({ full_name: "", email: "", role: "coordinator" as "coordinator" | "caller", department: "sales" });
+  const [staff, setStaff] = useState({ full_name: "", email: "", role: "coordinator" as "coordinator" | "caller", department: "SALES" });
 
   const refresh = async () => {
     setLoading(true);
@@ -100,7 +100,7 @@ function AdminUsersPage() {
       });
       await navigator.clipboard.writeText(`Email: ${res.email}\nPassword: ${res.temporary_password}`);
       toast.success(`${res.full_name} can sign in. Password copied: ${res.temporary_password}`);
-      setStaff({ full_name: "", email: "", role: "coordinator", department: "sales" });
+      setStaff({ full_name: "", email: "", role: "coordinator", department: "SALES" });
       await refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Could not create the employee");
