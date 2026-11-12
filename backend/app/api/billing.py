@@ -504,9 +504,11 @@ def razorpay_order(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    """Creates a pending payment. Checkout starts only after Razorpay keys are set."""
+    """Creates a pending payment and a Razorpay order. Checkout opens only when keys are set."""
     if user.seat_owner_id and user.seat_owner_id != user.id:
         raise HTTPException(status_code=403, detail="Only the account owner can pay for a plan")
+    if not settings.razorpay_enabled:
+        raise HTTPException(status_code=503, detail="Online payment is not connected yet")
     plan = PLANS.get(body.plan_id)
     if not plan:
         raise HTTPException(status_code=400, detail="Unknown plan")
@@ -523,12 +525,6 @@ def razorpay_order(
     )
     db.add(row)
     db.commit()
-    if not settings.razorpay_enabled:
-        return {
-            "ready": False,
-            "payment_id": str(row.id),
-            "message": "Razorpay is not connected yet. The request stays pending until keys are added.",
-        }
     import base64
     import urllib.request
 
@@ -559,6 +555,50 @@ def razorpay_order(
     }
 
 
+def _settle_razorpay(db: Session, row: BillingPayment, payment_id: str) -> None:
+    if row.status == "paid":
+        return
+    row.status = "paid"
+    row.paid_at = datetime.now(timezone.utc)
+    row.provider_payment_id = payment_id or None
+    if row.plan_id:
+        owner = db.query(User).filter(User.id == row.user_id).first()
+        if owner:
+            _apply_plan(db, owner, row.plan_id, row.cycle or "monthly", record_payment=False)
+            return
+    db.commit()
+
+
+class RazorpayConfirmIn(BaseModel):
+    payment_id: UUID
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+
+@router.post("/razorpay/confirm")
+def razorpay_confirm(
+    body: RazorpayConfirmIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Browser checkout callback. The plan turns on only after the signature matches."""
+    if not settings.razorpay_key_secret:
+        raise HTTPException(status_code=503, detail="Online payment is not connected yet")
+    owner = _get_owner(db, user)
+    row = db.query(BillingPayment).filter(BillingPayment.id == body.payment_id, BillingPayment.user_id == owner.id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Payment not found")
+    if row.provider_order_id != body.razorpay_order_id:
+        raise HTTPException(status_code=400, detail="Order does not match this payment")
+    signed = f"{body.razorpay_order_id}|{body.razorpay_payment_id}".encode()
+    expected = hmac.new(settings.razorpay_key_secret.encode(), signed, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, body.razorpay_signature):
+        raise HTTPException(status_code=400, detail="Payment signature did not match")
+    _settle_razorpay(db, row, body.razorpay_payment_id)
+    return {"success": True, "message": "Payment confirmed. Your plan is active."}
+
+
 @router.post("/razorpay/webhook")
 async def razorpay_webhook(request: Request, db: Session = Depends(get_db)) -> dict:
     raw = await request.body()
@@ -574,15 +614,7 @@ async def razorpay_webhook(request: Request, db: Session = Depends(get_db)) -> d
         return {"ok": True}
     order_id = str(payment.get("order_id") or "")
     row = db.query(BillingPayment).filter(BillingPayment.provider_order_id == order_id).first()
-    if not row or row.status == "paid":
+    if not row:
         return {"ok": True}
-    row.status = "paid"
-    row.paid_at = datetime.now(timezone.utc)
-    row.provider_payment_id = str(payment.get("id") or "") or None
-    if row.plan_id:
-        owner = db.query(User).filter(User.id == row.user_id).first()
-        if owner:
-            _apply_plan(db, owner, row.plan_id, row.cycle or "monthly", record_payment=False)
-            return {"ok": True}
-    db.commit()
+    _settle_razorpay(db, row, str(payment.get("id") or ""))
     return {"ok": True}

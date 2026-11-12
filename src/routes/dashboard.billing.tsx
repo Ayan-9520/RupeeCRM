@@ -14,6 +14,9 @@ import {
 import {
   getBillingMe,
   listMyBillingPayments,
+  getRazorpayStatus,
+  createRazorpayOrder,
+  confirmRazorpayPayment,
   activateBillingPlan,
   cancelBillingPlan,
   inviteBillingSeat,
@@ -30,6 +33,42 @@ export const Route = createFileRoute("/dashboard/billing")({
 });
 
 type Cycle = "monthly" | "quarterly" | "yearly";
+
+type RazorpaySuccess = {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+type RazorpayCheckout = new (options: {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpaySuccess) => void;
+  prefill?: { name?: string; email?: string };
+  theme?: { color: string };
+  modal?: { ondismiss?: () => void };
+}) => { open: () => void };
+
+function loadRazorpay(): Promise<RazorpayCheckout> {
+  const existing = (window as Window & { Razorpay?: RazorpayCheckout }).Razorpay;
+  if (existing) return Promise.resolve(existing);
+  return new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => {
+      const loaded = (window as Window & { Razorpay?: RazorpayCheckout }).Razorpay;
+      if (loaded) resolve(loaded);
+      else reject(new Error("Razorpay checkout did not load"));
+    };
+    script.onerror = () => reject(new Error("Could not load the payment window"));
+    document.body.appendChild(script);
+  });
+}
 
 function when(iso: string | null) {
   if (!iso) return "—";
@@ -51,12 +90,18 @@ function BillingPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [invite, setInvite] = useState({ email: "", full_name: "", role: "dsa" });
   const [payments, setPayments] = useState<BillingPaymentRow[]>([]);
+  const [payReady, setPayReady] = useState(false);
 
   const load = useCallback(async () => {
     try {
-      const [me, rows] = await Promise.all([getBillingMe(), listMyBillingPayments().catch(() => [])]);
+      const [me, rows, gateway] = await Promise.all([
+        getBillingMe(),
+        listMyBillingPayments().catch(() => []),
+        getRazorpayStatus().catch(() => ({ enabled: false })),
+      ]);
       setData(me);
       setPayments(rows);
+      setPayReady(gateway.enabled);
       setLoadError(null);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Could not load billing";
@@ -70,6 +115,57 @@ function BillingPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const onPay = async (planId: string, planName: string) => {
+    if (!payReady) {
+      toast.error("Razorpay keys are not on the server yet. Pay will open checkout as soon as they are added.");
+      return;
+    }
+    setBusy(`pay-${planId}`);
+    try {
+      const order = await createRazorpayOrder(planId, cycle);
+      const Razorpay = await loadRazorpay();
+      const profile = getCrmUser();
+      const checkout = new Razorpay({
+        key: order.key_id,
+        amount: order.amount * 100,
+        currency: order.currency,
+        name: "RupeeDial",
+        description: `${planName} · ${cycle}`,
+        order_id: order.order_id,
+        prefill: { name: profile?.full_name, email: profile?.email },
+        theme: { color: "#10662A" },
+        modal: {
+          ondismiss: () => {
+            setBusy(null);
+            toast.message("Payment was not completed.");
+          },
+        },
+        handler: (response) => {
+          void (async () => {
+            try {
+              const res = await confirmRazorpayPayment({
+                payment_id: order.payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              toast.success(res.message);
+              await load();
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : "Payment could not be confirmed");
+            } finally {
+              setBusy(null);
+            }
+          })();
+        },
+      });
+      checkout.open();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not start payment");
+      setBusy(null);
+    }
+  };
 
   const onActivate = async (planId: string) => {
     setBusy(`activate-${planId}`);
@@ -154,7 +250,7 @@ function BillingPage() {
       <div>
         <h1 className="font-display text-2xl font-bold text-[#390A5D]">Billing</h1>
         <p className="text-sm text-[#5c4d72] mt-1">
-          Plans, lead credits wallet, and team seats. Pay by UPI or bank transfer, then RupeeDial activates your plan — usually the same day.
+          Choose a plan and pay here. The plan and lead credits turn on as soon as the payment is confirmed.
         </p>
       </div>
 
@@ -251,7 +347,7 @@ function BillingPage() {
                     </li>
                   ))}
               </ul>
-              {isAdmin || active ? (
+              {isAdmin ? (
                 <button
                   type="button"
                   disabled={!!busy || active}
@@ -261,26 +357,27 @@ function BillingPage() {
                   {busy === `activate-${p.id}` ? "Activating…" : active ? "Active" : "Activate"}
                 </button>
               ) : (
-                <a
-                  href={`https://wa.me/917982953129?text=${encodeURIComponent(
-                    `Hi RupeeDial, I want to activate the ${p.name} plan (${cycle}, ₹${price.toLocaleString("en-IN")}). My CRM email: ${meEmail || ""}`,
-                  )}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-4 block w-full rounded-xl bg-[#10662A] text-center text-white text-sm font-semibold py-2 hover:bg-[#0d5222]"
+                <button
+                  type="button"
+                  disabled={!!busy || active || !isOwner}
+                  onClick={() => void onPay(p.id, p.name)}
+                  className="mt-4 w-full rounded-xl bg-[#10662A] text-white text-sm font-semibold py-2 disabled:opacity-50 hover:bg-[#0d5222]"
                 >
-                  Request activation
-                </a>
+                  {busy === `pay-${p.id}` ? "Opening payment…" : active ? "Active" : "Pay"}
+                </button>
               )}
             </div>
           );
         })}
       </div>
+      {!payReady && !isAdmin && (
+        <p className="text-xs text-[#5c4d72]">Pay opens Razorpay checkout once the keys are added on the server. Until then it will not charge anything.</p>
+      )}
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
         <h2 className="font-semibold text-[#390A5D]">Payments</h2>
         <p className="mt-1 text-xs text-[#5c4d72]">
-          Date and time are when the payment was confirmed. Razorpay will use this same list after the keys are added. Until then, a confirmed UPI payment is recorded when an admin activates the plan.
+          Each row is a real payment, with the date and time it was confirmed. Online payments appear here after Razorpay confirms them.
         </p>
         {payments.length === 0 ? (
           <p className="py-6 text-sm text-[#5c4d72]">No payment recorded yet.</p>

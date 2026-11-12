@@ -144,7 +144,7 @@ function AdminBillingPage() {
           <CreditCard className="size-6 text-[#10662A]" /> Billing overview
         </h1>
         <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
-          Partners pay by UPI or bank transfer. After you confirm the payment, activate their plan here — lead credits are added to their wallet automatically.
+          Partners pay on their own Billing page. Razorpay confirms the payment, turns the plan on, and adds lead credits. Use the form below only when a bank transfer did not go through Razorpay.
         </p>
       </div>
 
@@ -155,7 +155,7 @@ function AdminBillingPage() {
       </div>
 
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
-        <h2 className="font-semibold text-[#390A5D]">Activate a plan after payment</h2>
+        <h2 className="font-semibold text-[#390A5D]">Activate a plan for a bank transfer</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-[2fr_1fr_1fr_auto]">
           <select
             value={form.userId}
@@ -202,7 +202,7 @@ function AdminBillingPage() {
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
         <h2 className="font-semibold text-[#390A5D]">Payments</h2>
         <p className="mt-1 text-xs text-[#5c4d72]">
-          Each confirmed payment shows the date and time. Razorpay will add rows here after the keys are connected. Activating a plan records the offline payment now.
+          Razorpay payments and confirmed bank transfers both show here, with the date and time.
         </p>
         {payments.length === 0 ? (
           <p className="py-6 text-sm text-[#5c4d72]">No payment recorded yet.</p>

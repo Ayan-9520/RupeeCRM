@@ -557,6 +557,36 @@ export async function listAdminBillingPayments(): Promise<BillingPaymentRow[]> {
   return request("/api/billing/admin/payments");
 }
 
+export async function getRazorpayStatus(): Promise<{ enabled: boolean }> {
+  return request("/api/billing/razorpay/status");
+}
+
+export async function createRazorpayOrder(planId: string, cycle: "monthly" | "quarterly" | "yearly"): Promise<{
+  ready: boolean;
+  payment_id: string;
+  order_id: string;
+  key_id: string;
+  amount: number;
+  currency: string;
+}> {
+  return request("/api/billing/razorpay/order", {
+    method: "POST",
+    body: JSON.stringify({ plan_id: planId, cycle }),
+  });
+}
+
+export async function confirmRazorpayPayment(body: {
+  payment_id: string;
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}): Promise<{ success: boolean; message: string }> {
+  return request("/api/billing/razorpay/confirm", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export async function activateBillingPlan(
   planId: string,
   cycle: "monthly" | "quarterly" | "yearly" = "monthly",
