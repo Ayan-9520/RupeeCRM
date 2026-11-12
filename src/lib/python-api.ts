@@ -443,6 +443,7 @@ export async function listCrmUsers(): Promise<{
     reports_to_name?: string | null;
     monthly_target_inr?: number | null;
     monthly_login_target_inr?: number | null;
+    finance_level?: string | null;
     created_at: string | null;
   }[];
   total: number;

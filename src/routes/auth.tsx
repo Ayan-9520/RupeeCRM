@@ -5,6 +5,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
 import { forgotPassword } from "@/lib/python-api";
+import type { LoginDoor } from "@/lib/login-door";
 
 const onLocal =
   typeof window !== "undefined" &&
@@ -39,12 +40,14 @@ export const Route = createFileRoute("/auth")({
       },
     ],
   }),
-  validateSearch: (search: Record<string, unknown>): { next?: string; mode?: "signup" } => {
+  validateSearch: (search: Record<string, unknown>): { next?: string; mode?: "signup"; door?: LoginDoor } => {
     const next = typeof search.next === "string" ? search.next : undefined;
     const mode = search.mode === "signup" ? "signup" : undefined;
+    const door = search.door === "partner" || search.door === "employee" ? search.door : undefined;
     return {
       ...(next && next.startsWith("/") && !next.startsWith("//") ? { next } : {}),
-      ...(mode ? { mode } : {}),
+      ...(mode && door !== "employee" ? { mode } : {}),
+      ...(door ? { door } : {}),
     };
   },
   component: AuthPage,
@@ -61,7 +64,7 @@ const field =
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading, signIn } = useAuth();
-  const { next, mode: startMode } = Route.useSearch();
+  const { next, mode: startMode, door } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">(startMode === "signup" ? "signup" : "signin");
   const [submitting, setSubmitting] = useState(false);
   const [email, setEmail] = useState("");
@@ -118,7 +121,7 @@ function AuthPage() {
         setFormError(parsed.error.issues[0].message);
         return;
       }
-      await signIn(parsed.data.email.trim().toLowerCase(), parsed.data.password);
+      await signIn(parsed.data.email.trim().toLowerCase(), parsed.data.password, door);
       toast.success("Welcome to RupeeOne");
       setTimeout(() => navigate({ to: destination as "/dashboard" }), 300);
     } catch (err) {
@@ -158,12 +161,42 @@ function AuthPage() {
     }
   };
 
-  if (loading || (!loading && user)) {
+  if (loading || user) {
     return (
       <div className="auth-page grid min-h-svh place-items-center bg-[#f7f4ee] p-4">
         <div className="flex flex-col items-center gap-2 rounded-2xl bg-white px-8 py-8 text-[#5c4d72]">
           <Loader2 className="size-7 animate-spin text-[#0e4d28]" />
           <p className="text-sm font-medium">Restoring session…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!door) {
+    return (
+      <div className="auth-page relative grid min-h-svh place-items-center overflow-hidden bg-[#f7f4ee] px-4 py-10">
+        <img src="/rupeeone-login-bg.jpg" alt="" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+        <div className="pointer-events-none absolute inset-0 bg-white/25" />
+        <div className="relative w-full max-w-lg rounded-[28px] bg-white/95 p-8 text-center shadow-[0_24px_60px_rgba(16,102,42,0.12)]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#0e4d28]">RupeeOne</p>
+          <h1 className="mt-3 font-display text-3xl font-bold text-[#1c1915]">Business CRM</h1>
+          <p className="mt-2 text-sm text-[#6b645b]">Partners and employees use the same company login. Pick the door for your account.</p>
+          <div className="mt-8 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/auth", search: { door: "partner", ...(next ? { next } : {}) } })}
+              className="h-12 rounded-full bg-[#0e4d28] text-sm font-semibold text-white"
+            >
+              Partner Login
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate({ to: "/auth", search: { door: "employee", ...(next ? { next } : {}) } })}
+              className="h-12 rounded-full bg-[#0e4d28] text-sm font-semibold text-white"
+            >
+              Employee Login
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -180,8 +213,11 @@ function AuthPage() {
             onSubmit={(event) => void onSignIn(event)}
             className={mode === "signin" ? "relative z-10 flex flex-col justify-center px-6 py-8 sm:px-10 md:absolute md:inset-y-0 md:left-0 md:w-1/2 md:pr-14" : "hidden"}
           >
-            <h1 className="font-display text-2xl font-bold text-[#1c1915]">Sign in</h1>
-            <p className="mt-1 text-xs text-[#6b645b]">RupeeOne CRM</p>
+            <button type="button" onClick={() => navigate({ to: "/auth", search: next ? { next } : {} })} className="mb-3 text-left text-[11px] font-semibold uppercase tracking-[0.16em] text-[#0e4d28]">
+              RupeeOne
+            </button>
+            <h1 className="font-display text-2xl font-bold text-[#1c1915]">{door === "employee" ? "Employee sign in" : "Partner sign in"}</h1>
+            <p className="mt-1 text-xs text-[#6b645b]">{door === "employee" ? "Caller, bank desk, RM, accounts and admin." : "DSA and affiliate partners."}</p>
             <label className="mt-5 block text-xs font-semibold text-[#5c5348]">
               Email
               <input value={email} onChange={(e) => setEmail(e.target.value)} className={field} autoComplete="email" />
@@ -235,12 +271,16 @@ function AuthPage() {
             <button type="submit" disabled={submitting} className="mt-4 h-11 w-full rounded-full bg-[#0e4d28] text-sm font-semibold text-white disabled:opacity-60">
               {submitting && mode === "signin" ? "Signing in…" : "Sign in"}
             </button>
-            <p className="mt-4 text-center text-xs text-[#6b645b]">
-              New partner?{" "}
-              <button type="button" onClick={() => switchMode("signup")} className="font-semibold text-[#0e4d28]">
-                Create an account
-              </button>
-            </p>
+            {door === "partner" ? (
+              <p className="mt-4 text-center text-xs text-[#6b645b]">
+                New partner?{" "}
+                <button type="button" onClick={() => switchMode("signup")} className="font-semibold text-[#0e4d28]">
+                  Create an account
+                </button>
+              </p>
+            ) : (
+              <p className="mt-4 text-center text-xs text-[#6b645b]">Employees are created by admin. Partners use Partner Login.</p>
+            )}
           </form>
 
           <form

@@ -33,6 +33,7 @@ class UserAdminOut(BaseModel):
     reports_to_name: str | None = None
     monthly_target_inr: float | None = None
     monthly_login_target_inr: float | None = None
+    finance_level: str | None = None
     created_at: str | None = None
 
     model_config = {"from_attributes": True}
@@ -90,6 +91,7 @@ def list_users(
             reports_to_name=rm_names.get(u.reports_to_user_id) if u.reports_to_user_id else None,
             monthly_target_inr=u.monthly_target_inr,
             monthly_login_target_inr=u.monthly_login_target_inr,
+            finance_level=u.finance_level,
             created_at=u.created_at.isoformat() if u.created_at else None,
         )
         for u in rows

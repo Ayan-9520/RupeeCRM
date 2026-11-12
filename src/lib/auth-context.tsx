@@ -3,9 +3,11 @@ import {
   API_URL,
   clearCrmSession,
   crmLogin,
-  getCrmUser,
+  rememberCrmUser,
+  takeAuthHandoff,
   type CrmUser,
 } from "@/lib/python-api";
+import { doorAllows, wrongDoorMessage, type LoginDoor } from "@/lib/login-door";
 
 export type AppRole =
   | "ceo"
@@ -32,7 +34,7 @@ interface AuthContextValue {
   role: AppRole | null;
   loading: boolean;
   authMode: "python";
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (email: string, password: string, door?: "partner" | "employee") => Promise<void>;
   signOut: () => Promise<void>;
   refreshRole: () => Promise<void>;
 }
@@ -86,9 +88,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearLegacySupabaseKeys();
 
     (async () => {
+      takeAuthHandoff();
       const token = localStorage.getItem(TOKEN_KEY);
-      const cached = getCrmUser();
-      if (!token || !cached) {
+      if (!token) {
         setLoading(false);
         return;
       }
@@ -101,19 +103,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
         return;
       }
-      applyCrmUser(
-        { email: me.email, full_name: me.full_name, role: me.role },
-        token,
-        me.id,
-        me.finance_level,
-      );
+      const crmUser = { email: me.email, full_name: me.full_name, role: me.role };
+      rememberCrmUser(crmUser);
+      applyCrmUser(crmUser, token, me.id, me.finance_level);
       setLoading(false);
     })();
   }, [applyCrmUser]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, door?: LoginDoor) => {
     clearLegacySupabaseKeys();
     const u = await crmLogin(email.trim().toLowerCase(), password);
+    if (door && !doorAllows(door, u.role)) {
+      clearCrmSession();
+      throw new Error(wrongDoorMessage(door));
+    }
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) throw new Error("Login succeeded but no token stored");
     const me = await fetchMe(token);

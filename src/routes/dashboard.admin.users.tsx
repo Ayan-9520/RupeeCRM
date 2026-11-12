@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
-import { isPlatformAdmin } from "@/lib/role-access";
+import { getRoleLabel, isPlatformAdmin } from "@/lib/role-access";
 import { toast } from "sonner";
 import { Users, Loader2, Search, ShieldOff, UserCheck, Copy, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { listCrmUsers, resetCrmUserPassword } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/admin/users")({
-  head: () => ({ meta: [{ title: "Manage Users — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Manage Users — RupeeOne" }] }),
   component: AdminUsersPage,
 });
 
@@ -37,6 +37,7 @@ type UserRow = {
   phone: string | null;
   dsa_id: string | null;
   is_active: boolean;
+  finance_level?: string | null;
   created_at: string | null;
 };
 
@@ -136,7 +137,7 @@ function AdminUsersPage() {
               <SelectItem value="all">All roles</SelectItem>
               {ROLES.map((r) => (
                 <SelectItem key={r} value={r} className="capitalize">
-                  {r}
+                  {getRoleLabel(r)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -205,7 +206,10 @@ function AdminUsersPage() {
                     <td className="px-4 py-3 text-[#5c4d72]">{u.email}</td>
                     <td className="px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
                     <td className="px-4 py-3">
-                      <Badge className={`${ROLE_BADGE[u.role] || ""} capitalize text-[10px]`}>{u.role}</Badge>
+                      <Badge className={`${ROLE_BADGE[u.role] || ""} text-[10px]`}>
+                        {getRoleLabel(u.role as AppRole)}
+                        {u.finance_level ? ` · ${u.finance_level.replaceAll("_", " ")}` : ""}
+                      </Badge>
                     </td>
                     <td className="px-4 py-3 font-mono text-xs text-[#10662A]">{u.dsa_id || "—"}</td>
                     <td className="px-4 py-3">

@@ -245,7 +245,7 @@ export function getRoleLabel(role: AppRole): string {
     admin: "Admin",
     dsa: "DSA Partner",
     caller: "Telecaller",
-    coordinator: "Coordinator",
+    coordinator: "Employee",
     lender: "Lender",
     affiliate: "Affiliate",
     customer: "Customer",
@@ -311,8 +311,8 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
       };
     case "coordinator":
       return {
-        title: "Bank desk",
-        subtitle: "Files sent by sales. Move them through login, WIP, sanction, disbursed, or rejected.",
+        title: "Employee desk",
+        subtitle: "Files sent by sales. Log in with the bank, then move sanction, disbursed, or rejected.",
         stats: ["cases"],
         quickLinks: [
           { title: "Case files", desc: "Login, WIP, sanction, disbursed, rejected.", url: "/dashboard/cases", roles: ["coordinator"] },

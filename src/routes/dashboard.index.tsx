@@ -30,6 +30,7 @@ import { DeskGuide } from "@/components/dashboard/DeskGuide";
 import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
 import { RecallList } from "@/components/dashboard/RecallList";
 import { AdminCockpit } from "@/components/dashboard/AdminCockpit";
+import { EmployeeCockpit } from "@/components/dashboard/EmployeeCockpit";
 import { ConnectorCockpit } from "@/components/dashboard/ConnectorCockpit";
 import { TeleSalesCockpit } from "@/components/dashboard/TeleSalesCockpit";
 import { CustomerHome } from "@/components/dashboard/CustomerHome";
@@ -226,6 +227,10 @@ function DashboardHome() {
 
   if (role === "dsa") {
     return <ConnectorCockpit firstName={firstName} />;
+  }
+
+  if (role === "coordinator") {
+    return <EmployeeCockpit firstName={firstName} financeLevel={user?.finance_level} />;
   }
 
   if (role === "caller") {
