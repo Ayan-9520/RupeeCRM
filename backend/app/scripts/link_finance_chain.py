@@ -72,6 +72,12 @@ def main() -> None:
         sumit.reports_to_user_id = arvind.id
         naveen.reports_to_user_id = arvind.id
         arvind.reports_to_user_id = None
+        for person in (neeraj, ramesh, sumit, arvind):
+            person.department = "sales"
+        naveen.department = "accounts"
+        narender = db.query(User).filter(User.email == "narender@rupeedial.com").first()
+        if narender:
+            narender.department = "operation"
         db.commit()
         print(
             "chain "

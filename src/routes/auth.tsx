@@ -89,7 +89,7 @@ function AuthPage() {
 
   useEffect(() => {
     if (!door) return;
-    setLoginType(door === "employee" ? "coordinator" : "dsa");
+    setLoginType(door === "employee" ? "sales" : "dsa");
   }, [door]);
 
   const switchMode = (nextMode: "signin" | "signup") => {
@@ -218,7 +218,7 @@ function AuthPage() {
             RupeeOne
           </button>
           <h1 className="mt-3 font-display text-2xl font-bold text-[#1c1915]">Employee sign in</h1>
-          <p className="mt-1 text-sm text-[#6b645b]">RM, Manager, Business Head and Accounts all sign in as Employee.</p>
+          <p className="mt-1 text-sm text-[#6b645b]">RM, Manager and Business Head sign in as Sales. Accounts signs in as Accounts.</p>
           <label className="mt-5 block text-xs font-semibold text-[#5c5348]">
             User type
             <select value={loginType} onChange={(e) => setLoginType(e.target.value)} className={field}>

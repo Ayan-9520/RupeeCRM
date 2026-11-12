@@ -35,6 +35,7 @@ class User(Base):
     payout_bank: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     kyc_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     finance_level: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    department: Mapped[str | None] = mapped_column(String(40), nullable=True)
     rm1_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     rm2_user_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     sales_grade: Mapped[str | None] = mapped_column(String(20), nullable=True, index=True)

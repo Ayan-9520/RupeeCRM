@@ -8,6 +8,7 @@ from app.api.deps import get_current_user
 from app.core.security import hash_password
 from app.db.session import get_db
 from app.models import PartnerApplication, User
+from app.services.departments import DEPARTMENTS
 from app.services.partners import generate_temp_password
 from app.services.sales_grades import GRADES, downline_ids, grade_rank, grade_title
 
@@ -34,6 +35,7 @@ class UserAdminOut(BaseModel):
     monthly_target_inr: float | None = None
     monthly_login_target_inr: float | None = None
     finance_level: str | None = None
+    department: str | None = None
     created_at: str | None = None
 
     model_config = {"from_attributes": True}
@@ -61,6 +63,7 @@ class CreateEmployeeIn(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
     email: str = Field(min_length=5, max_length=255)
     role: str = Field(pattern="^(coordinator|caller)$")
+    department: str | None = None
 
 
 class CreateEmployeeOut(BaseModel):
@@ -81,6 +84,11 @@ def create_employee(
         raise HTTPException(status_code=400, detail="Enter a valid email")
     if db.query(User).filter(User.email == email).first():
         raise HTTPException(status_code=400, detail="This email already has a login")
+    department = None
+    if body.role == "coordinator":
+        department = (body.department or "").strip()
+        if department not in DEPARTMENTS:
+            raise HTTPException(status_code=400, detail="Pick a department")
     temp = generate_temp_password()
     db.add(
         User(
@@ -89,6 +97,7 @@ def create_employee(
             password_hash=hash_password(temp),
             role=body.role,
             is_active=True,
+            department=department,
         )
     )
     db.commit()
@@ -130,6 +139,7 @@ def list_users(
             monthly_target_inr=u.monthly_target_inr,
             monthly_login_target_inr=u.monthly_login_target_inr,
             finance_level=u.finance_level,
+            department=u.department,
             created_at=u.created_at.isoformat() if u.created_at else None,
         )
         for u in rows

@@ -28,6 +28,7 @@ class UserOut(BaseModel):
     is_active: bool = True
     kyc_verified: bool = False
     finance_level: str | None = None
+    department: str | None = None
     created_at: datetime | None = None
     monthly_target_inr: float | None = None
     monthly_login_target_inr: float | None = None

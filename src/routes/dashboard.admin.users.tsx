@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createEmployee, listCrmUsers, resetCrmUserPassword } from "@/lib/python-api";
+import { departmentLabel, EMPLOYEE_DEPARTMENTS } from "@/lib/login-door";
 
 export const Route = createFileRoute("/dashboard/admin/users")({
   head: () => ({ meta: [{ title: "Manage Users — RupeeOne" }] }),
@@ -38,6 +39,7 @@ type UserRow = {
   dsa_id: string | null;
   is_active: boolean;
   finance_level?: string | null;
+  department?: string | null;
   created_at: string | null;
 };
 
@@ -49,7 +51,7 @@ function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [staff, setStaff] = useState({ full_name: "", email: "", role: "coordinator" as "coordinator" | "caller" });
+  const [staff, setStaff] = useState({ full_name: "", email: "", role: "coordinator" as "coordinator" | "caller", department: "sales" });
 
   const refresh = async () => {
     setLoading(true);
@@ -90,10 +92,15 @@ function AdminUsersPage() {
     event.preventDefault();
     setBusyId("create");
     try {
-      const res = await createEmployee(staff);
+      const res = await createEmployee({
+        full_name: staff.full_name,
+        email: staff.email,
+        role: staff.role,
+        department: staff.role === "coordinator" ? staff.department : null,
+      });
       await navigator.clipboard.writeText(`Email: ${res.email}\nPassword: ${res.temporary_password}`);
       toast.success(`${res.full_name} can sign in. Password copied: ${res.temporary_password}`);
-      setStaff({ full_name: "", email: "", role: "coordinator" });
+      setStaff({ full_name: "", email: "", role: "coordinator", department: "sales" });
       await refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Could not create the employee");
@@ -162,13 +169,22 @@ function AdminUsersPage() {
         </div>
       </div>
 
-      <form onSubmit={(event) => void onCreate(event)} className="grid gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4 md:grid-cols-[1fr_1fr_180px_auto]">
+      <form onSubmit={(event) => void onCreate(event)} className="grid gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4 md:grid-cols-[1fr_1fr_150px_180px_auto]">
         <input required value={staff.full_name} onChange={(e) => setStaff((s) => ({ ...s, full_name: e.target.value }))} placeholder="Employee name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
         <input required type="email" value={staff.email} onChange={(e) => setStaff((s) => ({ ...s, email: e.target.value }))} placeholder="Email" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
         <select value={staff.role} onChange={(e) => setStaff((s) => ({ ...s, role: e.target.value as "coordinator" | "caller" }))} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm">
           <option value="coordinator">Employee</option>
           <option value="caller">Telecaller</option>
         </select>
+        {staff.role === "coordinator" ? (
+          <select value={staff.department} onChange={(e) => setStaff((s) => ({ ...s, department: e.target.value }))} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm">
+            {EMPLOYEE_DEPARTMENTS.map((item) => (
+              <option key={item.id} value={item.id}>{item.label}</option>
+            ))}
+          </select>
+        ) : (
+          <div />
+        )}
         <button type="submit" disabled={busyId === "create"} className="h-10 rounded-xl bg-[#10662A] px-4 text-sm font-semibold text-white disabled:opacity-60">
           {busyId === "create" ? "Creating…" : "Create login"}
         </button>
@@ -237,6 +253,7 @@ function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <Badge className={`${ROLE_BADGE[u.role] || ""} text-[10px]`}>
                         {getRoleLabel(u.role as AppRole)}
+                        {u.department ? ` · ${departmentLabel(u.department)}` : ""}
                         {u.finance_level ? ` · ${u.finance_level.replaceAll("_", " ")}` : ""}
                       </Badge>
                     </td>

@@ -60,7 +60,7 @@ function toAuthUser(u: CrmUser, id = "python-admin", financeLevel?: string | nul
 
 async function fetchMe(
   token: string,
-): Promise<{ id: string; email: string; full_name: string; role: string; finance_level?: string | null } | null> {
+): Promise<{ id: string; email: string; full_name: string; role: string; finance_level?: string | null; department?: string | null } | null> {
   try {
     const res = await fetch(`${API_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -117,13 +117,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearCrmSession();
       throw new Error(wrongDoorMessage(door));
     }
-    if (door && loginType && !loginTypeMatches(door, loginType, u.role)) {
-      clearCrmSession();
-      throw new Error(`This account signs in as ${loginTypeLabel(door, u.role)}.`);
-    }
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) throw new Error("Login succeeded but no token stored");
     const me = await fetchMe(token);
+    if (door && loginType && !loginTypeMatches(door, loginType, u.role, me?.department)) {
+      clearCrmSession();
+      const label = loginTypeLabel(door, u.role, me?.department);
+      throw new Error(label ? `This account signs in as ${label}.` : "This account has no department yet. Ask an admin to set it.");
+    }
     applyCrmUser(u, token, me?.id, me?.finance_level);
   };
 

@@ -429,6 +429,7 @@ export async function createEmployee(body: {
   full_name: string;
   email: string;
   role: "coordinator" | "caller";
+  department?: string | null;
 }): Promise<{ email: string; full_name: string; role: string; temporary_password: string }> {
   return request("/api/users", { method: "POST", body: JSON.stringify(body) });
 }
@@ -452,6 +453,7 @@ export async function listCrmUsers(): Promise<{
     monthly_target_inr?: number | null;
     monthly_login_target_inr?: number | null;
     finance_level?: string | null;
+    department?: string | null;
     created_at: string | null;
   }[];
   total: number;
