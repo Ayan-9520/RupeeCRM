@@ -63,11 +63,11 @@ type SectionId = "home" | "leads" | "cases" | "money" | "growth" | "learn" | "ad
 
 const SECTIONS: { id: SectionId; label: string; title: string; icon: IconType }[] = [
   { id: "home", label: "Home", title: "Home", icon: Home },
+  { id: "learn", label: "Learn", title: "Learn & Earn", icon: GraduationCap },
   { id: "leads", label: "Leads", title: "Leads & sales", icon: Target },
-  { id: "cases", label: "Cases", title: "Cases & LOS", icon: FolderKanban },
   { id: "money", label: "Money", title: "Money", icon: IndianRupee },
+  { id: "cases", label: "Cases", title: "Cases & LOS", icon: FolderKanban },
   { id: "growth", label: "Growth", title: "Growth", icon: Rocket },
-  { id: "learn", label: "Learn", title: "Learning", icon: GraduationCap },
   { id: "admin", label: "Admin", title: "Administration", icon: ShieldCheck },
 ];
 
@@ -100,6 +100,7 @@ const SECTION_OF: Record<string, SectionId> = {
   "/dashboard/leaderboard": "growth",
   "/dashboard/learn": "learn",
   "/dashboard/emi": "learn",
+  "/dashboard/learn": "learn",
   "/dashboard/training": "learn",
   "/dashboard/certificates": "learn",
 };
