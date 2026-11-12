@@ -425,6 +425,14 @@ export async function listLeaderboard(): Promise<{
   return request("/api/leaderboard");
 }
 
+export async function createEmployee(body: {
+  full_name: string;
+  email: string;
+  role: "coordinator" | "caller";
+}): Promise<{ email: string; full_name: string; role: string; temporary_password: string }> {
+  return request("/api/users", { method: "POST", body: JSON.stringify(body) });
+}
+
 export async function listCrmUsers(): Promise<{
   items: {
     id: string;

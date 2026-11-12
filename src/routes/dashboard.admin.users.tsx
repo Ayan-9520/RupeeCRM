@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { listCrmUsers, resetCrmUserPassword } from "@/lib/python-api";
+import { createEmployee, listCrmUsers, resetCrmUserPassword } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/admin/users")({
   head: () => ({ meta: [{ title: "Manage Users — RupeeOne" }] }),
@@ -49,6 +49,7 @@ function AdminUsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [staff, setStaff] = useState({ full_name: "", email: "", role: "coordinator" as "coordinator" | "caller" });
 
   const refresh = async () => {
     setLoading(true);
@@ -84,6 +85,22 @@ function AdminUsersPage() {
       return true;
     });
   }, [users, search, roleFilter]);
+
+  const onCreate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusyId("create");
+    try {
+      const res = await createEmployee(staff);
+      await navigator.clipboard.writeText(`Email: ${res.email}\nPassword: ${res.temporary_password}`);
+      toast.success(`${res.full_name} can sign in. Password copied: ${res.temporary_password}`);
+      setStaff({ full_name: "", email: "", role: "coordinator" });
+      await refresh();
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not create the employee");
+    } finally {
+      setBusyId(null);
+    }
+  };
 
   const onResetPassword = async (u: UserRow) => {
     setBusyId(u.id);
@@ -144,6 +161,18 @@ function AdminUsersPage() {
           </Select>
         </div>
       </div>
+
+      <form onSubmit={(event) => void onCreate(event)} className="grid gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4 md:grid-cols-[1fr_1fr_180px_auto]">
+        <input required value={staff.full_name} onChange={(e) => setStaff((s) => ({ ...s, full_name: e.target.value }))} placeholder="Employee name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+        <input required type="email" value={staff.email} onChange={(e) => setStaff((s) => ({ ...s, email: e.target.value }))} placeholder="Email" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+        <select value={staff.role} onChange={(e) => setStaff((s) => ({ ...s, role: e.target.value as "coordinator" | "caller" }))} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm">
+          <option value="coordinator">Employee</option>
+          <option value="caller">Telecaller</option>
+        </select>
+        <button type="submit" disabled={busyId === "create"} className="h-10 rounded-xl bg-[#10662A] px-4 text-sm font-semibold text-white disabled:opacity-60">
+          {busyId === "create" ? "Creating…" : "Create login"}
+        </button>
+      </form>
 
       {pendingPartners > 0 && (
         <Link

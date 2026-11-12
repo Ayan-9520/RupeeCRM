@@ -57,6 +57,44 @@ def require_admin(user: User = Depends(get_current_user)) -> User:
     return user
 
 
+class CreateEmployeeIn(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+    email: str = Field(min_length=5, max_length=255)
+    role: str = Field(pattern="^(coordinator|caller)$")
+
+
+class CreateEmployeeOut(BaseModel):
+    email: str
+    full_name: str
+    role: str
+    temporary_password: str
+
+
+@router.post("", response_model=CreateEmployeeOut)
+def create_employee(
+    body: CreateEmployeeIn,
+    db: Session = Depends(get_db),
+    _admin: User = Depends(require_admin),
+) -> CreateEmployeeOut:
+    email = body.email.strip().lower()
+    if "@" not in email or email.startswith("@") or email.endswith("@"):
+        raise HTTPException(status_code=400, detail="Enter a valid email")
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(status_code=400, detail="This email already has a login")
+    temp = generate_temp_password()
+    db.add(
+        User(
+            email=email,
+            full_name=body.full_name.strip(),
+            password_hash=hash_password(temp),
+            role=body.role,
+            is_active=True,
+        )
+    )
+    db.commit()
+    return CreateEmployeeOut(email=email, full_name=body.full_name.strip(), role=body.role, temporary_password=temp)
+
+
 @router.get("", response_model=UserListOut)
 def list_users(
     db: Session = Depends(get_db),
