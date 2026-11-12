@@ -5,7 +5,8 @@ import { SectionShell } from "./shared/SectionShell";
 import { CrmFormGrid } from "./shared/CrmFormGrid";
 import { EmptyBlock } from "./shared/EmptyBlock";
 import { PERSONAL_FIELDS, employmentFields } from "@/lib/customer-crm/field-config";
-import { ACCOUNT_TYPES, LOAN_TYPES, PRODUCT_TYPES } from "@/lib/customer-crm/constants";
+import { ACCOUNT_TYPES, LOAN_TYPES } from "@/lib/customer-crm/constants";
+import { RUPEEDIAL_PRODUCT_MENUS } from "@/lib/rupeedial-products";
 import type { BankAccount, CoApplicant, CustomerProfile, LoanRequirement, Obligation } from "@/lib/customer-crm/types";
 import { User, Briefcase, Landmark, Scale, Users, FileStack, FolderOpen, Building2 } from "lucide-react";
 import type { CrmFieldConfig } from "./shared/CrmFormGrid";
@@ -253,20 +254,38 @@ export function CoApplicantsSection({
   );
 }
 
+const ALL_PRODUCTS = RUPEEDIAL_PRODUCT_MENUS.flatMap((group) => group.items);
+
 function listedProduct(value: string | null | undefined) {
-  const raw = (value || "").toLowerCase();
-  const exact = PRODUCT_TYPES.find((item) => item.toLowerCase() === raw);
+  const raw = (value || "").trim();
+  if (!raw) return "";
+  const exact = ALL_PRODUCTS.find((item) => item.toLowerCase() === raw.toLowerCase());
   if (exact) return exact;
-  if (raw.includes("personal")) return "Personal Loan";
-  if (raw.includes("home")) return "Home Loan";
-  if (raw.includes("business") || raw.includes("msme")) return "Business Loan";
-  if (raw.includes("lap") || raw.includes("property")) return "LAP";
-  if (raw.includes("auto") || raw.includes("car")) return "Auto Loan";
-  if (raw.includes("insurance")) return "Insurance";
-  if (raw.includes("card")) return "Credit Card";
-  if (raw === "od" || raw.includes("overdraft")) return "OD";
-  if (raw === "cc" || raw.includes("cash credit")) return "CC";
-  return "";
+  const text = raw.toLowerCase();
+  if (text.includes("personal")) return "Personal Loan";
+  if (text.includes("home")) return "Home Loan";
+  if (text.includes("education")) return "Education Loan";
+  if (text.includes("machinery")) return "Machinery Loan";
+  if (text.includes("mudra")) return "Mudra Loan";
+  if (text.includes("startup")) return "Startup Business Loan";
+  if (text.includes("working")) return "Working Capital Loan";
+  if (text.includes("cgtmse")) return "CGTMSE Loan";
+  if (text.includes("pmegp")) return "PMEGP Loan";
+  if (text.includes("stand")) return "Stand-Up India";
+  if (text.includes("subsidy")) return "Subsidy Linked MSME";
+  if (text.includes("export")) return "Export Finance";
+  if (text.includes("import")) return "Import Finance";
+  if (text.includes("invoice")) return "Invoice Financing";
+  if (text.includes("msme")) return "MSME Loan";
+  if (text.includes("business")) return "Business Loan";
+  if (text === "lap" || text.includes("property")) return "Loan Against Property";
+  if (text.includes("auto") || text.includes("car")) return "Auto Loan";
+  if (text.includes("insurance")) return "Insurance";
+  if (text.includes("card")) return "Credit Cards";
+  if (text === "od" || text.includes("overdraft")) return "Overdraft (OD)";
+  if (text === "cc" || text.includes("cash credit")) return "Cash Credit (CC)";
+  if (text.includes("lc") || text.includes("guarantee")) return "LC / BG";
+  return raw;
 }
 
 export function LoanRequirementsSection({
@@ -294,28 +313,25 @@ export function LoanRequirementsSection({
       icon={FileStack}
       completion={completion}
     >
-      <div className="grid gap-2 sm:grid-cols-2">
-        {PRODUCT_TYPES.map((product) => {
-          const on = selected === product;
-          return (
-            <button
-              key={product}
-              type="button"
-              onClick={() => pick(product)}
-              className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left text-sm font-semibold transition-colors ${
-                on
-                  ? "border-[#10662A] bg-[#E8F7EC] text-[#0D4F20]"
-                  : "border-[#d8ecdd] bg-white text-[#390A5D] hover:bg-[#F4FBF6]"
-              }`}
-            >
-              {product}
-              <span className={`text-[11px] font-bold uppercase ${on ? "text-[#10662A]" : "text-[#8a7aa0]"}`}>
-                {on ? "Selected" : "Select"}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+      <select
+        value={selected}
+        onChange={(event) => {
+          if (event.target.value) pick(event.target.value);
+        }}
+        className="h-11 w-full max-w-md rounded-xl border border-[#d8ecdd] bg-white px-3 text-sm font-semibold text-[#390A5D]"
+      >
+        <option value="">Select a product</option>
+        {selected && !ALL_PRODUCTS.includes(selected as (typeof ALL_PRODUCTS)[number]) && <option value={selected}>{selected}</option>}
+        {RUPEEDIAL_PRODUCT_MENUS.map((group) => (
+          <optgroup key={group.title} label={group.title}>
+            {group.items.map((product) => (
+              <option key={product} value={product}>
+                {product}
+              </option>
+            ))}
+          </optgroup>
+        ))}
+      </select>
     </SectionShell>
   );
 }

@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Phone, Copy, CheckCircle2 } from "lucide-react";
-import { EMPLOYMENT_TYPES, PRODUCT_TYPES } from "@/lib/customer-crm/constants";
+import { EMPLOYMENT_TYPES } from "@/lib/customer-crm/constants";
+import { RUPEEDIAL_PRODUCT_MENUS } from "@/lib/rupeedial-products";
 import { documentMessage, documentPack } from "@/lib/document-pack";
 import { insertLoanRequirement, insertObligation, updateLoanRequirement, updateObligation } from "@/lib/customer-crm/api";
 import type { CustomerDocument } from "@/lib/customer-crm/phase3-api";
@@ -147,7 +148,11 @@ export function FirstCallSheet({ purchase, profile, loans, obligations, document
         <label className="text-xs font-semibold text-[#5c4d72]">
           Loan
           <select className="mt-1 h-10 w-full rounded-lg border border-[#d8ecdd] px-2 text-sm text-[#14281c]" value={product} onChange={(e) => setProduct(e.target.value)}>
-            {PRODUCT_TYPES.map((item) => <option key={item}>{item}</option>)}
+            {RUPEEDIAL_PRODUCT_MENUS.map((group) => (
+              <optgroup key={group.title} label={group.title}>
+                {group.items.map((item) => <option key={item}>{item}</option>)}
+              </optgroup>
+            ))}
           </select>
         </label>
         <label className="text-xs font-semibold text-[#5c4d72]">
