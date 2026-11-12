@@ -1,8 +1,8 @@
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SectionShell } from "./shared/SectionShell";
 import { CrmFormGrid } from "./shared/CrmFormGrid";
-import { RepeatableBlock } from "./shared/RepeatableBlock";
 import { EmptyBlock } from "./shared/EmptyBlock";
 import { PERSONAL_FIELDS, employmentFields } from "@/lib/customer-crm/field-config";
 import { ACCOUNT_TYPES, LOAN_TYPES, PRODUCT_TYPES } from "@/lib/customer-crm/constants";
@@ -48,6 +48,51 @@ export function EmploymentSection({
   );
 }
 
+function OneAtATime<T extends { id: string }>({
+  rows,
+  summary,
+  fields,
+  onChange,
+  onRemove,
+}: {
+  rows: T[];
+  summary: (row: T, index: number) => string;
+  fields: CrmFieldConfig[];
+  onChange: (row: T, key: string, value: unknown) => void;
+  onRemove: (id: string) => void;
+}) {
+  const [openId, setOpenId] = useState<string | null>(null);
+  return (
+    <div className="space-y-2">
+      {rows.map((row, index) => {
+        const open = openId === row.id;
+        return (
+          <div key={row.id} className={`rounded-xl border bg-white ${open ? "border-[#10662A]" : "border-[#d8ecdd]"}`}>
+            <div className="flex items-center gap-2 px-3 py-2.5">
+              <button
+                type="button"
+                className="flex min-w-0 flex-1 items-center justify-between text-left"
+                onClick={() => setOpenId(open ? null : row.id)}
+              >
+                <span className="truncate text-sm font-semibold text-[#390A5D]">{summary(row, index)}</span>
+                <span className="ml-3 text-[11px] font-bold uppercase text-[#10662A]">{open ? "Close" : "Select"}</span>
+              </button>
+              <button type="button" onClick={() => onRemove(row.id)} className="text-xs font-semibold text-red-700">
+                Remove
+              </button>
+            </div>
+            {open && (
+              <div className="border-t border-[#d8ecdd] p-3">
+                <CrmFormGrid fields={fields} values={row as unknown as Record<string, unknown>} onChange={(key, value) => onChange(row, key, value)} />
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 const BANK_FIELDS: CrmFieldConfig[] = [
   { key: "bank_name", label: "Bank Name" },
   { key: "account_type", label: "Account Type", type: "select", options: [...ACCOUNT_TYPES] },
@@ -87,13 +132,13 @@ export function BankingSection({
       {accounts.length === 0 ? (
         <EmptyBlock message="No bank accounts added" hint="Click Add Bank Account to start" />
       ) : (
-        <div className="space-y-4">
-          {accounts.map((row, i) => (
-            <RepeatableBlock key={row.id} title="Bank Account" index={i} onRemove={() => onRemove(row.id)}>
-              <CrmFormGrid fields={BANK_FIELDS} values={row as unknown as Record<string, unknown>} onChange={(k, v) => onChange(row, k, v)} />
-            </RepeatableBlock>
-          ))}
-        </div>
+        <OneAtATime
+          rows={accounts}
+          fields={BANK_FIELDS}
+          summary={(row, index) => row.bank_name || `Bank account ${index + 1}`}
+          onChange={onChange}
+          onRemove={onRemove}
+        />
       )}
     </SectionShell>
   );
@@ -145,13 +190,13 @@ export function ObligationsSection({
       {rows.length === 0 ? (
         <EmptyBlock message="No existing loans recorded" hint="Add running EMIs for accurate eligibility" />
       ) : (
-        <div className="space-y-4">
-          {rows.map((row, i) => (
-            <RepeatableBlock key={row.id} title="Existing Loan" index={i} onRemove={() => onRemove(row.id)}>
-              <CrmFormGrid fields={OBLIGATION_FIELDS} values={row as unknown as Record<string, unknown>} onChange={(k, v) => onChange(row, k, v)} />
-            </RepeatableBlock>
-          ))}
-        </div>
+        <OneAtATime
+          rows={rows}
+          fields={OBLIGATION_FIELDS}
+          summary={(row, index) => [row.loan_type, row.bank_name].filter(Boolean).join(" · ") || `Existing loan ${index + 1}`}
+          onChange={onChange}
+          onRemove={onRemove}
+        />
       )}
     </SectionShell>
   );
@@ -196,13 +241,13 @@ export function CoApplicantsSection({
       {rows.length === 0 ? (
         <EmptyBlock message="No co-applicants" hint="Add co-applicant for joint applications" />
       ) : (
-        <div className="space-y-4">
-          {rows.map((row, i) => (
-            <RepeatableBlock key={row.id} title="Co-Applicant" index={i} onRemove={() => onRemove(row.id)}>
-              <CrmFormGrid fields={CO_APP_FIELDS} values={row as unknown as Record<string, unknown>} onChange={(k, v) => onChange(row, k, v)} />
-            </RepeatableBlock>
-          ))}
-        </div>
+        <OneAtATime
+          rows={rows}
+          fields={CO_APP_FIELDS}
+          summary={(row, index) => row.full_name || `Co-applicant ${index + 1}`}
+          onChange={onChange}
+          onRemove={onRemove}
+        />
       )}
     </SectionShell>
   );

@@ -7,7 +7,7 @@ export function RepeatableBlock({
   index,
   onRemove,
   children,
-  defaultOpen = true,
+  defaultOpen = false,
 }: {
   title: string;
   index: number;
