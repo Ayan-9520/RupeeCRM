@@ -33,7 +33,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: "main",
   },
   {
-    title: "Public profile",
+    title: "My profile",
     url: "/dashboard/profile",
     roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"],
     group: "main",

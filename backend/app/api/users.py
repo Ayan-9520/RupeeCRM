@@ -305,16 +305,36 @@ def save_hr_profile(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    saved: dict[str, str] = {}
+    personal = {
+        "photo", "personal_email", "birthday", "gender", "address", "whatsapp", "facebook", "linkedin",
+        "skype", "twitter", "about", "blood_group", "father_name", "spouse_name", "marital_status",
+        "marriage_date", "nationality", "qualification", "institute", "specially_abled",
+        "emergency_phone", "emergency_person", "emergency_relation", "education_lines", "language_lines",
+        "office", "base_location",
+    }
+    payroll = {"bank_name", "account_number", "ifsc", "pan", "uan", "visa_country", "visa_type", "visa_expiry", "aadhaar"}
+    company = {
+        "employment_status", "biometric_code", "weekly_off", "shift_timing", "employee_type", "esic_eligible",
+        "induction", "email_quota", "pf_eligible", "probation_period", "notice_period", "confirmation_status",
+        "region", "regional_head", "line_name", "agent_code",
+    }
+    allowed = set(personal)
+    if user.role in ADMIN_ROLES or user.role == "coordinator":
+        allowed |= payroll
+    if user.role in ADMIN_ROLES:
+        allowed |= company
+    saved = dict(user.hr_profile or {})
     limits = {"about": 1000, "education_lines": 2000, "language_lines": 2000, "photo": 180000, "address": 300}
     for key, value in body.model_dump().items():
+        if key not in allowed:
+            continue
         raw = str(value or "").strip()
         if key == "photo":
             if raw and not raw.startswith("data:image/"):
                 raise HTTPException(status_code=400, detail="Profile photo must be an image")
             saved[key] = raw[:180000]
             continue
-        text = " ".join(raw.split()) if key not in {"education_lines", "language_lines"} else raw
+        text = raw if key in {"education_lines", "language_lines"} else " ".join(raw.split())
         saved[key] = text[: limits.get(key, 180)]
     user.hr_profile = saved
     db.commit()

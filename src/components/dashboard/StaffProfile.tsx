@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Loader2, Users } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 import { getMyDesk, saveHrProfile, type DeskNode, type DeskPerson } from "@/lib/python-api";
 import { departmentLabel } from "@/lib/login-door";
 import { toast } from "sonner";
@@ -113,7 +114,7 @@ function Field({
         <input
           value={form[name] || ""}
           onChange={(event) => onChange(name, event.target.value)}
-          className="h-9 rounded-lg border border-[#d8ecdd] px-2"
+          className="h-10 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 text-sm text-[#14281c] outline-none focus:border-[#10662A] focus:bg-white"
         />
       ) : (
         <span className="font-medium text-[#14281c]">{shown(form[name])}</span>
@@ -145,6 +146,10 @@ function TeamBranch({ node }: { node: DeskNode }) {
 }
 
 export function StaffProfile() {
+  const { role } = useAuth();
+  const admin = role === "admin" || role === "ceo" || role === "super_admin";
+  const staff = admin || role === "coordinator";
+  const showTeam = staff || role === "caller";
   const [desk, setDesk] = useState<{ me: DeskPerson; chain: DeskPerson[]; team: DeskNode[] } | null>(null);
   const [form, setForm] = useState(BLANK);
   const [tab, setTab] = useState<(typeof TABS)[number]>("Profile");
@@ -226,12 +231,17 @@ export function StaffProfile() {
   const set = (name: string, value: string) => setForm((current) => ({ ...current, [name]: value }));
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4">
-      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+    <div className="mx-auto max-w-5xl space-y-5">
+      <section className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_12px_32px_rgba(16,102,42,0.06)]">
+        <div className="h-1.5 bg-[#10662A]" />
+        <div className="p-6">
         <div className="flex flex-wrap gap-6">
-          <button type="button" onClick={() => setPhotoOpen(true)} className="grid size-20 place-items-center overflow-hidden rounded-full bg-[#E8F7EC] font-display text-3xl font-bold text-[#10662A] ring-4 ring-[#E8F7EC]" aria-label="Update profile picture">
-            {form.photo ? <img src={form.photo} alt="" className="h-full w-full object-cover" /> : initial}
-          </button>
+          <div className="flex flex-col items-center gap-2">
+            <button type="button" onClick={() => setPhotoOpen(true)} className="grid size-24 place-items-center overflow-hidden rounded-full bg-[#E8F7EC] font-display text-3xl font-bold text-[#10662A] ring-4 ring-white shadow-[0_0_0_3px_#10662A]" aria-label="Update profile picture">
+              {form.photo ? <img src={form.photo} alt="" className="h-full w-full object-cover" /> : initial}
+            </button>
+            <button type="button" onClick={() => setPhotoOpen(true)} className="text-xs font-semibold text-[#10662A]">Change photo</button>
+          </div>
           <div className="min-w-[220px] flex-1">
             <h1 className="font-display text-2xl font-bold text-[#390A5D]">
               {me.full_name}
@@ -251,11 +261,12 @@ export function StaffProfile() {
             <Row label="Reports to" value={boss ? `${boss.full_name}${boss.sales_grade ? ` (${boss.sales_grade})` : ""}` : "—"} />
           </div>
         </div>
+        </div>
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
-          {TABS.map((item) => (
+          {TABS.filter((item) => (item === "Bank & Statutory" || item === "Agent Details" || item === "Visa" ? staff : item === "My team" ? showTeam : true)).map((item) => (
             <button
               key={item}
               type="button"
@@ -281,14 +292,14 @@ export function StaffProfile() {
 
       {tab === "Profile" ? (
         <div className="grid gap-4 lg:grid-cols-2">
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
             <h2 className="font-semibold text-[#390A5D]">Contact details</h2>
             <Field label="Personal email" name="personal_email" form={form} editing={editing} onChange={set} />
             <Field label="Current address" name="address" form={form} editing={editing} onChange={set} />
             <Row label="Phone" value={shown(me.phone)} />
             <Field label="WhatsApp" name="whatsapp" form={form} editing={editing} onChange={set} />
           </section>
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
             <h2 className="font-semibold text-[#390A5D]">Social</h2>
             <Field label="Facebook" name="facebook" form={form} editing={editing} onChange={set} />
             <Field label="LinkedIn" name="linkedin" form={form} editing={editing} onChange={set} />
@@ -296,32 +307,32 @@ export function StaffProfile() {
             <Field label="Twitter" name="twitter" form={form} editing={editing} onChange={set} />
             <Field label="About me" name="about" form={form} editing={editing} onChange={set} />
           </section>
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
             <h2 className="font-semibold text-[#390A5D]">Employment</h2>
             <Row label="Department" value={departmentLabel(me.department) || "—"} />
             <Row label="Designation" value={me.sales_title || "—"} />
             <Row label="Seat" value={me.finance_level ? LEVEL[me.finance_level] || me.finance_level : "—"} />
             <Field label="Base location" name="base_location" form={form} editing={editing} onChange={set} />
-            <Field label="Line" name="line_name" form={form} editing={editing} onChange={set} />
-            <Field label="Region" name="region" form={form} editing={editing} onChange={set} />
-            <Field label="Regional head" name="regional_head" form={form} editing={editing} onChange={set} />
-            <Field label="Confirmation" name="confirmation_status" form={form} editing={editing} onChange={set} />
-            <Field label="Weekly off" name="weekly_off" form={form} editing={editing} onChange={set} />
-            <Field label="Shift timing" name="shift_timing" form={form} editing={editing} onChange={set} />
-            <Field label="Employee type" name="employee_type" form={form} editing={editing} onChange={set} />
-            <Field label="ESIC eligible" name="esic_eligible" form={form} editing={editing} onChange={set} />
-            <Field label="Induction" name="induction" form={form} editing={editing} onChange={set} />
-            <Field label="Email quota" name="email_quota" form={form} editing={editing} onChange={set} />
-            <Field label="PF eligible" name="pf_eligible" form={form} editing={editing} onChange={set} />
-            <Field label="Probation period" name="probation_period" form={form} editing={editing} onChange={set} />
-            <Field label="Notice period" name="notice_period" form={form} editing={editing} onChange={set} />
-            <Field label="Biometric code" name="biometric_code" form={form} editing={editing} onChange={set} />
+            {admin ? <Field label="Line" name="line_name" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Region" name="region" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Regional head" name="regional_head" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Confirmation" name="confirmation_status" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Weekly off" name="weekly_off" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Shift timing" name="shift_timing" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Employee type" name="employee_type" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="ESIC eligible" name="esic_eligible" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Induction" name="induction" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Email quota" name="email_quota" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="PF eligible" name="pf_eligible" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Probation period" name="probation_period" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Notice period" name="notice_period" form={form} editing={editing} onChange={set} /> : null}
+            {admin ? <Field label="Biometric code" name="biometric_code" form={form} editing={editing} onChange={set} /> : null}
             <Field label="Office" name="office" form={form} editing={editing} onChange={set} />
             <Field label="Birthday" name="birthday" form={form} editing={editing} onChange={set} />
             <Field label="Gender" name="gender" form={form} editing={editing} onChange={set} />
-            <Field label="Employment status" name="employment_status" form={form} editing={editing} onChange={set} />
+            {admin ? <Field label="Employment status" name="employment_status" form={form} editing={editing} onChange={set} /> : null}
           </section>
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
             <h2 className="font-semibold text-[#390A5D]">Personal</h2>
             <Field label="Blood group" name="blood_group" form={form} editing={editing} onChange={set} />
             <Field label="Father's name" name="father_name" form={form} editing={editing} onChange={set} />
@@ -331,16 +342,16 @@ export function StaffProfile() {
             <Field label="Nationality" name="nationality" form={form} editing={editing} onChange={set} />
             <Field label="Qualification" name="qualification" form={form} editing={editing} onChange={set} />
             <Field label="Institute" name="institute" form={form} editing={editing} onChange={set} />
-            <Field label="Aadhaar" name="aadhaar" form={form} editing={editing} onChange={set} />
+            {staff ? <Field label="Aadhaar" name="aadhaar" form={form} editing={editing} onChange={set} /> : null}
             <Field label="Specially abled" name="specially_abled" form={form} editing={editing} onChange={set} />
           </section>
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
             <h2 className="font-semibold text-[#390A5D]">Emergency contact</h2>
             <Field label="Phone" name="emergency_phone" form={form} editing={editing} onChange={set} />
             <Field label="Contact person" name="emergency_person" form={form} editing={editing} onChange={set} />
             <Field label="Relation" name="emergency_relation" form={form} editing={editing} onChange={set} />
           </section>
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
             <h2 className="font-semibold text-[#390A5D]">Education</h2>
             {editing ? (
               <textarea value={form.education_lines} onChange={(event) => set("education_lines", event.target.value)} placeholder={"Course | College | Year | Percent"} className="mt-3 min-h-24 w-full rounded-xl border border-[#d8ecdd] p-3 text-sm" />
@@ -360,7 +371,7 @@ export function StaffProfile() {
               </table>
             )}
           </section>
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 lg:col-span-2">
+          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)] lg:col-span-2">
             <h2 className="font-semibold text-[#390A5D]">Languages</h2>
             {editing ? (
               <textarea value={form.language_lines} onChange={(event) => set("language_lines", event.target.value)} placeholder={"English | Fluent"} className="mt-3 min-h-20 w-full rounded-xl border border-[#d8ecdd] p-3 text-sm" />
@@ -383,8 +394,8 @@ export function StaffProfile() {
         </div>
       ) : null}
 
-      {tab === "Bank & Statutory" ? (
-        <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+      {tab === "Bank & Statutory" && staff ? (
+        <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
           <h2 className="font-semibold text-[#390A5D]">Bank & statutory</h2>
           <Field label="Bank name" name="bank_name" form={form} editing={editing} onChange={set} />
           <Field label="Account number" name="account_number" form={form} editing={editing} onChange={set} />
@@ -394,25 +405,25 @@ export function StaffProfile() {
         </section>
       ) : null}
 
-      {tab === "Agent Details" ? (
-        <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+      {tab === "Agent Details" && staff ? (
+        <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
           <h2 className="font-semibold text-[#390A5D]">Agent details</h2>
           <Row label="Employee code" value={me.employee_code} />
-          <Field label="Agent code" name="agent_code" form={form} editing={editing} onChange={set} />
+          {admin ? <Field label="Agent code" name="agent_code" form={form} editing={editing} onChange={set} /> : <Row label="Agent code" value={shown(form.agent_code)} />}
           <Row label="Department" value={departmentLabel(me.department) || "—"} />
           <Row label="Designation" value={me.sales_title || "—"} />
         </section>
       ) : null}
 
       {tab === "Documents" ? (
-        <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+        <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
           <h2 className="font-semibold text-[#390A5D]">Documents</h2>
           <p className="mt-3 text-sm text-[#5c4d72]">No documents on this profile yet.</p>
         </section>
       ) : null}
 
-      {tab === "Visa" ? (
-        <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+      {tab === "Visa" && staff ? (
+        <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
           <h2 className="font-semibold text-[#390A5D]">Visa</h2>
           <Field label="Country" name="visa_country" form={form} editing={editing} onChange={set} />
           <Field label="Visa type" name="visa_type" form={form} editing={editing} onChange={set} />
@@ -421,28 +432,31 @@ export function StaffProfile() {
       ) : null}
 
       {photoOpen ? (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-[#14281c]/40 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-[0_24px_60px_rgba(16,102,42,0.18)]">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-bold text-[#390A5D]">Update profile picture</h2>
-              <button type="button" onClick={() => setPhotoOpen(false)} className="text-sm text-[#5c4d72]" aria-label="Close">✕</button>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[#0D4F20]/45 p-4">
+          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-[0_24px_60px_rgba(13,79,32,0.28)]">
+            <div className="flex items-center justify-between bg-[#0D4F20] px-5 py-4 text-white">
+              <h2 className="font-display text-lg font-bold">Update profile picture</h2>
+              <button type="button" onClick={() => setPhotoOpen(false)} className="grid size-8 place-items-center rounded-full text-white hover:bg-white/10" aria-label="Close">✕</button>
             </div>
-            <label className="mt-4 block text-sm text-[#5c4d72]">
-              Upload file
-              <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm" />
-            </label>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => void uploadPhoto()} disabled={!photoFile || saving} className="h-10 rounded-full bg-[#10662A] px-5 text-sm font-semibold text-white disabled:opacity-60">
-                {saving ? "Uploading…" : "Upload"}
-              </button>
-              <button type="button" onClick={() => setPhotoOpen(false)} className="h-10 rounded-full border border-[#d8ecdd] px-5 text-sm font-semibold text-[#390A5D]">Close</button>
+            <div className="p-5">
+              <label className="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-[#10662A] bg-[#F4FBF6] px-4 py-8 text-center">
+                <span className="text-sm font-semibold text-[#10662A]">Choose a photo</span>
+                <span className="mt-1 text-xs text-[#5c4d72]">{photoFile ? photoFile.name : "JPG or PNG, square looks best"}</span>
+                <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] || null)} className="mt-3 text-sm text-[#14281c]" />
+              </label>
+              <div className="mt-5 flex justify-end gap-2">
+                <button type="button" onClick={() => setPhotoOpen(false)} className="h-10 rounded-full border border-[#10662A] bg-white px-5 text-sm font-semibold text-[#10662A]">Close</button>
+                <button type="button" onClick={() => void uploadPhoto()} disabled={!photoFile || saving} className="h-10 rounded-full bg-[#10662A] px-5 text-sm font-semibold text-white disabled:opacity-60">
+                  {saving ? "Uploading…" : "Upload"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       ) : null}
 
-      {tab === "My team" ? (
-        <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+      {tab === "My team" && showTeam ? (
+        <section className="rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
           <div className="flex items-center gap-2 font-semibold text-[#390A5D]">
             <Users className="size-4 text-[#10662A]" /> My team
           </div>
