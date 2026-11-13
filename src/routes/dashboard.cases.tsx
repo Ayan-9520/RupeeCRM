@@ -78,9 +78,24 @@ function todayIst() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
 
+const OPS_CHIPS: { id: string; label: string }[] = [
+  { id: "submitted", label: "Submitted" },
+  { id: "logged_in", label: "Logged in" },
+  { id: "sanctioned", label: "Sanctioned" },
+  { id: "disbursed", label: "Disbursed" },
+  { id: "cancelled", label: "Cancelled" },
+];
+
+function shownStatus(row: LoanCaseFile, bankDesk: boolean) {
+  if (!bankDesk) return row.status_label;
+  if (row.flag === "cancelled") return "Cancelled";
+  return row.stage_label || row.status_label;
+}
+
 function CasesPage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const admin = isPlatformAdmin(role);
+  const bankDesk = role === "coordinator" && user?.department === "OPS" && !user?.finance_level;
   const [desk, setDesk] = useState<"files" | "payout">("files");
   const [chip, setChip] = useState("all");
   const [dateFrom, setDateFrom] = useState(() => `${todayIst().slice(0, 8)}01`);
@@ -196,13 +211,18 @@ function CasesPage() {
     <div className="mx-auto max-w-[1400px] space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">Closure desk</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">{bankDesk ? "Bank files" : "Closure desk"}</p>
           <h1 className="font-display text-2xl font-bold text-[#390A5D]">Case files</h1>
+          {bankDesk ? (
+            <p className="mt-1 max-w-xl text-sm text-[#5c4d72]">Open a row for the full file. Sanction and disbursement are marked on Submissions. Accounts pays the partner later.</p>
+          ) : null}
         </div>
+        {bankDesk ? null : (
         <div className="inline-flex rounded-xl border border-[#d8ecdd] bg-white p-1">
           <button className={`rounded-lg px-4 py-2 text-sm font-semibold ${desk === "files" ? "bg-[#10662A] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("files"); setActive(null); }}>Case list</button>
           <button className={`rounded-lg px-4 py-2 text-sm font-semibold ${desk === "payout" ? "bg-[#10662A] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("payout"); setActive(null); }}>Payout</button>
         </div>
+        )}
       </div>
 
       {desk === "payout" ? (
@@ -241,6 +261,8 @@ function CasesPage() {
             <p className="mt-4 text-sm text-[#5c4d72]">{payoutLoading ? "Loading deals…" : "No deal with that number."}</p>
           )}
         </section>
+      ) : active && money && bankDesk ? (
+        <BankFile active={active} onBack={() => setActive(null)} />
       ) : active && money ? (
         <CaseForm
           active={active}
@@ -264,10 +286,12 @@ function CasesPage() {
                 </label>
                 <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear dates</Button>
               </div>
+              {bankDesk ? null : (
               <div className="text-sm xl:text-right">
                 <div className="font-display text-lg font-bold text-[#10662A]">₹{inr(dateFrom && dateTo && chip ? revenue : 0)} revenue</div>
                 <div className="text-[#5c4d72]">{dateFrom && dateTo && chip ? confirmed : 0} disbursed confirmed in these dates</div>
               </div>
+              )}
               {admin ? (
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => void createCaseFile({ loan_type: "LAP", client_name: "New applicant" }).then((row) => { setActive(row); void refresh("draft", dateFrom, dateTo); })}>New draft</Button>
@@ -277,7 +301,7 @@ function CasesPage() {
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               <button className={statusButton(chip === "all")} onClick={() => { setChip("all"); void refresh("all", dateFrom, dateTo); }}>All{dateFrom && dateTo ? ` (${counts.all ?? 0})` : ""}</button>
-              {CHIPS.map((item) => (
+              {(bankDesk ? OPS_CHIPS : CHIPS).map((item) => (
                 <button
                   key={item.id}
                   className={statusButton(chip === item.id)}
@@ -305,31 +329,35 @@ function CasesPage() {
             <table className="min-w-[1180px] w-full text-left text-sm">
               <thead className="bg-[#390A5D] text-white">
                 <tr>
-                  {["Status", "Deal number", "Product", "Bank", "RM", "Connector", "Client", "Loan amount", "Sanctioned", "Submitted", "Submitted by", "Net"].map((head) => (
+                  {(bankDesk
+                    ? ["Status", "Deal number", "Product", "Bank", "Partner", "Client", "Phone", "Loan amount", "Sanctioned", "Submitted", "Submitted by"]
+                    : ["Status", "Deal number", "Product", "Bank", "RM", "Connector", "Client", "Loan amount", "Sanctioned", "Submitted", "Submitted by", "Net"]
+                  ).map((head) => (
                     <th key={head} className="whitespace-nowrap px-3 py-3 text-[11px] font-semibold uppercase tracking-wide">{head}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={12} className="px-3 py-10 text-center"><Loader2 className="mx-auto size-5 animate-spin text-[#10662A]" /></td></tr>
+                  <tr><td colSpan={bankDesk ? 11 : 12} className="px-3 py-10 text-center"><Loader2 className="mx-auto size-5 animate-spin text-[#10662A]" /></td></tr>
                 ) : items.map((row) => (
                   <tr key={row.id} className="cursor-pointer border-t border-[#eef6f0] hover:bg-[#f7fdf8]" onClick={() => setActive(row)}>
-                    <td className="px-3 py-3"><span className="inline-flex whitespace-nowrap rounded-full border border-[#d8ecdd] bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{row.status_label}</span></td>
+                    <td className="px-3 py-3"><span className="inline-flex whitespace-nowrap rounded-full border border-[#d8ecdd] bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{shownStatus(row, bankDesk)}</span></td>
                     <td className="whitespace-nowrap px-3 py-3 font-semibold text-[#10662A]">{row.deal_no}</td>
                     <td className="whitespace-nowrap px-3 py-3">{row.loan_type}</td>
                     <td className="px-3 py-3">{row.bank_name || "—"}</td>
-                    <td className="whitespace-nowrap px-3 py-3">{row.bank_rm || "—"}</td>
+                    {bankDesk ? null : <td className="whitespace-nowrap px-3 py-3">{row.bank_rm || "—"}</td>}
                     <td className="px-3 py-3">
                       <div className="whitespace-nowrap font-medium text-[#390A5D]">{row.partner_name || "—"}</div>
                       <div className="text-[11px] text-[#5c4d72]">{row.partner_code}</div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-3">{row.client_name || "—"}</td>
+                    {bankDesk ? <td className="whitespace-nowrap px-3 py-3">{row.client_phone || "—"}</td> : null}
                     <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">₹{inr(row.loan_amount)}</td>
                     <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">₹{inr(row.sanctioned_amount)}</td>
                     <td className="whitespace-nowrap px-3 py-3">{row.submitted_on || row.expected_sanction_on || "—"}</td>
                     <td className="whitespace-nowrap px-3 py-3">{row.submitted_by || "—"}</td>
-                    <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[#10662A]">₹{inr(row.net_revenue)}</td>
+                    {bankDesk ? null : <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[#10662A]">₹{inr(row.net_revenue)}</td>}
                   </tr>
                 ))}
               </tbody>
@@ -339,6 +367,48 @@ function CasesPage() {
         </>
       )}
     </div>
+  );
+}
+
+function BankFile({ active, onBack }: { active: LoanCaseFile; onBack: () => void }) {
+  const facts: [string, string][] = [
+    ["Deal number", active.deal_no],
+    ["Loan stage", active.flag === "cancelled" ? "Cancelled" : active.stage_label],
+    ["Client", active.client_name || "—"],
+    ["Phone", active.client_phone || "—"],
+    ["Product", active.loan_type || "—"],
+    ["Bank", active.bank_name || "—"],
+    ["Bank officer", active.bank_rm || "—"],
+    ["Partner", [active.partner_name, active.partner_code].filter(Boolean).join(" · ") || "—"],
+    ["Loan amount", `₹${inr(active.loan_amount)}`],
+    ["Sanctioned amount", `₹${inr(active.sanctioned_amount)}`],
+    ["Submitted", active.submitted_on || "—"],
+    ["Submitted by", active.submitted_by || "—"],
+  ];
+  return (
+    <section className="space-y-4 rounded-2xl border border-[#d8ecdd] bg-white p-4 sm:p-5">
+      <button className="text-sm font-semibold text-[#10662A]" onClick={onBack}>← Back to list</button>
+      <div>
+        <h2 className="text-xl font-bold text-[#390A5D]">{active.client_name || active.deal_no}</h2>
+        <p className="mt-1 text-sm text-[#5c4d72]">{active.deal_no}</p>
+      </div>
+      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {facts.map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] px-3 py-2">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</dt>
+            <dd className="mt-1 text-sm font-semibold text-[#390A5D]">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-sm text-[#5c4d72]">
+        {active.flag === "cancelled"
+          ? "The bank rejected this file, or it was cancelled. There is no partner invoice on a rejected file."
+          : active.stage === "disbursed"
+            ? "The loan is marked disbursed. The customer’s loan money comes from the bank. Partner commission is a separate invoice, paid by Accounts after approval."
+            : "This file is still with the bank. Mark sanction, disbursement, or rejection on Submissions."}
+        {active.counted ? "" : " Accounts has not booked the lender payout on this file yet."}
+      </p>
+    </section>
   );
 }
 
