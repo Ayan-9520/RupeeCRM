@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth, type AppRole } from "@/lib/auth-context";
 import { getRoleLabel, isPlatformAdmin } from "@/lib/role-access";
 import { toast } from "sonner";
@@ -51,6 +51,11 @@ type UserRow = {
   kyc_verified?: boolean;
   agreement_percent?: number | null;
 };
+
+function joiningDate(value: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
 
 function AdminUsersPage() {
   const { role, user: me } = useAuth();
@@ -230,68 +235,80 @@ function AdminUsersPage() {
         </button>
       </form>
 
-      {detail ? <UserDetail row={detail} onClose={() => setDetail(null)} /> : null}
+      {detail ? (
+        <UserDetail
+          row={detail}
+          onClose={() => setDetail(null)}
+          onEdit={() => {
+            setEdit(detail);
+            setDetail(null);
+          }}
+          onReset={() => void onResetPassword(detail)}
+          resetting={busyId === detail.id}
+        />
+      ) : null}
 
       {edit ? (
-        <form onSubmit={(event) => void onSave(event)} className="grid gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4 md:grid-cols-2">
-          <div className="md:col-span-2 text-sm font-semibold text-[#390A5D]">Edit {edit.full_name}</div>
-          <Field label="Name" value={edit.full_name} onChange={(full_name) => setEdit({ ...edit, full_name })} />
-          <Field label="Phone" value={edit.phone || ""} onChange={(phone) => setEdit({ ...edit, phone })} />
-          <Field label="Email" value={edit.email} readOnly />
-          <Field label="Employee ID" value={edit.employee_code || "—"} readOnly />
-          <Field label="Title" value={edit.sales_title || "—"} readOnly />
-          <Field label="Reports to" value={edit.reports_to_name || "—"} readOnly />
-          {edit.role === "dsa" || edit.role === "affiliate" ? (
-            <Field label="Agreement % of lender payout" value={edit.agreement_percent == null ? "" : String(edit.agreement_percent)} onChange={(value) => setEdit({ ...edit, agreement_percent: value === "" ? null : Number(value) })} />
-          ) : null}
-          <label className="block text-xs font-semibold text-[#5c4d72]">Gender
-            <select value={edit.gender || ""} onChange={(e) => setEdit({ ...edit, gender: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm">
-              <option value="">—</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-            </select>
-          </label>
-          <Field label="Location" value={edit.base_location || ""} onChange={(base_location) => setEdit({ ...edit, base_location })} />
-          <Field label="Branch" value={edit.office || ""} onChange={(office) => setEdit({ ...edit, office })} />
-          <Field label="Registered" value={edit.created_at ? new Date(edit.created_at).toLocaleDateString("en-IN") : "—"} readOnly />
-          {(edit.role === "coordinator" || edit.role === "caller") && !edit.finance_level ? (
-            <>
-              <label className="block text-xs font-semibold text-[#5c4d72]">Type
-                <select value={edit.role} onChange={(e) => setEdit({ ...edit, role: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm">
-                  <option value="coordinator">Employee</option>
-                  <option value="caller">Telecaller</option>
-                </select>
-              </label>
-              {edit.role === "coordinator" ? (
-                <label className="block text-xs font-semibold text-[#5c4d72]">Department
-                  <select value={edit.department || "SALES"} onChange={(e) => setEdit({ ...edit, department: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm">
-                    {EMPLOYEE_DEPARTMENTS.map((item) => (
-                      <option key={item.id} value={item.id}>{item.label}</option>
-                    ))}
+        <Popup title="Edit login" subtitle={edit.email} onClose={() => setEdit(null)}>
+          <form onSubmit={(event) => void onSave(event)} className="grid gap-3 sm:grid-cols-2">
+            <Field label="Name" value={edit.full_name} onChange={(full_name) => setEdit({ ...edit, full_name })} />
+            <Field label="Phone" value={edit.phone || ""} onChange={(phone) => setEdit({ ...edit, phone })} />
+            <Field label="Email" value={edit.email} readOnly />
+            <Field label="Employee ID" value={edit.employee_code || "—"} readOnly />
+            <Field label="Title" value={edit.sales_title || "—"} readOnly />
+            <Field label="Reports to" value={edit.reports_to_name || "—"} readOnly />
+            {edit.role === "dsa" || edit.role === "affiliate" ? (
+              <Field label="Agreement % of lender payout" value={edit.agreement_percent == null ? "" : String(edit.agreement_percent)} onChange={(value) => setEdit({ ...edit, agreement_percent: value === "" ? null : Number(value) })} />
+            ) : null}
+            <label className="block text-xs font-semibold text-[#5c4d72]">Gender
+              <select value={edit.gender || ""} onChange={(e) => setEdit({ ...edit, gender: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] bg-white px-3 text-sm text-[#390A5D]">
+                <option value="">—</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <Field label="Location" value={edit.base_location || ""} onChange={(base_location) => setEdit({ ...edit, base_location })} />
+            <Field label="Branch" value={edit.office || ""} onChange={(office) => setEdit({ ...edit, office })} />
+            <Field label="Joining date" value={joiningDate(edit.created_at)} readOnly />
+            {(edit.role === "coordinator" || edit.role === "caller") && !edit.finance_level ? (
+              <>
+                <label className="block text-xs font-semibold text-[#5c4d72]">Role
+                  <select value={edit.role} onChange={(e) => setEdit({ ...edit, role: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] bg-white px-3 text-sm text-[#390A5D]">
+                    <option value="coordinator">Employee</option>
+                    <option value="caller">Telecaller</option>
                   </select>
                 </label>
-              ) : (
-                <div className="flex items-end text-sm text-[#5c4d72]">Telecaller stays in Sales.</div>
-              )}
-            </>
-          ) : (
-            <div className="flex items-end text-sm text-[#5c4d72]">This role stays as it is. Invoice seats, the CEO and partner logins are not retitled here.</div>
-          )}
-          <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
-            <input
-              type="checkbox"
-              checked={edit.is_active}
-              disabled={edit.id === me?.id}
-              onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })}
-            />
-            Login active
-          </label>
-          <div className="flex gap-2">
-            <button type="submit" disabled={busyId === edit.id} className="h-10 rounded-xl bg-[#10662A] px-4 text-sm font-semibold text-white disabled:opacity-60">Save</button>
-            <button type="button" onClick={() => setEdit(null)} className="h-10 rounded-xl border border-[#d8ecdd] px-4 text-sm font-semibold text-[#390A5D]">Cancel</button>
-          </div>
-        </form>
+                {edit.role === "coordinator" ? (
+                  <label className="block text-xs font-semibold text-[#5c4d72]">Department
+                    <select value={edit.department || "SALES"} onChange={(e) => setEdit({ ...edit, department: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] bg-white px-3 text-sm text-[#390A5D]">
+                      {EMPLOYEE_DEPARTMENTS.map((item) => (
+                        <option key={item.id} value={item.id}>{item.label}</option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <div className="flex items-end text-sm text-[#5c4d72]">Telecaller stays in Sales.</div>
+                )}
+              </>
+            ) : (
+              <div className="flex items-end text-sm text-[#5c4d72] sm:col-span-2">This role stays as it is. Invoice seats, the CEO and partner logins are not retitled here.</div>
+            )}
+            <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
+              <input
+                type="checkbox"
+                checked={edit.is_active}
+                disabled={edit.id === me?.id}
+                onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })}
+              />
+              Login active
+            </label>
+            <div className="flex justify-end gap-2 sm:col-span-2">
+              <button type="button" onClick={() => setEdit(null)} className="h-10 rounded-xl border border-[#d8ecdd] px-4 text-sm font-semibold text-[#390A5D]">Cancel</button>
+              <button type="submit" disabled={busyId === edit.id} className="h-10 rounded-xl bg-[#10662A] px-5 text-sm font-semibold text-white disabled:opacity-60">Save</button>
+            </div>
+          </form>
+        </Popup>
       ) : null}
 
       {pendingPartners > 0 && (
@@ -336,59 +353,44 @@ function AdminUsersPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-[#E8F7EC]/70 text-left text-xs uppercase tracking-wide text-[#5c4d72]">
+            <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+              <thead className="text-left text-[11px] uppercase tracking-wide text-[#5c4d72]">
                 <tr>
-                  {["Name", "Employee ID", "Reports to", "Email", "Phone", "Location", "Registered", "Type", "Status", ""].map((head) => (
-                    <th key={head || "action"} className="whitespace-nowrap px-4 py-3">{head}</th>
+                  <th className="sticky left-0 z-20 w-[200px] min-w-[200px] bg-[#E8F7EC] px-4 py-3">Name</th>
+                  <th className="sticky left-[200px] z-20 w-[180px] min-w-[180px] bg-[#E8F7EC] px-4 py-3">Role</th>
+                  <th className="sticky left-[380px] z-20 w-[240px] min-w-[240px] bg-[#E8F7EC] px-4 py-3 shadow-[6px_0_10px_-6px_rgba(20,40,28,0.35)]">Email</th>
+                  {["Employee ID", "Reports to", "Phone", "Location", "Joining date", "Status", ""].map((head) => (
+                    <th key={head || "action"} className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">{head}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#d8ecdd]">
+              <tbody>
                 {filtered.map((u) => (
-                  <tr key={u.id} className="hover:bg-[#f5fcf7]">
-                    <td className="px-4 py-3 font-medium text-[#390A5D]">
+                  <tr key={u.id} className="group">
+                    <td className="sticky left-0 z-10 w-[200px] min-w-[200px] border-t border-[#d8ecdd] bg-white px-4 py-3 font-semibold text-[#390A5D] group-hover:bg-[#f5fcf7]">
                       <button type="button" className="text-left hover:underline" onClick={() => setDetail(u)}>{u.full_name || "—"}</button>
                     </td>
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-[#10662A]">{u.employee_code || "—"}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-[#5c4d72]">{u.reports_to_name || "—"}</td>
-                    <td className="px-4 py-3 text-[#5c4d72]">{u.email}</td>
-                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-[#5c4d72]">{u.base_location || "—"}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-[#5c4d72]">{u.created_at ? new Date(u.created_at).toLocaleDateString("en-IN") : "—"}</td>
-                    <td className="px-4 py-3">
+                    <td className="sticky left-[200px] z-10 w-[180px] min-w-[180px] whitespace-nowrap border-t border-[#d8ecdd] bg-white px-4 py-3 group-hover:bg-[#f5fcf7]">
                       <Badge className={`${ROLE_BADGE[u.role] || ""} text-[10px]`}>
                         {getRoleLabel(u.role as AppRole)}
                         {u.department ? ` · ${departmentLabel(u.department)}` : ""}
                         {u.finance_level ? ` · ${u.finance_level.replaceAll("_", " ")}` : ""}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="sticky left-[380px] z-10 w-[240px] min-w-[240px] whitespace-nowrap border-t border-[#d8ecdd] bg-white px-4 py-3 text-[#5c4d72] shadow-[6px_0_10px_-6px_rgba(20,40,28,0.25)] group-hover:bg-[#f5fcf7]">{u.email}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#10662A]">{u.employee_code || "—"}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.reports_to_name || "—"}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.base_location || "—"}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{joiningDate(u.created_at)}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3">
                       <Badge variant={u.is_active ? "default" : "outline"}>
                         {u.is_active ? "active" : "disabled"}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => setDetail(u)}>
-                        View
-                      </Button>
-                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => { setDetail(null); setEdit(u); }}>
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-[#10662A]"
-                        disabled={busyId === u.id}
-                        onClick={() => void onResetPassword(u)}
-                      >
-                        {busyId === u.id ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <Copy className="size-3.5 mr-1" />
-                        )}
-                        Reset password
-                      </Button>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-right">
+                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => setDetail(u)}>View</Button>
+                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => { setDetail(null); setEdit(u); }}>Edit</Button>
                     </td>
                   </tr>
                 ))}
@@ -401,10 +403,43 @@ function AdminUsersPage() {
   );
 }
 
-function UserDetail({ row, onClose }: { row: UserRow; onClose: () => void }) {
+function Popup({ title, subtitle, onClose, children }: { title: string; subtitle?: string; onClose: () => void; children: ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-[#14281c]/45 p-4" onClick={onClose}>
+      <div
+        className="max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_24px_60px_rgba(20,40,28,0.22)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-[#d8ecdd] bg-white px-6 py-4">
+          <div>
+            <h2 className="font-display text-xl font-bold text-[#390A5D]">{title}</h2>
+            {subtitle ? <p className="mt-0.5 text-sm text-[#5c4d72]">{subtitle}</p> : null}
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full border border-[#d8ecdd] px-3 py-1 text-sm font-semibold text-[#390A5D]">Close</button>
+        </div>
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function UserDetail({
+  row,
+  onClose,
+  onEdit,
+  onReset,
+  resetting,
+}: {
+  row: UserRow;
+  onClose: () => void;
+  onEdit: () => void;
+  onReset: () => void;
+  resetting: boolean;
+}) {
   const facts: [string, string][] = [
     ["Employee ID", row.employee_code || "—"],
     ["Name", row.full_name || "—"],
+    ["Role", getRoleLabel(row.role as AppRole)],
     ["Email", row.email],
     ["Phone", row.phone || "—"],
     ["Title", row.sales_title || "—"],
@@ -417,25 +452,36 @@ function UserDetail({ row, onClose }: { row: UserRow; onClose: () => void }) {
     ["Gender", row.gender || "—"],
     ["Location", row.base_location || "—"],
     ["Branch", row.office || "—"],
-    ["Registered", row.created_at ? new Date(row.created_at).toLocaleDateString("en-IN") : "—"],
+    ["Joining date", joiningDate(row.created_at)],
     ["Status", row.is_active ? "Active" : "Disabled"],
     ["KYC", row.kyc_verified ? "Verified" : "Not verified"],
   ];
+  const initial = (row.full_name || "?").trim().charAt(0).toUpperCase();
   return (
-    <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-[#390A5D]">{row.full_name}</h2>
-        <button type="button" onClick={onClose} className="text-sm font-semibold text-[#10662A]">Close</button>
+    <Popup title={row.full_name || "User"} subtitle={row.email} onClose={onClose}>
+      <div className="mb-4 flex items-center gap-3">
+        <div className="grid size-12 place-items-center rounded-2xl bg-[#10662A] text-lg font-bold text-white">{initial}</div>
+        <div>
+          <Badge className={`${ROLE_BADGE[row.role] || ""} text-[10px]`}>{getRoleLabel(row.role as AppRole)}</Badge>
+          <p className="mt-1 text-xs text-[#5c4d72]">Joined {joiningDate(row.created_at)}</p>
+        </div>
       </div>
-      <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <dl className="grid gap-3 sm:grid-cols-2">
         {facts.map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] px-3 py-2">
+          <div key={label} className="rounded-2xl border border-[#d8ecdd] bg-[#f7fdf8] px-3 py-2.5">
             <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</dt>
             <dd className="mt-1 text-sm font-semibold text-[#390A5D]">{value}</dd>
           </div>
         ))}
       </dl>
-    </section>
+      <div className="mt-5 flex justify-end gap-2">
+        <button type="button" onClick={onReset} disabled={resetting} className="inline-flex h-10 items-center gap-1 rounded-xl border border-[#d8ecdd] px-4 text-sm font-semibold text-[#10662A] disabled:opacity-60">
+          {resetting ? <Loader2 className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
+          Reset password
+        </button>
+        <button type="button" onClick={onEdit} className="h-10 rounded-xl bg-[#10662A] px-5 text-sm font-semibold text-white">Edit</button>
+      </div>
+    </Popup>
   );
 }
 
