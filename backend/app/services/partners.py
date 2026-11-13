@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import create_reset_token, hash_password
 from app.models import PartnerApplication, PartnerProfile, User
-from app.services.mailer import send_password_reset
+from app.services.mailer import notify_password_issued, send_password_reset
 from app.services.leads import normalize_phone
 from app.services.network import attach_sponsor
 
@@ -157,7 +157,7 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
             remember_issued_password(db, user, temp)
             db.commit()
             db.refresh(user)
-            return app, user, temp, email_password_reset(user)
+            return app, user, temp, notify_password_issued(user.email, user.full_name, temp, "New partner login", [admin.email])
         raise ValueError("Approved but user missing")
 
     if app.status == "approved":
@@ -202,7 +202,7 @@ def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: st
     db.commit()
     db.refresh(app)
     db.refresh(user)
-    return app, user, temp, email_password_reset(user)
+    return app, user, temp, notify_password_issued(user.email, user.full_name, temp, "New partner login", [admin.email])
 
 
 def _slugify(value: str) -> str:

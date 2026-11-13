@@ -1,11 +1,13 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.security import hash_password
+from app.services.mailer import notify_password_issued
 from app.db.session import get_db
 from app.models import PartnerApplication, User
 from app.services.departments import DEPARTMENTS
@@ -56,6 +58,7 @@ class ResetPasswordOut(BaseModel):
     success: bool = True
     email: str
     temporary_password: str
+    emailed: bool = False
 
 
 def require_admin(user: User = Depends(get_current_user)) -> User:
@@ -76,13 +79,15 @@ class CreateEmployeeOut(BaseModel):
     full_name: str
     role: str
     temporary_password: str
+    emailed: bool = False
 
 
 @router.post("", response_model=CreateEmployeeOut)
 def create_employee(
     body: CreateEmployeeIn,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> CreateEmployeeOut:
     email = body.email.strip().lower()
     if "@" not in email or email.startswith("@") or email.endswith("@"):
@@ -110,7 +115,14 @@ def create_employee(
         )
     )
     db.commit()
-    return CreateEmployeeOut(email=email, full_name=body.full_name.strip(), role=body.role, temporary_password=temp)
+    background.add_task(notify_password_issued, email, body.full_name.strip(), temp, "New login", [admin.email])
+    return CreateEmployeeOut(
+        email=email,
+        full_name=body.full_name.strip(),
+        role=body.role,
+        temporary_password=temp,
+        emailed=settings.smtp_enabled,
+    )
 
 
 @router.get("", response_model=UserListOut)
@@ -569,8 +581,9 @@ def update_login(
 @router.post("/{user_id}/reset-password", response_model=ResetPasswordOut)
 def reset_password(
     user_id: UUID,
+    background: BackgroundTasks,
     db: Session = Depends(get_db),
-    _admin: User = Depends(require_admin),
+    admin: User = Depends(require_admin),
 ) -> ResetPasswordOut:
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -582,4 +595,5 @@ def reset_password(
 
     remember_issued_password(db, user, temp)
     db.commit()
-    return ResetPasswordOut(email=user.email, temporary_password=temp)
+    background.add_task(notify_password_issued, user.email, user.full_name, temp, "Reset by admin", [admin.email])
+    return ResetPasswordOut(email=user.email, temporary_password=temp, emailed=settings.smtp_enabled)

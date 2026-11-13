@@ -438,7 +438,7 @@ export async function createEmployee(body: {
   email: string;
   role: "coordinator" | "caller";
   department?: string | null;
-}): Promise<{ email: string; full_name: string; role: string; temporary_password: string }> {
+}): Promise<{ email: string; full_name: string; role: string; temporary_password: string; emailed?: boolean }> {
   return request("/api/users", { method: "POST", body: JSON.stringify(body) });
 }
 
@@ -566,6 +566,7 @@ export async function resetCrmUserPassword(userId: string): Promise<{
   success: boolean;
   email: string;
   temporary_password: string;
+  emailed?: boolean;
 }> {
   return request(`/api/users/${userId}/reset-password`, { method: "POST", body: "{}" });
 }

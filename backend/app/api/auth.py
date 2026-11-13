@@ -8,13 +8,13 @@ from app.core.config import settings
 from app.core.rate_limit import check_rate_limit
 from app.core.security import (
     create_access_token,
-    create_reset_token,
     decode_token,
     hash_password,
     password_fingerprint,
     verify_password,
 )
-from app.services.mailer import send_email, send_password_reset
+from app.services.mailer import notify_password_issued, send_email
+from app.services.partners import generate_temp_password, remember_issued_password
 from app.db.session import get_db
 from app.models import User
 from app.schemas import LoginIn, TokenOut, UserOut, UserUpdateIn
@@ -90,7 +90,10 @@ class ResetPasswordIn(BaseModel):
     new_password: str = Field(min_length=8, max_length=128)
 
 
-FORGOT_REPLY = {"success": True, "message": "If that email has an account, a reset link is on its way."}
+FORGOT_REPLY = {
+    "success": True,
+    "message": "If that email has an account, the new password is on its way. Admin receives a copy.",
+}
 
 
 @router.post("/forgot-password")
@@ -105,9 +108,11 @@ def forgot_password(
         raise HTTPException(status_code=503, detail="Email reset is not set up yet. Ask your admin to reset your password.")
     user = db.query(User).filter(User.email == body.email.lower().strip()).first()
     if user and user.is_active:
-        token = create_reset_token(str(user.id), user.password_hash)
-        link = f"{settings.crm_public_url.rstrip('/')}/reset-password?token={token}"
-        background.add_task(send_password_reset, user.email, user.full_name, link)
+        temp = generate_temp_password()
+        user.password_hash = hash_password(temp)
+        remember_issued_password(db, user, temp)
+        db.commit()
+        background.add_task(notify_password_issued, user.email, user.full_name or "there", temp, "Forgot password", None)
     return FORGOT_REPLY
 
 

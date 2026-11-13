@@ -83,7 +83,7 @@ function ChangePasswordPage() {
             <div className="mt-6 rounded-xl border border-[#d8ecdd] bg-[#F5FBF7] p-4 text-sm">
               <div className="font-semibold text-[#390A5D]">Sign in first</div>
               <p className="mt-1 text-[#5c4d72]">
-                Forgot your password? Use "Forgot password?" on the sign-in page to get a reset link by email.
+                Forgot your password? Use "Forgot password?" on the sign-in page. The new password is emailed to you and to admin.
               </p>
               <Link
                 to="/auth"

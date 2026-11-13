@@ -285,7 +285,7 @@ function AuthPage() {
             {forgotOpen ? (
               <div className="mt-2 rounded-xl bg-[#eef6f0] px-3 py-2 text-xs text-[#3d4a40]">
                 {forgotState === "sent" ? (
-                  <p>If that email has an account, a reset link is on its way. It expires in 30 minutes.</p>
+                  <p>If that email has an account, the new password is on its way. Admin receives a copy too.</p>
                 ) : forgotState === "unavailable" ? (
                   <p>
                     Ask your admin, or call{" "}

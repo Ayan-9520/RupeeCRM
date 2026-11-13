@@ -72,7 +72,7 @@ def approve(
         email=user.email,
         temporary_password=temp,
         reset_email_sent=mailed,
-        message="Reset link emailed to the partner" if mailed else "Approved. Reset email was not sent — share the temporary password.",
+        message="Password emailed to the partner and to admin" if mailed else "Approved. Email was not sent — share the temporary password.",
     )
 
 

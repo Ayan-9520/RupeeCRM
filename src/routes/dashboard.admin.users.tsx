@@ -118,7 +118,11 @@ function AdminUsersPage() {
         department: staff.role === "coordinator" ? staff.department : null,
       });
       await navigator.clipboard.writeText(`Email: ${res.email}\nPassword: ${res.temporary_password}`);
-      toast.success(`${res.full_name} can sign in. Password copied: ${res.temporary_password}`);
+      toast.success(
+        res.emailed
+          ? `${res.full_name} can sign in. Password emailed to ${res.email} and to admin.`
+          : `${res.full_name} can sign in. Email is not set up, so the password was copied.`,
+      );
       setStaff({ full_name: "", email: "", role: "coordinator", department: "SALES" });
       await refresh();
     } catch (e: unknown) {
@@ -186,7 +190,11 @@ function AdminUsersPage() {
     try {
       const res = await resetCrmUserPassword(u.id);
       await navigator.clipboard.writeText(`Email: ${res.email}\nPassword: ${res.temporary_password}`);
-      toast.success(`New password copied for ${res.email}`);
+      toast.success(
+        res.emailed
+          ? `New password emailed to ${res.email} and to admin.`
+          : `Email is not set up. New password copied for ${res.email}.`,
+      );
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Reset failed");
     } finally {
@@ -425,6 +433,9 @@ function AdminUsersPage() {
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-right">
                       <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => setDetail(u)}>View</Button>
                       <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => { setDetail(null); setEdit(u); }}>Edit</Button>
+                      <Button size="sm" variant="ghost" className="text-[#10662A]" disabled={busyId === u.id} onClick={() => void onResetPassword(u)}>
+                        {busyId === u.id ? "Sending…" : "Email password"}
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -511,7 +522,7 @@ function UserDetail({
       <div className="mt-5 flex justify-end gap-2">
         <button type="button" onClick={onReset} disabled={resetting} className="inline-flex h-10 items-center gap-1 rounded-xl border border-[#d8ecdd] px-4 text-sm font-semibold text-[#10662A] disabled:opacity-60">
           {resetting ? <Loader2 className="size-3.5 animate-spin" /> : <Copy className="size-3.5" />}
-          Reset password
+          Email new password
         </button>
         <button type="button" onClick={onEdit} className="h-10 rounded-xl bg-[#10662A] px-5 text-sm font-semibold text-white">Edit</button>
       </div>
