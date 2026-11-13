@@ -188,19 +188,24 @@ export function hasRole(role: AppRole | null, allowed: AppRole[]): boolean {
   return allowed.includes(role);
 }
 
+const FINANCE_SEATS = new Set(["rm", "manager", "business_head", "accounts"]);
+
+function financeSeatUrls(level: string): Set<string> {
+  const urls = new Set(["/dashboard", "/dashboard/invoice-approvals", "/dashboard/profile", "/dashboard/settings"]);
+  if (level === "accounts" || level === "business_head") urls.add("/dashboard/admin/payouts");
+  return urls;
+}
+
 export function canAccessPath(role: AppRole | null, pathname: string, financeLevel?: string | null): boolean {
   if (!role) return false;
   const level = financeLevel || "";
+  const path = pathname.replace(/\/$/, "") || "/";
+  if (FINANCE_SEATS.has(level) && !isPlatformAdmin(role)) {
+    const urls = financeSeatUrls(level);
+    return [...urls].some((url) => path === url || (url !== "/dashboard" && path.startsWith(url + "/")));
+  }
   if (level && (pathname === "/dashboard/invoice-approvals" || pathname.startsWith("/dashboard/invoice-approvals/"))) return true;
   if ((level === "accounts" || level === "business_head") && (pathname === "/dashboard/admin/payouts" || pathname.startsWith("/dashboard/admin/payouts/"))) return true;
-
-  const path = pathname.replace(/\/$/, "") || "/";
-  if (
-    (level === "rm" || level === "manager" || level === "business_head" || level === "accounts") &&
-    (path === "/dashboard/hrms" || path.startsWith("/dashboard/hrms/"))
-  ) {
-    return false;
-  }
 
   for (const rule of EXTRA_ROUTE_RULES) {
     if (path === rule.prefix.replace(/\/$/, "") || path.startsWith(rule.prefix)) {
@@ -236,10 +241,11 @@ export function canAccessPath(role: AppRole | null, pathname: string, financeLev
 
 export function getNavForRole(role: AppRole | null, financeLevel?: string | null): NavItem[] {
   if (!role) return [];
-  const items = NAV_ITEMS.filter((item) => item.roles.includes(role)).filter((item) => {
-    if (item.url !== "/dashboard/hrms" || !financeLevel || isPlatformAdmin(role)) return true;
-    return financeLevel !== "rm" && financeLevel !== "manager" && financeLevel !== "business_head" && financeLevel !== "accounts";
-  });
+  if (financeLevel && FINANCE_SEATS.has(financeLevel) && !isPlatformAdmin(role)) {
+    const allow = financeSeatUrls(financeLevel);
+    return NAV_ITEMS.filter((item) => allow.has(item.url));
+  }
+  const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
   if (!financeLevel || isPlatformAdmin(role)) return items;
   const allowed = new Set<string>(["/dashboard/invoice-approvals"]);
   if (financeLevel === "accounts" || financeLevel === "business_head") allowed.add("/dashboard/admin/payouts");

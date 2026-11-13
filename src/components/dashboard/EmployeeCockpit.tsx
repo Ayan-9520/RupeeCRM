@@ -17,14 +17,19 @@ const STEP: Record<string, string> = {
 
 export function EmployeeCockpit({ firstName, financeLevel }: { firstName: string; financeLevel?: string | null }) {
   const level = financeLevel ? LEVEL[financeLevel] || financeLevel : "";
-  const work = [
-    { title: "Case files", desc: "Login the file with the bank, then sanction or reject.", to: "/dashboard/cases" as const, icon: Building2 },
-    { title: "Submissions", desc: "Files the sales desk has forwarded.", to: "/dashboard/submissions" as const, icon: FileText },
-    ...(level
-      ? [{ title: "Invoice approvals", desc: "Shown when the invoice reaches your step.", to: "/dashboard/invoice-approvals" as const, icon: Receipt }]
-      : []),
-    { title: "Learn", desc: "Product notes for the bank conversation.", to: "/dashboard/learn" as const, icon: Phone },
-  ];
+  const invoiceSeat = financeLevel === "rm" || financeLevel === "manager" || financeLevel === "business_head" || financeLevel === "accounts";
+  const work = invoiceSeat
+    ? [
+        { title: "Invoice approvals", desc: "Shown when the invoice reaches your step.", to: "/dashboard/invoice-approvals" as const, icon: Receipt },
+        ...(financeLevel === "accounts" || financeLevel === "business_head"
+          ? [{ title: "Payouts", desc: "Paid and pending partner invoices.", to: "/dashboard/admin/payouts" as const, icon: FileText }]
+          : []),
+      ]
+    : [
+        { title: "Case files", desc: "Login the file with the bank, then sanction or reject.", to: "/dashboard/cases" as const, icon: Building2 },
+        { title: "Submissions", desc: "Files the sales desk has forwarded.", to: "/dashboard/submissions" as const, icon: FileText },
+        { title: "Learn", desc: "Product notes for the bank conversation.", to: "/dashboard/learn" as const, icon: Phone },
+      ];
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
