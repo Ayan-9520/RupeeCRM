@@ -278,6 +278,25 @@ class HrProfileIn(BaseModel):
     visa_country: str = ""
     visa_type: str = ""
     visa_expiry: str = ""
+    weekly_off: str = ""
+    shift_timing: str = ""
+    employee_type: str = ""
+    esic_eligible: str = ""
+    induction: str = ""
+    email_quota: str = ""
+    pf_eligible: str = ""
+    probation_period: str = ""
+    notice_period: str = ""
+    qualification: str = ""
+    institute: str = ""
+    aadhaar: str = ""
+    specially_abled: str = ""
+    emergency_phone: str = ""
+    emergency_person: str = ""
+    emergency_relation: str = ""
+    education_lines: str = ""
+    language_lines: str = ""
+    photo: str = ""
 
 
 @router.put("/me/hr-profile")
@@ -287,9 +306,16 @@ def save_hr_profile(
     user: User = Depends(get_current_user),
 ) -> dict:
     saved: dict[str, str] = {}
+    limits = {"about": 1000, "education_lines": 2000, "language_lines": 2000, "photo": 180000, "address": 300}
     for key, value in body.model_dump().items():
-        text = " ".join(str(value or "").split())
-        saved[key] = text[:1000] if key == "about" else text[:180]
+        raw = str(value or "").strip()
+        if key == "photo":
+            if raw and not raw.startswith("data:image/"):
+                raise HTTPException(status_code=400, detail="Profile photo must be an image")
+            saved[key] = raw[:180000]
+            continue
+        text = " ".join(raw.split()) if key not in {"education_lines", "language_lines"} else raw
+        saved[key] = text[: limits.get(key, 180)]
     user.hr_profile = saved
     db.commit()
     return saved

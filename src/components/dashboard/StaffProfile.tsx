@@ -47,7 +47,30 @@ const BLANK: Record<string, string> = {
   visa_country: "",
   visa_type: "",
   visa_expiry: "",
+  weekly_off: "",
+  shift_timing: "",
+  employee_type: "",
+  esic_eligible: "",
+  induction: "",
+  email_quota: "",
+  pf_eligible: "",
+  probation_period: "",
+  notice_period: "",
+  qualification: "",
+  institute: "",
+  aadhaar: "",
+  specially_abled: "",
+  emergency_phone: "",
+  emergency_person: "",
+  emergency_relation: "",
+  education_lines: "",
+  language_lines: "",
+  photo: "",
 };
+
+function linesOf(value: string) {
+  return value.split("\n").map((line) => line.trim()).filter(Boolean);
+}
 
 function shown(value: string | null | undefined) {
   const text = (value || "").trim();
@@ -128,6 +151,8 @@ export function StaffProfile() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -147,6 +172,30 @@ export function StaffProfile() {
       alive = false;
     };
   }, []);
+
+  const uploadPhoto = async () => {
+    if (!photoFile) return;
+    const bitmap = await createImageBitmap(photoFile);
+    const scale = Math.min(1, 320 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const photo = canvas.toDataURL("image/jpeg", 0.82);
+    const next = { ...form, photo };
+    setSaving(true);
+    try {
+      const saved = await saveHrProfile(next);
+      setForm({ ...BLANK, ...saved });
+      setPhotoOpen(false);
+      setPhotoFile(null);
+      toast.success("Photo updated");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not upload the photo");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -180,7 +229,9 @@ export function StaffProfile() {
     <div className="mx-auto max-w-5xl space-y-4">
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
         <div className="flex flex-wrap gap-6">
-          <div className="grid size-20 place-items-center rounded-full bg-[#E8F7EC] font-display text-3xl font-bold text-[#10662A]">{initial}</div>
+          <button type="button" onClick={() => setPhotoOpen(true)} className="grid size-20 place-items-center overflow-hidden rounded-full bg-[#E8F7EC] font-display text-3xl font-bold text-[#10662A] ring-4 ring-[#E8F7EC]" aria-label="Update profile picture">
+            {form.photo ? <img src={form.photo} alt="" className="h-full w-full object-cover" /> : initial}
+          </button>
           <div className="min-w-[220px] flex-1">
             <h1 className="font-display text-2xl font-bold text-[#390A5D]">
               {me.full_name}
@@ -255,6 +306,15 @@ export function StaffProfile() {
             <Field label="Region" name="region" form={form} editing={editing} onChange={set} />
             <Field label="Regional head" name="regional_head" form={form} editing={editing} onChange={set} />
             <Field label="Confirmation" name="confirmation_status" form={form} editing={editing} onChange={set} />
+            <Field label="Weekly off" name="weekly_off" form={form} editing={editing} onChange={set} />
+            <Field label="Shift timing" name="shift_timing" form={form} editing={editing} onChange={set} />
+            <Field label="Employee type" name="employee_type" form={form} editing={editing} onChange={set} />
+            <Field label="ESIC eligible" name="esic_eligible" form={form} editing={editing} onChange={set} />
+            <Field label="Induction" name="induction" form={form} editing={editing} onChange={set} />
+            <Field label="Email quota" name="email_quota" form={form} editing={editing} onChange={set} />
+            <Field label="PF eligible" name="pf_eligible" form={form} editing={editing} onChange={set} />
+            <Field label="Probation period" name="probation_period" form={form} editing={editing} onChange={set} />
+            <Field label="Notice period" name="notice_period" form={form} editing={editing} onChange={set} />
             <Field label="Biometric code" name="biometric_code" form={form} editing={editing} onChange={set} />
             <Field label="Office" name="office" form={form} editing={editing} onChange={set} />
             <Field label="Birthday" name="birthday" form={form} editing={editing} onChange={set} />
@@ -269,6 +329,56 @@ export function StaffProfile() {
             <Field label="Marital status" name="marital_status" form={form} editing={editing} onChange={set} />
             <Field label="Date of marriage" name="marriage_date" form={form} editing={editing} onChange={set} />
             <Field label="Nationality" name="nationality" form={form} editing={editing} onChange={set} />
+            <Field label="Qualification" name="qualification" form={form} editing={editing} onChange={set} />
+            <Field label="Institute" name="institute" form={form} editing={editing} onChange={set} />
+            <Field label="Aadhaar" name="aadhaar" form={form} editing={editing} onChange={set} />
+            <Field label="Specially abled" name="specially_abled" form={form} editing={editing} onChange={set} />
+          </section>
+          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+            <h2 className="font-semibold text-[#390A5D]">Emergency contact</h2>
+            <Field label="Phone" name="emergency_phone" form={form} editing={editing} onChange={set} />
+            <Field label="Contact person" name="emergency_person" form={form} editing={editing} onChange={set} />
+            <Field label="Relation" name="emergency_relation" form={form} editing={editing} onChange={set} />
+          </section>
+          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5">
+            <h2 className="font-semibold text-[#390A5D]">Education</h2>
+            {editing ? (
+              <textarea value={form.education_lines} onChange={(event) => set("education_lines", event.target.value)} placeholder={"Course | College | Year | Percent"} className="mt-3 min-h-24 w-full rounded-xl border border-[#d8ecdd] p-3 text-sm" />
+            ) : (
+              <table className="mt-3 w-full text-sm">
+                <thead className="bg-[#0D4F20] text-left text-white">
+                  <tr><th className="px-2 py-1.5">Course</th><th className="px-2 py-1.5">College</th><th className="px-2 py-1.5">Year</th><th className="px-2 py-1.5">%</th></tr>
+                </thead>
+                <tbody>
+                  {linesOf(form.education_lines).length === 0 ? (
+                    <tr><td className="px-2 py-2 text-[#5c4d72]" colSpan={4}>—</td></tr>
+                  ) : linesOf(form.education_lines).map((line) => {
+                    const [course, college, year, percent] = line.split("|").map((part) => part.trim());
+                    return <tr key={line} className="border-b border-[#f3f6f4]"><td className="px-2 py-1.5">{course || "—"}</td><td className="px-2 py-1.5">{college || "—"}</td><td className="px-2 py-1.5">{year || "—"}</td><td className="px-2 py-1.5">{percent || "—"}</td></tr>;
+                  })}
+                </tbody>
+              </table>
+            )}
+          </section>
+          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-5 lg:col-span-2">
+            <h2 className="font-semibold text-[#390A5D]">Languages</h2>
+            {editing ? (
+              <textarea value={form.language_lines} onChange={(event) => set("language_lines", event.target.value)} placeholder={"English | Fluent"} className="mt-3 min-h-20 w-full rounded-xl border border-[#d8ecdd] p-3 text-sm" />
+            ) : (
+              <table className="mt-3 w-full text-sm">
+                <thead className="bg-[#0D4F20] text-left text-white">
+                  <tr><th className="px-2 py-1.5">Language</th><th className="px-2 py-1.5">Level</th></tr>
+                </thead>
+                <tbody>
+                  {linesOf(form.language_lines).length === 0 ? (
+                    <tr><td className="px-2 py-2 text-[#5c4d72]" colSpan={2}>—</td></tr>
+                  ) : linesOf(form.language_lines).map((line) => {
+                    const [language, level] = line.split("|").map((part) => part.trim());
+                    return <tr key={line} className="border-b border-[#f3f6f4]"><td className="px-2 py-1.5">{language || "—"}</td><td className="px-2 py-1.5">{level || "—"}</td></tr>;
+                  })}
+                </tbody>
+              </table>
+            )}
           </section>
         </div>
       ) : null}
@@ -308,6 +418,27 @@ export function StaffProfile() {
           <Field label="Visa type" name="visa_type" form={form} editing={editing} onChange={set} />
           <Field label="Valid till" name="visa_expiry" form={form} editing={editing} onChange={set} />
         </section>
+      ) : null}
+
+      {photoOpen ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[#14281c]/40 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-[0_24px_60px_rgba(16,102,42,0.18)]">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-bold text-[#390A5D]">Update profile picture</h2>
+              <button type="button" onClick={() => setPhotoOpen(false)} className="text-sm text-[#5c4d72]" aria-label="Close">✕</button>
+            </div>
+            <label className="mt-4 block text-sm text-[#5c4d72]">
+              Upload file
+              <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] || null)} className="mt-2 block w-full text-sm" />
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => void uploadPhoto()} disabled={!photoFile || saving} className="h-10 rounded-full bg-[#10662A] px-5 text-sm font-semibold text-white disabled:opacity-60">
+                {saving ? "Uploading…" : "Upload"}
+              </button>
+              <button type="button" onClick={() => setPhotoOpen(false)} className="h-10 rounded-full border border-[#d8ecdd] px-5 text-sm font-semibold text-[#390A5D]">Close</button>
+            </div>
+          </div>
+        </div>
       ) : null}
 
       {tab === "My team" ? (
