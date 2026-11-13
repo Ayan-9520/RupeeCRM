@@ -22,6 +22,8 @@ function ProfilePage() {
 }
 
 function PartnerProfilePage() {
+  const { role } = useAuth();
+  const affiliate = role === "affiliate";
   const [form, setForm] = useState<PartnerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -93,14 +95,19 @@ function PartnerProfilePage() {
     setForm({ ...form, theme: { ...theme, [key]: value } });
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[#390A5D]">Public profile</h1>
-        <p className="text-sm text-[#5c4d72] mt-1">
-          Public page{" "}
-          <span className="font-mono text-[#10662A]">pro.rupeedial.com/{previewSlug}</span>
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-5">
+      <section className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_12px_32px_rgba(16,102,42,0.06)]">
+        <div className="h-1.5 bg-[#10662A]" />
+        <div className="p-6">
+          <h1 className="font-display text-2xl font-bold text-[#390A5D]">{affiliate ? "Affiliate profile" : "Partner profile"}</h1>
+          <p className="mt-1 text-sm text-[#5c4d72]">
+            {affiliate
+              ? "Customers see your name, phone, and the products you refer. A firm brochure is for DSA partners."
+              : "This is the page a customer opens before they call you."}
+          </p>
+          <p className="mt-3 font-mono text-sm text-[#10662A]">pro.rupeedial.com/{previewSlug}</p>
+        </div>
+      </section>
 
       {!form.can_publish && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -111,9 +118,11 @@ function PartnerProfilePage() {
         </div>
       )}
 
-      <form onSubmit={(e) => void onSave(e)} className="space-y-4 rounded-2xl border border-[#d8ecdd] bg-white p-5">
+      <form onSubmit={(e) => void onSave(e)} className="space-y-4">
+        <section className="space-y-4 rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
+        <h2 className="font-semibold text-[#390A5D]">{affiliate ? "Your name" : "Firm"}</h2>
         <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Firm name</span>
+          <span className="font-semibold text-[#390A5D]">{affiliate ? "Name" : "Firm name"}</span>
           <input
             required
             value={form.firm_name}
@@ -122,7 +131,7 @@ function PartnerProfilePage() {
               const slug = firm_name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
               setForm({ ...form, firm_name, slug });
             }}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
           />
         </label>
         <label className="block text-sm">
@@ -130,7 +139,7 @@ function PartnerProfilePage() {
           <input
             readOnly
             value={previewHref}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 font-mono text-sm text-[#10662A]"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 font-mono text-sm text-[#10662A]"
           />
         </label>
         <label className="block text-sm">
@@ -138,80 +147,88 @@ function PartnerProfilePage() {
           <input
             value={form.tagline || ""}
             onChange={(e) => setForm({ ...form, tagline: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
           />
         </label>
+        </section>
+        <section className="space-y-4 rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
+        <h2 className="font-semibold text-[#390A5D]">{affiliate ? "What you refer" : "What customers read"}</h2>
         <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Story</span>
+          <span className="font-semibold text-[#390A5D]">{affiliate ? "Note" : "Story"}</span>
           <textarea
             rows={5}
             value={form.bio || ""}
             onChange={(e) => setForm({ ...form, bio: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             placeholder="How you help customers, in your own words"
           />
         </label>
-        <div className="grid sm:grid-cols-2 gap-3">
+        {affiliate ? null : <div className="grid sm:grid-cols-2 gap-3">
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Mission</span>
-            <textarea rows={3} value={themeText("mission")} onChange={(e) => setTheme("mission", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+            <textarea rows={3} value={themeText("mission")} onChange={(e) => setTheme("mission", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
           </label>
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Vision</span>
-            <textarea rows={3} value={themeText("vision")} onChange={(e) => setTheme("vision", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+            <textarea rows={3} value={themeText("vision")} onChange={(e) => setTheme("vision", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
           </label>
-        </div>
+        </div>}
+        </section>
+        <section className="space-y-4 rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
+        <h2 className="font-semibold text-[#390A5D]">Contact</h2>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Office address</span>
-          <input value={themeText("address")} onChange={(e) => setTheme("address", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+          <input value={themeText("address")} onChange={(e) => setTheme("address", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
         </label>
+        {affiliate ? null : <>
         <div className="grid sm:grid-cols-2 gap-3">
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Founder</span>
-            <input value={themeText("founder")} onChange={(e) => setTheme("founder", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+            <input value={themeText("founder")} onChange={(e) => setTheme("founder", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
           </label>
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Established</span>
-            <input value={themeText("founded")} onChange={(e) => setTheme("founded", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="2016" />
+            <input value={themeText("founded")} onChange={(e) => setTheme("founded", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder="2016" />
           </label>
         </div>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Working areas</span>
-          <input value={themeText("areas")} onChange={(e) => setTheme("areas", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="Delhi, Noida, Gurugram" />
+          <input value={themeText("areas")} onChange={(e) => setTheme("areas", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder="Delhi, Noida, Gurugram" />
         </label>
         <div className="grid sm:grid-cols-3 gap-3">
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Business assisted</span>
-            <input value={themeText("stat_business")} onChange={(e) => setTheme("stat_business", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="₹12 Cr" />
+            <input value={themeText("stat_business")} onChange={(e) => setTheme("stat_business", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder="₹12 Cr" />
           </label>
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Families served</span>
-            <input value={themeText("stat_families")} onChange={(e) => setTheme("stat_families", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" />
+            <input value={themeText("stat_families")} onChange={(e) => setTheme("stat_families", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
           </label>
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Rating</span>
-            <input value={themeText("stat_rating")} onChange={(e) => setTheme("stat_rating", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder="4.8" />
+            <input value={themeText("stat_rating")} onChange={(e) => setTheme("stat_rating", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder="4.8" />
           </label>
         </div>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Achievements</span>
-          <textarea rows={3} value={themeText("achievements")} onChange={(e) => setTheme("achievements", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder={"One per line: Title | 2025"} />
+          <textarea rows={3} value={themeText("achievements")} onChange={(e) => setTheme("achievements", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Title | 2025"} />
         </label>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Certificates</span>
-          <textarea rows={3} value={themeText("certificates")} onChange={(e) => setTheme("certificates", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder={"One per line: Certificate | Institute"} />
+          <textarea rows={3} value={themeText("certificates")} onChange={(e) => setTheme("certificates", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Certificate | Institute"} />
         </label>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Customer notes</span>
-          <textarea rows={3} value={themeText("reviews")} onChange={(e) => setTheme("reviews", e.target.value)} className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2" placeholder={"One per line: Name | 5 | What they said"} />
+          <textarea rows={3} value={themeText("reviews")} onChange={(e) => setTheme("reviews", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Name | 5 | What they said"} />
         </label>
+        </>}
         <div className="grid sm:grid-cols-2 gap-3">
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">City</span>
             <input
               value={form.city}
               onChange={(e) => setForm({ ...form, city: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             />
           </label>
           <label className="block text-sm">
@@ -219,7 +236,7 @@ function PartnerProfilePage() {
             <input
               value={form.state || ""}
               onChange={(e) => setForm({ ...form, state: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             />
           </label>
         </div>
@@ -229,7 +246,7 @@ function PartnerProfilePage() {
             <input
               value={form.phone || ""}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             />
           </label>
           <label className="block text-sm">
@@ -238,7 +255,7 @@ function PartnerProfilePage() {
               type="email"
               value={form.email || ""}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             />
           </label>
         </div>
@@ -247,7 +264,7 @@ function PartnerProfilePage() {
           <input
             value={themeText("website")}
             onChange={(e) => setTheme("website", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             placeholder="https://"
           />
         </label>
@@ -256,7 +273,7 @@ function PartnerProfilePage() {
           <input
             value={themeText("booking_url")}
             onChange={(e) => setTheme("booking_url", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             placeholder="https://… leave blank to use the RupeeDial contact page"
           />
         </label>
@@ -266,7 +283,7 @@ function PartnerProfilePage() {
             rows={3}
             value={themeText("links")}
             onChange={(e) => setTheme("links", e.target.value)}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             placeholder={"One per line: Instagram | https://instagram.com/…"}
           />
         </label>
@@ -276,7 +293,7 @@ function PartnerProfilePage() {
             <input
               value={themeText("pincode")}
               onChange={(e) => setTheme("pincode", e.target.value.replace(/\D/g, "").slice(0, 6))}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
               inputMode="numeric"
               placeholder="201301"
             />
@@ -286,7 +303,7 @@ function PartnerProfilePage() {
             <input
               value={themeText("designation")}
               onChange={(e) => setTheme("designation", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
               placeholder="Loan advisor"
             />
           </label>
@@ -297,7 +314,7 @@ function PartnerProfilePage() {
             <input
               value={themeText("whatsapp")}
               onChange={(e) => setTheme("whatsapp", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             />
           </label>
           <label className="block text-sm">
@@ -305,7 +322,7 @@ function PartnerProfilePage() {
             <input
               value={themeText("languages")}
               onChange={(e) => setTheme("languages", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
               placeholder="Hindi, English"
             />
           </label>
@@ -316,7 +333,7 @@ function PartnerProfilePage() {
             <input
               value={themeText("years")}
               onChange={(e) => setTheme("years", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
               placeholder="8"
             />
           </label>
@@ -325,7 +342,7 @@ function PartnerProfilePage() {
             <input
               value={themeText("since")}
               onChange={(e) => setTheme("since", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+              className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
               placeholder="2016"
             />
           </label>
@@ -335,16 +352,16 @@ function PartnerProfilePage() {
           <input
             value={form.logo_url || ""}
             onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             placeholder="https://…"
           />
         </label>
         <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Products (comma-separated)</span>
+          <span className="font-semibold text-[#390A5D]">{affiliate ? "Products you refer" : "Products you handle"}</span>
           <input
             value={productsText}
             onChange={(e) => setProductsText(e.target.value)}
-            className="mt-1 w-full rounded-lg border border-[#d8ecdd] px-3 py-2"
+            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
             placeholder="Personal Loan, Business Loan, Insurance"
           />
         </label>
@@ -398,7 +415,7 @@ function PartnerProfilePage() {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#10662A] text-white px-4 py-2 text-sm font-semibold disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-full bg-[#10662A] px-5 text-sm font-semibold text-white disabled:opacity-50"
           >
             {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
             Save profile
