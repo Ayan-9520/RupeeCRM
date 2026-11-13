@@ -279,7 +279,8 @@ def reserved_leads(
     )
 
 
-BANK_STAGES = ("docs_collected", "bank_submitted", "sanctioned", "disbursed")
+BANK_STAGES = ("bank_submitted", "sanctioned", "disbursed", "rejected")
+BANK_RESULTS = {"sanctioned", "disbursed", "rejected"}
 
 
 def _bank_desk(user: User) -> bool:
@@ -330,6 +331,12 @@ def patch_my_lead(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your lead")
     if not owner and (body.disposition or body.lead is not None or body.deal_value is not None or body.converted is not None):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk can update the stage only")
+    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage in {"sanctioned", "disbursed"}:
+        raise HTTPException(status_code=400, detail="The bank desk records sanction and disbursement")
+    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "rejected" and p.pipeline_stage in {"bank_submitted", "sanctioned", "disbursed"}:
+        raise HTTPException(status_code=400, detail="After the file reaches the bank, the bank desk records the rejection")
+    if not owner and body.pipeline_stage and body.pipeline_stage not in BANK_RESULTS:
+        raise HTTPException(status_code=400, detail="Bank desk records sanction, disbursement, or rejection")
 
     notes = list(p.notes or [])
     lead = db.query(Lead).filter(Lead.id == p.lead_id).first()

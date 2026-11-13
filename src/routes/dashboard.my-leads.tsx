@@ -208,8 +208,8 @@ const textareaClass =
 
 function MyLeadsPage() {
   const navigate = useNavigate();
-  const { role, user } = useAuth();
-  const canBoard = canAccessPath(role, "/dashboard/leadboard", user?.finance_level);
+  const { role } = useAuth();
+  const partner = role === "dsa" || role === "affiliate";
   const [reserved, setReserved] = useState<Awaited<ReturnType<typeof listReservedLeads>> | null>(null);
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [items, setItems] = useState<CrmPurchase[]>([]);
@@ -393,7 +393,12 @@ function MyLeadsPage() {
       toast.message("Already at final stage");
       return;
     }
-    await moveStage(forward[fi + 1]);
+    const next = forward[fi + 1];
+    if (partner && (next === "sanctioned" || next === "disbursed")) {
+      toast.message("The bank desk records sanction and disbursement");
+      return;
+    }
+    await moveStage(next);
   };
 
   const addNote = async () => {
@@ -423,18 +428,18 @@ function MyLeadsPage() {
             My Leads
           </h1>
           <p className="text-[#5c4d72] mt-0.5 text-sm max-w-xl">
-            Edit form fields · New → Disbursed · notes & follow-ups
+            You collect papers and submit the file to the bank. The bank desk records sanction or disbursement.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {canBoard && <Link
+          <Link
             to="/dashboard/leadboard"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl border border-[#d8ecdd] bg-white text-[#390A5D] text-sm font-semibold hover:bg-[#E8F7EC] hover:border-[#10662A]/35"
+          {canBoard && <Link
           >
             Leadboard
-          </Link>}
+          </Link>
           <button
-            type="button"
+          </Link>}
             onClick={() => void load()}
             className="inline-flex items-center gap-1.5 border border-[#d8ecdd] bg-white rounded-xl px-3 py-1.5 text-sm font-semibold text-[#390A5D] hover:bg-[#E8F7EC] cursor-pointer"
           >
@@ -527,6 +532,8 @@ function MyLeadsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[#d8ecdd] bg-white p-10 text-center text-[#5c4d72] text-sm">
+          No purchased leads yet. Go to{" "}
+          <Link to="/dashboard/leadboard" className="text-[#10662A] font-bold hover:underline">
           No purchased leads yet.
           {canBoard ? (
             <>
@@ -537,8 +544,6 @@ function MyLeadsPage() {
               and click Buy.
             </>
           ) : null}
-        </div>
-      ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((p) => {
             const lead = p.lead;
@@ -932,7 +937,9 @@ function MyLeadsPage() {
                 <div className="grid lg:grid-cols-[1fr_0.85fr] gap-4">
                   <div className="rounded-xl border border-[#d8ecdd] bg-white p-4 shadow-[0_2px_10px_rgba(16,102,42,0.04)] space-y-3">
                     <div className="text-sm font-bold text-[#390A5D]">Stage timeline</div>
-                    <p className="text-xs text-[#5c4d72] -mt-1">Click any stage to move · New → Disbursed</p>
+                    <p className="text-xs text-[#5c4d72] -mt-1">
+                      {partner ? "You can move the file until it is submitted to the bank." : "Click a stage to move it."}
+                    </p>
                     <ol className="space-y-2">
                       {stages.map((s, i) => {
                         const forward = stages.filter((x) => x !== "rejected");
@@ -943,11 +950,13 @@ function MyLeadsPage() {
                             ? s === "rejected"
                             : stageIdx >= 0 && currentIdx >= 0 && stageIdx <= currentIdx;
                         const active = s === selected.pipeline_stage;
+                        const bankHeld = ["bank_submitted", "sanctioned", "disbursed"].includes(selected.pipeline_stage);
+                        const locked = partner && (s === "sanctioned" || s === "disbursed" || (s === "rejected" && bankHeld));
                         return (
                           <li key={s}>
                             <button
                               type="button"
-                              disabled={saving}
+                              disabled={saving || locked}
                               onClick={() => void moveStage(s)}
                               className={`w-full text-left rounded-xl border px-3.5 py-2.5 flex items-center gap-3 transition cursor-pointer ${
                                 active
@@ -973,7 +982,7 @@ function MyLeadsPage() {
                                   {STAGE_LABELS[s] ?? s}
                                 </div>
                                 <div className="text-[11px] text-[#5c4d72]">
-                                  {active ? "Current stage" : done ? "Completed" : "Click to jump"}
+                                  {locked ? "Bank desk records this" : active ? "Current stage" : done ? "Completed" : "Click to jump"}
                                 </div>
                               </div>
                             </button>
@@ -1014,7 +1023,7 @@ function MyLeadsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected"}
+                        disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && selected.pipeline_stage === "bank_submitted")}
                         onClick={() => void advanceStage()}
                         className="w-full rounded-xl border border-[#d8ecdd] py-2.5 text-sm font-semibold text-[#390A5D] inline-flex items-center justify-center gap-2 hover:bg-[#E8F7EC] cursor-pointer disabled:opacity-40"
                       >
@@ -1022,7 +1031,7 @@ function MyLeadsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={saving || selected.pipeline_stage === "rejected"}
+                        disabled={saving || selected.pipeline_stage === "rejected" || (partner && ["bank_submitted", "sanctioned", "disbursed"].includes(selected.pipeline_stage))}
                         onClick={() => void moveStage("rejected")}
                         className="w-full rounded-xl border border-red-200 text-red-600 py-2.5 text-sm font-semibold hover:bg-red-50 cursor-pointer disabled:opacity-40"
                       >

@@ -32,6 +32,7 @@ const STAGE_LABEL: Record<string, string> = {
   bank_submitted: "submitted",
   sanctioned: "approved",
   disbursed: "disbursed",
+  rejected: "rejected",
 };
 const LENDERS = ["HDFC Bank", "ICICI Bank", "Axis Bank", "Bajaj Finserv", "Tata Capital", "IDFC First", "Kotak Mahindra"];
 
@@ -98,7 +99,7 @@ function Submissions() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Lender Submissions</h1>
-          <p className="text-muted-foreground mt-1">Partner files that have reached the bank. Mark submitted, approved, or disbursed. Papers stay with the partner.</p>
+          <p className="text-muted-foreground mt-1">The partner has given these files to the bank. Record sanction, disbursement, or rejection. Papers stay with the bank.</p>
         </div>
       </div>
 
@@ -155,8 +156,7 @@ function SubmissionRow({ row, onAdvance }: { row: Row; onAdvance: (r: Row, next:
     : row.pipeline_stage === "sanctioned" ? "bg-blue-500/15 text-blue-600"
     : row.pipeline_stage === "bank_submitted" ? "bg-amber-500/15 text-amber-600"
     : "bg-secondary text-muted-foreground";
-  const next = row.pipeline_stage === "docs_collected" ? "bank_submitted"
-    : row.pipeline_stage === "bank_submitted" ? "sanctioned"
+  const next = row.pipeline_stage === "bank_submitted" ? "sanctioned"
     : row.pipeline_stage === "sanctioned" ? "disbursed" : null;
 
   return (
@@ -187,9 +187,14 @@ function SubmissionRow({ row, onAdvance }: { row: Row; onAdvance: (r: Row, next:
       </td>
       <td className="px-4 py-3">
         {next ? (
-          <button onClick={() => onAdvance(row, next)} className="text-xs font-bold px-2.5 py-1 rounded-md bg-accent text-accent-foreground hover:opacity-90">
-            → {STAGE_LABEL[next] ?? next}
-          </button>
+          <div className="flex flex-wrap gap-1">
+            <button onClick={() => onAdvance(row, next)} className="text-xs font-bold px-2.5 py-1 rounded-md bg-accent text-accent-foreground hover:opacity-90">
+              → {STAGE_LABEL[next] ?? next}
+            </button>
+            <button onClick={() => onAdvance(row, "rejected")} className="text-xs font-bold px-2.5 py-1 rounded-md border border-red-200 text-red-700">
+              Reject
+            </button>
+          </div>
         ) : (
           <span className="text-xs text-muted-foreground">Done ✓</span>
         )}
@@ -205,7 +210,7 @@ function EmptyState() {
     <div className="rounded-3xl bg-card border border-dashed border-border p-12 text-center">
       <div className="size-14 mx-auto rounded-2xl bg-accent/15 grid place-items-center"><FileText className="size-6 text-accent" /></div>
       <h2 className="font-display text-xl font-bold mt-4">No submissions yet</h2>
-      <p className="text-muted-foreground mt-2 max-w-md mx-auto">Files appear here after a lead is marked docs collected.</p>
+      <p className="text-muted-foreground mt-2 max-w-md mx-auto">Files appear here after the partner marks the file as submitted to the bank.</p>
       {canCalls && (
         <Link to="/dashboard/calls" className="inline-flex items-center gap-2 mt-6 px-5 py-2.5 rounded-full bg-accent text-accent-foreground font-semibold hover:opacity-90">
           <ShoppingBag className="size-4" /> Open Call Queue <ArrowRight className="size-4" />
