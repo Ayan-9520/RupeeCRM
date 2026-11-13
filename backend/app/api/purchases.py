@@ -381,10 +381,12 @@ def patch_my_lead(
         )
         if body.pipeline_stage == "disbursed":
             p.converted = True
+            p.next_followup_at = None
             if p.deal_value is None and lead is not None:
                 p.deal_value = float(lead.loan_amount or 0)
         if body.pipeline_stage == "rejected":
             p.converted = False
+            p.next_followup_at = None
 
     if body.converted is not None:
         p.converted = body.converted

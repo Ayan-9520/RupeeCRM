@@ -32,7 +32,9 @@ export function RecallList() {
   useEffect(() => {
     listMyLeads()
       .then((data) => {
-        const due = (data.items || []).filter((row) => row.next_followup_at);
+        const due = (data.items || []).filter(
+          (row) => row.next_followup_at && row.pipeline_stage !== "disbursed" && row.pipeline_stage !== "rejected" && !row.converted,
+        );
         due.sort((a, b) => new Date(a.next_followup_at || 0).getTime() - new Date(b.next_followup_at || 0).getTime());
         setRows(due);
       })
