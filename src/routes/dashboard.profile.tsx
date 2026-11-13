@@ -437,6 +437,7 @@ function PartnerProfilePage() {
             Visiting card
           </Link>
         </div>
+        </section>
       </form>
     </div>
   );
