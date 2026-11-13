@@ -1612,4 +1612,40 @@ export async function saveFinanceSetup(
   return request(`/api/invoice-approvals/setup/${userId}`, { method: "PUT", body: JSON.stringify(body) });
 }
 
+export type PerformanceCard = { label: string; value: number; money?: boolean };
+export type PerformancePerson = {
+  id: string;
+  name: string;
+  seat: string;
+  agreement_percent?: number | null;
+  disbursed_amount?: number;
+  lender_payout?: number;
+  partner_share?: number;
+  company_revenue?: number;
+  files?: number;
+  plan_sales?: number;
+  paid?: number;
+  calls?: number;
+  interested?: number;
+  handed?: number;
+  bank?: number;
+  partners?: number;
+};
+export type PerformanceReport = {
+  period: string;
+  label: string;
+  view: "company" | "unit" | "coordinator" | "caller" | "backend" | "partner";
+  intro: string;
+  reports_to: string;
+  team_count: number;
+  partner_count: number;
+  cards: PerformanceCard[];
+  team: PerformancePerson[];
+  partners: PerformancePerson[];
+};
+
+export async function getPerformance(period: "month" | "quarter" | "year"): Promise<PerformanceReport> {
+  return request(`/api/performance?period=${period}`);
+}
+
 export { API_URL };

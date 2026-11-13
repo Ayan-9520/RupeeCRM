@@ -25,6 +25,12 @@ export type NavItem = {
 export const NAV_ITEMS: NavItem[] = [
   { title: "CEO Overview", url: "/ceo", roles: ADMIN_ROLES, group: "main" },
   { title: "Dashboard", url: "/dashboard", roles: ALL_ROLES, group: "main" },
+  {
+    title: "Performance",
+    url: "/dashboard/performance",
+    roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller", "coordinator"],
+    group: "main",
+  },
   { title: "Workspace", url: "/dashboard/workspace", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "coordinator"], group: "main" },
   {
     title: "Billing",
@@ -191,7 +197,7 @@ export function hasRole(role: AppRole | null, allowed: AppRole[]): boolean {
 const FINANCE_SEATS = new Set(["rm", "manager", "business_head", "accounts"]);
 
 function financeSeatUrls(level: string): Set<string> {
-  const urls = new Set(["/dashboard", "/dashboard/invoice-approvals", "/dashboard/profile", "/dashboard/settings"]);
+  const urls = new Set(["/dashboard", "/dashboard/performance", "/dashboard/invoice-approvals", "/dashboard/profile", "/dashboard/settings"]);
   if (level === "accounts" || level === "business_head") urls.add("/dashboard/admin/payouts");
   return urls;
 }
@@ -201,11 +207,11 @@ function opsDesk(role: AppRole | null, level: string, department?: string | null
 }
 
 function opsUrls(): Set<string> {
-  return new Set(["/dashboard", "/dashboard/cases", "/dashboard/submissions", "/dashboard/profile", "/dashboard/settings"]);
+  return new Set(["/dashboard", "/dashboard/performance", "/dashboard/cases", "/dashboard/submissions", "/dashboard/profile", "/dashboard/settings"]);
 }
 
 function callerUrls(): Set<string> {
-  return new Set(["/dashboard", "/dashboard/calls", "/dashboard/learn", "/dashboard/profile", "/dashboard/settings"]);
+  return new Set(["/dashboard", "/dashboard/performance", "/dashboard/calls", "/dashboard/learn", "/dashboard/profile", "/dashboard/settings"]);
 }
 
 function pathAllowed(path: string, urls: Set<string>): boolean {
