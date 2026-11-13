@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Check, Loader2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import { patchMyLead } from "@/lib/python-api";
+import { useAuth } from "@/lib/auth-context";
 import type { PurchaseContext } from "@/lib/customer-crm/types";
 
 const FORWARD = [
@@ -13,34 +14,14 @@ const FORWARD = [
   ["disbursed", "Disbursed"],
 ] as const;
 
-const STATUSES = [
-  ["callback", "Callback"],
-  ["docs_pending", "Documents pending"],
-  ["login_sent", "Login sent to bank"],
-  ["not_reachable", "Not reachable"],
-  ["interested", "Interested"],
-  ["not_interested", "Not interested"],
-] as const;
-
-const NEEDS_DATE = new Set(["callback", "docs_pending", "not_reachable"]);
-const RECALL_DAYS: [number, string][] = [[2, "2 days"], [7, "1 week"], [30, "1 month"], [60, "2 months"]];
-
 const LABEL: Record<string, string> = Object.fromEntries([...FORWARD, ["rejected", "Rejected"]]);
-
-function fromNow(days: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + days);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T10:00`;
-}
 
 /** The My Leads pipeline. Case Files, Submissions and Invoices all follow this stage. */
 export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
+  const { role } = useAuth();
+  const partner = role === "dsa" || role === "affiliate";
   const [stage, setStage] = useState(purchase.pipeline_stage);
   const [dealValue, setDealValue] = useState(purchase.deal_value != null ? String(purchase.deal_value) : "");
-  const [status, setStatus] = useState("callback");
-  const [when, setWhen] = useState("");
-  const [followup, setFollowup] = useState(purchase.next_followup_at);
   const [busy, setBusy] = useState<string | null>(null);
   const railRef = useRef<HTMLOListElement>(null);
 
@@ -54,6 +35,9 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
   const current = FORWARD.findIndex(([key]) => key === stage);
   const rejected = stage === "rejected";
   const next = !rejected && current >= 0 && current < FORWARD.length - 1 ? FORWARD[current + 1] : null;
+  const bankHeld = stage === "bank_submitted" || stage === "sanctioned" || stage === "disbursed";
+  const bankStep = (key: string) => partner && (key === "sanctioned" || key === "disbursed" || (key === "rejected" && bankHeld));
+  const nextLocked = Boolean(next && bankStep(next[0]));
 
   const save = async (key: string, body: Parameters<typeof patchMyLead>[1], message: string) => {
     setBusy(key);
@@ -61,7 +45,6 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
       const updated = await patchMyLead(purchase.id, body);
       setStage(updated.pipeline_stage);
       setDealValue(updated.deal_value != null ? String(updated.deal_value) : "");
-      setFollowup(updated.next_followup_at);
       toast.success(message);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update the lead");
@@ -71,7 +54,7 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
   };
 
   const move = (key: string) => {
-    if (key === stage || busy) return;
+    if (key === stage || busy || bankStep(key)) return;
     void save(key, { pipeline_stage: key }, `Lead moved to ${LABEL[key] ?? key}`);
   };
 
@@ -100,9 +83,9 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
                 <li key={key} className="flex shrink-0 snap-start items-center sm:flex-1 sm:last:flex-none">
                   <button
                     type="button"
-                    disabled={busy !== null}
+                    disabled={busy !== null || bankStep(key)}
                     onClick={() => move(key)}
-                    title={active ? `Current stage: ${label}` : `Move to ${label}`}
+                    title={bankStep(key) ? "The bank desk records this" : active ? `Current stage: ${label}` : `Move to ${label}`}
                     aria-current={active ? "step" : undefined}
                     className="group flex items-center gap-1.5 rounded-full py-0.5 pr-1 disabled:cursor-wait"
                   >
@@ -143,47 +126,6 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center gap-2 xl:shrink-0">
-          <label className="flex h-8 items-center gap-1 rounded-md border border-[#d8ecdd] bg-white px-2 text-[11px] font-semibold text-[#5c4d72]">
-            Status
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="h-7 bg-transparent text-[11px] font-semibold text-[#390A5D] outline-none"
-            >
-              {STATUSES.map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </label>
-          <input
-            type="datetime-local"
-            value={when}
-            onChange={(e) => setWhen(e.target.value)}
-            className="h-8 rounded-md border border-[#d8ecdd] bg-white px-2 text-[11px] text-[#390A5D]"
-          />
-          {RECALL_DAYS.map(([days, label]) => (
-            <button key={days} type="button" onClick={() => setWhen(fromNow(days))} className="h-8 rounded-full bg-white px-2.5 text-[11px] font-semibold text-[#0D4F20] ring-1 ring-[#d8ecdd] hover:bg-[#0D4F20] hover:text-white">
-              {label}
-            </button>
-          ))}
-          <button
-            type="button"
-            disabled={busy !== null}
-            onClick={() => {
-              if (NEEDS_DATE.has(status) && !when) {
-                toast.error("Pick the date to call again");
-                return;
-              }
-              void save("status", {
-                disposition: status,
-                next_followup_at: when ? new Date(when).toISOString() : null,
-              }, "Status saved");
-            }}
-            className="h-8 rounded-md bg-[#10662A] px-3 text-[11px] font-semibold text-white hover:bg-[#0D4F20] disabled:opacity-50"
-          >
-            {busy === "status" ? "Saving…" : "Save status"}
-          </button>
-          {followup ? <span className="text-[11px] font-semibold text-[#390A5D]">Recall {new Date(followup).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span> : null}
           <div className="flex h-8 items-center overflow-hidden rounded-md border border-[#d8ecdd] bg-white">
             <span className="px-2 text-[11px] font-semibold text-[#5c4d72]">Deal ₹</span>
             <input
@@ -209,18 +151,18 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
           </div>
           <button
             type="button"
-            disabled={busy !== null || !next}
-            onClick={() => next && move(next[0])}
-            title={rejected ? "Click a stage to reopen this lead" : next ? `Move to ${next[1]}` : "Lead is disbursed"}
+            disabled={busy !== null || !next || nextLocked}
+            onClick={() => next && !nextLocked && move(next[0])}
+            title={nextLocked ? "Narender records sanction and disbursement after the bank decides" : rejected ? "Click a stage to reopen this lead" : next ? `Move to ${next[1]}` : "Lead is disbursed"}
             className="inline-flex h-8 items-center gap-1 rounded-md bg-[#390A5D] px-3 text-[11px] font-semibold text-white hover:bg-[#2d0848] disabled:opacity-40"
           >
-            {next ? `Next: ${next[1]}` : rejected ? "Rejected" : "Disbursed"}
+            {nextLocked ? "Waiting for bank desk" : next ? `Next: ${next[1]}` : rejected ? "Rejected" : "Disbursed"}
             {next ? <ArrowRight className="size-3.5" /> : null}
           </button>
           {!rejected ? (
             <button
               type="button"
-              disabled={busy !== null}
+              disabled={busy !== null || (partner && bankHeld)}
               onClick={() => {
                 if (confirm("Mark this lead as rejected? Its case file will be cancelled.")) move("rejected");
               }}
