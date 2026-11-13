@@ -11,7 +11,7 @@ from app.services.mailer import notify_password_issued
 from app.db.session import get_db
 from app.models import PartnerApplication, User
 from app.services.departments import DEPARTMENTS
-from app.services.partners import generate_temp_password
+from app.services.partners import generate_temp_password, remember_issued_password
 from app.services.sales_grades import GRADES, downline_ids, grade_rank, grade_title
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -44,6 +44,7 @@ class UserAdminOut(BaseModel):
     base_location: str = ""
     office: str = ""
     agreement_percent: float | None = None
+    issued_password: str = ""
 
     model_config = {"from_attributes": True}
 
@@ -103,17 +104,18 @@ def create_employee(
             raise HTTPException(status_code=400, detail="Pick a department")
         grade = starter[department]
     temp = generate_temp_password()
-    db.add(
-        User(
-            email=email,
-            full_name=body.full_name.strip(),
-            password_hash=hash_password(temp),
-            role=body.role,
-            is_active=True,
-            department=department,
-            sales_grade=grade,
-        )
+    created = User(
+        email=email,
+        full_name=body.full_name.strip(),
+        password_hash=hash_password(temp),
+        role=body.role,
+        is_active=True,
+        department=department,
+        sales_grade=grade,
     )
+    db.add(created)
+    db.flush()
+    remember_issued_password(db, created, temp)
     db.commit()
     background.add_task(notify_password_issued, email, body.full_name.strip(), temp, "New login", [admin.email])
     return CreateEmployeeOut(
@@ -141,7 +143,21 @@ def list_users(
         .filter(PartnerApplication.status.in_(["pending", "under_review"]))
         .count()
     )
-    items = [
+    saved_password: dict = {}
+    for app in db.query(PartnerApplication).all():
+        password = str((app.documents or {}).get("issued_password") or "")
+        if not password:
+            continue
+        if app.user_id:
+            saved_password[app.user_id] = password
+        if app.email:
+            saved_password[app.email.lower()] = password
+    items = []
+    for u in rows:
+        fields = _staff_fields(u)
+        if not fields["issued_password"]:
+            fields["issued_password"] = saved_password.get(u.id) or saved_password.get((u.email or "").lower()) or ""
+        items.append(
         UserAdminOut(
             id=u.id,
             email=u.email,
@@ -163,10 +179,10 @@ def list_users(
             department=u.department,
             created_at=u.created_at.isoformat() if u.created_at else None,
             agreement_percent=u.agreement_percent,
-            **_staff_fields(u),
+            **fields,
         )
-        for u in rows
-    ]
+        )
+    items = items
     return UserListOut(items=items, total=len(items), pending_partners=pending)
 
 
@@ -253,6 +269,7 @@ def _staff_fields(row: User) -> dict:
         "gender": str(hr.get("gender") or ""),
         "base_location": str(hr.get("base_location") or ""),
         "office": str(hr.get("office") or ""),
+        "issued_password": str(hr.get("issued_password") or ""),
     }
 
 
@@ -269,7 +286,7 @@ def _desk_person(row: User, names: dict) -> DeskPerson:
         reports_to_name=names.get(row.reports_to_user_id) if row.reports_to_user_id else None,
         joined_at=row.created_at.isoformat() if row.created_at else None,
         employee_code=_employee_code(row),
-        hr_profile=dict(row.hr_profile or {}),
+        hr_profile={key: value for key, value in dict(row.hr_profile or {}).items() if key != "issued_password"},
     )
 
 
@@ -367,7 +384,9 @@ def save_hr_profile(
         saved[key] = text[: limits.get(key, 180)]
     user.hr_profile = saved
     db.commit()
-    return saved
+    public = dict(saved)
+    public.pop("issued_password", None)
+    return public
 
 
 @router.get("/me/desk", response_model=DeskOut)

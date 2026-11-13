@@ -468,6 +468,7 @@ export async function listCrmUsers(): Promise<{
     gender?: string;
     base_location?: string;
     office?: string;
+    issued_password?: string;
   }[];
   total: number;
   pending_partners: number;

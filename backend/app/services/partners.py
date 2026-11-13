@@ -120,7 +120,10 @@ def upsert_partner_from_website(db: Session, payload: dict) -> PartnerApplicatio
 
 
 def remember_issued_password(db: Session, user: User, password: str) -> None:
-    """Keep the latest login password on the partner application so admin can see it."""
+    """Keep the latest login password so an admin can open it. The hash itself cannot be read back."""
+    profile = dict(user.hr_profile or {})
+    profile["issued_password"] = password
+    user.hr_profile = profile
     email = (user.email or "").lower()
     rows = (
         db.query(PartnerApplication)

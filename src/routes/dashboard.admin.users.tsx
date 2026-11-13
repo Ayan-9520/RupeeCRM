@@ -50,6 +50,7 @@ type UserRow = {
   office?: string;
   kyc_verified?: boolean;
   agreement_percent?: number | null;
+  issued_password?: string;
 };
 
 function joiningDate(value: string | null) {
@@ -189,6 +190,8 @@ function AdminUsersPage() {
     setBusyId(u.id);
     try {
       const res = await resetCrmUserPassword(u.id);
+      setUsers((rows) => rows.map((row) => (row.id === u.id ? { ...row, issued_password: res.temporary_password } : row)));
+      setDetail((row) => (row && row.id === u.id ? { ...row, issued_password: res.temporary_password } : row));
       await navigator.clipboard.writeText(`Email: ${res.email}\nPassword: ${res.temporary_password}`);
       toast.success(
         res.emailed
@@ -394,6 +397,7 @@ function AdminUsersPage() {
                   <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Name</th>
                   <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Role</th>
                   <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Email</th>
+                  <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Password</th>
                   {["Employee ID", "Reports to", "Phone", "Location", "Joining date", "Status", ""].map((head) => (
                     <th key={head || "action"} className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">{head}</th>
                   ))}
@@ -413,6 +417,7 @@ function AdminUsersPage() {
                       </Badge>
                     </td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.email}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#390A5D]">{u.issued_password || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#10662A]">{u.employee_code || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.reports_to_name || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
@@ -486,6 +491,7 @@ function UserDetail({
     ["Name", row.full_name || "—"],
     ["Role", getRoleLabel(row.role as AppRole)],
     ["Email", row.email],
+    ["Password", row.issued_password || "Not saved yet. Use Email password."],
     ["Phone", row.phone || "—"],
     ["Title", row.sales_title || "—"],
     ["Grade", row.sales_grade || "—"],
