@@ -195,6 +195,12 @@ export function canAccessPath(role: AppRole | null, pathname: string, financeLev
   if ((level === "accounts" || level === "business_head") && (pathname === "/dashboard/admin/payouts" || pathname.startsWith("/dashboard/admin/payouts/"))) return true;
 
   const path = pathname.replace(/\/$/, "") || "/";
+  if (
+    (level === "rm" || level === "manager" || level === "business_head" || level === "accounts") &&
+    (path === "/dashboard/hrms" || path.startsWith("/dashboard/hrms/"))
+  ) {
+    return false;
+  }
 
   for (const rule of EXTRA_ROUTE_RULES) {
     if (path === rule.prefix.replace(/\/$/, "") || path.startsWith(rule.prefix)) {
@@ -230,7 +236,10 @@ export function canAccessPath(role: AppRole | null, pathname: string, financeLev
 
 export function getNavForRole(role: AppRole | null, financeLevel?: string | null): NavItem[] {
   if (!role) return [];
-  const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
+  const items = NAV_ITEMS.filter((item) => item.roles.includes(role)).filter((item) => {
+    if (item.url !== "/dashboard/hrms" || !financeLevel || isPlatformAdmin(role)) return true;
+    return financeLevel !== "rm" && financeLevel !== "manager" && financeLevel !== "business_head" && financeLevel !== "accounts";
+  });
   if (!financeLevel || isPlatformAdmin(role)) return items;
   const allowed = new Set<string>(["/dashboard/invoice-approvals"]);
   if (financeLevel === "accounts" || financeLevel === "business_head") allowed.add("/dashboard/admin/payouts");
