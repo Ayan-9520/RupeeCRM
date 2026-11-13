@@ -41,6 +41,7 @@ class UserAdminOut(BaseModel):
     gender: str = ""
     base_location: str = ""
     office: str = ""
+    agreement_percent: float | None = None
 
     model_config = {"from_attributes": True}
 
@@ -149,6 +150,7 @@ def list_users(
             finance_level=u.finance_level,
             department=u.department,
             created_at=u.created_at.isoformat() if u.created_at else None,
+            agreement_percent=u.agreement_percent,
             **_staff_fields(u),
         )
         for u in rows
@@ -492,6 +494,7 @@ class LoginEditIn(BaseModel):
     gender: str = ""
     base_location: str = ""
     office: str = ""
+    agreement_percent: float | None = None
 
 
 def _admin_out(db: Session, user: User) -> UserAdminOut:
@@ -512,6 +515,7 @@ def _admin_out(db: Session, user: User) -> UserAdminOut:
         finance_level=user.finance_level,
         department=user.department,
         created_at=user.created_at.isoformat() if user.created_at else None,
+        agreement_percent=user.agreement_percent,
         **_staff_fields(user),
     )
 
@@ -544,6 +548,15 @@ def update_login(
                 raise HTTPException(status_code=400, detail="Pick a department")
             user.department = department
             user.sales_grade = user.sales_grade or {"SALES": "T8", "OPS": "OP-E", "HR": "HR-E", "ITM": "MK-E", "ACC": "AC-E"}[department]
+    if user.role in {"dsa", "affiliate"} and body.agreement_percent is not None:
+        percent = float(body.agreement_percent)
+        if not 50 <= percent <= 95:
+            raise HTTPException(status_code=400, detail="Agreement percent must be from 50 to 95")
+        user.agreement_percent = percent
+        from app.models import LoanCase
+
+        for case in db.query(LoanCase).filter(LoanCase.partner_user_id == user.id, LoanCase.payout_status != "paid").all():
+            case.payable_percent = percent
     profile = dict(user.hr_profile or {})
     for key, value in (("gender", body.gender), ("base_location", body.base_location), ("office", body.office)):
         profile[key] = " ".join(str(value or "").split())[:180]

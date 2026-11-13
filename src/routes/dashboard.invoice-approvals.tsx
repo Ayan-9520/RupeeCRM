@@ -7,7 +7,9 @@ import {
   getFinanceSetup,
   invoiceApprovalAction,
   listInvoiceApprovals,
+  confirmInvoice,
   payInvoice,
+  setInvoiceLenderPayout,
   saveFinanceSetup,
   type FinanceSetupUser,
   type InvoiceApprovalRow,
@@ -18,7 +20,7 @@ import { InvoiceSteps, STAGE_FILTERS, actionLabel, inr } from "@/components/invo
 import { downloadInvoicePdf } from "@/lib/invoice-pdf";
 
 export const Route = createFileRoute("/dashboard/invoice-approvals")({
-  head: () => ({ meta: [{ title: "Invoice approvals — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Invoice approvals — RupeeOne" }] }),
   component: InvoiceApprovalsPage,
 });
 
@@ -216,6 +218,41 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
     }
   };
 
+  const lenderConfirmed = Boolean(snap.lender_confirmed_at);
+  const invoiceConfirmed = Boolean(snap.invoice_confirmed_at);
+  const lines = Array.isArray(snap.lines) ? (snap.lines as { purchase_id: string; lender_percent: number; lender_payout: number; agreement_percent: number; share: number }[]) : [];
+
+  const confirm = async (step: "lender" | "invoice") => {
+    setBusy(step);
+    try {
+      const updated = await confirmInvoice(row.id, step);
+      toast.success(step === "lender" ? "Lender payout confirmed" : "Invoice confirmed");
+      onChange(updated);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not confirm");
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const saveLenderPercent = async (purchaseId: string, value: string) => {
+    const percent = Number(value);
+    if (!percent || percent <= 0 || percent > 20) {
+      toast.error("Enter the lender payout percent");
+      return;
+    }
+    setBusy(purchaseId);
+    try {
+      const updated = await setInvoiceLenderPayout(row.id, purchaseId, percent);
+      toast.success("Lender payout updated. Confirm it again.");
+      onChange(updated);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update the lender payout");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const recordPayment = async () => {
     if (!pay.payment_bank.trim() || !pay.transaction_id.trim()) {
       toast.error("Bank and transaction ID are required");
@@ -312,7 +349,10 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
             <Info label="TDS" value={`− ${inr(row.tds_amount ?? 0)}`} />
             <Info label="Net payable" value={inr(row.net_payable ?? row.amount)} strong />
             <Info label="Cases" value={String((snap.case_ids as unknown[] | undefined)?.length ?? 0)} />
-            <Info label="Disbursed total" value={inr(Number(snap.disbursed_total || 0))} />
+            <Info label="Lender payout" value={inr(Number(snap.lender_payout_total || 0))} />
+            <Info label="Agreement" value={snap.agreement_percent ? `${snap.agreement_percent}%` : "—"} />
+            <Info label="Lender confirmed" value={lenderConfirmed ? String(snap.lender_confirmed_by || "Yes") : "Waiting"} />
+            <Info label="Invoice confirmed" value={invoiceConfirmed ? String(snap.invoice_confirmed_by || "Yes") : "Waiting"} />
             <Info label="RM 1 / RM 2" value={`${row.rm1_name || "Not set"} / ${row.rm2_name || "Not set"}`} />
             <Info label="Raised on" value={row.created_at ? new Date(row.created_at).toLocaleString("en-IN") : "—"} />
             <Info label="Bank" value={`${snap.bank_name || "—"} · ${snap.account_number || ""} · ${snap.ifsc || ""}`} />
@@ -326,6 +366,24 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
 
           <History row={row} />
 
+          {lines.length ? (
+            <div className="space-y-2">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#10662A]">Lender payout on each case</div>
+              {lines.map((line) => (
+                <LenderLine key={line.purchase_id} line={line} disabled={!row.can_act || !!busy} onSave={(value) => void saveLenderPercent(line.purchase_id, value)} />
+              ))}
+            </div>
+          ) : null}
+          {row.can_act && row.stage !== "paid" && row.stage !== "rejected" ? (
+            <div className="flex flex-wrap gap-2">
+              <button type="button" disabled={!!busy || lenderConfirmed} onClick={() => void confirm("lender")} className="rounded-lg border border-[#d8ecdd] px-3.5 py-2 text-sm font-semibold text-[#390A5D] disabled:opacity-50">
+                {lenderConfirmed ? `Lender payout confirmed · ${String(snap.lender_confirmed_by || "")}` : "Confirm lender payout"}
+              </button>
+              <button type="button" disabled={!!busy || !lenderConfirmed || invoiceConfirmed} onClick={() => void confirm("invoice")} className="rounded-lg border border-[#d8ecdd] px-3.5 py-2 text-sm font-semibold text-[#390A5D] disabled:opacity-50">
+                {invoiceConfirmed ? `Invoice confirmed · ${String(snap.invoice_confirmed_by || "")}` : "Confirm invoice"}
+              </button>
+            </div>
+          ) : null}
           {row.can_act ? (
             <div className="space-y-3 rounded-xl border border-[#d8ecdd] bg-white p-3">
               <div className="text-xs font-bold uppercase tracking-wide text-[#10662A]">Your action · {row.stage_label}</div>
@@ -367,7 +425,7 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
                     <input type="number" value={pay.paid_amount} onChange={(e) => setPay((p) => ({ ...p, paid_amount: e.target.value }))} placeholder="Paid amount" className="h-9 rounded-lg border border-[#d8ecdd] px-2 text-sm" />
                     <input value={pay.remarks} onChange={(e) => setPay((p) => ({ ...p, remarks: e.target.value }))} placeholder="Remarks (optional)" className="h-9 rounded-lg border border-[#d8ecdd] px-2 text-sm" />
                   </div>
-                  <button type="button" disabled={!!busy} onClick={() => void recordPayment()} className="inline-flex items-center gap-1.5 rounded-lg bg-[#10662A] px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                  <button type="button" disabled={!!busy || !lenderConfirmed || !invoiceConfirmed} onClick={() => void recordPayment()} className="inline-flex items-center gap-1.5 rounded-lg bg-[#10662A] px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50">
                     {busy === "pay" ? <Loader2 className="size-4 animate-spin" /> : null} Mark paid
                   </button>
                 </div>
@@ -538,6 +596,28 @@ function SetupPanel() {
           ))}
         </ul>
       </section>
+    </div>
+  );
+}
+
+function LenderLine({
+  line,
+  disabled,
+  onSave,
+}: {
+  line: { purchase_id: string; lender_percent: number; lender_payout: number; agreement_percent: number; share: number };
+  disabled: boolean;
+  onSave: (value: string) => void;
+}) {
+  const [value, setValue] = useState(String(line.lender_percent || ""));
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[#d8ecdd] bg-white px-3 py-2 text-xs">
+      <span className="font-semibold text-[#390A5D]">Lender payout {line.lender_percent}% · {inr(line.lender_payout)}</span>
+      <span className="text-[#5c4d72]">Agreement {line.agreement_percent}% · Partner share {inr(line.share)}</span>
+      <input value={value} onChange={(event) => setValue(event.target.value)} className="h-8 w-20 rounded-lg border border-[#d8ecdd] px-2" />
+      <button type="button" disabled={disabled} onClick={() => onSave(value)} className="rounded-lg border border-[#d8ecdd] px-2 py-1 font-semibold text-[#10662A] disabled:opacity-50">
+        Save subvention
+      </button>
     </div>
   );
 }

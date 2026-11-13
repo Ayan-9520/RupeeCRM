@@ -463,6 +463,7 @@ export async function listCrmUsers(): Promise<{
     finance_level?: string | null;
     department?: string | null;
     created_at: string | null;
+    agreement_percent?: number | null;
     employee_code?: string;
     gender?: string;
     base_location?: string;
@@ -546,6 +547,7 @@ export async function updateCrmUser(
     gender?: string;
     base_location?: string;
     office?: string;
+    agreement_percent?: number | null;
   },
 ): Promise<{
   id: string;
@@ -838,6 +840,9 @@ export type InvoiceCase = {
   disbursed: number;
   commission: number;
   invoiced: boolean;
+  lender_percent?: number;
+  lender_payout?: number;
+  agreement_percent?: number;
 };
 
 export type InvoiceCentre = {
@@ -1559,6 +1564,17 @@ export async function invoiceApprovalAction(
   return request(`/api/invoice-approvals/${id}/action`, {
     method: "POST",
     body: JSON.stringify({ action, comment: comment || null }),
+  });
+}
+
+export async function confirmInvoice(id: string, step: "lender" | "invoice"): Promise<InvoiceApprovalRow> {
+  return request(`/api/invoice-approvals/${id}/confirm`, { method: "POST", body: JSON.stringify({ step }) });
+}
+
+export async function setInvoiceLenderPayout(id: string, purchaseId: string, lenderPercent: number): Promise<InvoiceApprovalRow> {
+  return request(`/api/invoice-approvals/${id}/lender-payout`, {
+    method: "POST",
+    body: JSON.stringify({ purchase_id: purchaseId, lender_percent: lenderPercent }),
   });
 }
 

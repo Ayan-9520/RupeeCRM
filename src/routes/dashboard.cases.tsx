@@ -64,13 +64,12 @@ function liveMoney(row: Pick<LoanCaseFile, "loan_amount" | "sanctioned_amount" |
   const receivable = Math.round(base * Number(row.receivable_percent || 0)) / 100;
   const payable = Math.round(receivable * Number(row.payable_percent || 0)) / 100;
   const margin = receivable - payable - Number(row.loyalty_amount || 0);
-  const agent = Math.round(margin) / 2;
   return {
     base,
     receivable,
     payable,
-    agent,
-    net: margin - agent,
+    agent: 0,
+    net: margin,
   };
 }
 
@@ -514,22 +513,22 @@ function CaseForm({
 
       <div className="grid gap-2 text-sm sm:grid-cols-3">
         <div className="rounded-xl bg-[#14301c] px-3 py-3 text-white">
-          <div className="text-xs opacity-80">Agent · {active.submitted_by || "—"}</div>
-          <div className="text-lg font-bold">₹{inr(money.agent)}</div>
+          <div className="text-xs opacity-80">Lender payout</div>
+          <div className="text-lg font-bold">₹{inr(money.receivable)}</div>
         </div>
         <div className="rounded-xl bg-[#10662A] px-3 py-3 text-white">
-          <div className="text-xs opacity-80">Connector · {active.partner_name || "—"}</div>
+          <div className="text-xs opacity-80">Partner share · {active.partner_name || "—"}</div>
           <div className="text-lg font-bold">₹{inr(money.payable)}</div>
         </div>
         <div className="rounded-xl border px-3 py-3">
-          <div className="text-xs text-[#5c4d72]">Company net</div>
+          <div className="text-xs text-[#5c4d72]">Company revenue</div>
           <div className="text-lg font-bold text-[#10662A]">₹{inr(money.net)}</div>
         </div>
       </div>
       <p className="text-xs text-[#5c4d72]">
-        ₹{inr(money.base)} × {active.receivable_percent}% = ₹{inr(money.receivable)} from the lender.
-        Connector {active.payable_percent}% = ₹{inr(money.payable)}.
-        The rest is split equally: agent ₹{inr(money.agent)} and company net ₹{inr(money.net)}.
+        ₹{inr(money.base)} × {active.receivable_percent}% = ₹{inr(money.receivable)} lender payout, after any subvention.
+        Partner agreement {active.payable_percent}% = ₹{inr(money.payable)}.
+        The rest, ₹{inr(money.net)}, is company revenue under the employee mapped to this partner.
       </p>
       {admin ? (
         <div className="flex flex-wrap gap-2">

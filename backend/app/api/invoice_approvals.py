@@ -12,9 +12,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.api.payouts import HistoryOut, RequestOut, _to_out, history_out
+from app.api.payouts import HistoryOut, RequestOut, _to_out, history_out, reprice_invoice
 from app.db.session import get_db
-from app.models import InvoiceApproval, PayoutRequest, User
+from app.models import InvoiceApproval, LoanCase, PayoutRequest, User
 from app.services.audit import write_audit
 from app.services.invoice_flow import (
     ADMIN_ROLES,
@@ -47,6 +47,15 @@ class QueueRow(RequestOut):
 class ActionIn(BaseModel):
     action: str = Field(pattern="^(approve|query|reject|processing)$")
     comment: str | None = Field(default=None, max_length=2000)
+
+
+class ConfirmIn(BaseModel):
+    step: str = Field(pattern="^(lender|invoice)$")
+
+
+class LenderPayoutIn(BaseModel):
+    purchase_id: UUID
+    lender_percent: float = Field(gt=0, le=20)
 
 
 class PayIn(BaseModel):
@@ -208,6 +217,62 @@ def act(
     return _rows_out(db, [row], user)[0]
 
 
+@router.post("/{request_id}/confirm", response_model=QueueRow)
+def confirm(
+    request_id: UUID,
+    body: ConfirmIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_staff),
+) -> QueueRow:
+    row, partner = _load(db, request_id)
+    if row.stage in {"paid", "rejected"}:
+        raise HTTPException(status_code=400, detail="This invoice is already closed")
+    if not can_act(user, row, partner) and user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="This invoice is not at your approval level")
+    snap = dict(row.bank_snapshot or {})
+    if body.step == "invoice" and not snap.get("lender_confirmed_at"):
+        raise HTTPException(status_code=400, detail="Confirm the lender payout first")
+    stamp = datetime.now(timezone.utc).isoformat()
+    if body.step == "lender":
+        snap["lender_confirmed_at"] = stamp
+        snap["lender_confirmed_by"] = user.full_name
+    else:
+        snap["invoice_confirmed_at"] = stamp
+        snap["invoice_confirmed_by"] = user.full_name
+    row.bank_snapshot = snap
+    log_step(db, row, row.stage or "", f"confirm_{body.step}", user, "Lender payout confirmed" if body.step == "lender" else "Invoice confirmed")
+    db.commit()
+    db.refresh(row)
+    return _rows_out(db, [row], user)[0]
+
+
+@router.post("/{request_id}/lender-payout", response_model=QueueRow)
+def set_lender_payout(
+    request_id: UUID,
+    body: LenderPayoutIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_staff),
+) -> QueueRow:
+    row, partner = _load(db, request_id)
+    if row.stage in {"paid", "rejected"}:
+        raise HTTPException(status_code=400, detail="This invoice is already closed")
+    if not can_act(user, row, partner) and user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="This invoice is not at your approval level")
+    if not partner:
+        raise HTTPException(status_code=404, detail="Partner not found")
+    if str(body.purchase_id) not in [str(item) for item in (row.bank_snapshot or {}).get("case_ids") or []]:
+        raise HTTPException(status_code=400, detail="That case is not on this invoice")
+    case = db.query(LoanCase).filter(LoanCase.lead_purchase_id == body.purchase_id).first()
+    if case is None:
+        raise HTTPException(status_code=400, detail="This disbursement has no case file yet")
+    case.receivable_percent = round(float(body.lender_percent), 4)
+    reprice_invoice(db, row, partner)
+    log_step(db, row, row.stage or "", "subvention", user, f"Lender payout set to {body.lender_percent}%")
+    db.commit()
+    db.refresh(row)
+    return _rows_out(db, [row], user)[0]
+
+
 @router.post("/{request_id}/pay", response_model=QueueRow)
 def pay(
     request_id: UUID,
@@ -216,6 +281,9 @@ def pay(
     user: User = Depends(require_staff),
 ) -> QueueRow:
     row, partner = _load(db, request_id)
+    snap = dict(row.bank_snapshot or {})
+    if not snap.get("lender_confirmed_at") or not snap.get("invoice_confirmed_at"):
+        raise HTTPException(status_code=400, detail="Confirm the lender payout, then confirm the invoice, before payment")
     if row.stage != "accounts":
         raise HTTPException(status_code=400, detail="Invoice is not at the Accounts step")
     if not can_act(user, row, partner):

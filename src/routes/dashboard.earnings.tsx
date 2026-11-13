@@ -115,7 +115,7 @@ function InvoiceCentrePage() {
             <Receipt className="size-6 text-[#10662A]" /> Invoice & payout
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
-            Commission is {Math.round(centre.rate * 1000) / 10}% of the disbursed amount. TDS is cut from that, and the net is what gets paid.
+            Your share is {Math.round(centre.rate * 1000) / 10}% of the lender payout. The payout shown is after any subvention. TDS is cut from your share.
           </p>
         </div>
         <Link to="/dashboard/settings" className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] px-3 py-2 text-xs font-semibold text-[#390A5D]">
@@ -191,11 +191,15 @@ function InvoiceCentrePage() {
                   <Link to="/dashboard/customer/$id" params={{ id: item.purchase_id }} className="font-medium text-[#390A5D] hover:underline">
                     {item.applicant_name}
                   </Link>
-                  <div className="text-xs text-[#5c4d72]">{item.product} · {item.city || "—"} · Disbursed {inr(item.disbursed)}</div>
+                  <div className="text-xs text-[#5c4d72]">
+                    {item.product} · {item.city || "—"} · Loan {inr(item.disbursed)}
+                    {" · "}Lender payout {item.lender_percent || 0}% · {inr(item.lender_payout || 0)}
+                    {" · "}Your agreement {item.agreement_percent || 0}%
+                  </div>
                 </div>
                 <div className="text-right">
                   <div className="font-bold text-[#10662A]">{inr(item.commission)}</div>
-                  <div className="text-[10px] uppercase text-[#5c4d72]">{item.invoiced ? "On an invoice" : "Ready"}</div>
+                  <div className="text-[10px] uppercase text-[#5c4d72]">{item.invoiced ? "On an invoice" : item.lender_payout ? "Your share" : "Lender payout pending"}</div>
                 </div>
               </li>
             ))}

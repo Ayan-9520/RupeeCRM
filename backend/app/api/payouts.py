@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.entitlements import has_module
-from app.models import InvoiceApproval, Lead, LeadPurchase, PayoutRequest, User
+from app.models import InvoiceApproval, Lead, LeadPurchase, LoanCase, PayoutRequest, User
 from app.plans import PAYOUT_MIN
 from app.services.audit import write_audit
 from app.services.commission import get_percent, rate_fraction
@@ -192,6 +192,9 @@ class InvoiceCaseOut(BaseModel):
     disbursed: float
     commission: float
     invoiced: bool
+    lender_percent: float = 0
+    lender_payout: float = 0
+    agreement_percent: float = 0
 
 
 class InvoiceCentreOut(BaseModel):
@@ -398,6 +401,53 @@ def create_request(
     return _to_out(row, user)
 
 
+def _share(db: Session, purchase: LeadPurchase, partner: User) -> tuple[float, float, float, float]:
+    """Loan base, lender percent, lender payout, partner share.
+
+    The agreement is typed on the partner. The lender percent sits on the case,
+    so a subvented payout can be corrected before the invoice is confirmed.
+    """
+    case = db.query(LoanCase).filter(LoanCase.lead_purchase_id == purchase.id).first()
+    base = _case_base(db, purchase)
+    lender_percent = float(case.receivable_percent or 0) if case else 0
+    lender_payout = round(base * lender_percent / 100, 2)
+    agreement = float(partner.agreement_percent or 0)
+    share = round(lender_payout * agreement / 100, 2) if agreement else 0
+    return lender_percent, lender_payout, agreement, share
+
+
+def reprice_invoice(db: Session, row: PayoutRequest, partner: User) -> None:
+    """Rebuild the partner share after a subvented lender payout changes. Both confirms are cleared."""
+    snap = dict(row.bank_snapshot or {})
+    lines = []
+    for raw_id in snap.get("case_ids") or []:
+        purchase = db.query(LeadPurchase).filter(LeadPurchase.id == raw_id).first()
+        if purchase is None:
+            continue
+        lender_percent, lender_payout, agreement, share = _share(db, purchase, partner)
+        lines.append(
+            {
+                "purchase_id": str(purchase.id),
+                "lender_percent": lender_percent,
+                "lender_payout": lender_payout,
+                "agreement_percent": agreement,
+                "share": share,
+            }
+        )
+    amount = round(sum(line["share"] for line in lines), 2)
+    gst, tds, net = tax_breakup(db, amount, (partner.payout_bank or {}).get("gstin") if partner else None)
+    snap["lines"] = lines
+    snap["lender_payout_total"] = round(sum(line["lender_payout"] for line in lines), 2)
+    snap["agreement_percent"] = float(partner.agreement_percent or 0)
+    for key in ("lender_confirmed_at", "lender_confirmed_by", "invoice_confirmed_at", "invoice_confirmed_by"):
+        snap.pop(key, None)
+    row.bank_snapshot = snap
+    row.amount = amount
+    row.gst_amount = gst
+    row.tds_amount = tds
+    row.net_payable = net
+
+
 def _sum_status(rows: list[PayoutRequest], *statuses: str) -> float:
     return round(sum(float(row.amount or 0) for row in rows if row.status in statuses), 2)
 
@@ -410,6 +460,7 @@ def invoice_centre(db: Session = Depends(get_db), user: User = Depends(get_curre
     for purchase in purchases:
         lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()
         disbursed = _case_base(db, purchase)
+        lender_percent, lender_payout, agreement, share = _share(db, purchase, user)
         cases.append(
             InvoiceCaseOut(
                 purchase_id=purchase.id,
@@ -418,8 +469,11 @@ def invoice_centre(db: Session = Depends(get_db), user: User = Depends(get_curre
                 product=(lead.product_subtype if lead and lead.product_subtype else "Loan"),
                 city=lead.city if lead else "",
                 disbursed=disbursed,
-                commission=round(disbursed * rate_fraction(db), 2),
+                commission=share,
                 invoiced=str(purchase.id) in taken,
+                lender_percent=lender_percent,
+                lender_payout=lender_payout,
+                agreement_percent=agreement,
             )
         )
     requests = (
@@ -432,7 +486,7 @@ def invoice_centre(db: Session = Depends(get_db), user: User = Depends(get_curre
     expected = round(sum(item.commission for item in cases), 2)
     pending = round(sum(item.commission for item in cases if not item.invoiced), 2)
     return InvoiceCentreOut(
-        rate=rate_fraction(db),
+        rate=(float(user.agreement_percent or 0) / 100),
         expected=expected,
         pending=pending,
         invoice_raised=_sum_status(requests, "pending"),
@@ -465,13 +519,29 @@ def raise_invoice(
     if pending:
         raise HTTPException(status_code=400, detail="An invoice is already in approval. Wait for it, or answer its query first.")
 
+    if not user.agreement_percent or not 50 <= float(user.agreement_percent) <= 95:
+        raise HTTPException(status_code=400, detail="Your agreement percent is not set. Ask RupeeDial to enter it, from 50 to 95.")
     taken = _taken_case_ids(db, user.id)
     selected = [row for row in _disbursed_purchases(db, user.id) if str(row.id) not in taken]
     if not selected:
         raise HTTPException(status_code=400, detail="No disbursed cases are waiting for an invoice")
+    lines = []
+    for row in selected:
+        lender_percent, lender_payout, agreement, share = _share(db, row, user)
+        if lender_payout <= 0 or share <= 0:
+            raise HTTPException(status_code=400, detail="A disbursed case has no lender payout yet. The company confirms that figure first.")
+        lines.append(
+            {
+                "purchase_id": str(row.id),
+                "lender_percent": lender_percent,
+                "lender_payout": lender_payout,
+                "agreement_percent": agreement,
+                "share": share,
+            }
+        )
     disbursed_total = round(sum(_case_base(db, row) for row in selected), 2)
-    rate = rate_fraction(db)
-    amount = round(disbursed_total * rate, 2)
+    lender_total = round(sum(line["lender_payout"] for line in lines), 2)
+    amount = round(sum(line["share"] for line in lines), 2)
     if amount <= 0:
         raise HTTPException(status_code=400, detail="Eligible commission is zero")
 
@@ -479,8 +549,11 @@ def raise_invoice(
     snapshot = dict(bank)
     snapshot["invoice_number"] = invoice_number
     snapshot["case_ids"] = [str(row.id) for row in selected]
+    snapshot["lines"] = lines
     snapshot["disbursed_total"] = disbursed_total
-    snapshot["commission_rate"] = rate
+    snapshot["lender_payout_total"] = lender_total
+    snapshot["agreement_percent"] = float(user.agreement_percent)
+    snapshot["commission_rate"] = float(user.agreement_percent) / 100
     gst, tds, net = tax_breakup(db, amount, bank.get("gstin"))
     row = PayoutRequest(
         id=uuid4(),

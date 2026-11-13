@@ -47,17 +47,17 @@ def _round(value: float) -> float:
 def figures(row: LoanCase) -> dict:
     """Lender pays receivable. Connector gets payable % of that.
 
-    What is left is split in half: agent share and company net.
-    20,50,000 at 1.4% is 28,700. Connector 90% is 25,830.
-    Left 2,870 becomes agent 1,435 and net 1,435.
+    What is left after the partner agreement is company revenue.
+    A ₹1,00,00,000 LAP at 1.5% is ₹1,50,000. An 85% agreement pays ₹1,27,500.
+    The ₹22,500 stays with the company, under the employee mapped to that partner.
     """
     base = float(row.sanctioned_amount or 0) or float(row.loan_amount or 0)
     receivable = _round(base * float(row.receivable_percent or 0) / 100)
     payable = _round(receivable * float(row.payable_percent or 0) / 100)
     loyalty = _round(row.loyalty_amount or 0)
     margin = _round(receivable - payable - loyalty)
-    agent = _round(margin / 2)
-    net = _round(margin - agent)
+    agent = 0.0
+    net = margin
     invoice = _round(row.invoice_amount or 0)
     collected = _round(row.collected_amount or 0)
     invoice_pct = _round(invoice / receivable * 100) if receivable else 0
@@ -409,6 +409,7 @@ def _case_from_purchase(db: Session, purchase: LeadPurchase, actor: User | None)
         client_phone=((lead.full_phone or "") if lead else "")[:30],
         loan_amount=lead_amount or disbursed,
         sanctioned_amount=disbursed,
+        payable_percent=float(partner.agreement_percent) if partner and partner.agreement_percent else 90,
         bank_name=lender_from_notes(purchase),
         submitted_by=((actor.full_name or actor.email) if actor else "Auto · My Leads")[:120],
         owner_user_id=actor.id if actor else None,

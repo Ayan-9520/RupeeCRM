@@ -49,6 +49,7 @@ type UserRow = {
   base_location?: string;
   office?: string;
   kyc_verified?: boolean;
+  agreement_percent?: number | null;
 };
 
 function AdminUsersPage() {
@@ -136,6 +137,7 @@ function AdminUsersPage() {
         gender: edit.gender || "",
         base_location: edit.base_location || "",
         office: edit.office || "",
+        agreement_percent: edit.role === "dsa" || edit.role === "affiliate" ? Number(edit.agreement_percent) || null : null,
       });
       setUsers((rows) => rows.map((row) => (row.id === edit.id ? { ...row, ...saved } : row)));
       setEdit(null);
@@ -239,6 +241,9 @@ function AdminUsersPage() {
           <Field label="Employee ID" value={edit.employee_code || "—"} readOnly />
           <Field label="Title" value={edit.sales_title || "—"} readOnly />
           <Field label="Reports to" value={edit.reports_to_name || "—"} readOnly />
+          {edit.role === "dsa" || edit.role === "affiliate" ? (
+            <Field label="Agreement % of lender payout" value={edit.agreement_percent == null ? "" : String(edit.agreement_percent)} onChange={(value) => setEdit({ ...edit, agreement_percent: value === "" ? null : Number(value) })} />
+          ) : null}
           <label className="block text-xs font-semibold text-[#5c4d72]">Gender
             <select value={edit.gender || ""} onChange={(e) => setEdit({ ...edit, gender: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm">
               <option value="">—</option>
@@ -408,6 +413,7 @@ function UserDetail({ row, onClose }: { row: UserRow; onClose: () => void }) {
     ["Seat", row.finance_level ? row.finance_level.replaceAll("_", " ") : "—"],
     ["Reports to", row.reports_to_name || "—"],
     ["Partner ID", row.dsa_id || "—"],
+    ["Agreement %", row.agreement_percent == null ? "—" : `${row.agreement_percent}%`],
     ["Gender", row.gender || "—"],
     ["Location", row.base_location || "—"],
     ["Branch", row.office || "—"],
