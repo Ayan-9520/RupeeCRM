@@ -154,6 +154,33 @@ function AdminUsersPage() {
     }
   };
 
+  const onToggleActive = async (u: UserRow) => {
+    if (u.id === me?.id) {
+      toast.error("You cannot disable your own login");
+      return;
+    }
+    setBusyId(u.id);
+    try {
+      const saved = await updateCrmUser(u.id, {
+        full_name: u.full_name,
+        phone: u.phone || "",
+        department: u.department,
+        is_active: !u.is_active,
+        role: u.role,
+        gender: u.gender || "",
+        base_location: u.base_location || "",
+        office: u.office || "",
+        agreement_percent: u.role === "dsa" || u.role === "affiliate" ? u.agreement_percent ?? null : null,
+      });
+      setUsers((rows) => rows.map((row) => (row.id === u.id ? { ...row, ...saved } : row)));
+      toast.success(`${u.full_name} is ${u.is_active ? "inactive" : "active"}`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not update the login");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const onResetPassword = async (u: UserRow) => {
     setBusyId(u.id);
     try {
@@ -356,9 +383,9 @@ function AdminUsersPage() {
             <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
               <thead className="text-left text-[11px] uppercase tracking-wide text-[#5c4d72]">
                 <tr>
-                  <th className="sticky left-0 z-20 w-[200px] min-w-[200px] bg-[#E8F7EC] px-4 py-3">Name</th>
-                  <th className="sticky left-[200px] z-20 w-[180px] min-w-[180px] bg-[#E8F7EC] px-4 py-3">Role</th>
-                  <th className="sticky left-[380px] z-20 w-[240px] min-w-[240px] bg-[#E8F7EC] px-4 py-3 shadow-[6px_0_10px_-6px_rgba(20,40,28,0.35)]">Email</th>
+                  <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Name</th>
+                  <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Role</th>
+                  <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Email</th>
                   {["Employee ID", "Reports to", "Phone", "Location", "Joining date", "Status", ""].map((head) => (
                     <th key={head || "action"} className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">{head}</th>
                   ))}
@@ -367,26 +394,33 @@ function AdminUsersPage() {
               <tbody>
                 {filtered.map((u) => (
                   <tr key={u.id} className="group">
-                    <td className="sticky left-0 z-10 w-[200px] min-w-[200px] border-t border-[#d8ecdd] bg-white px-4 py-3 font-semibold text-[#390A5D] group-hover:bg-[#f5fcf7]">
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-semibold text-[#390A5D]">
                       <button type="button" className="text-left hover:underline" onClick={() => setDetail(u)}>{u.full_name || "—"}</button>
                     </td>
-                    <td className="sticky left-[200px] z-10 w-[180px] min-w-[180px] whitespace-nowrap border-t border-[#d8ecdd] bg-white px-4 py-3 group-hover:bg-[#f5fcf7]">
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3">
                       <Badge className={`${ROLE_BADGE[u.role] || ""} text-[10px]`}>
                         {getRoleLabel(u.role as AppRole)}
                         {u.department ? ` · ${departmentLabel(u.department)}` : ""}
                         {u.finance_level ? ` · ${u.finance_level.replaceAll("_", " ")}` : ""}
                       </Badge>
                     </td>
-                    <td className="sticky left-[380px] z-10 w-[240px] min-w-[240px] whitespace-nowrap border-t border-[#d8ecdd] bg-white px-4 py-3 text-[#5c4d72] shadow-[6px_0_10px_-6px_rgba(20,40,28,0.25)] group-hover:bg-[#f5fcf7]">{u.email}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.email}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#10662A]">{u.employee_code || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.reports_to_name || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.base_location || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{joiningDate(u.created_at)}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3">
-                      <Badge variant={u.is_active ? "default" : "outline"}>
-                        {u.is_active ? "active" : "disabled"}
-                      </Badge>
+                      <button
+                        type="button"
+                        disabled={busyId === u.id || u.id === me?.id}
+                        onClick={() => void onToggleActive(u)}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold disabled:opacity-60 ${
+                          u.is_active ? "bg-[#10662A] text-white" : "border border-[#d8ecdd] text-[#5c4d72]"
+                        }`}
+                      >
+                        {busyId === u.id ? "Saving…" : u.is_active ? "Active" : "Inactive"}
+                      </button>
                     </td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-right">
                       <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => setDetail(u)}>View</Button>
