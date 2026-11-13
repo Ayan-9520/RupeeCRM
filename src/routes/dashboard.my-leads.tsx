@@ -395,6 +395,10 @@ function MyLeadsPage() {
       return;
     }
     const next = forward[fi + 1];
+    if (partner && next === "contacted") {
+      toast.message("The telecaller records the first call");
+      return;
+    }
     if (partner && (next === "sanctioned" || next === "disbursed")) {
       toast.message("The bank desk records sanction and disbursement");
       return;
@@ -429,7 +433,7 @@ function MyLeadsPage() {
             My Leads
           </h1>
           <p className="text-[#5c4d72] mt-0.5 text-sm max-w-xl">
-            You collect papers and submit the file to the bank. The bank desk records sanction or disbursement.
+            The telecaller records the first call. You collect papers and submit the file to the bank. The bank desk records sanction or disbursement.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -719,7 +723,7 @@ function MyLeadsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected"}
+                    disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && (selected.pipeline_stage === "new" || selected.pipeline_stage === "bank_submitted"))}
                     onClick={() => void advanceStage()}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-[#390A5D] text-white px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40 hover:bg-[#2d0848] cursor-pointer"
                   >
@@ -941,7 +945,7 @@ function MyLeadsPage() {
                   <div className="rounded-xl border border-[#d8ecdd] bg-white p-4 shadow-[0_2px_10px_rgba(16,102,42,0.04)] space-y-3">
                     <div className="text-sm font-bold text-[#390A5D]">Stage timeline</div>
                     <p className="text-xs text-[#5c4d72] -mt-1">
-                      {partner ? "You can move the file until it is submitted to the bank." : "Click a stage to move it."}
+                      {partner ? "The telecaller records the first call. You collect papers and submit the file to the bank." : "Click a stage to move it."}
                     </p>
                     <ol className="space-y-2">
                       {stages.map((s, i) => {
@@ -954,7 +958,9 @@ function MyLeadsPage() {
                             : stageIdx >= 0 && currentIdx >= 0 && stageIdx <= currentIdx;
                         const active = s === selected.pipeline_stage;
                         const bankHeld = ["bank_submitted", "sanctioned", "disbursed"].includes(selected.pipeline_stage);
-                        const locked = partner && (s === "sanctioned" || s === "disbursed" || (s === "rejected" && bankHeld));
+                        const callHeld = ["new", "contacted"].includes(selected.pipeline_stage);
+                        const nextStage = currentIdx >= 0 && currentIdx < forward.length - 1 ? forward[currentIdx + 1] : null;
+                        const locked = partner && (s === "contacted" || s === "sanctioned" || s === "disbursed" || (s === "rejected" && (bankHeld || callHeld)) || (s !== "rejected" && s !== selected.pipeline_stage && s !== nextStage));
                         return (
                           <li key={s}>
                             <button
@@ -985,7 +991,7 @@ function MyLeadsPage() {
                                   {STAGE_LABELS[s] ?? s}
                                 </div>
                                 <div className="text-[11px] text-[#5c4d72]">
-                                  {locked ? "Bank desk records this" : active ? "Current stage" : done ? "Completed" : "Click to jump"}
+                                  {locked && s === "contacted" ? "Telecaller records this" : locked ? "Locked" : active ? "Current stage" : done ? "Completed" : "Next step"}
                                 </div>
                               </div>
                             </button>
@@ -1026,7 +1032,7 @@ function MyLeadsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && selected.pipeline_stage === "bank_submitted")}
+                        disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && (selected.pipeline_stage === "new" || selected.pipeline_stage === "bank_submitted"))}
                         onClick={() => void advanceStage()}
                         className="w-full rounded-xl border border-[#d8ecdd] py-2.5 text-sm font-semibold text-[#390A5D] inline-flex items-center justify-center gap-2 hover:bg-[#E8F7EC] cursor-pointer disabled:opacity-40"
                       >
@@ -1034,7 +1040,7 @@ function MyLeadsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={saving || selected.pipeline_stage === "rejected" || (partner && ["bank_submitted", "sanctioned", "disbursed"].includes(selected.pipeline_stage))}
+                        disabled={saving || selected.pipeline_stage === "rejected" || (partner && ["new", "contacted", "bank_submitted", "sanctioned", "disbursed"].includes(selected.pipeline_stage))}
                         onClick={() => void moveStage("rejected")}
                         className="w-full rounded-xl border border-red-200 text-red-600 py-2.5 text-sm font-semibold hover:bg-red-50 cursor-pointer disabled:opacity-40"
                       >

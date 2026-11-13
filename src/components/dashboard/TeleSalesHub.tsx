@@ -110,7 +110,7 @@ export function TeleSalesHub() {
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">TeleSales</p>
           <h1 className="font-display text-2xl font-bold text-[#390A5D] lg:text-3xl">Calling desk</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Owned leads only. Name and phone stay on this desk after the lead is assigned to you.</p>
+          <p className="mt-1 text-sm text-muted-foreground">New and contacted files. Mark Connected or Interested. The partner then collects the documents.</p>
         </div>
         {canBrowse ? (
           <Link to="/dashboard/my-leads" className="rounded-full border border-border px-4 py-2 text-sm font-semibold">
@@ -197,13 +197,6 @@ function QueueCard({ row, onOpen }: { row: CrmPurchase; onOpen: () => void }) {
           <Phone className="size-4" /> Call
         </a>
         <button type="button" onClick={onOpen} className="rounded-lg border border-border px-3 py-2 text-sm font-semibold">Open</button>
-        <Link
-          to="/dashboard/customer/$id"
-          params={{ id: row.id }}
-          className="rounded-lg border border-[#10662A]/40 bg-[#E8F7EC] px-3 py-2 text-sm font-semibold text-[#10662A]"
-        >
-          Workspace
-        </Link>
       </div>
     </div>
   );
@@ -259,13 +252,6 @@ function LeadWork({
         </a>
         <p className="mt-2 text-sm">{lead.product_subtype || "Loan"} · {inr(lead.loan_amount)}</p>
         <p className="mt-1 text-xs text-muted-foreground">{lastDisposition(row)?.text || row.pipeline_stage}</p>
-        <Link
-          to="/dashboard/customer/$id"
-          params={{ id: row.id }}
-          className="mt-3 inline-flex w-full items-center justify-center rounded-lg border border-[#10662A]/40 bg-[#E8F7EC] px-3 py-2 text-sm font-semibold text-[#10662A]"
-        >
-          Open full workspace
-        </Link>
       </div>
 
       <div className="rounded-2xl border border-border bg-white p-4">
@@ -299,7 +285,7 @@ function LeadWork({
           <div className="space-y-3">
             <textarea value={note} onChange={(event) => setNote(event.target.value)} placeholder="Call note" className="input-base min-h-20 w-full" />
             <div className="flex flex-wrap gap-2">
-              {DISPOSITIONS.map((item) => (
+              {DISPOSITIONS.filter((item) => item.code !== "converted").map((item) => (
                 <button key={item.code} type="button" disabled={busy} onClick={() => onDisposition(item.code)} className="rounded-full border border-border px-3 py-1.5 text-sm font-semibold hover:bg-[#f5fcf7] disabled:opacity-50">
                   {item.label}
                 </button>
@@ -325,11 +311,8 @@ function LeadWork({
 
         {section === "conversion" && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Moves this lead to document collection for the connector. It does not sanction or disburse.</p>
+            <p className="text-sm text-muted-foreground">Mark Interested when the customer wants the loan. The partner collects PAN, income proof and the bank papers. This desk does not sanction or disburse.</p>
             <p className="text-sm">Suggested script: {scriptFor(lead.product_subtype).title}</p>
-            <button type="button" disabled={busy} onClick={() => onDisposition("converted")} className="rounded-full bg-[#390A5D] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
-              Convert to case
-            </button>
           </div>
         )}
       </div>

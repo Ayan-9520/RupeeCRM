@@ -310,7 +310,10 @@ def my_leads(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> PurchaseListOut:
-    q = db.query(LeadPurchase).filter(LeadPurchase.buyer_user_id == user.id)
+    if user.role == "caller":
+        q = db.query(LeadPurchase).filter(LeadPurchase.pipeline_stage.in_(("new", "contacted")))
+    else:
+        q = db.query(LeadPurchase).filter(LeadPurchase.buyer_user_id == user.id)
     rows = q.order_by(LeadPurchase.created_at.desc()).limit(300).all()
     items = [_purchase_out(db, p) for p in rows]
     return PurchaseListOut(items=items, total=len(items), stages=DEFAULT_PIPELINE_STAGES)
@@ -327,15 +330,34 @@ def patch_my_lead(
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Purchase not found")
     owner = p.buyer_user_id == user.id
-    if not owner and not _bank_desk(user):
+    caller = user.role == "caller" and not owner
+    if caller and p.pipeline_stage not in {"new", "contacted"}:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This file has left the call desk")
+    if caller and (body.lead is not None or body.deal_value is not None or body.converted is not None):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Telecaller records the call only")
+    if caller and body.pipeline_stage and body.pipeline_stage != "contacted":
+        raise HTTPException(status_code=400, detail="Telecaller records the first call only")
+    if caller and body.disposition:
+        spec = DISPOSITIONS.get(body.disposition.strip().lower())
+        if spec and spec[1] not in {None, "contacted", "rejected"}:
+            raise HTTPException(status_code=400, detail="The partner collects the documents")
+    if not owner and not _bank_desk(user) and not caller:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your lead")
-    if not owner and (body.disposition or body.lead is not None or body.deal_value is not None or body.converted is not None):
+    if not owner and not caller and (body.disposition or body.lead is not None or body.deal_value is not None or body.converted is not None):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk can update the stage only")
+    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "contacted":
+        raise HTTPException(status_code=400, detail="The telecaller records the first call")
+    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "rejected" and p.pipeline_stage in {"new", "contacted"}:
+        raise HTTPException(status_code=400, detail="The telecaller records this call result")
+    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "docs_collected" and p.pipeline_stage != "contacted":
+        raise HTTPException(status_code=400, detail="The telecaller marks the call before documents")
+    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "bank_submitted" and p.pipeline_stage != "docs_collected":
+        raise HTTPException(status_code=400, detail="Collect the documents before the bank submission")
     if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage in {"sanctioned", "disbursed"}:
         raise HTTPException(status_code=400, detail="The bank desk records sanction and disbursement")
     if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "rejected" and p.pipeline_stage in {"bank_submitted", "sanctioned", "disbursed"}:
         raise HTTPException(status_code=400, detail="After the file reaches the bank, the bank desk records the rejection")
-    if not owner and body.pipeline_stage and body.pipeline_stage not in BANK_RESULTS:
+    if not owner and not caller and body.pipeline_stage and body.pipeline_stage not in BANK_RESULTS:
         raise HTTPException(status_code=400, detail="Bank desk records sanction, disbursement, or rejection")
 
     notes = list(p.notes or [])

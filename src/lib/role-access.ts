@@ -204,6 +204,10 @@ function opsUrls(): Set<string> {
   return new Set(["/dashboard", "/dashboard/cases", "/dashboard/submissions", "/dashboard/profile", "/dashboard/settings"]);
 }
 
+function callerUrls(): Set<string> {
+  return new Set(["/dashboard", "/dashboard/calls", "/dashboard/learn", "/dashboard/profile", "/dashboard/settings"]);
+}
+
 function pathAllowed(path: string, urls: Set<string>): boolean {
   return [...urls].some((url) => path === url || (url !== "/dashboard" && path.startsWith(url + "/")));
 }
@@ -214,6 +218,7 @@ export function canAccessPath(role: AppRole | null, pathname: string, financeLev
   const path = pathname.replace(/\/$/, "") || "/";
   if (FINANCE_SEATS.has(level) && !isPlatformAdmin(role)) return pathAllowed(path, financeSeatUrls(level));
   if (opsDesk(role, level, department)) return pathAllowed(path, opsUrls());
+  if (role === "caller") return pathAllowed(path, callerUrls());
   if (level && (pathname === "/dashboard/invoice-approvals" || pathname.startsWith("/dashboard/invoice-approvals/"))) return true;
   if ((level === "accounts" || level === "business_head") && (pathname === "/dashboard/admin/payouts" || pathname.startsWith("/dashboard/admin/payouts/"))) return true;
 
@@ -257,6 +262,10 @@ export function getNavForRole(role: AppRole | null, financeLevel?: string | null
   }
   if (opsDesk(role, financeLevel || "", department)) {
     const allow = opsUrls();
+    return NAV_ITEMS.filter((item) => allow.has(item.url));
+  }
+  if (role === "caller") {
+    const allow = callerUrls();
     return NAV_ITEMS.filter((item) => allow.has(item.url));
   }
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role));
@@ -319,7 +328,7 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
     case "dsa":
       return {
         title: "Partner desk",
-        subtitle: "Buy a lead, call the customer, send the file to the bank, then raise the invoice.",
+        subtitle: "After the telecaller marks the call, collect the papers, submit the file to the bank, then raise the invoice.",
         stats: ["wallet", "leads_available", "leads_purchased", "earnings"],
         quickLinks: [
           { title: "Leadboard", desc: "Leads from RupeeDial. Identity stays masked until you buy.", url: "/dashboard/leadboard", roles: ["dsa"] },

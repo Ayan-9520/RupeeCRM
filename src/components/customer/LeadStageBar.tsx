@@ -36,8 +36,10 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
   const rejected = stage === "rejected";
   const next = !rejected && current >= 0 && current < FORWARD.length - 1 ? FORWARD[current + 1] : null;
   const bankHeld = stage === "bank_submitted" || stage === "sanctioned" || stage === "disbursed";
-  const bankStep = (key: string) => partner && (key === "sanctioned" || key === "disbursed" || (key === "rejected" && bankHeld));
+  const callHeld = stage === "new" || stage === "contacted";
+  const bankStep = (key: string) => partner && (key === "sanctioned" || key === "disbursed" || (key === "rejected" && bankHeld) || (key === "rejected" && callHeld) || key === "contacted" || (current >= 0 && FORWARD.findIndex(([item]) => item === key) > current + 1));
   const nextLocked = Boolean(next && bankStep(next[0]));
+  const waitingOnCall = Boolean(next && partner && next[0] === "contacted");
 
   const save = async (key: string, body: Parameters<typeof patchMyLead>[1], message: string) => {
     setBusy(key);
@@ -85,7 +87,7 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
                     type="button"
                     disabled={busy !== null || bankStep(key)}
                     onClick={() => move(key)}
-                    title={bankStep(key) ? "The bank desk records this" : active ? `Current stage: ${label}` : `Move to ${label}`}
+                    title={partner && key === "contacted" ? "The telecaller records this" : bankStep(key) ? "The bank desk records this" : active ? `Current stage: ${label}` : `Move to ${label}`}
                     aria-current={active ? "step" : undefined}
                     className="group flex items-center gap-1.5 rounded-full py-0.5 pr-1 disabled:cursor-wait"
                   >
@@ -153,16 +155,16 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
             type="button"
             disabled={busy !== null || !next || nextLocked}
             onClick={() => next && !nextLocked && move(next[0])}
-            title={nextLocked ? "Narender records sanction and disbursement after the bank decides" : rejected ? "Click a stage to reopen this lead" : next ? `Move to ${next[1]}` : "Lead is disbursed"}
+            title={waitingOnCall ? "Rishika records the first call" : nextLocked ? "Narender records sanction and disbursement after the bank decides" : rejected ? "Click a stage to reopen this lead" : next ? `Move to ${next[1]}` : "Lead is disbursed"}
             className="inline-flex h-8 items-center gap-1 rounded-md bg-[#390A5D] px-3 text-[11px] font-semibold text-white hover:bg-[#2d0848] disabled:opacity-40"
           >
-            {nextLocked ? "Waiting for bank desk" : next ? `Next: ${next[1]}` : rejected ? "Rejected" : "Disbursed"}
+            {waitingOnCall ? "Waiting for telecaller" : nextLocked ? "Waiting for bank desk" : next ? `Next: ${next[1]}` : rejected ? "Rejected" : "Disbursed"}
             {next ? <ArrowRight className="size-3.5" /> : null}
           </button>
           {!rejected ? (
             <button
               type="button"
-              disabled={busy !== null || (partner && bankHeld)}
+              disabled={busy !== null || (partner && (bankHeld || callHeld))}
               onClick={() => {
                 if (confirm("Mark this lead as rejected? Its case file will be cancelled.")) move("rejected");
               }}

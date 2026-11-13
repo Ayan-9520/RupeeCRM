@@ -88,7 +88,8 @@ def main() -> None:
         ramesh.reports_to_user_id = sumit.id
         sumit.reports_to_user_id = arvind.id
         naveen.reports_to_user_id = arvind.id
-        arvind.reports_to_user_id = None
+        ceo = db.query(User).filter(User.role == "ceo", User.is_active.is_(True)).order_by(User.created_at.asc()).first()
+        arvind.reports_to_user_id = ceo.id if ceo else None
         narender = db.query(User).filter(User.email == "narender@rupeedial.com").first()
         if narender:
             narender.department = "OPS"
