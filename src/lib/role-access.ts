@@ -243,7 +243,7 @@ export function getRoleLabel(role: AppRole): string {
     ceo: "CEO",
     super_admin: "Super Admin",
     admin: "Admin",
-    dsa: "DSA Partner",
+    dsa: "Partner",
     caller: "Telecaller",
     coordinator: "Employee",
     lender: "Lender",
