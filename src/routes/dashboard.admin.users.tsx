@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { createEmployee, listCrmUsers, resetCrmUserPassword } from "@/lib/python-api";
+import { createEmployee, listCrmUsers, resetCrmUserPassword, updateCrmUser } from "@/lib/python-api";
 import { departmentLabel, EMPLOYEE_DEPARTMENTS } from "@/lib/login-door";
 
 export const Route = createFileRoute("/dashboard/admin/users")({
@@ -44,7 +44,7 @@ type UserRow = {
 };
 
 function AdminUsersPage() {
-  const { role } = useAuth();
+  const { role, user: me } = useAuth();
   const [users, setUsers] = useState<UserRow[]>([]);
   const [pendingPartners, setPendingPartners] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -52,6 +52,7 @@ function AdminUsersPage() {
   const [roleFilter, setRoleFilter] = useState<AppRole | "all">("all");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [staff, setStaff] = useState({ full_name: "", email: "", role: "coordinator" as "coordinator" | "caller", department: "SALES" });
+  const [edit, setEdit] = useState<UserRow | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -104,6 +105,28 @@ function AdminUsersPage() {
       await refresh();
     } catch (e: unknown) {
       toast.error(e instanceof Error ? e.message : "Could not create the employee");
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const onSave = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!edit) return;
+    setBusyId(edit.id);
+    try {
+      const saved = await updateCrmUser(edit.id, {
+        full_name: edit.full_name,
+        phone: edit.phone || "",
+        department: edit.department,
+        is_active: edit.is_active,
+        role: edit.role,
+      });
+      setUsers((rows) => rows.map((row) => (row.id === edit.id ? { ...row, ...saved } : row)));
+      setEdit(null);
+      toast.success("Login updated");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Could not update the login");
     } finally {
       setBusyId(null);
     }
@@ -190,6 +213,46 @@ function AdminUsersPage() {
         </button>
       </form>
 
+      {edit ? (
+        <form onSubmit={(event) => void onSave(event)} className="grid gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4 md:grid-cols-2">
+          <div className="md:col-span-2 text-sm font-semibold text-[#390A5D]">Edit {edit.email}</div>
+          <input required value={edit.full_name} onChange={(e) => setEdit({ ...edit, full_name: e.target.value })} placeholder="Name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+          <input value={edit.phone || ""} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} placeholder="Phone" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+          {(edit.role === "coordinator" || edit.role === "caller") && !edit.finance_level ? (
+            <>
+              <select value={edit.role} onChange={(e) => setEdit({ ...edit, role: e.target.value })} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm">
+                <option value="coordinator">Employee</option>
+                <option value="caller">Telecaller</option>
+              </select>
+              {edit.role === "coordinator" ? (
+                <select value={edit.department || "SALES"} onChange={(e) => setEdit({ ...edit, department: e.target.value })} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm">
+                  {EMPLOYEE_DEPARTMENTS.map((item) => (
+                    <option key={item.id} value={item.id}>{item.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <div className="flex items-center text-sm text-[#5c4d72]">Telecaller stays in Sales.</div>
+              )}
+            </>
+          ) : (
+            <div className="flex items-center text-sm text-[#5c4d72]">This role stays as it is. Invoice seats and partner logins are not retitled here.</div>
+          )}
+          <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
+            <input
+              type="checkbox"
+              checked={edit.is_active}
+              disabled={edit.id === me?.id}
+              onChange={(e) => setEdit({ ...edit, is_active: e.target.checked })}
+            />
+            Login active
+          </label>
+          <div className="flex gap-2">
+            <button type="submit" disabled={busyId === edit.id} className="h-10 rounded-xl bg-[#10662A] px-4 text-sm font-semibold text-white disabled:opacity-60">Save</button>
+            <button type="button" onClick={() => setEdit(null)} className="h-10 rounded-xl border border-[#d8ecdd] px-4 text-sm font-semibold text-[#390A5D]">Cancel</button>
+          </div>
+        </form>
+      ) : null}
+
       {pendingPartners > 0 && (
         <Link
           to="/dashboard/admin/partners"
@@ -264,6 +327,9 @@ function AdminUsersPage() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right">
+                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => setEdit(u)}>
+                        Edit
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"

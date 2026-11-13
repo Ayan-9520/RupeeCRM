@@ -523,6 +523,22 @@ export async function setUserDesignation(
   return request(`/api/users/${userId}/designation`, { method: "PUT", body: JSON.stringify(body) });
 }
 
+export async function updateCrmUser(
+  userId: string,
+  body: { full_name: string; phone: string; department?: string | null; is_active: boolean; role?: string | null },
+): Promise<{
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  phone: string | null;
+  is_active: boolean;
+  department?: string | null;
+  finance_level?: string | null;
+}> {
+  return request(`/api/users/${userId}`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
 export async function resetCrmUserPassword(userId: string): Promise<{
   success: boolean;
   email: string;

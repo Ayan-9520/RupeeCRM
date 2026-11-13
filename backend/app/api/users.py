@@ -468,6 +468,66 @@ def set_targets(
     )
 
 
+class LoginEditIn(BaseModel):
+    full_name: str = Field(min_length=1, max_length=120)
+    phone: str = ""
+    department: str | None = None
+    is_active: bool = True
+    role: str | None = None
+
+
+def _admin_out(user: User) -> UserAdminOut:
+    return UserAdminOut(
+        id=user.id,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role,
+        phone=user.phone,
+        dsa_id=user.dsa_id,
+        is_active=user.is_active,
+        kyc_verified=bool(user.kyc_verified),
+        sales_grade=user.sales_grade,
+        sales_title=grade_title(user.sales_grade),
+        reports_to_user_id=user.reports_to_user_id,
+        finance_level=user.finance_level,
+        department=user.department,
+        created_at=user.created_at.isoformat() if user.created_at else None,
+    )
+
+
+@router.patch("/{user_id}", response_model=UserAdminOut)
+def update_login(
+    user_id: UUID,
+    body: LoginEditIn,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+) -> UserAdminOut:
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.id == admin.id and not body.is_active:
+        raise HTTPException(status_code=400, detail="You cannot disable your own login")
+    user.full_name = " ".join(body.full_name.split())
+    phone = "".join(ch for ch in body.phone if ch.isdigit())
+    user.phone = phone[:15] or None
+    user.is_active = body.is_active
+    staff = user.role in {"coordinator", "caller"} and not user.finance_level and user.role not in ADMIN_ROLES
+    if staff and body.role in {"coordinator", "caller"}:
+        user.role = body.role
+        if user.role == "caller":
+            user.department = "SALES"
+            user.sales_grade = user.sales_grade or "T9"
+        else:
+            department = (body.department or user.department or "").strip()
+            if department not in DEPARTMENTS:
+                raise HTTPException(status_code=400, detail="Pick a department")
+            user.department = department
+            user.sales_grade = user.sales_grade or {"SALES": "T8", "OPS": "OP-E", "HR": "HR-E", "ITM": "MK-E", "ACC": "AC-E"}[department]
+    db.commit()
+    db.refresh(user)
+    return _admin_out(user)
+
+
 @router.post("/{user_id}/reset-password", response_model=ResetPasswordOut)
 def reset_password(
     user_id: UUID,
