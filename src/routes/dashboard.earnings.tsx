@@ -5,14 +5,11 @@ import { AlertTriangle, Building2, CheckCircle2, Download, Loader2, Receipt } fr
 import {
   getInvoiceCentre,
   getPayoutSummary,
-  listCaseFiles,
   raiseInvoice,
   type InvoiceCentre,
-  type LoanCaseFile,
   type PayoutSummary,
 } from "@/lib/python-api";
 import { useAuth } from "@/lib/auth-context";
-import { canAccessPath } from "@/lib/role-access";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { InvoiceSteps } from "@/components/invoices/InvoiceSteps";
 import { downloadInvoicePdf, invoiceLines } from "@/lib/invoice-pdf";
@@ -28,8 +25,6 @@ function inr(n: number) {
 
 function InvoiceCentrePage() {
   const [centre, setCentre] = useState<InvoiceCentre | null>(null);
-  const [files, setFiles] = useState<LoanCaseFile[]>([]);
-  const [filesError, setFilesError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -39,21 +34,13 @@ function InvoiceCentrePage() {
 
   const load = useCallback(async () => {
     try {
-      const [invoiceCentre, caseFiles, payoutSummary] = await Promise.all([
+      const [invoiceCentre, payoutSummary] = await Promise.all([
         getInvoiceCentre(),
-        listCaseFiles().catch((error: unknown) => (error instanceof Error ? error : new Error("Could not load closure files"))),
         getPayoutSummary().catch(() => null),
       ]);
       setCentre(invoiceCentre);
       setSummary(payoutSummary);
       setLoadError(null);
-      if (caseFiles instanceof Error) {
-        setFilesError(caseFiles.message);
-        setFiles([]);
-      } else {
-        setFilesError(null);
-        setFiles(caseFiles.items ?? []);
-      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Could not load invoices";
       setLoadError(message);
@@ -128,44 +115,13 @@ function InvoiceCentrePage() {
             <Receipt className="size-6 text-[#10662A]" /> Invoice & payout
           </h1>
           <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
-            Closure files use lender receivable, then the connector percent, then an equal split between agent and company net. Lead-purchase invoices below stay on the admin percent ({Math.round(centre.rate * 1000) / 10}%).
+            Commission is {Math.round(centre.rate * 1000) / 10}% of the disbursed amount. TDS is cut from that, and the net is what gets paid.
           </p>
         </div>
         <Link to="/dashboard/settings" className="inline-flex items-center gap-1.5 rounded-xl border border-[#d8ecdd] px-3 py-2 text-xs font-semibold text-[#390A5D]">
           <Building2 className="size-3.5" /> Bank details
         </Link>
       </div>
-
-      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold text-[#390A5D]">Closure payout</h2>
-          {canAccessPath(role, "/dashboard/cases", user?.finance_level) && (
-            <Link to="/dashboard/cases" className="text-sm font-semibold text-[#10662A]">Open case files</Link>
-          )}
-        </div>
-        {filesError ? (
-          <p className="py-6 text-sm text-destructive">{filesError}</p>
-        ) : files.length === 0 ? (
-          <p className="py-6 text-sm text-[#5c4d72]">No closure file yet. Open Case Files and use the sample deal.</p>
-        ) : (
-          <ul className="mt-3 divide-y divide-[#d8ecdd]">
-            {files.map((row) => (
-              <li key={row.id} className="grid gap-1 py-3 text-sm sm:grid-cols-5">
-                <div>
-                  <a href={`/dashboard/cases?deal=${encodeURIComponent(row.deal_no)}`} className="font-medium text-[#10662A] hover:underline">
-                    {row.deal_no}
-                  </a>
-                  <div className="text-xs text-[#5c4d72]">{row.status_label} · {row.loan_type}</div>
-                </div>
-                <div>Receivable {inr(row.receivable_amount)}</div>
-                <div>Connector {inr(row.payable_amount)}</div>
-                <div>Agent {inr(row.agent_amount)}</div>
-                <div className="font-bold text-[#10662A]">Net {inr(row.net_revenue)}</div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-7">
         {cards.map(([label, value, hint]) => (
