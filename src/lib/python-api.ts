@@ -299,6 +299,14 @@ export async function listReservedLeads(): Promise<{
   return request("/api/reserved-leads");
 }
 
+export async function listBankSubmissions(): Promise<{
+  items: CrmPurchase[];
+  total: number;
+  stages: string[];
+}> {
+  return request("/api/bank-submissions");
+}
+
 export async function listMyLeads(): Promise<{
   items: CrmPurchase[];
   total: number;

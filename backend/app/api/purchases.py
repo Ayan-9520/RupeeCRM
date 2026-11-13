@@ -71,19 +71,14 @@ class PurchasePatch(BaseModel):
 # Call outcome → optional pipeline move. None keeps the current stage.
 DISPOSITIONS: dict[str, tuple[str, str | None]] = {
     "connected": ("Connected", "contacted"),
-    "interested": ("Interested", "contacted"),
-    "callback": ("Callback", None),
-    "docs_pending": ("Documents pending", "docs_collected"),
-    "login_sent": ("Login sent to bank", "bank_submitted"),
     "not_reachable": ("Not reachable", None),
+    "interested": ("Interested", "contacted"),
     "not_interested": ("Not interested", "rejected"),
+    "callback": ("Callback scheduled", None),
     "wrong_number": ("Wrong number", "rejected"),
     "eligible": ("Eligible", None),
     "converted": ("Converted to case", "docs_collected"),
 }
-
-NEEDS_RECALL = {"callback", "docs_pending", "not_reachable"}
-RECALL_STAFF = {"admin", "ceo", "super_admin", "caller", "coordinator"}
 
 _STAGE_RANK = {
     "new": 0,
@@ -284,6 +279,31 @@ def reserved_leads(
     )
 
 
+BANK_STAGES = ("docs_collected", "bank_submitted", "sanctioned", "disbursed")
+
+
+def _bank_desk(user: User) -> bool:
+    if user.role in {"admin", "ceo", "super_admin"}:
+        return True
+    return user.role == "coordinator" and (user.department or "") == "OPS" and not user.finance_level
+
+
+@router.get("/bank-submissions", response_model=PurchaseListOut)
+def bank_submissions(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> PurchaseListOut:
+    query = db.query(LeadPurchase).filter(LeadPurchase.pipeline_stage.in_(BANK_STAGES))
+    if _bank_desk(user):
+        pass
+    elif user.role == "coordinator":
+        query = query.filter(LeadPurchase.buyer_user_id == user.id)
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk only")
+    rows = query.order_by(LeadPurchase.updated_at.desc()).limit(300).all()
+    return PurchaseListOut(items=[_purchase_out(db, row) for row in rows], total=len(rows), stages=list(BANK_STAGES))
+
+
 @router.get("/my-leads", response_model=PurchaseListOut)
 def my_leads(
     db: Session = Depends(get_db),
@@ -305,8 +325,11 @@ def patch_my_lead(
     p = db.query(LeadPurchase).filter(LeadPurchase.id == purchase_id).first()
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Purchase not found")
-    if p.buyer_user_id != user.id and user.role not in RECALL_STAFF:
+    owner = p.buyer_user_id == user.id
+    if not owner and not _bank_desk(user):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your lead")
+    if not owner and (body.disposition or body.lead is not None or body.deal_value is not None or body.converted is not None):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk can update the stage only")
 
     notes = list(p.notes or [])
     lead = db.query(Lead).filter(Lead.id == p.lead_id).first()
@@ -318,8 +341,8 @@ def patch_my_lead(
         if spec is None:
             raise HTTPException(status_code=400, detail="Invalid disposition")
         label, target = spec
-        if code in NEEDS_RECALL and body.next_followup_at is None:
-            raise HTTPException(status_code=400, detail="This status needs the date to call again")
+        if code == "callback" and body.next_followup_at is None:
+            raise HTTPException(status_code=400, detail="Callback needs a follow-up time")
         notes.append(
             {
                 "at": datetime.now(timezone.utc).isoformat(),

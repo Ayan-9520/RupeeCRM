@@ -230,7 +230,7 @@ function DashboardHome() {
   }
 
   if (role === "coordinator") {
-    return <EmployeeCockpit firstName={firstName} financeLevel={user?.finance_level} />;
+    return <EmployeeCockpit firstName={firstName} financeLevel={user?.finance_level} department={user?.department} />;
   }
 
   if (role === "caller") {

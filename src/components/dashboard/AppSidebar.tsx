@@ -63,11 +63,11 @@ type SectionId = "home" | "leads" | "cases" | "money" | "growth" | "learn" | "ad
 
 const SECTIONS: { id: SectionId; label: string; title: string; icon: IconType }[] = [
   { id: "home", label: "Home", title: "Home", icon: Home },
-  { id: "learn", label: "Learn", title: "Learn & Earn", icon: GraduationCap },
   { id: "leads", label: "Leads", title: "Leads & sales", icon: Target },
-  { id: "money", label: "Money", title: "Money", icon: IndianRupee },
   { id: "cases", label: "Cases", title: "Cases & LOS", icon: FolderKanban },
+  { id: "money", label: "Money", title: "Money", icon: IndianRupee },
   { id: "growth", label: "Growth", title: "Growth", icon: Rocket },
+  { id: "learn", label: "Learn", title: "Learning", icon: GraduationCap },
   { id: "admin", label: "Admin", title: "Administration", icon: ShieldCheck },
 ];
 
@@ -116,7 +116,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { role, signOut, user } = useAuth();
 
-  const items = getNavForRole(role, user?.finance_level);
+  const items = getNavForRole(role, user?.finance_level, user?.department);
 
   const isActive = (path: string) =>
     path === "/dashboard" ? location.pathname === path : location.pathname.startsWith(path);

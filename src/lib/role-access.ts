@@ -196,14 +196,24 @@ function financeSeatUrls(level: string): Set<string> {
   return urls;
 }
 
-export function canAccessPath(role: AppRole | null, pathname: string, financeLevel?: string | null): boolean {
+function opsDesk(role: AppRole | null, level: string, department?: string | null): boolean {
+  return role === "coordinator" && department === "OPS" && !FINANCE_SEATS.has(level);
+}
+
+function opsUrls(): Set<string> {
+  return new Set(["/dashboard", "/dashboard/cases", "/dashboard/submissions", "/dashboard/profile", "/dashboard/settings"]);
+}
+
+function pathAllowed(path: string, urls: Set<string>): boolean {
+  return [...urls].some((url) => path === url || (url !== "/dashboard" && path.startsWith(url + "/")));
+}
+
+export function canAccessPath(role: AppRole | null, pathname: string, financeLevel?: string | null, department?: string | null): boolean {
   if (!role) return false;
   const level = financeLevel || "";
   const path = pathname.replace(/\/$/, "") || "/";
-  if (FINANCE_SEATS.has(level) && !isPlatformAdmin(role)) {
-    const urls = financeSeatUrls(level);
-    return [...urls].some((url) => path === url || (url !== "/dashboard" && path.startsWith(url + "/")));
-  }
+  if (FINANCE_SEATS.has(level) && !isPlatformAdmin(role)) return pathAllowed(path, financeSeatUrls(level));
+  if (opsDesk(role, level, department)) return pathAllowed(path, opsUrls());
   if (level && (pathname === "/dashboard/invoice-approvals" || pathname.startsWith("/dashboard/invoice-approvals/"))) return true;
   if ((level === "accounts" || level === "business_head") && (pathname === "/dashboard/admin/payouts" || pathname.startsWith("/dashboard/admin/payouts/"))) return true;
 
@@ -239,10 +249,14 @@ export function canAccessPath(role: AppRole | null, pathname: string, financeLev
   return path === "/dashboard" || path.startsWith("/dashboard/settings");
 }
 
-export function getNavForRole(role: AppRole | null, financeLevel?: string | null): NavItem[] {
+export function getNavForRole(role: AppRole | null, financeLevel?: string | null, department?: string | null): NavItem[] {
   if (!role) return [];
   if (financeLevel && FINANCE_SEATS.has(financeLevel) && !isPlatformAdmin(role)) {
     const allow = financeSeatUrls(financeLevel);
+    return NAV_ITEMS.filter((item) => allow.has(item.url));
+  }
+  if (opsDesk(role, financeLevel || "", department)) {
+    const allow = opsUrls();
     return NAV_ITEMS.filter((item) => allow.has(item.url));
   }
   const items = NAV_ITEMS.filter((item) => item.roles.includes(role));

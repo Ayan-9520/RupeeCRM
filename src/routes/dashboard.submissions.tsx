@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { FileText, Loader2, MapPin, Building2, ArrowRight, ShoppingBag } from "lucide-react";
-import { listMyLeads, patchMyLead } from "@/lib/python-api";
+import { listBankSubmissions, patchMyLead } from "@/lib/python-api";
 import { useAuth } from "@/lib/auth-context";
 import { canAccessPath } from "@/lib/role-access";
 
@@ -43,7 +43,7 @@ function Submissions() {
   const load = async () => {
     setLoading(true);
     try {
-      const data = await listMyLeads();
+      const data = await listBankSubmissions();
       const mapped: Row[] = (data.items ?? [])
         .filter((p) => (SUBMISSION_STAGES as readonly string[]).includes(p.pipeline_stage))
         .map((p) => ({
@@ -98,7 +98,7 @@ function Submissions() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="font-display text-2xl lg:text-3xl font-bold">Lender Submissions</h1>
-          <p className="text-muted-foreground mt-1">Track each case from documents to disbursal across your lender partners.</p>
+          <p className="text-muted-foreground mt-1">Partner files that have reached the bank. Mark submitted, approved, or disbursed. Papers stay with the partner.</p>
         </div>
       </div>
 
