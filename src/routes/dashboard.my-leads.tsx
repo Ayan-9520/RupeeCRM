@@ -208,8 +208,9 @@ const textareaClass =
 
 function MyLeadsPage() {
   const navigate = useNavigate();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const partner = role === "dsa" || role === "affiliate";
+  const canBoard = canAccessPath(role, "/dashboard/leadboard", user?.finance_level, user?.department);
   const [reserved, setReserved] = useState<Awaited<ReturnType<typeof listReservedLeads>> | null>(null);
   const [unlocking, setUnlocking] = useState<string | null>(null);
   const [items, setItems] = useState<CrmPurchase[]>([]);
@@ -432,14 +433,16 @@ function MyLeadsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Link
-            to="/dashboard/leadboard"
-          {canBoard && <Link
-          >
-            Leadboard
-          </Link>
+          {canBoard ? (
+            <Link
+              to="/dashboard/leadboard"
+              className="inline-flex items-center gap-1.5 border border-[#d8ecdd] bg-white rounded-xl px-3 py-1.5 text-sm font-semibold text-[#390A5D] hover:bg-[#E8F7EC]"
+            >
+              Leadboard
+            </Link>
+          ) : null}
           <button
-          </Link>}
+            type="button"
             onClick={() => void load()}
             className="inline-flex items-center gap-1.5 border border-[#d8ecdd] bg-white rounded-xl px-3 py-1.5 text-sm font-semibold text-[#390A5D] hover:bg-[#E8F7EC] cursor-pointer"
           >
@@ -532,8 +535,6 @@ function MyLeadsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-xl border border-dashed border-[#d8ecdd] bg-white p-10 text-center text-[#5c4d72] text-sm">
-          No purchased leads yet. Go to{" "}
-          <Link to="/dashboard/leadboard" className="text-[#10662A] font-bold hover:underline">
           No purchased leads yet.
           {canBoard ? (
             <>
@@ -544,6 +545,8 @@ function MyLeadsPage() {
               and click Buy.
             </>
           ) : null}
+        </div>
+      ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {filtered.map((p) => {
             const lead = p.lead;
