@@ -463,6 +463,10 @@ export async function listCrmUsers(): Promise<{
     finance_level?: string | null;
     department?: string | null;
     created_at: string | null;
+    employee_code?: string;
+    gender?: string;
+    base_location?: string;
+    office?: string;
   }[];
   total: number;
   pending_partners: number;
@@ -533,7 +537,16 @@ export async function setUserDesignation(
 
 export async function updateCrmUser(
   userId: string,
-  body: { full_name: string; phone: string; department?: string | null; is_active: boolean; role?: string | null },
+  body: {
+    full_name: string;
+    phone: string;
+    department?: string | null;
+    is_active: boolean;
+    role?: string | null;
+    gender?: string;
+    base_location?: string;
+    office?: string;
+  },
 ): Promise<{
   id: string;
   email: string;

@@ -37,6 +37,10 @@ class UserAdminOut(BaseModel):
     finance_level: str | None = None
     department: str | None = None
     created_at: str | None = None
+    employee_code: str = ""
+    gender: str = ""
+    base_location: str = ""
+    office: str = ""
 
     model_config = {"from_attributes": True}
 
@@ -145,6 +149,7 @@ def list_users(
             finance_level=u.finance_level,
             department=u.department,
             created_at=u.created_at.isoformat() if u.created_at else None,
+            **_staff_fields(u),
         )
         for u in rows
     ]
@@ -225,6 +230,16 @@ class DeskOut(BaseModel):
 
 def _employee_code(row: User) -> str:
     return "RD" + str(row.id).replace("-", "")[:8].upper()
+
+
+def _staff_fields(row: User) -> dict:
+    hr = dict(row.hr_profile or {})
+    return {
+        "employee_code": _employee_code(row),
+        "gender": str(hr.get("gender") or ""),
+        "base_location": str(hr.get("base_location") or ""),
+        "office": str(hr.get("office") or ""),
+    }
 
 
 def _desk_person(row: User, names: dict) -> DeskPerson:
@@ -474,9 +489,13 @@ class LoginEditIn(BaseModel):
     department: str | None = None
     is_active: bool = True
     role: str | None = None
+    gender: str = ""
+    base_location: str = ""
+    office: str = ""
 
 
-def _admin_out(user: User) -> UserAdminOut:
+def _admin_out(db: Session, user: User) -> UserAdminOut:
+    manager = db.query(User).filter(User.id == user.reports_to_user_id).first() if user.reports_to_user_id else None
     return UserAdminOut(
         id=user.id,
         email=user.email,
@@ -489,9 +508,11 @@ def _admin_out(user: User) -> UserAdminOut:
         sales_grade=user.sales_grade,
         sales_title=grade_title(user.sales_grade),
         reports_to_user_id=user.reports_to_user_id,
+        reports_to_name=manager.full_name if manager else None,
         finance_level=user.finance_level,
         department=user.department,
         created_at=user.created_at.isoformat() if user.created_at else None,
+        **_staff_fields(user),
     )
 
 
@@ -523,9 +544,13 @@ def update_login(
                 raise HTTPException(status_code=400, detail="Pick a department")
             user.department = department
             user.sales_grade = user.sales_grade or {"SALES": "T8", "OPS": "OP-E", "HR": "HR-E", "ITM": "MK-E", "ACC": "AC-E"}[department]
+    profile = dict(user.hr_profile or {})
+    for key, value in (("gender", body.gender), ("base_location", body.base_location), ("office", body.office)):
+        profile[key] = " ".join(str(value or "").split())[:180]
+    user.hr_profile = profile
     db.commit()
     db.refresh(user)
-    return _admin_out(user)
+    return _admin_out(db, user)
 
 
 @router.post("/{user_id}/reset-password", response_model=ResetPasswordOut)

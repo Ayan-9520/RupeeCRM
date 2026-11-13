@@ -41,6 +41,14 @@ type UserRow = {
   finance_level?: string | null;
   department?: string | null;
   created_at: string | null;
+  sales_title?: string | null;
+  sales_grade?: string | null;
+  reports_to_name?: string | null;
+  employee_code?: string;
+  gender?: string;
+  base_location?: string;
+  office?: string;
+  kyc_verified?: boolean;
 };
 
 function AdminUsersPage() {
@@ -53,6 +61,7 @@ function AdminUsersPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [staff, setStaff] = useState({ full_name: "", email: "", role: "coordinator" as "coordinator" | "caller", department: "SALES" });
   const [edit, setEdit] = useState<UserRow | null>(null);
+  const [detail, setDetail] = useState<UserRow | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -82,6 +91,9 @@ function AdminUsersPage() {
           u.email?.toLowerCase().includes(q) ||
           u.phone?.includes(q) ||
           u.dsa_id?.toLowerCase().includes(q) ||
+          u.employee_code?.toLowerCase().includes(q) ||
+          u.base_location?.toLowerCase().includes(q) ||
+          u.reports_to_name?.toLowerCase().includes(q) ||
           u.id.includes(q)
         );
       }
@@ -121,6 +133,9 @@ function AdminUsersPage() {
         department: edit.department,
         is_active: edit.is_active,
         role: edit.role,
+        gender: edit.gender || "",
+        base_location: edit.base_location || "",
+        office: edit.office || "",
       });
       setUsers((rows) => rows.map((row) => (row.id === edit.id ? { ...row, ...saved } : row)));
       setEdit(null);
@@ -213,29 +228,50 @@ function AdminUsersPage() {
         </button>
       </form>
 
+      {detail ? <UserDetail row={detail} onClose={() => setDetail(null)} /> : null}
+
       {edit ? (
         <form onSubmit={(event) => void onSave(event)} className="grid gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4 md:grid-cols-2">
-          <div className="md:col-span-2 text-sm font-semibold text-[#390A5D]">Edit {edit.email}</div>
-          <input required value={edit.full_name} onChange={(e) => setEdit({ ...edit, full_name: e.target.value })} placeholder="Name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
-          <input value={edit.phone || ""} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} placeholder="Phone" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+          <div className="md:col-span-2 text-sm font-semibold text-[#390A5D]">Edit {edit.full_name}</div>
+          <Field label="Name" value={edit.full_name} onChange={(full_name) => setEdit({ ...edit, full_name })} />
+          <Field label="Phone" value={edit.phone || ""} onChange={(phone) => setEdit({ ...edit, phone })} />
+          <Field label="Email" value={edit.email} readOnly />
+          <Field label="Employee ID" value={edit.employee_code || "—"} readOnly />
+          <Field label="Title" value={edit.sales_title || "—"} readOnly />
+          <Field label="Reports to" value={edit.reports_to_name || "—"} readOnly />
+          <label className="block text-xs font-semibold text-[#5c4d72]">Gender
+            <select value={edit.gender || ""} onChange={(e) => setEdit({ ...edit, gender: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm">
+              <option value="">—</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </label>
+          <Field label="Location" value={edit.base_location || ""} onChange={(base_location) => setEdit({ ...edit, base_location })} />
+          <Field label="Branch" value={edit.office || ""} onChange={(office) => setEdit({ ...edit, office })} />
+          <Field label="Registered" value={edit.created_at ? new Date(edit.created_at).toLocaleDateString("en-IN") : "—"} readOnly />
           {(edit.role === "coordinator" || edit.role === "caller") && !edit.finance_level ? (
             <>
-              <select value={edit.role} onChange={(e) => setEdit({ ...edit, role: e.target.value })} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm">
-                <option value="coordinator">Employee</option>
-                <option value="caller">Telecaller</option>
-              </select>
-              {edit.role === "coordinator" ? (
-                <select value={edit.department || "SALES"} onChange={(e) => setEdit({ ...edit, department: e.target.value })} className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm">
-                  {EMPLOYEE_DEPARTMENTS.map((item) => (
-                    <option key={item.id} value={item.id}>{item.label}</option>
-                  ))}
+              <label className="block text-xs font-semibold text-[#5c4d72]">Type
+                <select value={edit.role} onChange={(e) => setEdit({ ...edit, role: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm">
+                  <option value="coordinator">Employee</option>
+                  <option value="caller">Telecaller</option>
                 </select>
+              </label>
+              {edit.role === "coordinator" ? (
+                <label className="block text-xs font-semibold text-[#5c4d72]">Department
+                  <select value={edit.department || "SALES"} onChange={(e) => setEdit({ ...edit, department: e.target.value })} className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm">
+                    {EMPLOYEE_DEPARTMENTS.map((item) => (
+                      <option key={item.id} value={item.id}>{item.label}</option>
+                    ))}
+                  </select>
+                </label>
               ) : (
-                <div className="flex items-center text-sm text-[#5c4d72]">Telecaller stays in Sales.</div>
+                <div className="flex items-end text-sm text-[#5c4d72]">Telecaller stays in Sales.</div>
               )}
             </>
           ) : (
-            <div className="flex items-center text-sm text-[#5c4d72]">This role stays as it is. Invoice seats and partner logins are not retitled here.</div>
+            <div className="flex items-end text-sm text-[#5c4d72]">This role stays as it is. Invoice seats, the CEO and partner logins are not retitled here.</div>
           )}
           <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
             <input
@@ -298,21 +334,23 @@ function AdminUsersPage() {
             <table className="w-full text-sm">
               <thead className="bg-[#E8F7EC]/70 text-left text-xs uppercase tracking-wide text-[#5c4d72]">
                 <tr>
-                  <th className="px-4 py-3">Name</th>
-                  <th className="px-4 py-3">Email</th>
-                  <th className="px-4 py-3">Phone</th>
-                  <th className="px-4 py-3">Role</th>
-                  <th className="px-4 py-3">DSA ID</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3"></th>
+                  {["Name", "Employee ID", "Reports to", "Email", "Phone", "Location", "Registered", "Type", "Status", ""].map((head) => (
+                    <th key={head || "action"} className="whitespace-nowrap px-4 py-3">{head}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#d8ecdd]">
                 {filtered.map((u) => (
                   <tr key={u.id} className="hover:bg-[#f5fcf7]">
-                    <td className="px-4 py-3 font-medium text-[#390A5D]">{u.full_name || "—"}</td>
+                    <td className="px-4 py-3 font-medium text-[#390A5D]">
+                      <button type="button" className="text-left hover:underline" onClick={() => setDetail(u)}>{u.full_name || "—"}</button>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-[#10662A]">{u.employee_code || "—"}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-[#5c4d72]">{u.reports_to_name || "—"}</td>
                     <td className="px-4 py-3 text-[#5c4d72]">{u.email}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
+                    <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-[#5c4d72]">{u.base_location || "—"}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-[#5c4d72]">{u.created_at ? new Date(u.created_at).toLocaleDateString("en-IN") : "—"}</td>
                     <td className="px-4 py-3">
                       <Badge className={`${ROLE_BADGE[u.role] || ""} text-[10px]`}>
                         {getRoleLabel(u.role as AppRole)}
@@ -320,14 +358,16 @@ function AdminUsersPage() {
                         {u.finance_level ? ` · ${u.finance_level.replaceAll("_", " ")}` : ""}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-[#10662A]">{u.dsa_id || "—"}</td>
                     <td className="px-4 py-3">
                       <Badge variant={u.is_active ? "default" : "outline"}>
                         {u.is_active ? "active" : "disabled"}
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => setEdit(u)}>
+                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => setDetail(u)}>
+                        View
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-[#390A5D]" onClick={() => { setDetail(null); setEdit(u); }}>
                         Edit
                       </Button>
                       <Button
@@ -353,5 +393,66 @@ function AdminUsersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function UserDetail({ row, onClose }: { row: UserRow; onClose: () => void }) {
+  const facts: [string, string][] = [
+    ["Employee ID", row.employee_code || "—"],
+    ["Name", row.full_name || "—"],
+    ["Email", row.email],
+    ["Phone", row.phone || "—"],
+    ["Title", row.sales_title || "—"],
+    ["Grade", row.sales_grade || "—"],
+    ["Department", row.department ? departmentLabel(row.department) : "—"],
+    ["Seat", row.finance_level ? row.finance_level.replaceAll("_", " ") : "—"],
+    ["Reports to", row.reports_to_name || "—"],
+    ["Partner ID", row.dsa_id || "—"],
+    ["Gender", row.gender || "—"],
+    ["Location", row.base_location || "—"],
+    ["Branch", row.office || "—"],
+    ["Registered", row.created_at ? new Date(row.created_at).toLocaleDateString("en-IN") : "—"],
+    ["Status", row.is_active ? "Active" : "Disabled"],
+    ["KYC", row.kyc_verified ? "Verified" : "Not verified"],
+  ];
+  return (
+    <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-lg font-bold text-[#390A5D]">{row.full_name}</h2>
+        <button type="button" onClick={onClose} className="text-sm font-semibold text-[#10662A]">Close</button>
+      </div>
+      <dl className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {facts.map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] px-3 py-2">
+            <dt className="text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</dt>
+            <dd className="mt-1 text-sm font-semibold text-[#390A5D]">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  readOnly = false,
+}: {
+  label: string;
+  value: string;
+  onChange?: (value: string) => void;
+  readOnly?: boolean;
+}) {
+  return (
+    <label className="block text-xs font-semibold text-[#5c4d72]">
+      {label}
+      <input
+        value={value}
+        readOnly={readOnly}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="mt-1 h-10 w-full rounded-xl border border-[#d8ecdd] px-3 text-sm text-[#390A5D] read-only:bg-[#f7fdf8]"
+      />
+    </label>
   );
 }
