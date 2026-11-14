@@ -45,6 +45,7 @@ class UserAdminOut(BaseModel):
     office: str = ""
     agreement_percent: float | None = None
     issued_password: str = ""
+    under_partner: str = ""
 
     model_config = {"from_attributes": True}
 
@@ -130,24 +131,52 @@ def create_employee(
 class MyCallerIn(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
     email: str = Field(min_length=5, max_length=255)
+    phone: str = ""
+    base_location: str = ""
+    gender: str = ""
+
+
+def _partner_account(user: User) -> None:
+    if user.role not in {"dsa", "affiliate"}:
+        raise HTTPException(status_code=403, detail="Partners add their own telecallers")
+    if user.seat_owner_id and user.seat_owner_id != user.id:
+        raise HTTPException(status_code=403, detail="The partner account adds the telecaller")
+
+
+def _caller_card(row: User) -> dict:
+    hr = dict(row.hr_profile or {})
+    return {
+        "id": str(row.id),
+        "full_name": row.full_name or "",
+        "email": row.email,
+        "phone": row.phone or "",
+        "gender": str(hr.get("gender") or ""),
+        "base_location": str(hr.get("base_location") or ""),
+        "is_active": bool(row.is_active),
+        "created_at": row.created_at.isoformat() if row.created_at else "",
+        "employee_code": _employee_code(row),
+        "issued_password": str(hr.get("issued_password") or ""),
+    }
+
+
+def _own_caller(db: Session, user: User, caller_id: UUID) -> User:
+    _partner_account(user)
+    row = db.query(User).filter(User.id == caller_id, User.role == "caller", User.seat_owner_id == user.id).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="This telecaller is not on your team")
+    return row
 
 
 @router.get("/my-callers")
 def my_callers(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
-    if user.role not in {"dsa", "affiliate"}:
-        raise HTTPException(status_code=403, detail="Partners add their own telecallers")
+    _partner_account(user)
     rows = (
         db.query(User)
-        .filter(User.role == "caller", User.seat_owner_id == user.id, User.is_active.is_(True))
+        .filter(User.role == "caller", User.seat_owner_id == user.id)
         .order_by(User.full_name.asc())
         .all()
     )
-    return {
-        "items": [
-            {"id": str(row.id), "full_name": row.full_name, "email": row.email, "issued_password": str((row.hr_profile or {}).get("issued_password") or "")}
-            for row in rows
-        ]
-    }
+    return {"items": [_caller_card(row) for row in rows]}
 
 
 @router.post("/my-callers", response_model=CreateEmployeeOut)
@@ -157,10 +186,7 @@ def create_my_caller(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> CreateEmployeeOut:
-    if user.role not in {"dsa", "affiliate"}:
-        raise HTTPException(status_code=403, detail="Partners add their own telecallers")
-    if user.seat_owner_id and user.seat_owner_id != user.id:
-        raise HTTPException(status_code=403, detail="The partner account adds the telecaller")
+    _partner_account(user)
     existing_count = (
         db.query(User).filter(User.role == "caller", User.seat_owner_id == user.id, User.is_active.is_(True)).count()
     )
@@ -175,6 +201,7 @@ def create_my_caller(
     created = User(
         email=email,
         full_name=body.full_name.strip(),
+        phone=(body.phone or "").strip()[:30] or None,
         password_hash=hash_password(temp),
         role="caller",
         is_active=True,
@@ -182,6 +209,10 @@ def create_my_caller(
         sales_grade="T9",
         seat_owner_id=user.id,
         reports_to_user_id=user.id,
+        hr_profile={
+            "gender": (body.gender or "").strip()[:40],
+            "base_location": " ".join((body.base_location or "").split())[:180],
+        },
     )
     db.add(created)
     db.flush()
@@ -191,6 +222,68 @@ def create_my_caller(
     return CreateEmployeeOut(email=email, full_name=created.full_name, role="caller", temporary_password=temp, emailed=settings.smtp_enabled)
 
 
+class MyCallerEdit(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+    phone: str = ""
+    base_location: str = ""
+    gender: str = ""
+    is_active: bool = True
+
+
+@router.patch("/my-callers/{caller_id}")
+def update_my_caller(
+    caller_id: UUID,
+    body: MyCallerEdit,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    row = _own_caller(db, user, caller_id)
+    row.full_name = " ".join(body.full_name.split())
+    row.phone = (body.phone or "").strip()[:30] or None
+    row.is_active = body.is_active
+    profile = dict(row.hr_profile or {})
+    profile["gender"] = (body.gender or "").strip()[:40]
+    profile["base_location"] = " ".join((body.base_location or "").split())[:180]
+    row.hr_profile = profile
+    db.commit()
+    db.refresh(row)
+    return _caller_card(row)
+
+
+@router.post("/my-callers/{caller_id}/reset-password")
+def reset_my_caller(
+    caller_id: UUID,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Email the telecaller a link to set their own password. The chosen password then shows on this list."""
+    row = _own_caller(db, user, caller_id)
+    if not settings.smtp_enabled:
+        temp = generate_temp_password()
+        row.password_hash = hash_password(temp)
+        row.is_active = True
+        remember_issued_password(db, row, temp)
+        db.commit()
+        db.refresh(row)
+        return {"email": row.email, "emailed": False, "issued_password": temp}
+    from app.services.partners import email_password_reset
+    from app.services.mailer import send_email
+
+    ok = email_password_reset(row)
+    if not ok:
+        raise HTTPException(status_code=503, detail="The reset email could not be sent")
+    note = (
+        f"A password reset link was sent to {row.full_name} ({row.email}).\n"
+        "They set the new password from that email. It then shows on the partner's telecaller list and on Users."
+    )
+    background.add_task(send_email, user.email, f"Reset link sent to {row.full_name}", note)
+    admin = (settings.admin_email or "").strip()
+    if admin and admin.lower() != (user.email or "").lower():
+        background.add_task(send_email, admin, f"Reset link sent to {row.full_name}", note)
+    return {"email": row.email, "emailed": True, "issued_password": str((row.hr_profile or {}).get("issued_password") or "")}
+
+
 @router.get("", response_model=UserListOut)
 def list_users(
     db: Session = Depends(get_db),
@@ -198,10 +291,10 @@ def list_users(
 ) -> UserListOut:
     rows = db.query(User).order_by(User.created_at.desc()).limit(500).all()
     rm_ids = {u.rm2_user_id for u in rows if u.rm2_user_id} | {u.reports_to_user_id for u in rows if u.reports_to_user_id}
-    rm_names = {
-        u.id: u.full_name
-        for u in (db.query(User).filter(User.id.in_(rm_ids)).all() if rm_ids else [])
-    }
+    seat_ids = {u.seat_owner_id for u in rows if u.seat_owner_id}
+    known_ids = rm_ids | seat_ids
+    known = {u.id: u for u in (db.query(User).filter(User.id.in_(known_ids)).all() if known_ids else [])}
+    rm_names = {key: person.full_name for key, person in known.items()}
     pending = (
         db.query(PartnerApplication)
         .filter(PartnerApplication.status.in_(["pending", "under_review"]))
@@ -243,6 +336,7 @@ def list_users(
             department=u.department,
             created_at=u.created_at.isoformat() if u.created_at else None,
             agreement_percent=u.agreement_percent,
+            under_partner=_under_partner(u, known),
             **fields,
         )
         )
@@ -324,6 +418,15 @@ class DeskOut(BaseModel):
 
 def _employee_code(row: User) -> str:
     return "RD" + str(row.id).replace("-", "")[:8].upper()
+
+
+def _under_partner(row: User, owners: dict) -> str:
+    if row.role != "caller":
+        return ""
+    owner = owners.get(row.seat_owner_id) if row.seat_owner_id else None
+    if owner and owner.role in {"dsa", "affiliate"}:
+        return owner.full_name or owner.email
+    return "Company"
 
 
 def _staff_fields(row: User) -> dict:
@@ -594,6 +697,8 @@ class LoginEditIn(BaseModel):
 
 def _admin_out(db: Session, user: User) -> UserAdminOut:
     manager = db.query(User).filter(User.id == user.reports_to_user_id).first() if user.reports_to_user_id else None
+    owner = db.query(User).filter(User.id == user.seat_owner_id).first() if user.seat_owner_id else None
+    owners = {owner.id: owner} if owner else {}
     return UserAdminOut(
         id=user.id,
         email=user.email,
@@ -611,6 +716,7 @@ def _admin_out(db: Session, user: User) -> UserAdminOut:
         department=user.department,
         created_at=user.created_at.isoformat() if user.created_at else None,
         agreement_percent=user.agreement_percent,
+        under_partner=_under_partner(user, owners),
         **_staff_fields(user),
     )
 

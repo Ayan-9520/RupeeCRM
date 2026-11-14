@@ -66,6 +66,12 @@ export const NAV_ITEMS: NavItem[] = [
     group: "main",
   },
   {
+    title: "Telecallers",
+    url: "/dashboard/callers",
+    roles: ["dsa", "affiliate"],
+    group: "main",
+  },
+  {
     title: "Upload leads",
     url: "/dashboard/upload-leads",
     roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller"],
@@ -340,6 +346,7 @@ export function getDashboardConfig(role: AppRole | null): RoleDashboardConfig {
         quickLinks: [
           { title: "Leadboard", desc: "Leads from RupeeDial. Identity stays masked until you buy.", url: "/dashboard/leadboard", roles: ["dsa"] },
           { title: "My Leads", desc: "Call, documents, bank, sanction, disbursed.", url: "/dashboard/my-leads", roles: ["dsa"] },
+          { title: "Telecallers", desc: "Your own callers. They see only your leads.", url: "/dashboard/callers", roles: ["dsa"] },
           { title: "Wallet", desc: "Lead credits and earnings, kept separate.", url: "/dashboard/wallet", roles: ["dsa"] },
           { title: "Invoices", desc: "Raise after disbursement. Track payout date and transaction ID.", url: "/dashboard/earnings", roles: ["dsa"] },
         ],

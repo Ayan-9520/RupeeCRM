@@ -51,6 +51,7 @@ type UserRow = {
   kyc_verified?: boolean;
   agreement_percent?: number | null;
   issued_password?: string;
+  under_partner?: string;
 };
 
 function joiningDate(value: string | null) {
@@ -398,7 +399,7 @@ function AdminUsersPage() {
                   <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Role</th>
                   <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Email</th>
                   <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Password</th>
-                  {["Employee ID", "Reports to", "Phone", "Location", "Joining date", "Status", ""].map((head) => (
+                  {["Employee ID", "Reports to", "Under partner", "Phone", "Location", "Joining date", "Status", ""].map((head) => (
                     <th key={head || "action"} className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">{head}</th>
                   ))}
                 </tr>
@@ -420,6 +421,7 @@ function AdminUsersPage() {
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#390A5D]">{u.issued_password || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#10662A]">{u.employee_code || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.reports_to_name || "—"}</td>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#390A5D]">{u.under_partner || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 font-mono text-xs text-[#5c4d72]">{u.phone || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{u.base_location || "—"}</td>
                     <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{joiningDate(u.created_at)}</td>
@@ -498,6 +500,7 @@ function UserDetail({
     ["Department", row.department ? departmentLabel(row.department) : "—"],
     ["Seat", row.finance_level ? row.finance_level.replaceAll("_", " ") : "—"],
     ["Reports to", row.reports_to_name || "—"],
+    ["Under partner", row.under_partner || "—"],
     ["Partner ID", row.dsa_id || "—"],
     ["Agreement %", row.agreement_percent == null ? "—" : `${row.agreement_percent}%`],
     ["Gender", row.gender || "—"],

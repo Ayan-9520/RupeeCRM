@@ -309,17 +309,38 @@ export async function listBankSubmissions(): Promise<{
   return request("/api/bank-submissions");
 }
 
-export async function listMyCallers(): Promise<{ items: { id: string; full_name: string; email: string; issued_password: string }[] }> {
+export type MyCaller = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  gender: string;
+  base_location: string;
+  is_active: boolean;
+  created_at: string;
+  employee_code: string;
+  issued_password: string;
+};
+
+export async function listMyCallers(): Promise<{ items: MyCaller[] }> {
   return request("/api/users/my-callers");
 }
 
-export async function createMyCaller(body: { full_name: string; email: string }): Promise<{
+export async function createMyCaller(body: { full_name: string; email: string; phone?: string; base_location?: string; gender?: string }): Promise<{
   email: string;
   full_name: string;
   temporary_password: string;
   emailed?: boolean;
 }> {
   return request("/api/users/my-callers", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function updateMyCaller(id: string, body: { full_name: string; phone: string; base_location: string; gender: string; is_active: boolean }): Promise<MyCaller> {
+  return request(`/api/users/my-callers/${id}`, { method: "PATCH", body: JSON.stringify(body) });
+}
+
+export async function resetMyCallerPassword(id: string): Promise<{ email: string; emailed: boolean; issued_password: string }> {
+  return request(`/api/users/my-callers/${id}/reset-password`, { method: "POST" });
 }
 
 export async function getCallQueue(): Promise<{
@@ -508,6 +529,7 @@ export async function listCrmUsers(): Promise<{
     base_location?: string;
     office?: string;
     issued_password?: string;
+    under_partner?: string;
   }[];
   total: number;
   pending_partners: number;

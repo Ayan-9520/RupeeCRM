@@ -76,6 +76,7 @@ def change_password(
     if body.new_password == body.current_password:
         raise HTTPException(status_code=400, detail="New password must be different")
     user.password_hash = hash_password(body.new_password)
+    remember_issued_password(db, user, body.new_password)
     db.add(user)
     db.commit()
     return {"success": True}

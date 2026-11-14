@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { canAccessPath } from "@/lib/role-access";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -29,7 +29,7 @@ import {
   Activity,
   FolderOpen,
 } from "lucide-react";
-import { createMyCaller, listMyCallers, listMyLeads, listReservedLeads, patchMyLead, purchaseCrmLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
+import { listMyLeads, listReservedLeads, patchMyLead, purchaseCrmLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
 import { gradeCode, gradeFromPipeline, gradeText } from "@/lib/lead-grades";
 import {
   CRM_FORM_SECTIONS,
@@ -433,7 +433,7 @@ function MyLeadsPage() {
             My Leads
           </h1>
           <p className="text-[#5c4d72] mt-0.5 text-sm max-w-xl">
-            Add your own telecaller and they see only your leads. With no telecaller, you record the call yourself. Then collect papers and submit the file to the bank.
+            Add a telecaller from the Telecallers tab. They see only your leads. With no telecaller, you record the call yourself. Then collect papers and submit the file to the bank.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -456,7 +456,6 @@ function MyLeadsPage() {
         </div>
       </div>
 
-      {partner ? <PartnerCallers onChange={() => void load()} /> : null}
 
       <div className="flex flex-wrap gap-1.5">
         <button
@@ -1099,72 +1098,5 @@ function MyLeadsPage() {
         </div>
       )}
     </div>
-  );
-}
-
-function PartnerCallers({ onChange }: { onChange: () => void }) {
-  const [rows, setRows] = useState<{ id: string; full_name: string; email: string; issued_password: string }[]>([]);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  const load = async () => {
-    try {
-      const data = await listMyCallers();
-      setRows(data.items);
-    } catch {
-      setRows([]);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-  }, []);
-
-  const create = async (event: FormEvent) => {
-    event.preventDefault();
-    setBusy(true);
-    try {
-      const created = await createMyCaller({ full_name: name.trim(), email: email.trim() });
-      toast.success(
-        created.emailed
-          ? `${created.full_name} can sign in on Employee Login. Password emailed to you and to them.`
-          : `${created.full_name} can sign in. Password: ${created.temporary_password}`,
-      );
-      setName("");
-      setEmail("");
-      await load();
-      onChange();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not add the telecaller");
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-      <h2 className="text-sm font-bold text-[#390A5D]">Your telecallers</h2>
-      <p className="mt-1 text-xs text-[#5c4d72]">They sign in through Employee Login and see only your leads. The call result comes back to you.</p>
-      <form onSubmit={(event) => void create(event)} className="mt-3 flex flex-wrap gap-2">
-        <input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
-        <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
-        <button type="submit" disabled={busy} className="h-10 rounded-xl bg-[#10662A] px-4 text-sm font-semibold text-white disabled:opacity-60">
-          {busy ? "Adding…" : "Add telecaller"}
-        </button>
-      </form>
-      {rows.length > 0 ? (
-        <ul className="mt-3 space-y-1 text-sm text-[#390A5D]">
-          {rows.map((row) => (
-            <li key={row.id}>
-              {row.full_name} · {row.email}
-              {row.issued_password ? ` · ${row.issued_password}` : ""}
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-3 text-xs text-[#5c4d72]">No telecaller yet. You record the first call yourself.</p>
-      )}
-    </section>
   );
 }
