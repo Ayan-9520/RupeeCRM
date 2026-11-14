@@ -585,10 +585,13 @@ def call_queue(db: Session = Depends(get_db), user: User = Depends(get_current_u
     for row in rows:
         buyer = buyers.get(row.buyer_user_id)
         lead = leads.get(row.lead_id)
+        partner = buyer.full_name if buyer else "—"
+        if buyer and buyer.role in ADMIN_ROLES:
+            partner = "Company"
         items.append(
             {
                 "id": str(row.id),
-                "partner": buyer.full_name if buyer else "—",
+                "partner": partner,
                 "applicant": lead.applicant_name if lead else "—",
                 "city": lead.city if lead else "",
                 "product": lead.loan_type if lead else "",
@@ -598,6 +601,13 @@ def call_queue(db: Session = Depends(get_db), user: User = Depends(get_current_u
                 "assigned_caller": names.get(row.assigned_caller_id, "") if row.assigned_caller_id else "",
             }
         )
+    if leader_id is not None:
+        team_ids = {str(row.id) for row in callers}
+        items = [
+            item
+            for item in items
+            if not item["partner_has_caller"] and (not item["assigned_caller_id"] or item["assigned_caller_id"] in team_ids)
+        ]
     return {"items": items, "callers": [{"id": str(row.id), "name": row.full_name} for row in callers]}
 
 
