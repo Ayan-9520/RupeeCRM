@@ -360,6 +360,25 @@ export async function getCallQueue(): Promise<{
   return request("/api/call-queue");
 }
 
+export type CallFloorCaller = {
+  id: string;
+  name: string;
+  email: string;
+  given: number;
+  not_called: number;
+  connected: number;
+  interested: number;
+  callback: number;
+  not_reachable: number;
+  not_interested: number;
+  wrong_number: number;
+  leads: { id: string; applicant: string; city: string; phone: string; partner: string; result: string; at: string }[];
+};
+
+export async function getCallFloor(): Promise<{ items: CallFloorCaller[] }> {
+  return request("/api/call-floor");
+}
+
 export async function assignCall(purchaseId: string, callerUserId: string | null): Promise<{ ok: boolean }> {
   return request(`/api/call-queue/${purchaseId}`, {
     method: "POST",

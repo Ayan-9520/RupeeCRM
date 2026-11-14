@@ -28,6 +28,8 @@ const ICONS: Record<string, IconType> = {
   "/dashboard/automation": Cog,
   "/dashboard/wallet": Wallet,
   "/dashboard/calls": Phone,
+  "/dashboard/admin/call-queue": Phone,
+  "/dashboard/call-floor": Users,
   "/dashboard/submissions": FileText,
   "/dashboard/cases": Building2,
   "/dashboard/earnings": Receipt,
@@ -84,6 +86,8 @@ const SECTION_OF: Record<string, SectionId> = {
   "/dashboard/business": "leads",
   "/dashboard/admin/partners": "leads",
   "/dashboard/calls": "leads",
+  "/dashboard/admin/call-queue": "leads",
+  "/dashboard/call-floor": "leads",
   "/dashboard/submissions": "leads",
   "/dashboard/cases": "cases",
   "/dashboard/los-analytics": "cases",
@@ -116,7 +120,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { role, signOut, user } = useAuth();
 
-  const items = getNavForRole(role, user?.finance_level, user?.department);
+  const items = getNavForRole(role, user?.finance_level, user?.department, user?.sales_grade);
 
   const isActive = (path: string) =>
     path === "/dashboard" ? location.pathname === path : location.pathname.startsWith(path);

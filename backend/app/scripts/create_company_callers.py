@@ -23,7 +23,18 @@ CALLERS = (
 def main() -> None:
     db = SessionLocal()
     try:
-        manager = db.query(User).filter(User.email == "sumit@rupeedial.com").first()
+        leader = (
+            db.query(User)
+            .filter(
+                User.role == "coordinator",
+                User.department == "SALES",
+                User.sales_grade == "T7",
+                User.is_active.is_(True),
+            )
+            .order_by(User.created_at.asc())
+            .first()
+        )
+        manager = leader or db.query(User).filter(User.email == "sumit@rupeedial.com").first()
         for name in CALLERS:
             first = name.split()[0].lower()
             email = f"{first}.caller@rupeedial.com"

@@ -63,6 +63,22 @@ class ResetPasswordOut(BaseModel):
     emailed: bool = False
 
 
+def _calling_leader_id(db: Session) -> UUID | None:
+    leader = (
+        db.query(User)
+        .filter(
+            User.role == "coordinator",
+            User.department == "SALES",
+            User.sales_grade == "T7",
+            User.is_active.is_(True),
+            User.finance_level.is_(None),
+        )
+        .order_by(User.created_at.asc())
+        .first()
+    )
+    return leader.id if leader else None
+
+
 def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role not in ADMIN_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
@@ -113,6 +129,7 @@ def create_employee(
         is_active=True,
         department=department,
         sales_grade=grade,
+        reports_to_user_id=_calling_leader_id(db) if body.role == "caller" else None,
     )
     db.add(created)
     db.flush()

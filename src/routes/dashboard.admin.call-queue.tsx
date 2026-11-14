@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { assignCall, getCallQueue } from "@/lib/python-api";
 import { useAuth } from "@/lib/auth-context";
-import { isPlatformAdmin } from "@/lib/role-access";
+import { isPlatformAdmin, isTeamLeader } from "@/lib/role-access";
 
 export const Route = createFileRoute("/dashboard/admin/call-queue")({
   head: () => ({ meta: [{ title: "Call queue — RupeeOne" }] }),
@@ -24,7 +24,8 @@ type QueueRow = {
 };
 
 function CallQueuePage() {
-  const { role } = useAuth();
+  const { role, user } = useAuth();
+  const leader = isTeamLeader(role, user?.finance_level, user?.department, user?.sales_grade);
   const [items, setItems] = useState<QueueRow[]>([]);
   const [callers, setCallers] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,16 +61,18 @@ function CallQueuePage() {
     }
   };
 
-  if (!isPlatformAdmin(role)) {
-    return <p className="text-sm text-[#5c4d72]">Admin only.</p>;
+  if (!isPlatformAdmin(role) && !leader) {
+    return <p className="text-sm text-[#5c4d72]">The team leader gives these leads.</p>;
   }
 
   return (
     <div className="max-w-6xl space-y-4">
       <div>
         <h1 className="font-display text-2xl font-bold text-[#390A5D]">Call queue</h1>
-        <p className="mt-1 text-sm text-[#5c4d72]">
-          Company telecallers see a lead only after you give it to them. A partner who has their own telecaller keeps that lead in their team.
+        <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
+          {leader
+            ? "Give a lead only to a telecaller on your team. A partner who has their own telecaller keeps that file."
+            : "Company telecallers see a lead only after the team leader gives it to them. A partner who has their own telecaller keeps that lead."}
         </p>
       </div>
       {loading ? (
@@ -97,6 +100,8 @@ function CallQueuePage() {
                   <td className="whitespace-nowrap px-4 py-3">
                     {row.partner_has_caller ? (
                       <span className="text-xs text-[#5c4d72]">Partner's own telecaller</span>
+                    ) : leader && row.assigned_caller_id && !callers.some((caller) => caller.id === row.assigned_caller_id) ? (
+                      <span className="text-xs text-[#5c4d72]">{row.assigned_caller || "Another team"}</span>
                     ) : (
                       <select
                         value={row.assigned_caller_id}

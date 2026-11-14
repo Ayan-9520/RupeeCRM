@@ -17,7 +17,7 @@ export function RoleGuard({ children }: { children: ReactNode }) {
     );
   }
 
-  if (!role || !canAccessPath(role, pathname, user?.finance_level, user?.department)) {
+  if (!role || !canAccessPath(role, pathname, user?.finance_level, user?.department, user?.sales_grade)) {
     return (
       <div className="max-w-md mx-auto mt-16 rounded-2xl border border-border bg-card p-8 text-center shadow-card">
         <ShieldAlert className="size-10 text-amber-500 mx-auto mb-3" />

@@ -27,6 +27,7 @@ export type AuthUser = {
   full_name?: string;
   finance_level?: string | null;
   department?: string | null;
+  sales_grade?: string | null;
 };
 
 interface AuthContextValue {
@@ -55,13 +56,26 @@ function clearLegacySupabaseKeys() {
   keys.forEach((k) => localStorage.removeItem(k));
 }
 
-function toAuthUser(u: CrmUser, id = "python-admin", financeLevel?: string | null, department?: string | null): AuthUser {
-  return { id, email: u.email, full_name: u.full_name, finance_level: financeLevel ?? null, department: department ?? null };
+function toAuthUser(
+  u: CrmUser,
+  id = "python-admin",
+  financeLevel?: string | null,
+  department?: string | null,
+  salesGrade?: string | null,
+): AuthUser {
+  return {
+    id,
+    email: u.email,
+    full_name: u.full_name,
+    finance_level: financeLevel ?? null,
+    department: department ?? null,
+    sales_grade: salesGrade ?? null,
+  };
 }
 
 async function fetchMe(
   token: string,
-): Promise<{ id: string; email: string; full_name: string; role: string; finance_level?: string | null; department?: string | null } | null> {
+): Promise<{ id: string; email: string; full_name: string; role: string; finance_level?: string | null; department?: string | null; sales_grade?: string | null } | null> {
   try {
     const res = await fetch(`${API_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -79,9 +93,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const applyCrmUser = useCallback((u: CrmUser, token: string, id?: string, financeLevel?: string | null, department?: string | null) => {
+  const applyCrmUser = useCallback((u: CrmUser, token: string, id?: string, financeLevel?: string | null, department?: string | null, salesGrade?: string | null) => {
     setSession({ access_token: token });
-    setUser(toAuthUser(u, id, financeLevel, department));
+    setUser(toAuthUser(u, id, financeLevel, department, salesGrade));
     setRole((u.role as AppRole) || "admin");
   }, []);
 
@@ -106,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       const crmUser = { email: me.email, full_name: me.full_name, role: me.role };
       rememberCrmUser(crmUser);
-      applyCrmUser(crmUser, token, me.id, me.finance_level, me.department);
+      applyCrmUser(crmUser, token, me.id, me.finance_level, me.department, me.sales_grade);
       setLoading(false);
     })();
   }, [applyCrmUser]);
@@ -121,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem(TOKEN_KEY);
     if (!token) throw new Error("Login succeeded but no token stored");
     const me = await fetchMe(token);
-    applyCrmUser(u, token, me?.id, me?.finance_level, me?.department);
+    applyCrmUser(u, token, me?.id, me?.finance_level, me?.department, me?.sales_grade);
   };
 
   const signOut = async () => {

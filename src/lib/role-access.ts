@@ -168,6 +168,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Data Pipeline", url: "/dashboard/admin/pipeline", roles: ADMIN_ROLES, group: "admin" },
   { title: "Users", url: "/dashboard/admin/users", roles: ADMIN_ROLES, group: "admin" },
   { title: "Call queue", url: "/dashboard/admin/call-queue", roles: ADMIN_ROLES, group: "admin" },
+  { title: "Caller check", url: "/dashboard/call-floor", roles: ADMIN_ROLES, group: "admin" },
   { title: "Add Leads", url: "/dashboard/admin/leads", roles: ADMIN_ROLES, group: "admin" },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", roles: ADMIN_ROLES, group: "admin" },
   { title: "Commission Rules", url: "/dashboard/admin/commissions", roles: ADMIN_ROLES, group: "admin" },
@@ -217,6 +218,14 @@ function opsUrls(): Set<string> {
   return new Set(["/dashboard", "/dashboard/performance", "/dashboard/cases", "/dashboard/submissions", "/dashboard/profile", "/dashboard/settings"]);
 }
 
+export function isTeamLeader(role: AppRole | null, financeLevel?: string | null, department?: string | null, grade?: string | null): boolean {
+  return role === "coordinator" && department === "SALES" && grade === "T7" && !FINANCE_SEATS.has(financeLevel || "");
+}
+
+function teamLeadUrls(): Set<string> {
+  return new Set(["/dashboard", "/dashboard/admin/call-queue", "/dashboard/call-floor", "/dashboard/profile", "/dashboard/settings"]);
+}
+
 function callerUrls(): Set<string> {
   return new Set(["/dashboard", "/dashboard/performance", "/dashboard/calls", "/dashboard/learn", "/dashboard/profile", "/dashboard/settings"]);
 }
@@ -225,12 +234,13 @@ function pathAllowed(path: string, urls: Set<string>): boolean {
   return [...urls].some((url) => path === url || (url !== "/dashboard" && path.startsWith(url + "/")));
 }
 
-export function canAccessPath(role: AppRole | null, pathname: string, financeLevel?: string | null, department?: string | null): boolean {
+export function canAccessPath(role: AppRole | null, pathname: string, financeLevel?: string | null, department?: string | null, grade?: string | null): boolean {
   if (!role) return false;
   const level = financeLevel || "";
   const path = pathname.replace(/\/$/, "") || "/";
   if (FINANCE_SEATS.has(level) && !isPlatformAdmin(role)) return pathAllowed(path, financeSeatUrls(level));
   if (opsDesk(role, level, department)) return pathAllowed(path, opsUrls());
+  if (isTeamLeader(role, level, department, grade)) return pathAllowed(path, teamLeadUrls());
   if (role === "caller") return pathAllowed(path, callerUrls());
   if (level && (pathname === "/dashboard/invoice-approvals" || pathname.startsWith("/dashboard/invoice-approvals/"))) return true;
   if ((level === "accounts" || level === "business_head") && (pathname === "/dashboard/admin/payouts" || pathname.startsWith("/dashboard/admin/payouts/"))) return true;
@@ -267,7 +277,7 @@ export function canAccessPath(role: AppRole | null, pathname: string, financeLev
   return path === "/dashboard" || path.startsWith("/dashboard/settings");
 }
 
-export function getNavForRole(role: AppRole | null, financeLevel?: string | null, department?: string | null): NavItem[] {
+export function getNavForRole(role: AppRole | null, financeLevel?: string | null, department?: string | null, grade?: string | null): NavItem[] {
   if (!role) return [];
   if (financeLevel && FINANCE_SEATS.has(financeLevel) && !isPlatformAdmin(role)) {
     const allow = financeSeatUrls(financeLevel);
@@ -276,6 +286,10 @@ export function getNavForRole(role: AppRole | null, financeLevel?: string | null
   if (opsDesk(role, financeLevel || "", department)) {
     const allow = opsUrls();
     return NAV_ITEMS.filter((item) => allow.has(item.url));
+  }
+  if (isTeamLeader(role, financeLevel, department, grade)) {
+    const allow = teamLeadUrls();
+    return NAV_ITEMS.filter((item) => allow.has(item.url)).map((item) => ({ ...item, group: "main" as const }));
   }
   if (role === "caller") {
     const allow = callerUrls();

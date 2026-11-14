@@ -544,15 +544,27 @@ class AssignCallerIn(BaseModel):
     caller_user_id: UUID | None = None
 
 
-def _company_callers(db: Session) -> list[User]:
+def _team_leader(user: User) -> bool:
+    return user.role == "coordinator" and user.department == "SALES" and user.sales_grade == "T7" and not user.finance_level
+
+
+def _company_callers(db: Session, leader_id: UUID | None = None) -> list[User]:
     callers = db.query(User).filter(User.role == "caller", User.is_active.is_(True)).order_by(User.full_name.asc()).all()
-    return [row for row in callers if partner_caller_owner(db, row) is None]
+    rows = [row for row in callers if partner_caller_owner(db, row) is None]
+    if leader_id is not None:
+        rows = [row for row in rows if row.reports_to_user_id == leader_id]
+    return rows
+
+
+def _queue_actor(user: User) -> None:
+    if user.role not in ADMIN_ROLES and not _team_leader(user):
+        raise HTTPException(status_code=403, detail="The team leader gives these leads")
 
 
 @router.get("/call-queue")
 def call_queue(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
-    if user.role not in ADMIN_ROLES:
-        raise HTTPException(status_code=403, detail="Admin only")
+    _queue_actor(user)
+    leader_id = user.id if _team_leader(user) else None
     rows = (
         db.query(LeadPurchase)
         .filter(LeadPurchase.pipeline_stage.in_(("new", "contacted")))
@@ -562,8 +574,12 @@ def call_queue(db: Session = Depends(get_db), user: User = Depends(get_current_u
     )
     buyers = {row.id: row for row in db.query(User).filter(User.id.in_({item.buyer_user_id for item in rows})).all()} if rows else {}
     leads = {row.id: row for row in db.query(Lead).filter(Lead.id.in_({item.lead_id for item in rows})).all()} if rows else {}
-    callers = _company_callers(db)
+    callers = _company_callers(db, leader_id)
     names = {row.id: row.full_name for row in callers}
+    missing = {row.assigned_caller_id for row in rows if row.assigned_caller_id and row.assigned_caller_id not in names}
+    if missing:
+        for person in db.query(User).filter(User.id.in_(missing)).all():
+            names[person.id] = person.full_name
     covered = buyers_with_callers(db, {item.buyer_user_id for item in rows})
     items = []
     for row in rows:
@@ -592,20 +608,91 @@ def assign_caller(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    if user.role not in ADMIN_ROLES:
-        raise HTTPException(status_code=403, detail="Admin only")
+    _queue_actor(user)
     purchase = db.query(LeadPurchase).filter(LeadPurchase.id == purchase_id).first()
     if not purchase:
         raise HTTPException(status_code=404, detail="Lead not found")
     if body.caller_user_id is None:
+        if _team_leader(user) and purchase.assigned_caller_id:
+            current = db.query(User).filter(User.id == purchase.assigned_caller_id).first()
+            if current and current.reports_to_user_id != user.id:
+                raise HTTPException(status_code=400, detail="This lead is on another team")
         purchase.assigned_caller_id = None
         db.commit()
         return {"ok": True, "assigned_caller_id": ""}
     caller = db.query(User).filter(User.id == body.caller_user_id, User.role == "caller", User.is_active.is_(True)).first()
     if not caller or partner_caller_owner(db, caller):
         raise HTTPException(status_code=400, detail="Choose a company telecaller")
+    if _team_leader(user) and caller.reports_to_user_id != user.id:
+        raise HTTPException(status_code=400, detail="This telecaller is not on your team")
     if purchase.buyer_user_id in buyers_with_callers(db, {purchase.buyer_user_id}):
         raise HTTPException(status_code=400, detail="This partner's own telecaller handles their leads")
     purchase.assigned_caller_id = caller.id
     db.commit()
     return {"ok": True, "assigned_caller_id": str(caller.id)}
+
+
+def _last_disposition(notes: list) -> dict:
+    for note in reversed(notes or []):
+        if note.get("kind") == "disposition":
+            return note
+    return {}
+
+
+@router.get("/call-floor")
+def call_floor(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
+    """What each company telecaller was given, and the result they saved on each number."""
+    _queue_actor(user)
+    leader_id = user.id if _team_leader(user) else None
+    callers = _company_callers(db, leader_id)
+    ids = [row.id for row in callers]
+    purchases = (
+        db.query(LeadPurchase).filter(LeadPurchase.assigned_caller_id.in_(ids)).order_by(LeadPurchase.updated_at.desc()).all()
+        if ids
+        else []
+    )
+    buyers = {row.id: row.full_name for row in db.query(User).filter(User.id.in_({item.buyer_user_id for item in purchases})).all()} if purchases else {}
+    leads = {row.id: row for row in db.query(Lead).filter(Lead.id.in_({item.lead_id for item in purchases})).all()} if purchases else {}
+    buckets = ("connected", "interested", "callback", "not_reachable", "not_interested", "wrong_number")
+    grouped: dict = {row.id: [] for row in callers}
+    for purchase in purchases:
+        grouped.setdefault(purchase.assigned_caller_id, []).append(purchase)
+    items = []
+    for caller in callers:
+        rows = grouped.get(caller.id, [])
+        counts = {code: 0 for code in buckets}
+        not_called = 0
+        lead_rows = []
+        for purchase in rows:
+            note = _last_disposition(purchase.notes or [])
+            code = str(note.get("code") or "")
+            if code in counts:
+                counts[code] += 1
+            elif code in {"eligible"}:
+                counts["connected"] += 1
+            else:
+                not_called += 1
+            lead = leads.get(purchase.lead_id)
+            lead_rows.append(
+                {
+                    "id": str(purchase.id),
+                    "applicant": lead.applicant_name if lead else "—",
+                    "city": lead.city if lead else "",
+                    "phone": lead.full_phone if lead else "",
+                    "partner": buyers.get(purchase.buyer_user_id, "—"),
+                    "result": str(note.get("text") or "Not called"),
+                    "at": str(note.get("at") or ""),
+                }
+            )
+        items.append(
+            {
+                "id": str(caller.id),
+                "name": caller.full_name,
+                "email": caller.email,
+                "given": len(rows),
+                "not_called": not_called,
+                **counts,
+                "leads": lead_rows[:100],
+            }
+        )
+    return {"items": items}

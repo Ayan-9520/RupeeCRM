@@ -33,6 +33,7 @@ import { AdminCockpit } from "@/components/dashboard/AdminCockpit";
 import { EmployeeCockpit } from "@/components/dashboard/EmployeeCockpit";
 import { ConnectorCockpit } from "@/components/dashboard/ConnectorCockpit";
 import { TeleSalesCockpit } from "@/components/dashboard/TeleSalesCockpit";
+import { TeamLeadHome } from "@/routes/dashboard.call-floor";
 import { CustomerHome } from "@/components/dashboard/CustomerHome";
 
 export const Route = createFileRoute("/dashboard/")({
@@ -227,6 +228,10 @@ function DashboardHome() {
 
   if (role === "dsa") {
     return <ConnectorCockpit firstName={firstName} />;
+  }
+
+  if (role === "coordinator" && user?.department === "SALES" && user?.sales_grade === "T7" && !user?.finance_level) {
+    return <TeamLeadHome firstName={firstName} />;
   }
 
   if (role === "coordinator") {
