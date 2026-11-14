@@ -58,7 +58,6 @@ function CallFloorPage() {
     getCallFloor()
       .then((data) => {
         setRows(data.items);
-        setOpenId(data.items[0]?.id ?? null);
       })
       .catch((error: unknown) => toast.error(error instanceof Error ? error.message : "Could not load the floor"))
       .finally(() => setLoading(false));
@@ -76,7 +75,7 @@ function CallFloorPage() {
         <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Team leader</p>
         <h1 className="font-display text-2xl font-bold text-[#390A5D]">Caller check</h1>
         <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
-          Each number stays on the telecaller you gave it to. Not called means they have not saved a result. Open a card to see every number, the result, and the time.
+          Slide the list to the right for every count. Open a name to see the numbers, the result, and the time.
         </p>
       </div>
       {loading ? (
@@ -85,47 +84,52 @@ function CallFloorPage() {
         <p className="rounded-3xl border border-dashed border-[#d8ecdd] bg-white p-8 text-sm text-[#5c4d72]">No company telecaller reports to this desk yet.</p>
       ) : (
         <>
-          <section className="rounded-3xl border border-[#d8ecdd] bg-white p-4 shadow-[0_8px_30px_rgba(16,102,42,0.05)]">
-            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A]">Whole team</p>
-            <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
-              {totals.map((item) => (
-                <div key={item.key} className="rounded-2xl bg-[#F4FBF6] px-3 py-3">
-                  <dt className="text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{item.label}</dt>
-                  <dd className="mt-1 font-display text-2xl font-bold text-[#14281c]">{item.value}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-          <div className="grid gap-4 xl:grid-cols-2">
-            {rows.map((row) => {
-              const initial = (row.name || "?").trim().charAt(0).toUpperCase();
-              const selected = openId === row.id;
-              return (
-                <button
-                  key={row.id}
-                  type="button"
-                  onClick={() => setOpenId(row.id)}
-                  className={`rounded-3xl border bg-white p-4 text-left shadow-[0_8px_30px_rgba(16,102,42,0.04)] ${selected ? "border-[#10662A] ring-2 ring-[#10662A]/20" : "border-[#d8ecdd]"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="grid size-11 place-items-center rounded-2xl bg-[#10662A] font-display text-lg font-bold text-white">{initial}</div>
-                    <div className="min-w-0">
-                      <h2 className="truncate font-display text-lg font-bold text-[#390A5D]">{row.name}</h2>
-                      <p className="truncate text-xs text-[#5c4d72]">{row.email}</p>
-                    </div>
-                  </div>
-                  <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <section className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_8px_30px_rgba(16,102,42,0.05)]">
+            <div className="overflow-x-auto">
+              <table className="w-max min-w-full border-separate border-spacing-0 text-sm">
+                <thead className="text-left text-[11px] uppercase tracking-wide text-[#5c4d72]">
+                  <tr>
+                    <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Name</th>
+                    <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3">Email</th>
                     {COUNTS.map((item) => (
-                      <div key={item.key} className="rounded-2xl border border-[#e7f5eb] bg-[#F4FBF6] px-3 py-2.5">
-                        <dt className="text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{item.label}</dt>
-                        <dd className="mt-1 font-display text-xl font-bold text-[#14281c]">{row[item.key]}</dd>
-                      </div>
+                      <th key={item.key} className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3 text-right">{item.label}</th>
                     ))}
-                  </dl>
-                </button>
-              );
-            })}
-          </div>
+                    <th className="whitespace-nowrap bg-[#E8F7EC] px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => {
+                    const initial = (row.name || "?").trim().charAt(0).toUpperCase();
+                    const selected = openId === row.id;
+                    return (
+                      <tr key={row.id} className={selected ? "bg-[#F4FBF6]" : ""}>
+                        <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3">
+                          <button type="button" onClick={() => setOpenId(row.id)} className="flex items-center gap-3 text-left">
+                            <span className="grid size-9 place-items-center rounded-xl bg-[#10662A] text-sm font-bold text-white">{initial}</span>
+                            <span className="font-semibold text-[#390A5D]">{row.name}</span>
+                          </button>
+                        </td>
+                        <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-[#5c4d72]">{row.email}</td>
+                        {COUNTS.map((item) => (
+                          <td key={item.key} className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3 text-right font-display text-base font-bold text-[#14281c]">{row[item.key]}</td>
+                        ))}
+                        <td className="whitespace-nowrap border-t border-[#d8ecdd] px-4 py-3">
+                          <button type="button" onClick={() => setOpenId(row.id)} className="text-sm font-semibold text-[#10662A]">Numbers</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  <tr>
+                    <td className="whitespace-nowrap border-t border-[#d8ecdd] bg-[#F4FBF6] px-4 py-3 font-semibold text-[#390A5D]" colSpan={2}>Whole team</td>
+                    {totals.map((item) => (
+                      <td key={item.key} className="whitespace-nowrap border-t border-[#d8ecdd] bg-[#F4FBF6] px-4 py-3 text-right font-display text-base font-bold text-[#10662A]">{item.value}</td>
+                    ))}
+                    <td className="border-t border-[#d8ecdd] bg-[#F4FBF6]" />
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
           {open ? (
             <section className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_8px_30px_rgba(16,102,42,0.05)]">
               <div className="flex items-center justify-between gap-3 border-b border-[#e7f5eb] px-5 py-4">
