@@ -131,6 +131,7 @@ export type PurchaseContext = {
   converted: boolean;
   deal_value?: number | null;
   next_followup_at: string | null;
+  caller_required?: boolean;
   lead: {
     id: string;
     applicant_name: string;

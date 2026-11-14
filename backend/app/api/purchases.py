@@ -30,6 +30,8 @@ class PurchaseOut(BaseModel):
     deal_value: float | None = None
     created_at: datetime
     updated_at: datetime
+    assigned_caller_id: UUID | None = None
+    caller_required: bool = False
     lead: LeadOut | None = None
 
     model_config = {"from_attributes": True}
@@ -106,7 +108,50 @@ class BuyOut(BaseModel):
     message: str = "Lead purchased"
 
 
-def _purchase_out(db: Session, p: LeadPurchase) -> PurchaseOut:
+PARTNER_ROLES = {"dsa", "affiliate"}
+ADMIN_ROLES = {"admin", "ceo", "super_admin"}
+
+
+def partner_caller_owner(db: Session, user: User) -> User | None:
+    """A caller seated under a partner works only that partner's leads."""
+    if user.role != "caller" or not user.seat_owner_id:
+        return None
+    owner = db.query(User).filter(User.id == user.seat_owner_id, User.role.in_(PARTNER_ROLES)).first()
+    return owner
+
+
+def buyers_with_callers(db: Session, buyer_ids: set[UUID]) -> set[UUID]:
+    if not buyer_ids:
+        return set()
+    rows = (
+        db.query(User.seat_owner_id)
+        .filter(User.role == "caller", User.is_active.is_(True), User.seat_owner_id.in_(buyer_ids))
+        .all()
+    )
+    return {row[0] for row in rows if row[0]}
+
+
+def caller_required(db: Session, purchase: LeadPurchase, covered: set[UUID] | None = None) -> bool:
+    if purchase.assigned_caller_id:
+        return True
+    if covered is not None:
+        return purchase.buyer_user_id in covered
+    return (
+        db.query(User.id)
+        .filter(User.role == "caller", User.is_active.is_(True), User.seat_owner_id == purchase.buyer_user_id)
+        .first()
+        is not None
+    )
+
+
+def caller_may_see(db: Session, user: User, purchase: LeadPurchase) -> bool:
+    owner = partner_caller_owner(db, user)
+    if owner:
+        return purchase.buyer_user_id == owner.id
+    return purchase.assigned_caller_id == user.id
+
+
+def _purchase_out(db: Session, p: LeadPurchase, covered: set[UUID] | None = None) -> PurchaseOut:
     lead = db.query(Lead).filter(Lead.id == p.lead_id).first()
     return PurchaseOut(
         id=p.id,
@@ -120,6 +165,8 @@ def _purchase_out(db: Session, p: LeadPurchase) -> PurchaseOut:
         deal_value=p.deal_value,
         created_at=p.created_at,
         updated_at=p.updated_at,
+        assigned_caller_id=p.assigned_caller_id,
+        caller_required=caller_required(db, p, covered),
         lead=LeadOut.model_validate(lead) if lead else None,
     )
 
@@ -302,7 +349,8 @@ def bank_submissions(
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk only")
     rows = query.order_by(LeadPurchase.updated_at.desc()).limit(300).all()
-    return PurchaseListOut(items=[_purchase_out(db, row) for row in rows], total=len(rows), stages=list(BANK_STAGES))
+    covered = buyers_with_callers(db, {row.buyer_user_id for row in rows})
+    return PurchaseListOut(items=[_purchase_out(db, row, covered) for row in rows], total=len(rows), stages=list(BANK_STAGES))
 
 
 @router.get("/my-leads", response_model=PurchaseListOut)
@@ -311,11 +359,17 @@ def my_leads(
     user: User = Depends(get_current_user),
 ) -> PurchaseListOut:
     if user.role == "caller":
+        owner = partner_caller_owner(db, user)
         q = db.query(LeadPurchase).filter(LeadPurchase.pipeline_stage.in_(("new", "contacted")))
+        if owner:
+            q = q.filter(LeadPurchase.buyer_user_id == owner.id)
+        else:
+            q = q.filter(LeadPurchase.assigned_caller_id == user.id)
     else:
         q = db.query(LeadPurchase).filter(LeadPurchase.buyer_user_id == user.id)
     rows = q.order_by(LeadPurchase.created_at.desc()).limit(300).all()
-    items = [_purchase_out(db, p) for p in rows]
+    covered = buyers_with_callers(db, {row.buyer_user_id for row in rows})
+    items = [_purchase_out(db, p, covered) for p in rows]
     return PurchaseListOut(items=items, total=len(items), stages=DEFAULT_PIPELINE_STAGES)
 
 
@@ -330,7 +384,9 @@ def patch_my_lead(
     if not p:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Purchase not found")
     owner = p.buyer_user_id == user.id
-    caller = user.role == "caller" and not owner
+    caller = user.role == "caller" and not owner and caller_may_see(db, user, p)
+    if user.role == "caller" and not owner and not caller:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This lead is not on your call list")
     if caller and p.pipeline_stage not in {"new", "contacted"}:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This file has left the call desk")
     if caller and (body.lead is not None or body.deal_value is not None or body.converted is not None):
@@ -345,10 +401,15 @@ def patch_my_lead(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your lead")
     if not owner and not caller and (body.disposition or body.lead is not None or body.deal_value is not None or body.converted is not None):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk can update the stage only")
-    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "contacted":
-        raise HTTPException(status_code=400, detail="The telecaller records the first call")
-    if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "rejected" and p.pipeline_stage in {"new", "contacted"}:
-        raise HTTPException(status_code=400, detail="The telecaller records this call result")
+    waits = owner and user.role in PARTNER_ROLES and caller_required(db, p)
+    if waits and body.pipeline_stage == "contacted":
+        raise HTTPException(status_code=400, detail="Your telecaller records the first call")
+    if waits and body.pipeline_stage == "rejected" and p.pipeline_stage in {"new", "contacted"}:
+        raise HTTPException(status_code=400, detail="Your telecaller records this call result")
+    if waits and body.disposition:
+        spec = DISPOSITIONS.get((body.disposition or "").strip().lower())
+        if spec and spec[1] in {None, "contacted", "rejected"}:
+            raise HTTPException(status_code=400, detail="Your telecaller records this call result")
     if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "docs_collected" and p.pipeline_stage != "contacted":
         raise HTTPException(status_code=400, detail="The telecaller marks the call before documents")
     if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "bank_submitted" and p.pipeline_stage != "docs_collected":
@@ -458,3 +519,74 @@ def patch_my_lead(
     except Exception:
         db.rollback()
     return _purchase_out(db, p)
+
+
+class AssignCallerIn(BaseModel):
+    caller_user_id: UUID | None = None
+
+
+def _company_callers(db: Session) -> list[User]:
+    callers = db.query(User).filter(User.role == "caller", User.is_active.is_(True)).order_by(User.full_name.asc()).all()
+    return [row for row in callers if partner_caller_owner(db, row) is None]
+
+
+@router.get("/call-queue")
+def call_queue(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Admin only")
+    rows = (
+        db.query(LeadPurchase)
+        .filter(LeadPurchase.pipeline_stage.in_(("new", "contacted")))
+        .order_by(LeadPurchase.created_at.desc())
+        .limit(300)
+        .all()
+    )
+    buyers = {row.id: row for row in db.query(User).filter(User.id.in_({item.buyer_user_id for item in rows})).all()} if rows else {}
+    leads = {row.id: row for row in db.query(Lead).filter(Lead.id.in_({item.lead_id for item in rows})).all()} if rows else {}
+    callers = _company_callers(db)
+    names = {row.id: row.full_name for row in callers}
+    covered = buyers_with_callers(db, {item.buyer_user_id for item in rows})
+    items = []
+    for row in rows:
+        buyer = buyers.get(row.buyer_user_id)
+        lead = leads.get(row.lead_id)
+        items.append(
+            {
+                "id": str(row.id),
+                "partner": buyer.full_name if buyer else "—",
+                "applicant": lead.applicant_name if lead else "—",
+                "city": lead.city if lead else "",
+                "product": lead.loan_type if lead else "",
+                "stage": row.pipeline_stage,
+                "partner_has_caller": row.buyer_user_id in covered,
+                "assigned_caller_id": str(row.assigned_caller_id) if row.assigned_caller_id else "",
+                "assigned_caller": names.get(row.assigned_caller_id, "") if row.assigned_caller_id else "",
+            }
+        )
+    return {"items": items, "callers": [{"id": str(row.id), "name": row.full_name} for row in callers]}
+
+
+@router.post("/call-queue/{purchase_id}")
+def assign_caller(
+    purchase_id: UUID,
+    body: AssignCallerIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Admin only")
+    purchase = db.query(LeadPurchase).filter(LeadPurchase.id == purchase_id).first()
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    if body.caller_user_id is None:
+        purchase.assigned_caller_id = None
+        db.commit()
+        return {"ok": True, "assigned_caller_id": ""}
+    caller = db.query(User).filter(User.id == body.caller_user_id, User.role == "caller", User.is_active.is_(True)).first()
+    if not caller or partner_caller_owner(db, caller):
+        raise HTTPException(status_code=400, detail="Choose a company telecaller")
+    if purchase.buyer_user_id in buyers_with_callers(db, {purchase.buyer_user_id}):
+        raise HTTPException(status_code=400, detail="This partner's own telecaller handles their leads")
+    purchase.assigned_caller_id = caller.id
+    db.commit()
+    return {"ok": True, "assigned_caller_id": str(caller.id)}

@@ -110,7 +110,7 @@ export function TeleSalesHub() {
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">TeleSales</p>
           <h1 className="font-display text-2xl font-bold text-[#390A5D] lg:text-3xl">Calling desk</h1>
-          <p className="mt-1 text-sm text-muted-foreground">New and contacted files. Mark Connected or Interested. The partner then collects the documents.</p>
+          <p className="mt-1 text-sm text-muted-foreground">You see only the leads on your list. Mark Connected or Interested. The partner who owns the file then collects the documents.</p>
         </div>
         {canBrowse ? (
           <Link to="/dashboard/my-leads" className="rounded-full border border-border px-4 py-2 text-sm font-semibold">

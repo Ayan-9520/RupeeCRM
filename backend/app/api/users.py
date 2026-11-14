@@ -127,6 +127,70 @@ def create_employee(
     )
 
 
+class MyCallerIn(BaseModel):
+    full_name: str = Field(min_length=2, max_length=120)
+    email: str = Field(min_length=5, max_length=255)
+
+
+@router.get("/my-callers")
+def my_callers(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict:
+    if user.role not in {"dsa", "affiliate"}:
+        raise HTTPException(status_code=403, detail="Partners add their own telecallers")
+    rows = (
+        db.query(User)
+        .filter(User.role == "caller", User.seat_owner_id == user.id, User.is_active.is_(True))
+        .order_by(User.full_name.asc())
+        .all()
+    )
+    return {
+        "items": [
+            {"id": str(row.id), "full_name": row.full_name, "email": row.email, "issued_password": str((row.hr_profile or {}).get("issued_password") or "")}
+            for row in rows
+        ]
+    }
+
+
+@router.post("/my-callers", response_model=CreateEmployeeOut)
+def create_my_caller(
+    body: MyCallerIn,
+    background: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> CreateEmployeeOut:
+    if user.role not in {"dsa", "affiliate"}:
+        raise HTTPException(status_code=403, detail="Partners add their own telecallers")
+    if user.seat_owner_id and user.seat_owner_id != user.id:
+        raise HTTPException(status_code=403, detail="The partner account adds the telecaller")
+    existing_count = (
+        db.query(User).filter(User.role == "caller", User.seat_owner_id == user.id, User.is_active.is_(True)).count()
+    )
+    if existing_count >= 10:
+        raise HTTPException(status_code=400, detail="A partner can have up to 10 telecallers")
+    email = body.email.strip().lower()
+    if "@" not in email or email.startswith("@") or email.endswith("@"):
+        raise HTTPException(status_code=400, detail="Enter a valid email")
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(status_code=400, detail="This email already has a login")
+    temp = generate_temp_password()
+    created = User(
+        email=email,
+        full_name=body.full_name.strip(),
+        password_hash=hash_password(temp),
+        role="caller",
+        is_active=True,
+        department="SALES",
+        sales_grade="T9",
+        seat_owner_id=user.id,
+        reports_to_user_id=user.id,
+    )
+    db.add(created)
+    db.flush()
+    remember_issued_password(db, created, temp)
+    db.commit()
+    background.add_task(notify_password_issued, email, created.full_name, temp, "Partner telecaller", [user.email])
+    return CreateEmployeeOut(email=email, full_name=created.full_name, role="caller", temporary_password=temp, emailed=settings.smtp_enabled)
+
+
 @router.get("", response_model=UserListOut)
 def list_users(
     db: Session = Depends(get_db),

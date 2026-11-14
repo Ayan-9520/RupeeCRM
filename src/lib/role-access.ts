@@ -161,6 +161,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Control Centre", url: "/dashboard/admin/control", roles: ADMIN_ROLES, group: "admin" },
   { title: "Data Pipeline", url: "/dashboard/admin/pipeline", roles: ADMIN_ROLES, group: "admin" },
   { title: "Users", url: "/dashboard/admin/users", roles: ADMIN_ROLES, group: "admin" },
+  { title: "Call queue", url: "/dashboard/admin/call-queue", roles: ADMIN_ROLES, group: "admin" },
   { title: "Add Leads", url: "/dashboard/admin/leads", roles: ADMIN_ROLES, group: "admin" },
   { title: "Lead Pricing", url: "/dashboard/admin/pricing", roles: ADMIN_ROLES, group: "admin" },
   { title: "Commission Rules", url: "/dashboard/admin/commissions", roles: ADMIN_ROLES, group: "admin" },

@@ -278,6 +278,7 @@ export type CrmPurchase = {
   next_followup_at: string | null;
   converted: boolean;
   deal_value: number | null;
+  caller_required?: boolean;
   created_at: string;
   updated_at?: string;
   lead: CrmLead | null;
@@ -305,6 +306,43 @@ export async function listBankSubmissions(): Promise<{
   stages: string[];
 }> {
   return request("/api/bank-submissions");
+}
+
+export async function listMyCallers(): Promise<{ items: { id: string; full_name: string; email: string; issued_password: string }[] }> {
+  return request("/api/users/my-callers");
+}
+
+export async function createMyCaller(body: { full_name: string; email: string }): Promise<{
+  email: string;
+  full_name: string;
+  temporary_password: string;
+  emailed?: boolean;
+}> {
+  return request("/api/users/my-callers", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function getCallQueue(): Promise<{
+  items: {
+    id: string;
+    partner: string;
+    applicant: string;
+    city: string;
+    product: string;
+    stage: string;
+    partner_has_caller: boolean;
+    assigned_caller_id: string;
+    assigned_caller: string;
+  }[];
+  callers: { id: string; name: string }[];
+}> {
+  return request("/api/call-queue");
+}
+
+export async function assignCall(purchaseId: string, callerUserId: string | null): Promise<{ ok: boolean }> {
+  return request(`/api/call-queue/${purchaseId}`, {
+    method: "POST",
+    body: JSON.stringify({ caller_user_id: callerUserId }),
+  });
 }
 
 export async function listMyLeads(): Promise<{

@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
+from app.api.purchases import caller_required
 from app.db.session import get_db
 from app.services.name_sync import sync_customer_name
 from app.models import (
@@ -441,6 +442,7 @@ def _workspace(db: Session, purchase: LeadPurchase) -> dict:
             "converted": bool(purchase.converted),
             "deal_value": float(purchase.deal_value) if purchase.deal_value is not None else None,
             "next_followup_at": _iso(purchase.next_followup_at),
+            "caller_required": caller_required(db, purchase),
             "lead": _lead_out(lead),
         },
         "profile": _profile_out(profile),

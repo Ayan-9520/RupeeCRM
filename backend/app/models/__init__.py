@@ -118,6 +118,7 @@ class LeadPurchase(Base):
     buyer_user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     price_paid: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     pipeline_stage: Mapped[str] = mapped_column(String(60), nullable=False, default="new", index=True)
+    assigned_caller_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
     notes: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     next_followup_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     converted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

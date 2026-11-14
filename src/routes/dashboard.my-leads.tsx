@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { canAccessPath } from "@/lib/role-access";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -29,7 +29,7 @@ import {
   Activity,
   FolderOpen,
 } from "lucide-react";
-import { listMyLeads, listReservedLeads, patchMyLead, purchaseCrmLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
+import { createMyCaller, listMyCallers, listMyLeads, listReservedLeads, patchMyLead, purchaseCrmLead, type CrmLead, type CrmPurchase } from "@/lib/python-api";
 import { gradeCode, gradeFromPipeline, gradeText } from "@/lib/lead-grades";
 import {
   CRM_FORM_SECTIONS,
@@ -395,8 +395,8 @@ function MyLeadsPage() {
       return;
     }
     const next = forward[fi + 1];
-    if (partner && next === "contacted") {
-      toast.message("The telecaller records the first call");
+    if (partner && selected.caller_required && next === "contacted") {
+      toast.message("Your telecaller records the first call");
       return;
     }
     if (partner && (next === "sanctioned" || next === "disbursed")) {
@@ -433,7 +433,7 @@ function MyLeadsPage() {
             My Leads
           </h1>
           <p className="text-[#5c4d72] mt-0.5 text-sm max-w-xl">
-            The telecaller records the first call. You collect papers and submit the file to the bank. The bank desk records sanction or disbursement.
+            Add your own telecaller and they see only your leads. With no telecaller, you record the call yourself. Then collect papers and submit the file to the bank.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -455,6 +455,8 @@ function MyLeadsPage() {
           </button>
         </div>
       </div>
+
+      {partner ? <PartnerCallers onChange={() => void load()} /> : null}
 
       <div className="flex flex-wrap gap-1.5">
         <button
@@ -723,7 +725,7 @@ function MyLeadsPage() {
                   </button>
                   <button
                     type="button"
-                    disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && (selected.pipeline_stage === "new" || selected.pipeline_stage === "bank_submitted"))}
+                    disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && ((selected.caller_required && selected.pipeline_stage === "new") || selected.pipeline_stage === "bank_submitted"))}
                     onClick={() => void advanceStage()}
                     className="inline-flex items-center gap-1.5 rounded-lg bg-[#390A5D] text-white px-2.5 py-1.5 text-xs font-semibold disabled:opacity-40 hover:bg-[#2d0848] cursor-pointer"
                   >
@@ -958,9 +960,9 @@ function MyLeadsPage() {
                             : stageIdx >= 0 && currentIdx >= 0 && stageIdx <= currentIdx;
                         const active = s === selected.pipeline_stage;
                         const bankHeld = ["bank_submitted", "sanctioned", "disbursed"].includes(selected.pipeline_stage);
-                        const callHeld = ["new", "contacted"].includes(selected.pipeline_stage);
+                        const callHeld = Boolean(selected.caller_required) && ["new", "contacted"].includes(selected.pipeline_stage);
                         const nextStage = currentIdx >= 0 && currentIdx < forward.length - 1 ? forward[currentIdx + 1] : null;
-                        const locked = partner && (s === "contacted" || s === "sanctioned" || s === "disbursed" || (s === "rejected" && (bankHeld || callHeld)) || (s !== "rejected" && s !== selected.pipeline_stage && s !== nextStage));
+                        const locked = partner && ((selected.caller_required && s === "contacted") || s === "sanctioned" || s === "disbursed" || (s === "rejected" && (bankHeld || callHeld)) || (s !== "rejected" && s !== selected.pipeline_stage && s !== nextStage));
                         return (
                           <li key={s}>
                             <button
@@ -1032,7 +1034,7 @@ function MyLeadsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && (selected.pipeline_stage === "new" || selected.pipeline_stage === "bank_submitted"))}
+                        disabled={saving || selected.pipeline_stage === "disbursed" || selected.pipeline_stage === "rejected" || (partner && ((selected.caller_required && selected.pipeline_stage === "new") || selected.pipeline_stage === "bank_submitted"))}
                         onClick={() => void advanceStage()}
                         className="w-full rounded-xl border border-[#d8ecdd] py-2.5 text-sm font-semibold text-[#390A5D] inline-flex items-center justify-center gap-2 hover:bg-[#E8F7EC] cursor-pointer disabled:opacity-40"
                       >
@@ -1040,7 +1042,7 @@ function MyLeadsPage() {
                       </button>
                       <button
                         type="button"
-                        disabled={saving || selected.pipeline_stage === "rejected" || (partner && ["new", "contacted", "bank_submitted", "sanctioned", "disbursed"].includes(selected.pipeline_stage))}
+                        disabled={saving || selected.pipeline_stage === "rejected" || (partner && ((selected.caller_required ? ["new", "contacted"] : []).concat(["bank_submitted", "sanctioned", "disbursed"])).includes(selected.pipeline_stage))}
                         onClick={() => void moveStage("rejected")}
                         className="w-full rounded-xl border border-red-200 text-red-600 py-2.5 text-sm font-semibold hover:bg-red-50 cursor-pointer disabled:opacity-40"
                       >
@@ -1097,5 +1099,72 @@ function MyLeadsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function PartnerCallers({ onChange }: { onChange: () => void }) {
+  const [rows, setRows] = useState<{ id: string; full_name: string; email: string; issued_password: string }[]>([]);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const load = async () => {
+    try {
+      const data = await listMyCallers();
+      setRows(data.items);
+    } catch {
+      setRows([]);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  const create = async (event: FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    try {
+      const created = await createMyCaller({ full_name: name.trim(), email: email.trim() });
+      toast.success(
+        created.emailed
+          ? `${created.full_name} can sign in on Employee Login. Password emailed to you and to them.`
+          : `${created.full_name} can sign in. Password: ${created.temporary_password}`,
+      );
+      setName("");
+      setEmail("");
+      await load();
+      onChange();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not add the telecaller");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+      <h2 className="text-sm font-bold text-[#390A5D]">Your telecallers</h2>
+      <p className="mt-1 text-xs text-[#5c4d72]">They sign in through Employee Login and see only your leads. The call result comes back to you.</p>
+      <form onSubmit={(event) => void create(event)} className="mt-3 flex flex-wrap gap-2">
+        <input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Name" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+        <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="Email" className="h-10 rounded-xl border border-[#d8ecdd] px-3 text-sm" />
+        <button type="submit" disabled={busy} className="h-10 rounded-xl bg-[#10662A] px-4 text-sm font-semibold text-white disabled:opacity-60">
+          {busy ? "Adding…" : "Add telecaller"}
+        </button>
+      </form>
+      {rows.length > 0 ? (
+        <ul className="mt-3 space-y-1 text-sm text-[#390A5D]">
+          {rows.map((row) => (
+            <li key={row.id}>
+              {row.full_name} · {row.email}
+              {row.issued_password ? ` · ${row.issued_password}` : ""}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-xs text-[#5c4d72]">No telecaller yet. You record the first call yourself.</p>
+      )}
+    </section>
   );
 }
