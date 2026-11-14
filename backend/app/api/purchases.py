@@ -32,6 +32,7 @@ class PurchaseOut(BaseModel):
     updated_at: datetime
     assigned_caller_id: UUID | None = None
     caller_required: bool = False
+    partner_name: str = ""
     lead: LeadOut | None = None
 
     model_config = {"from_attributes": True}
@@ -151,8 +152,23 @@ def caller_may_see(db: Session, user: User, purchase: LeadPurchase) -> bool:
     return purchase.assigned_caller_id == user.id
 
 
-def _purchase_out(db: Session, p: LeadPurchase, covered: set[UUID] | None = None) -> PurchaseOut:
+def _buyer_names(db: Session, rows: list[LeadPurchase]) -> dict[UUID, str]:
+    ids = {row.buyer_user_id for row in rows if row.buyer_user_id}
+    if not ids:
+        return {}
+    found = db.query(User).filter(User.id.in_(ids)).all()
+    return {user.id: (user.full_name or user.email or "").strip() for user in found}
+
+
+def _purchase_out(
+    db: Session,
+    p: LeadPurchase,
+    covered: set[UUID] | None = None,
+    names: dict[UUID, str] | None = None,
+) -> PurchaseOut:
     lead = db.query(Lead).filter(Lead.id == p.lead_id).first()
+    if names is None:
+        names = _buyer_names(db, [p])
     return PurchaseOut(
         id=p.id,
         lead_id=p.lead_id,
@@ -167,6 +183,7 @@ def _purchase_out(db: Session, p: LeadPurchase, covered: set[UUID] | None = None
         updated_at=p.updated_at,
         assigned_caller_id=p.assigned_caller_id,
         caller_required=caller_required(db, p, covered),
+        partner_name=names.get(p.buyer_user_id, ""),
         lead=LeadOut.model_validate(lead) if lead else None,
     )
 
@@ -350,7 +367,8 @@ def bank_submissions(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk only")
     rows = query.order_by(LeadPurchase.updated_at.desc()).limit(300).all()
     covered = buyers_with_callers(db, {row.buyer_user_id for row in rows})
-    return PurchaseListOut(items=[_purchase_out(db, row, covered) for row in rows], total=len(rows), stages=list(BANK_STAGES))
+    names = _buyer_names(db, rows)
+    return PurchaseListOut(items=[_purchase_out(db, row, covered, names) for row in rows], total=len(rows), stages=list(BANK_STAGES))
 
 
 @router.get("/my-leads", response_model=PurchaseListOut)
@@ -369,7 +387,8 @@ def my_leads(
         q = db.query(LeadPurchase).filter(LeadPurchase.buyer_user_id == user.id)
     rows = q.order_by(LeadPurchase.created_at.desc()).limit(300).all()
     covered = buyers_with_callers(db, {row.buyer_user_id for row in rows})
-    items = [_purchase_out(db, p, covered) for p in rows]
+    names = _buyer_names(db, rows)
+    items = [_purchase_out(db, p, covered, names) for p in rows]
     return PurchaseListOut(items=items, total=len(items), stages=DEFAULT_PIPELINE_STAGES)
 
 

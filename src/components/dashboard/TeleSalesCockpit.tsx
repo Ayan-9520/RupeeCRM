@@ -1,11 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Phone } from "lucide-react";
-import { DeskGuide } from "@/components/dashboard/DeskGuide";
-import { ProductivityChart } from "@/components/dashboard/ProductivityChart";
-import { RecallList } from "@/components/dashboard/RecallList";
 import { listMyLeads, type CrmPurchase } from "@/lib/python-api";
-import { TELE_SECTIONS, telesalesStats } from "@/lib/telesales";
+import { telesalesStats } from "@/lib/telesales";
 
 export function TeleSalesCockpit({ firstName }: { firstName: string }) {
   const [loading, setLoading] = useState(true);
@@ -46,7 +43,7 @@ export function TeleSalesCockpit({ firstName }: { firstName: string }) {
             {firstName ? `${firstName}'s calling desk` : "Calling desk"}
           </h1>
           <p className="mt-1 max-w-xl text-sm text-[#5c4d72]">
-            Queue, follow-ups, scripts, disposition and conversion. Lender matching stays outside this desk.
+            You call and mark the result. The partner collects the papers. Sanction and disbursement stay with the bank desk.
           </p>
         </div>
         <Link
@@ -67,25 +64,17 @@ export function TeleSalesCockpit({ firstName }: { firstName: string }) {
         ))}
       </div>
 
-      <ProductivityChart />
-
-      <RecallList />
-
-      <DeskGuide audience="caller" />
-
-      <div>
-        <h2 className="font-display text-lg font-bold text-[#390A5D]">TeleSales</h2>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {TELE_SECTIONS.map((item) => (
-            <a
-              key={item.id}
-              href={`/dashboard/calls#${item.id}`}
-              className="rounded-full border border-[#d8ecdd] bg-white px-3 py-1.5 text-sm font-semibold text-[#390A5D] hover:border-[#10662A] hover:bg-[#f5fcf7]"
-            >
-              {item.label}
-            </a>
-          ))}
-        </div>
+      <div className="grid gap-3 md:grid-cols-3">
+        {[
+          ["You", "Call the customer and mark Connected, Interested, Not interested, or a callback."],
+          ["Partner", "After Interested, the partner collects PAN, income proof and bank papers."],
+          ["Bank desk", "Sanction and disbursement are not marked from this desk."],
+        ].map(([who, detail]) => (
+          <article key={who} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A]">{who}</p>
+            <p className="mt-1 text-sm text-[#5c4d72]">{detail}</p>
+          </article>
+        ))}
       </div>
     </div>
   );

@@ -279,6 +279,7 @@ export type CrmPurchase = {
   converted: boolean;
   deal_value: number | null;
   caller_required?: boolean;
+  partner_name?: string;
   created_at: string;
   updated_at?: string;
   lead: CrmLead | null;
