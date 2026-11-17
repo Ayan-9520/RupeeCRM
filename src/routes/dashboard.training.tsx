@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Award, BookOpen, Clock, FileText, Phone, ShieldCheck } from "lucide-react";
 import { AskRupeeDial } from "@/components/dashboard/AskRupeeDial";
-import { COURSES, CATEGORY_LABEL, LEVEL_LABEL } from "@/lib/courses";
+import { CourseReader } from "@/components/learn/CourseReader";
+import { COURSES, CATEGORY_LABEL, LEVEL_LABEL, getCourse } from "@/lib/courses";
 import { CALL_SCRIPTS } from "@/lib/telesales";
 import { RUPEEDIAL_PRODUCT_MENUS } from "@/lib/rupeedial-products";
 
@@ -41,9 +42,16 @@ const RULES = [
 
 function Training() {
   const [tab, setTab] = useState<Tab>("courses");
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const openCourse = openSlug ? getCourse(openSlug) : undefined;
   const [scriptId, setScriptId] = useState<(typeof CALL_SCRIPTS)[number]["id"]>(CALL_SCRIPTS[0].id);
   const script = CALL_SCRIPTS.find((item) => item.id === scriptId) ?? CALL_SCRIPTS[0];
   const groups = [...new Set(CALL_SCRIPTS.map((item) => item.group))];
+
+  useEffect(() => {
+    if (!openCourse) return;
+    document.getElementById("lesson-view")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [openCourse]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -111,16 +119,29 @@ function Training() {
                   <Clock className="size-3.5" /> {course.duration_min} min · {course.lessons} lessons · +{course.reward_points} pts
                 </p>
                 <div className="mt-auto flex gap-2 pt-4 text-sm font-semibold">
-                  <Link to="/dashboard/learn/$slug" params={{ slug: course.slug }} className="rounded-xl border border-[#d8ecdd] px-3 py-2 text-[#390A5D]">
-                    Lessons
-                  </Link>
-                  <Link to="/learn-quiz/$slug" params={{ slug: course.slug }} className="rounded-xl bg-[#10662A] px-3 py-2 text-white">
+                  <button
+                    type="button"
+                    onClick={() => setOpenSlug(course.slug)}
+                    className={`rounded-xl px-3 py-2 ${openSlug === course.slug ? "bg-[#10662A] text-white" : "border border-[#d8ecdd] text-[#390A5D]"}`}
+                  >
+                    View
+                  </button>
+                  <Link to="/learn-quiz/$slug" params={{ slug: course.slug }} className="rounded-xl bg-[#0D4F20] px-3 py-2 text-white">
                     Take quiz
                   </Link>
                 </div>
               </article>
             ))}
           </div>
+          {openCourse ? (
+            <div id="lesson-view" className="rounded-3xl border border-[#d8ecdd] bg-[#F4FBF6] p-5">
+              <CourseReader course={openCourse} />
+            </div>
+          ) : (
+            <p className="rounded-2xl border border-dashed border-[#d8ecdd] bg-white px-4 py-6 text-center text-sm text-[#5c4d72]">
+              Press View on a course. The lessons open on this page.
+            </p>
+          )}
         </div>
       )}
 
