@@ -93,9 +93,6 @@ function CourseDetail() {
                   >
                     <Trophy className="size-4" /> Take the quiz
                   </Link>
-                  <Link to="/auth" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-card border border-border font-medium hover:border-foreground/30 transition-smooth">
-                    Create free account
-                  </Link>
                 </div>
               </div>
 
