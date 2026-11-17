@@ -118,7 +118,7 @@ function LearnDashboard() {
           </div>
           <div className="flex gap-2">
             <Link
-              to="/learn-earn/$slug"
+              to="/dashboard/learn/$slug"
               params={{ slug: nextCourse.slug }}
               className="inline-flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#10662A]"
             >
@@ -172,7 +172,7 @@ function LearnDashboard() {
                     <span className="font-semibold text-[#10662A]">+{c.reward_points} pts</span>
                   </div>
                   <div className="mt-auto flex gap-2 pt-4 text-xs font-semibold">
-                    <Link to="/learn-earn/$slug" params={{ slug: c.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D]">
+                    <Link to="/dashboard/learn/$slug" params={{ slug: c.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D]">
                       Lessons
                     </Link>
                     {cert ? (

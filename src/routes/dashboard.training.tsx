@@ -92,7 +92,7 @@ function Training() {
               <Clock className="size-3.5" /> {c.duration_min} min · {c.lessons} lessons
             </div>
             <div className="mt-4 flex gap-2 text-xs font-semibold">
-              <Link to="/learn-earn/$slug" params={{ slug: c.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D]">
+              <Link to="/dashboard/learn/$slug" params={{ slug: c.slug }} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-[#390A5D]">
                 Lessons
               </Link>
               <Link to="/learn-quiz/$slug" params={{ slug: c.slug }} className="rounded-lg bg-[#10662A] px-3 py-1.5 text-white">

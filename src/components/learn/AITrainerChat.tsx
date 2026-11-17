@@ -290,7 +290,7 @@ function MessageBubble({ msg }: { msg: Msg }) {
             {cited.map((c) => (
               <Link
                 key={c.slug}
-                to="/learn-earn/$slug"
+                to="/dashboard/learn/$slug"
                 params={{ slug: c.slug }}
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-accent/10 text-accent-foreground border border-accent/30 text-[11px] font-semibold hover:bg-accent/20 transition-colors"
               >

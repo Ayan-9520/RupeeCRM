@@ -189,7 +189,7 @@ function CertificatesPage() {
                 <p className="mt-1 text-sm font-semibold text-[#B7E4C7]">{featured.badge}</p>
                 <p className="mt-2 max-w-xs text-sm leading-6 text-[#d7f3df]">+{featured.points} points after a quiz of 70% or more.</p>
                 <div className="mt-5 flex gap-2 text-sm font-semibold">
-                  <Link to="/learn-earn/$slug" params={{ slug: featured.slug }} className="rounded-lg border border-white/30 px-3 py-1.5 text-white hover:bg-white/10">Lessons</Link>
+                  <Link to="/dashboard/learn/$slug" params={{ slug: featured.slug }} className="rounded-lg border border-white/30 px-3 py-1.5 text-white hover:bg-white/10">Lessons</Link>
                   <Link to="/learn-quiz/$slug" params={{ slug: featured.slug }} className="rounded-lg bg-white px-3 py-1.5 text-[#0D4F20] hover:bg-[#E8F7EC]">Take quiz</Link>
                 </div>
               </div>
@@ -246,7 +246,7 @@ function CertificatesPage() {
                   </div>
                   <p className="mt-3 text-sm text-[#5c4d72]">+{course.points} points after a quiz of 70% or more.</p>
                   <div className="mt-4 flex gap-2 text-sm font-semibold">
-                    <Link to="/learn-earn/$slug" params={{ slug: course.slug }} className="rounded-lg border border-[#d8ecdd] bg-white px-3 py-1.5 text-[#390A5D] hover:border-[#10662A]">
+                    <Link to="/dashboard/learn/$slug" params={{ slug: course.slug }} className="rounded-lg border border-[#d8ecdd] bg-white px-3 py-1.5 text-[#390A5D] hover:border-[#10662A]">
                       Lessons
                     </Link>
                     <Link to="/learn-quiz/$slug" params={{ slug: course.slug }} className="rounded-lg bg-[#10662A] px-3 py-1.5 text-white hover:bg-[#0D4F20]">
