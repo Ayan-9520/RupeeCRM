@@ -65,43 +65,62 @@ function LearnEarnLanding() {
 
       <main className="pt-24">
         {/* HERO */}
-        <section className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-hero-gradient opacity-95" />
-          <div className="absolute inset-0 grid-bg opacity-30" />
-          <div className="relative max-w-7xl mx-auto px-5 lg:px-8 py-20 lg:py-28">
-            <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white/90 text-xs font-medium animate-fade-up">
-                <Sparkles className="size-3.5 text-accent" />
+        <section className="relative overflow-hidden bg-[#0B3D1C]">
+          <div className="pointer-events-none absolute -left-20 top-8 size-72 rounded-full bg-[#1f8a42]/30 blur-3xl" />
+          <div className="pointer-events-none absolute -right-16 bottom-0 size-80 rounded-full bg-[#B7E4C7]/15 blur-3xl" />
+          <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-5 py-14 lg:grid-cols-[1.15fr_0.85fr] lg:px-8 lg:py-20">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-medium text-white/90">
+                <Sparkles className="size-3.5 text-[#B7E4C7]" />
                 RupeeDial Academy · Free for partners
               </div>
-              <h1 className="mt-6 font-display text-4xl sm:text-5xl lg:text-6xl font-bold text-white tracking-tight animate-fade-up">
-                Learn → Get Certified → <span className="text-gradient">Sell Better</span>
+              <h1 className="mt-6 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl lg:text-6xl">
+                Learn. Get certified.
+                <span className="mt-1 block text-[#B7E4C7]">Sell better.</span>
               </h1>
-              <p className="mt-5 text-lg text-white/80 max-w-2xl animate-fade-up">
+              <p className="mt-5 max-w-xl text-base leading-7 text-white/75 sm:text-lg">
                 Free training for loan, insurance and card distributors. Read short courses, pass the quiz, and download a certificate with your name on it.
               </p>
-              <div className="mt-8 flex flex-wrap gap-3 animate-fade-up">
-                <a href="#courses" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-[#10662A] text-white font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
+              <div className="mt-8 flex flex-wrap gap-3">
+                <a href="#courses" className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#0D4F20] shadow-[0_12px_30px_rgba(0,0,0,0.18)]">
                   Start learning <ArrowRight className="size-4" />
                 </a>
-                <Link to="/become-partner" className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium hover:bg-white/20 transition-smooth">
+                <Link to="/become-partner" className="inline-flex items-center gap-2 rounded-full border border-white/25 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10">
                   Become a partner
                 </Link>
               </div>
-
-              <div className="mt-12 grid grid-cols-3 gap-4 max-w-xl">
+              <div className="mt-10 flex max-w-md divide-x divide-white/15 rounded-2xl border border-white/15 bg-white/5">
                 {[
                   { k: String(COURSES.length), v: "Live courses" },
                   { k: "70%", v: "Pass mark" },
                   { k: "₹0", v: "Course fee" },
                 ].map((s) => (
-                  <div key={s.v} className="rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md p-4">
+                  <div key={s.v} className="flex-1 px-4 py-3">
                     <div className="font-display text-2xl font-bold text-white">{s.k}</div>
-                    <div className="text-xs text-white/70 mt-0.5">{s.v}</div>
+                    <div className="mt-0.5 text-[11px] text-white/65">{s.v}</div>
                   </div>
                 ))}
               </div>
             </div>
+
+            <aside className="rounded-[1.75rem] border border-white/10 bg-white p-6 text-[#14281c] shadow-[0_30px_70px_rgba(0,0,0,0.28)]">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#10662A]">Certificate path</p>
+                <Award className="size-5 text-[#10662A]" />
+              </div>
+              <h2 className="mt-2 font-display text-2xl font-bold text-[#390A5D]">Your name on the certificate</h2>
+              <ol className="mt-5 space-y-3">
+                {HOW_STEPS.map((step, index) => (
+                  <li key={step.title} className="flex gap-3 rounded-2xl bg-[#F4FBF6] p-3">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#10662A] text-sm font-bold text-white">{index + 1}</span>
+                    <div>
+                      <div className="text-sm font-semibold text-[#14281c]">{step.title}</div>
+                      <div className="mt-0.5 text-xs leading-5 text-[#5c4d72]">{step.body}</div>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </aside>
           </div>
         </section>
 
@@ -281,7 +300,7 @@ function LearnEarnLanding() {
                   Join as a partner, take your first course tonight, and walk into tomorrow's call as a Certified Partner.
                 </p>
                 <div className="mt-8 flex flex-wrap gap-3 justify-center">
-                  <Link to="/become-partner" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#10662A] text-white font-semibold shadow-mint hover:scale-[1.02] transition-smooth">
+                  <Link to="/become-partner" className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-semibold text-[#0D4F20]">
                     Become a partner <ArrowRight className="size-4" />
                   </Link>
                   <a href="#courses" className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-white font-medium hover:bg-white/20 transition-smooth">
