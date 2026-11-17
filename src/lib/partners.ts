@@ -6,6 +6,7 @@ import {
   API_URL,
   type CrmPartnerApplication,
 } from "@/lib/python-api";
+import { RUPEEDIAL_PRODUCT_MENUS } from "@/lib/rupeedial-products";
 
 export type PartnerApplication = CrmPartnerApplication;
 
@@ -139,15 +140,13 @@ export async function getKycSignedUrl(_path: string, _expiresInSec = 3600) {
   return "";
 }
 
-export const PRODUCT_OPTIONS = [
-  { value: "personal_loan", label: "Personal Loan" },
-  { value: "business_loan", label: "Business Loan" },
-  { value: "home_loan", label: "Home Loan" },
-  { value: "lap", label: "Loan Against Property" },
-  { value: "credit_card", label: "Credit Card" },
-  { value: "insurance", label: "Insurance" },
-  { value: "investment", label: "Investments / MF" },
-];
+function productValue(name: string) {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
+}
+
+export const PRODUCT_OPTIONS = RUPEEDIAL_PRODUCT_MENUS.flatMap((menu) =>
+  menu.items.map((name) => ({ value: productValue(name), label: name, group: menu.title })),
+);
 
 export const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   pending: { label: "Pending Review", color: "bg-amber-50 text-amber-700 border-amber-200" },

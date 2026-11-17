@@ -6,12 +6,12 @@ import { AskRupeeDial } from "@/components/dashboard/AskRupeeDial";
 import { CALL_SCRIPTS } from "@/lib/telesales";
 
 export const Route = createFileRoute("/dashboard/training")({
-  head: () => ({ meta: [{ title: "Academy — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Academy — RupeeOne" }] }),
   component: Training,
 });
 
 const ACADEMY = [
-  { id: "products", title: "Products", body: "Personal, business, home, auto and cards. Open a course below for the product you sell." },
+  { id: "products", title: "Products", body: "Retail, MSME, government MSME and trade finance. Open a course below, or use the call book for the product on the file." },
   { id: "policies", title: "Lender policies", body: "Live bank rules are not stored here. Confirm income, obligations and documents, then lender match runs later in OneFlo." },
   { id: "documents", title: "Documents", body: "Start with PAN, address proof, income proof and bank statements. Property loans also need ownership papers. Do not mark a file ready until the customer has shared it." },
   { id: "eligibility", title: "Eligibility", body: "The website check compares indicative offers. It does not sanction. A case becomes eligible in your pipeline only after income and requirement are confirmed." },

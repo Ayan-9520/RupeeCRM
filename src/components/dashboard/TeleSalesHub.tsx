@@ -392,17 +392,50 @@ function ResultRow({
 }
 
 function Scripts({ product }: { product?: string | null }) {
-  const active = scriptFor(product);
+  const matched = scriptFor(product);
+  const [picked, setPicked] = useState(matched.id);
+  const active = CALL_SCRIPTS.find((script) => script.id === picked) ?? matched;
+  const groups = [...new Set(CALL_SCRIPTS.map((script) => script.group))];
   return (
-    <div className="grid gap-3 md:grid-cols-2">
-      {CALL_SCRIPTS.map((script) => (
-        <article key={script.id} className={`rounded-2xl border bg-white p-4 ${script.id === active.id ? "border-[#10662A]" : "border-[#d8ecdd]"}`}>
-          <h2 className="font-display font-bold text-[#390A5D]">{script.title}</h2>
-          <ol className="mt-2 list-decimal space-y-2 pl-4 text-sm text-[#3d3450]">
-            {script.lines.map((line) => <li key={line}>{line}</li>)}
+    <div className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_16px_40px_rgba(16,102,42,0.05)]">
+      <div className="border-b border-[#d8ecdd] px-5 py-4">
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A]">Call book</p>
+        <h2 className="font-display text-xl font-bold text-[#390A5D]">What to say</h2>
+        <p className="mt-1 text-sm text-[#5c4d72]">Same three steps on every product. Open the call, confirm the facts, then hand the file. Do not promise a sanction.</p>
+      </div>
+      <div className="grid lg:grid-cols-[260px_1fr]">
+        <aside className="max-h-[32rem] overflow-y-auto border-b border-[#d8ecdd] bg-[#F4FBF6] lg:border-b-0 lg:border-r">
+          {groups.map((group) => (
+            <div key={group} className="px-3 py-3">
+              <p className="px-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#10662A]">{group}</p>
+              <div className="mt-1">
+                {CALL_SCRIPTS.filter((script) => script.group === group).map((script) => (
+                  <button
+                    key={script.id}
+                    type="button"
+                    onClick={() => setPicked(script.id)}
+                    className={`mt-1 w-full rounded-xl px-3 py-2 text-left text-sm font-semibold ${script.id === active.id ? "bg-[#10662A] text-white" : "text-[#390A5D] hover:bg-white"}`}
+                  >
+                    {script.title}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </aside>
+        <div className="p-5 md:p-6">
+          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A]">{active.group}</p>
+          <h3 className="mt-1 font-display text-2xl font-bold text-[#390A5D]">{active.title}</h3>
+          <ol className="mt-4 space-y-3">
+            {active.lines.map((line, index) => (
+              <li key={line} className="flex gap-3 rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] p-3 text-sm leading-6 text-[#14281c]">
+                <span className="grid size-6 shrink-0 place-items-center rounded-full bg-[#10662A] text-xs font-bold text-white">{index + 1}</span>
+                {line}
+              </li>
+            ))}
           </ol>
-        </article>
-      ))}
+        </div>
+      </div>
     </div>
   );
 }

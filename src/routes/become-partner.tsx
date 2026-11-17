@@ -3,6 +3,7 @@ import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Loader2, ArrowRight, ShieldCheck, IndianRupee, GraduationCap, CheckCircle2, Upload, FileText } from "lucide-react";
+import { Nav } from "@/components/landing/Nav";
 import { submitPartnerApplication, uploadKycDoc, PRODUCT_OPTIONS } from "@/lib/partners";
 
 export const Route = createFileRoute("/become-partner")({
@@ -137,8 +138,8 @@ function BecomePartnerPage() {
   if (done) {
     return (
       <div className="min-h-screen bg-[#F4FBF6] text-[#14281c]">
-        <PartnerHeader />
-        <div className="mx-auto grid min-h-[70vh] max-w-lg place-items-center px-4 py-12">
+        <Nav />
+        <div className="mx-auto grid min-h-[70vh] max-w-lg place-items-center px-4 pb-12 pt-24">
           <div className="w-full rounded-3xl border border-[#d8ecdd] bg-white p-8 shadow-[0_20px_50px_rgba(16,102,42,0.08)] md:p-10">
             <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-[#E8F7EC]">
               <CheckCircle2 className="size-7 text-[#10662A]" />
@@ -170,9 +171,9 @@ function BecomePartnerPage() {
 
   return (
     <div className="min-h-screen bg-[#F4FBF6] text-[#14281c]">
-      <PartnerHeader />
+      <Nav />
 
-      <div className="mx-auto grid max-w-6xl items-start gap-8 px-4 py-8 md:py-12 lg:grid-cols-[0.9fr_1.2fr] lg:gap-10">
+      <div className="mx-auto grid max-w-6xl items-start gap-8 px-4 pb-8 pt-24 md:pb-12 lg:grid-cols-[0.9fr_1.2fr] lg:gap-10">
         <aside className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0D4F20] to-[#10662A] p-7 text-white shadow-[0_24px_50px_rgba(13,79,32,0.25)] lg:sticky lg:top-24">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B7E4C7]">Partner network</p>
           <h1 className="mt-2 font-display text-3xl font-bold leading-tight md:text-4xl">
@@ -270,12 +271,19 @@ function BecomePartnerPage() {
                 <p className="mt-1 text-sm text-[#5c4d72]">Step 2 of 3 · Products and experience</p>
               </div>
               <Field label="Products you want to sell *">
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {PRODUCT_OPTIONS.map((p) => (
-                    <label key={p.value} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium ${products.includes(p.value) ? "border-[#10662A] bg-[#E8F7EC] text-[#0D4F20]" : "border-[#d8ecdd] hover:border-[#10662A]/40"}`}>
-                      <input type="checkbox" className="accent-[#10662A]" checked={products.includes(p.value)} onChange={() => toggleProduct(p.value)} />
-                      {p.label}
-                    </label>
+                <div className="space-y-4">
+                  {[...new Set(PRODUCT_OPTIONS.map((p) => p.group))].map((group) => (
+                    <div key={group}>
+                      <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A]">{group}</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {PRODUCT_OPTIONS.filter((p) => p.group === group).map((p) => (
+                          <label key={p.value} className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-medium ${products.includes(p.value) ? "border-[#10662A] bg-[#E8F7EC] text-[#0D4F20]" : "border-[#d8ecdd] hover:border-[#10662A]/40"}`}>
+                            <input type="checkbox" className="accent-[#10662A]" checked={products.includes(p.value)} onChange={() => toggleProduct(p.value)} />
+                            {p.label}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               </Field>
@@ -338,22 +346,6 @@ function BecomePartnerPage() {
         </form>
       </div>
     </div>
-  );
-}
-
-function PartnerHeader() {
-  return (
-    <header className="sticky top-0 z-30 border-b border-[#d8ecdd] bg-white/95 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link to="/learn-earn" className="flex items-center gap-2.5">
-          <span className="grid size-8 place-items-center rounded-full bg-[#10662A] font-display text-sm font-bold text-white">R</span>
-          <span className="font-display text-lg font-bold tracking-tight text-[#10662A]">RupeeOne</span>
-        </Link>
-        <Link to="/auth" className="text-sm font-semibold text-[#10662A] hover:text-[#0D4F20]">
-          Already a partner? Sign in
-        </Link>
-      </div>
-    </header>
   );
 }
 
