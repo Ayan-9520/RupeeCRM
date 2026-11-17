@@ -2,12 +2,6 @@ import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Menu, X, Phone } from "lucide-react";
 
-const links = [
-  { label: "Products", href: "/overview#products" },
-  { label: "How it works", href: "/overview#flow" },
-  { label: "Partner", href: "/become-partner" },
-];
-
 export function Nav() {
   const [open, setOpen] = useState(false);
 
@@ -22,28 +16,6 @@ export function Nav() {
             RupeeOne
           </span>
         </Link>
-
-        <nav className="hidden md:flex items-center gap-7">
-          {links.map((l) =>
-            l.href.includes("#") ? (
-              <a
-                key={l.href}
-                href={l.href}
-                className="text-sm font-semibold text-[#10662A]/80 hover:text-[#10662A] transition-colors"
-              >
-                {l.label}
-              </a>
-            ) : (
-              <Link
-                key={l.href}
-                to={l.href}
-                className="text-sm font-semibold text-[#10662A]/80 hover:text-[#10662A] transition-colors"
-              >
-                {l.label}
-              </Link>
-            ),
-          )}
-        </nav>
 
         <div className="hidden md:flex items-center gap-3">
           <a
@@ -73,17 +45,6 @@ export function Nav() {
 
       {open && (
         <div className="md:hidden border-t border-[#d8ecdd] bg-white px-5 py-4 flex flex-col gap-1">
-          {links.map((l) =>
-            l.href.includes("#") ? (
-              <a key={l.href} href={l.href} onClick={() => setOpen(false)} className="py-2.5 text-sm font-semibold text-[#10662A]">
-                {l.label}
-              </a>
-            ) : (
-              <Link key={l.href} to={l.href} onClick={() => setOpen(false)} className="py-2.5 text-sm font-semibold text-[#10662A]">
-                {l.label}
-              </Link>
-            ),
-          )}
           <Link
             to="/auth"
             onClick={() => setOpen(false)}

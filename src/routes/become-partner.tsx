@@ -174,8 +174,7 @@ function BecomePartnerPage() {
 
       <div className="mx-auto grid max-w-6xl items-start gap-8 px-4 py-8 md:py-12 lg:grid-cols-[0.9fr_1.2fr] lg:gap-10">
         <aside className="overflow-hidden rounded-3xl bg-gradient-to-br from-[#0D4F20] to-[#10662A] p-7 text-white shadow-[0_24px_50px_rgba(13,79,32,0.25)] lg:sticky lg:top-24">
-          <img src="/rupeediallogo.png" alt="RupeeDial" className="h-16 w-auto rounded-xl bg-white object-contain px-2" />
-          <p className="mt-6 text-xs font-semibold uppercase tracking-[0.18em] text-[#B7E4C7]">Partner network</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#B7E4C7]">Partner network</p>
           <h1 className="mt-2 font-display text-3xl font-bold leading-tight md:text-4xl">
             Become a RupeeDial financial partner
           </h1>
@@ -346,8 +345,9 @@ function PartnerHeader() {
   return (
     <header className="sticky top-0 z-30 border-b border-[#d8ecdd] bg-white/95 backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
-        <Link to="/" className="flex items-center">
-          <img src="/rupeediallogo.png" alt="RupeeDial" className="h-12 w-auto object-contain" />
+        <Link to="/learn-earn" className="flex items-center gap-2.5">
+          <span className="grid size-8 place-items-center rounded-full bg-[#10662A] font-display text-sm font-bold text-white">R</span>
+          <span className="font-display text-lg font-bold tracking-tight text-[#10662A]">RupeeOne</span>
         </Link>
         <Link to="/auth" className="text-sm font-semibold text-[#10662A] hover:text-[#0D4F20]">
           Already a partner? Sign in
