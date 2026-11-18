@@ -18,8 +18,8 @@ export function Hero() {
       <div className="relative w-full max-w-6xl mx-auto px-5 pt-28 pb-14 lg:pt-32 lg:pb-20">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-14 items-center">
           <div className="animate-fade-up">
-            <p className="font-display text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight text-[#10662A] leading-[1.05]">
-              RupeeDial{" "}
+            <p className="font-display text-4xl sm:text-5xl lg:text-[3.25rem] font-extrabold tracking-tight leading-[1.05]">
+              <span className="text-[#10662A]">Rupee</span>
               <span className="text-[#390A5D]">One</span>
             </p>
 
@@ -54,7 +54,7 @@ export function Hero() {
                 to="/auth"
                 className="group rd-btn-primary inline-flex items-center gap-2 rounded-xl px-6 py-3.5 text-sm font-semibold transition-all"
               >
-                Open RupeeDial One
+                Open RupeeOne
                 <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <a
