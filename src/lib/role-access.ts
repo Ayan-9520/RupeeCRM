@@ -51,6 +51,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: "main",
   },
   { title: "Website Leads", url: "/dashboard/website-leads", roles: ADMIN_ROLES, group: "main" },
+  { title: "Careers", url: "/dashboard/careers", roles: ADMIN_ROLES, group: "main" },
   {
     title: "Business Cases",
     url: "/dashboard/business",

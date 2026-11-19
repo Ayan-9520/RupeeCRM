@@ -167,6 +167,68 @@ class PublicPartnerIn(BaseModel):
     status: str | None = None
 
 
+class PublicCareerIn(BaseModel):
+    model_config = {"extra": "allow"}
+
+    website_lead_id: str | None = None
+    lead_id: str | None = None
+    full_name: str | None = None
+    name: str | None = None
+    phone: str | None = None
+    mobile: str | None = None
+    email: str | None = None
+    position: str | None = None
+    experience: str | None = None
+    city: str | None = None
+    message: str | None = None
+    current_role: str | None = None
+    currentRole: str | None = None
+    notice_period: str | None = None
+    noticePeriod: str | None = None
+    expected_salary: str | None = None
+    expectedSalary: str | None = None
+    source: str | None = None
+    resume_url: str | None = None
+    resumeUrl: str | None = None
+
+
+class PublicCareerOut(BaseModel):
+    success: bool = True
+    id: UUID
+    website_lead_id: str
+    message: str = "Career application saved"
+
+
+class CareerOut(BaseModel):
+    model_config = {"from_attributes": True}
+
+    id: UUID
+    website_lead_id: str
+    full_name: str
+    phone: str
+    email: str
+    position: str
+    experience: str
+    city: str
+    message: str
+    current_role: str
+    notice_period: str
+    expected_salary: str
+    source: str
+    resume_url: str
+    status: str
+    created_at: datetime
+
+
+class CareerListOut(BaseModel):
+    items: list[CareerOut]
+    total: int
+
+
+class CareerStatusIn(BaseModel):
+    status: str
+
+
 class PublicPartnerOut(BaseModel):
     success: bool = True
     id: UUID

@@ -160,6 +160,35 @@ class PartnerApplication(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+CAREER_STATUSES = ("new", "shortlisted", "rejected")
+
+
+class CareerApplication(Base):
+    """Website career form. HR inbox for admin. Not a sales lead."""
+
+    __tablename__ = "career_applications"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    website_lead_id: Mapped[str] = mapped_column(String(80), unique=True, nullable=False, index=True)
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    email: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    position: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    experience: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    city: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    message: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    current_role: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    notice_period: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    expected_salary: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    source: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    resume_url: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    status: Mapped[str] = mapped_column(String(40), nullable=False, default="new", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class PartnerProfile(Base):
     """Public firm profile — Growth+ published; Pro can be directory_featured."""
 

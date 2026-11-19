@@ -8,6 +8,7 @@ from app.api import (
     assistant,
     auth,
     billing,
+    careers,
     business,
     commission,
     customer,
@@ -29,6 +30,7 @@ from app.api import (
     pipeline,
     payout_grids,
     payouts,
+    public_careers,
     public_community,
     public_directory,
     public_leads,
@@ -52,11 +54,12 @@ app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(public_leads.router)
 app.include_router(public_partners.router)
+app.include_router(public_careers.router)
+app.include_router(careers.router)
 app.include_router(public_directory.router)
 app.include_router(public_community.router)
 app.include_router(purchases.router)
 app.include_router(partners.router)
-app.include_router(performance.router)
 app.include_router(users.router)
 app.include_router(billing.router)
 app.include_router(partner_profile.router)

@@ -434,6 +434,33 @@ export type CrmPartnerApplication = {
   updated_at: string;
 };
 
+export type CrmCareer = {
+  id: string;
+  website_lead_id: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  position: string;
+  experience: string;
+  city: string;
+  message: string;
+  current_role: string;
+  notice_period: string;
+  expected_salary: string;
+  source: string;
+  resume_url: string;
+  status: string;
+  created_at: string;
+};
+
+export async function listCrmCareers(): Promise<{ items: CrmCareer[]; total: number }> {
+  return request("/api/careers");
+}
+
+export async function setCrmCareerStatus(id: string, status: string): Promise<CrmCareer> {
+  return request(`/api/careers/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+}
+
 export async function listCrmPartners(status?: string): Promise<{ items: CrmPartnerApplication[]; total: number }> {
   const qs = status && status !== "all" ? `?status=${encodeURIComponent(status)}` : "";
   return request(`/api/partners${qs}`);
