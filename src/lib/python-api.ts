@@ -448,6 +448,7 @@ export type CrmCareer = {
   notice_period: string;
   expected_salary: string;
   source: string;
+  work_mode: string;
   resume_url: string;
   status: string;
   created_at: string;

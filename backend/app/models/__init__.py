@@ -181,6 +181,7 @@ class CareerApplication(Base):
     notice_period: Mapped[str] = mapped_column(String(40), nullable=False, default="")
     expected_salary: Mapped[str] = mapped_column(String(80), nullable=False, default="")
     source: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    work_mode: Mapped[str] = mapped_column(String(40), nullable=False, default="")
     resume_url: Mapped[str] = mapped_column(Text, nullable=False, default="")
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="new", index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)

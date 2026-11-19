@@ -78,7 +78,7 @@ function CareersPage() {
                   <td className="whitespace-nowrap px-4 py-3">{row.phone || "—"}</td>
                   <td className="px-4 py-3">
                     <div>{row.position || "—"}</div>
-                    <div className="text-xs text-[#5c4d72]">{row.experience ? `${row.experience} exp` : ""}</div>
+                    <div className="text-xs text-[#5c4d72]">{row.work_mode || "—"}{row.experience ? ` · ${row.experience} exp` : ""}</div>
                   </td>
                   <td className="whitespace-nowrap px-4 py-3">{row.city || "—"}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-xs text-[#5c4d72]">{new Date(row.created_at).toLocaleString("en-IN")}</td>

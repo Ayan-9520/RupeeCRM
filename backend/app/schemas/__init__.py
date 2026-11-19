@@ -188,6 +188,8 @@ class PublicCareerIn(BaseModel):
     expected_salary: str | None = None
     expectedSalary: str | None = None
     source: str | None = None
+    work_mode: str | None = None
+    workMode: str | None = None
     resume_url: str | None = None
     resumeUrl: str | None = None
 
@@ -215,6 +217,7 @@ class CareerOut(BaseModel):
     notice_period: str
     expected_salary: str
     source: str
+    work_mode: str = ""
     resume_url: str
     status: str
     created_at: datetime

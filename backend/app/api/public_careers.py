@@ -43,6 +43,7 @@ def ingest_public_career(body: PublicCareerIn, request: Request, db: Session = D
         "notice_period": _text(data, "notice_period", "noticePeriod", limit=40),
         "expected_salary": _text(data, "expected_salary", "expectedSalary", limit=80),
         "source": _text(data, "source", limit=80),
+        "work_mode": _text(data, "work_mode", "workMode", limit=40),
         "resume_url": _text(data, "resume_url", "resumeUrl", limit=2000),
     }
     if row is None:
