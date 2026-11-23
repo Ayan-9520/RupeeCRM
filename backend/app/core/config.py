@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
     razorpay_webhook_secret: str = ""
+    telephony_click_url: str = ""
+    telephony_api_key: str = ""
+    telephony_virtual_number: str = ""
 
     @property
     def smtp_enabled(self) -> bool:
@@ -33,6 +36,10 @@ class Settings(BaseSettings):
     @property
     def razorpay_enabled(self) -> bool:
         return bool(self.razorpay_key_id and self.razorpay_key_secret)
+
+    @property
+    def telephony_ready(self) -> bool:
+        return bool(self.telephony_click_url.strip() and self.telephony_api_key.strip() and self.telephony_virtual_number.strip())
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Banknote, Check, Loader2, MapPin, Phone, Search } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
-import { listMyLeads, patchMyLead, type CrmPurchase } from "@/lib/python-api";
+import { clickToCall, listMyLeads, patchMyLead, telephonyStatus, type CrmPurchase } from "@/lib/python-api";
 import {
   CALL_SCRIPTS,
   DISPOSITIONS,
@@ -86,6 +86,8 @@ export function TeleSalesHub() {
   const [note, setNote] = useState("");
   const [callbackAt, setCallbackAt] = useState("");
   const [busy, setBusy] = useState(false);
+  const [providerOn, setProviderOn] = useState(false);
+  const [callingId, setCallingId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -104,6 +106,9 @@ export function TeleSalesHub() {
   useEffect(() => {
     setSection(deskFromHash(window.location.hash.replace("#", "")));
     void load();
+    void telephonyStatus()
+      .then((status) => setProviderOn(status.configured))
+      .catch(() => setProviderOn(false));
   }, []);
 
   const openSection = (id: Desk) => {
@@ -128,6 +133,29 @@ export function TeleSalesHub() {
       (lead?.full_phone || "").includes(q)
     );
   });
+
+  const startCall = async (row: CrmPurchase) => {
+    const phone = row.lead?.full_phone;
+    if (!phone) return;
+    if (!providerOn) {
+      window.location.href = `tel:${phone}`;
+      return;
+    }
+    setCallingId(row.id);
+    try {
+      await clickToCall(row.id);
+      toast.success("Your phone rings first. Pick up, then the customer is connected.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      if (message.includes("telephony_not_configured")) {
+        window.location.href = `tel:${phone}`;
+        return;
+      }
+      toast.error(message || "The call could not be placed");
+    } finally {
+      setCallingId(null);
+    }
+  };
 
   const openLead = (row: CrmPurchase) => {
     setSelectedId(row.id);
@@ -165,6 +193,11 @@ export function TeleSalesHub() {
         <p className="mt-1 max-w-2xl text-sm text-[#5c4d72]">
           You only see the leads on your list. Call the customer and mark the result. The partner collects the papers. The bank desk records sanction and disbursement.
         </p>
+        <p className="mt-2 text-xs font-semibold text-[#10662A]">
+          {providerOn
+            ? "Calling account is connected. The customer sees the company number."
+            : "Calling account is not connected yet. Call opens on this phone."}
+        </p>
       </div>
 
       <div className="grid gap-3 md:grid-cols-3">
@@ -177,13 +210,13 @@ export function TeleSalesHub() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex gap-2 overflow-x-auto pb-1">
         {TABS.map((item) => (
           <button
             key={item.id}
             type="button"
             onClick={() => openSection(item.id)}
-            className={`rounded-full px-3 py-1.5 text-sm font-semibold ${
+            className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${
               section === item.id ? "bg-[#10662A] text-white" : "border border-[#d8ecdd] bg-white text-[#390A5D]"
             }`}
           >
@@ -208,6 +241,8 @@ export function TeleSalesHub() {
           callbackAt={callbackAt}
           setCallbackAt={setCallbackAt}
           busy={busy}
+          calling={callingId === selected?.id}
+          onCall={() => selected && void startCall(selected)}
           onDisposition={saveDisposition}
           onBack={() => openSection("queue")}
         />
@@ -221,7 +256,7 @@ export function TeleSalesHub() {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             {visible.map((row) => (
-              <QueueCard key={row.id} row={row} onOpen={() => openLead(row)} />
+              <QueueCard key={row.id} row={row} calling={callingId === row.id} onCall={() => void startCall(row)} onOpen={() => openLead(row)} />
             ))}
           </div>
         </div>
@@ -230,7 +265,7 @@ export function TeleSalesHub() {
   );
 }
 
-function QueueCard({ row, onOpen }: { row: CrmPurchase; onOpen: () => void }) {
+function QueueCard({ row, calling, onCall, onOpen }: { row: CrmPurchase; calling: boolean; onCall: () => void; onOpen: () => void }) {
   const lead = row.lead;
   if (!lead) return null;
   return (
@@ -243,17 +278,17 @@ function QueueCard({ row, onOpen }: { row: CrmPurchase; onOpen: () => void }) {
         <span className="rounded-full bg-[#E8F7EC] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#10662A]">{resultLine(row)}</span>
       </div>
       <div className="mt-3 space-y-1 text-sm text-[#14281c]">
-        <p className="flex items-center gap-2"><Phone className="size-3.5 text-[#10662A]" /><span className="font-mono">{lead.full_phone}</span></p>
+        <p className="flex min-w-0 items-center gap-2"><Phone className="size-3.5 shrink-0 text-[#10662A]" /><span className="truncate font-mono">{lead.full_phone}</span></p>
         <p className="flex items-center gap-2"><Banknote className="size-3.5 text-[#10662A]" />{productLabel(lead.product_subtype)} · {inr(lead.loan_amount)}</p>
       </div>
       <p className="mt-2 text-xs text-[#5c4d72]">
         {row.partner_name ? `Partner: ${row.partner_name}` : "Partner owns this file"}
         {row.next_followup_at ? ` · Follow-up ${when(row.next_followup_at)}` : ""}
       </p>
-      <div className="mt-3 flex gap-2">
-        <a href={`tel:${lead.full_phone}`} className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-[#10662A] px-3 py-2.5 text-sm font-bold text-white">
-          <Phone className="size-4" /> Call
-        </a>
+      <div className="mt-3 grid grid-cols-1 gap-2 min-[380px]:grid-cols-[1fr_auto]">
+        <button type="button" disabled={calling} onClick={onCall} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#10662A] px-3 py-2.5 text-sm font-bold text-white disabled:opacity-60">
+          <Phone className="size-4" /> {calling ? "Ringing…" : "Call"}
+        </button>
         <button type="button" onClick={onOpen} className="rounded-xl border border-[#d8ecdd] px-4 py-2.5 text-sm font-semibold text-[#390A5D]">
           Mark result
         </button>
@@ -269,6 +304,8 @@ function CallSheet({
   callbackAt,
   setCallbackAt,
   busy,
+  calling,
+  onCall,
   onDisposition,
   onBack,
 }: {
@@ -278,6 +315,8 @@ function CallSheet({
   callbackAt: string;
   setCallbackAt: (value: string) => void;
   busy: boolean;
+  calling: boolean;
+  onCall: () => void;
   onDisposition: (code: string, followup?: string) => void;
   onBack: () => void;
 }) {
@@ -298,9 +337,9 @@ function CallSheet({
         <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#10662A]">Customer</p>
         <h2 className="mt-1 font-display text-2xl font-bold text-[#390A5D]">{lead.applicant_name}</h2>
         <p className="text-sm text-[#5c4d72]">{lead.city || "—"}{lead.state ? `, ${lead.state}` : ""}</p>
-        <a href={`tel:${lead.full_phone}`} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#10662A] px-3 py-2.5 font-mono text-sm font-bold text-white">
-          <Phone className="size-4" /> {lead.full_phone}
-        </a>
+        <button type="button" disabled={calling} onClick={onCall} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#10662A] px-3 py-2.5 font-mono text-sm font-bold text-white disabled:opacity-60">
+          <Phone className="size-4" /> {calling ? "Ringing…" : lead.full_phone}
+        </button>
         <dl className="mt-4 space-y-2 text-sm">
           <Fact label="Product" value={`${productLabel(lead.product_subtype)} · ${inr(lead.loan_amount)}`} />
           <Fact label="Work" value={lead.employment_type || "Ask on the call"} />

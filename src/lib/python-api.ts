@@ -386,6 +386,17 @@ export async function assignCall(purchaseId: string, callerUserId: string | null
   });
 }
 
+export async function telephonyStatus(): Promise<{ configured: boolean; mode: "provider" | "handset" }> {
+  return request("/api/telephony/status");
+}
+
+export async function clickToCall(purchaseId: string): Promise<{ placed: boolean }> {
+  return request("/api/telephony/click", {
+    method: "POST",
+    body: JSON.stringify({ purchase_id: purchaseId }),
+  });
+}
+
 export async function listMyLeads(): Promise<{
   items: CrmPurchase[];
   total: number;

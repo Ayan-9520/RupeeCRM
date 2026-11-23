@@ -36,6 +36,7 @@ from app.api import (
     public_leads,
     public_partners,
     purchases,
+    telephony,
     users,
 )
 from app.core.config import settings
@@ -59,6 +60,7 @@ app.include_router(careers.router)
 app.include_router(public_directory.router)
 app.include_router(public_community.router)
 app.include_router(purchases.router)
+app.include_router(telephony.router)
 app.include_router(partners.router)
 app.include_router(users.router)
 app.include_router(billing.router)

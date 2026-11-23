@@ -8,6 +8,7 @@ import string
 from datetime import datetime, timezone
 from uuid import uuid4
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -50,6 +51,40 @@ def generate_temp_password(length: int = 10) -> str:
     return f"Rd{raw}!"
 
 
+def _phone_tail(phone: str) -> str:
+    return re.sub(r"\D", "", phone)[-10:]
+
+
+def _find_partner_by_contact(db: Session, phone: str, email: str) -> PartnerApplication | None:
+    """One person, one application. Match phone or email. Approved wins, then the oldest row."""
+    tail = _phone_tail(phone)
+    filters = []
+    if email:
+        filters.append(PartnerApplication.email.ilike(email))
+    if phone:
+        filters.append(PartnerApplication.phone == phone)
+    if len(tail) == 10:
+        filters.append(PartnerApplication.phone.like(f"%{tail}"))
+    if not filters:
+        return None
+
+    rows = (
+        db.query(PartnerApplication)
+        .filter(or_(*filters))
+        .order_by(PartnerApplication.created_at.asc())
+        .all()
+    )
+    if not rows:
+        return None
+    approved = [row for row in rows if row.status == "approved"]
+    if approved:
+        return approved[0]
+    pending = [row for row in rows if row.status == "pending"]
+    if pending:
+        return pending[0]
+    return rows[0]
+
+
 def upsert_partner_from_website(db: Session, payload: dict) -> PartnerApplication:
     website_id = str(payload.get("website_lead_id") or payload.get("lead_id") or "").strip()
     if not website_id:
@@ -80,9 +115,11 @@ def upsert_partner_from_website(db: Session, payload: dict) -> PartnerApplicatio
         .filter(PartnerApplication.website_lead_id == website_id)
         .first()
     )
+    if existing is None:
+        existing = _find_partner_by_contact(db, phone, email)
+    if existing and existing.status == "approved":
+        return existing
     if existing:
-        if existing.status == "approved":
-            return existing
         existing.full_name = full_name
         existing.phone = phone
         existing.email = email
@@ -134,15 +171,6 @@ def remember_issued_password(db: Session, user: User, password: str) -> None:
         docs = dict(app.documents or {})
         docs["issued_password"] = password
         app.documents = docs
-
-
-def email_password_reset(user: User) -> bool:
-    """Email a one-time set-password link. Never puts the password in the mail."""
-    if not settings.smtp_enabled or not user.email:
-        return False
-    token = create_reset_token(str(user.id), user.password_hash)
-    link = f"{settings.crm_public_url.rstrip('/')}/reset-password?token={token}"
-    return send_password_reset(user.email, user.full_name or "Partner", link)
 
 
 def approve_partner(db: Session, app: PartnerApplication, admin: User, notes: str | None = None) -> tuple[PartnerApplication, User, str, bool]:
