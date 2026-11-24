@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
+import { RUPEEDIAL_PRODUCT_MENUS } from "@/lib/rupeedial-products";
 import {
   createCaseFile,
   downloadCasePaper,
@@ -78,6 +79,8 @@ function liveMoney(row: Pick<LoanCaseFile, "loan_amount" | "sanctioned_amount" |
 function todayIst() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
+
+const loanTypes = RUPEEDIAL_PRODUCT_MENUS.flatMap((group) => group.items);
 
 const OPS_CHIPS: { id: string; label: string }[] = [
   { id: "submitted", label: "Submitted" },
@@ -467,8 +470,21 @@ function CaseForm({
         </div>
       </div>
 
-      <FileBlock title="Loan file" hint="Product, source, and the connector who owns this file.">
-        <Field label="Loan type" value={active.loan_type} onChange={(loan_type) => onChange({ ...active, loan_type })} />
+      <FileBlock title="Loan file" hint="Login starts here. Product and amount sit together, then the customer and the connector.">
+        <label className="block text-xs font-medium text-[#5c4d72]">
+          Loan type
+          <select className="mt-1 h-10 w-full rounded-md border border-input bg-white px-3 text-sm" value={active.loan_type} onChange={(event) => onChange({ ...active, loan_type: event.target.value })}>
+            {active.loan_type && !loanTypes.includes(active.loan_type) ? <option value={active.loan_type}>{active.loan_type}</option> : null}
+            {RUPEEDIAL_PRODUCT_MENUS.map((group) => (
+              <optgroup key={group.title} label={group.title}>
+                {group.items.map((item) => <option key={item} value={item}>{item}</option>)}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <Field label="Loan amount" type="number" value={String(active.loan_amount)} onChange={(value) => onChange({ ...active, loan_amount: Number(value) })} />
+        <Field label="Customer name" value={active.client_name} onChange={(client_name) => onChange({ ...active, client_name })} />
+        <Field label="Customer phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
         <Field label="Project" value={active.project_name} onChange={(project_name) => onChange({ ...active, project_name })} />
         <Field label="Lead source" value={active.lead_source} onChange={(lead_source) => onChange({ ...active, lead_source })} />
         <Field label="Sanction date" value={active.expected_sanction_on} onChange={(expected_sanction_on) => onChange({ ...active, expected_sanction_on })} />
@@ -476,21 +492,18 @@ function CaseForm({
         <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => onChange({ ...active, partner_name })} />
       </FileBlock>
 
-      <FileBlock title="Client" hint="Who the loan is for. Papers stay with the connector.">
-        <Field label="Client" value={active.client_name} onChange={(client_name) => onChange({ ...active, client_name })} />
-        <Field label="Phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
-        <Field label="Client access" value={active.client_access} onChange={(client_access) => onChange({ ...active, client_access })} />
-      </FileBlock>
-
       <FileBlock title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => onChange({ ...active, bank_name })} />
         <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
         <PaperSlot label="Sanction letter" name={active.sanction_letter_name} onPick={(file) => void sendPaper(active.id, "sanction_letter", file, onUploaded)} onOpen={() => void openPaper(active.id, "sanction_letter", active.sanction_letter_name)} />
-        <BankerList admin={admin} rows={bankerRows(active)} onChange={(bankers) => onChange({ ...active, bankers })} />
+        <BankerList
+          rows={bankerRows(active)}
+          onChange={(bankers) => onChange({ ...active, bankers })}
+          onCommit={(bankers) => void saveCaseFile(active.id, { bankers }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the officer"))}
+        />
       </FileBlock>
 
       <FileBlock title="Payout" hint="Lender payout first. Partner share is their agreement on that payout. The rest is company revenue.">
-        <Field label="Loan amount" type="number" value={String(active.loan_amount)} onChange={(value) => onChange({ ...active, loan_amount: Number(value) })} />
         <Field label="Sanctioned amount" type="number" value={String(active.sanctioned_amount)} onChange={(value) => onChange({ ...active, sanctioned_amount: Number(value) })} />
         <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
         <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
@@ -607,32 +620,36 @@ function bankerRows(row: LoanCaseFile) {
 }
 
 function BankerList({
-  admin,
   rows,
   onChange,
+  onCommit,
 }: {
-  admin: boolean;
   rows: { name: string; email: string; designation: string; phone: string }[];
   onChange: (rows: { name: string; email: string; designation: string; phone: string }[]) => void;
+  onCommit: (rows: { name: string; email: string; designation: string; phone: string }[]) => void;
 }) {
+  const latest = useRef(rows);
+  latest.current = rows;
   const edit = (index: number, key: "name" | "email" | "designation" | "phone", value: string) => {
-    onChange(rows.map((row, at) => (at === index ? { ...row, [key]: value } : row)));
+    const next = rows.map((row, at) => (at === index ? { ...row, [key]: value } : row));
+    latest.current = next;
+    onChange(next);
   };
   return (
     <div className="space-y-3 md:col-span-2 xl:col-span-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-[#390A5D]">Bank officers</p>
-        {admin && rows.length < 8 ? (
-          <button type="button" className="text-xs font-semibold text-[#10662A]" onClick={() => onChange([...rows, { name: "", email: "", designation: "", phone: "" }])}>Add officer</button>
+        {rows.length < 8 ? (
+          <button type="button" aria-label="Add officer" className="grid size-8 place-items-center rounded-full bg-[#10662A] text-lg font-bold leading-none text-white" onClick={() => onChange([...rows, { name: "", email: "", designation: "", phone: "" }])}>+</button>
         ) : null}
       </div>
       {rows.map((row, index) => (
         <div key={index} className="grid gap-2 rounded-xl border border-[#d8ecdd] p-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Field label="Name" value={row.name} onChange={(value) => edit(index, "name", value)} />
-          <Field label="Email" value={row.email} onChange={(value) => edit(index, "email", value)} />
-          <Field label="Designation" value={row.designation} onChange={(value) => edit(index, "designation", value)} />
-          <Field label="Phone" value={row.phone} onChange={(value) => edit(index, "phone", value)} />
-          {admin && rows.length > 1 ? (
+          <Field label="Name" value={row.name} onChange={(value) => edit(index, "name", value)} onBlur={() => onCommit(latest.current)} />
+          <Field label="Email" value={row.email} onChange={(value) => edit(index, "email", value)} onBlur={() => onCommit(latest.current)} />
+          <Field label="Designation" value={row.designation} onChange={(value) => edit(index, "designation", value)} onBlur={() => onCommit(latest.current)} />
+          <Field label="Phone" value={row.phone} onChange={(value) => edit(index, "phone", value)} onBlur={() => onCommit(latest.current)} />
+          {rows.length > 1 ? (
             <button type="button" className="text-left text-xs font-semibold text-[#5c4d72] sm:col-span-2 xl:col-span-4" onClick={() => onChange(rows.filter((_, at) => at !== index))}>Remove this officer</button>
           ) : null}
         </div>
@@ -667,11 +684,11 @@ function FileBlock({ title, hint, children }: { title: string; hint: string; chi
   );
 }
 
-function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
+function Field({ label, value, onChange, onBlur, type = "text" }: { label: string; value: string; onChange: (value: string) => void; onBlur?: () => void; type?: string }) {
   return (
     <label className="block text-xs font-medium text-[#5c4d72]">
       {label}
-      <Input className="mt-1" type={type} value={value} onChange={(event) => onChange(event.target.value)} />
+      <Input className="mt-1" type={type} value={value} onChange={(event) => onChange(event.target.value)} onBlur={onBlur} />
     </label>
   );
 }

@@ -387,11 +387,13 @@ def _apply(row: LoanCase, payload: dict) -> None:
 
 
 def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
-    row = db.query(LoanCase).filter(LoanCase.id == case_id).first()
+    row = _visible(db, user).filter(LoanCase.id == case_id).first()
     if not row:
         raise LookupError("Case not found")
     if user.role not in {"admin", "ceo", "super_admin"}:
-        raise PermissionError("Only admin can edit a case file")
+        if user.role not in {"dsa", "affiliate"} or "bankers" not in payload:
+            raise PermissionError("Only admin can edit a case file")
+        payload = {"bankers": payload.get("bankers")}
     _apply(row, payload)
     db.commit()
     db.refresh(row)
