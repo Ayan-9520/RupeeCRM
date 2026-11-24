@@ -584,7 +584,7 @@ function CaseForm({
         </table>
       </div>
 
-        <div className={`grid gap-2 text-sm md:col-span-2 xl:col-span-3 ${admin ? "sm:grid-cols-3" : "sm:grid-cols-1"}`}>
+        <div className={`grid grid-cols-2 gap-2 text-sm md:col-span-2 xl:col-span-3 ${admin ? "sm:grid-cols-3" : ""}`}>
         <div className="rounded-xl bg-[#14301c] px-3 py-3 text-white">
           <div className="text-xs opacity-80">Lender payout</div>
           <div className="text-lg font-bold">₹{inr(money.receivable)}</div>
