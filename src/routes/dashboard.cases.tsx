@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -430,9 +430,9 @@ function CaseForm({
 }) {
   const reached = STAGES.findIndex(([key]) => key === active.stage);
   return (
-    <section className="space-y-5 rounded-2xl border border-[#d8ecdd] bg-white p-4 sm:p-5">
+    <section className="space-y-4">
       <button className="text-sm font-semibold text-[#10662A]" onClick={onBack}>← Back to list</button>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-2xl border border-[#d8ecdd] bg-white px-3 py-4">
         <div className="flex min-w-[720px] items-center">
           {STAGES.map(([id, label], index) => (
             <div key={id} className="flex flex-1 items-center">
@@ -449,45 +449,54 @@ function CaseForm({
           ))}
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-xl font-bold">{active.deal_no}</h2>
-        <span className="rounded-full bg-[#e8f7ec] px-3 py-1 text-xs font-semibold text-[#10662A]">{active.stage_label}</span>
-      </div>
-      <div className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] p-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[#5c4d72]">What happened on this case</p>
-        <div className="mt-2 flex flex-wrap gap-2">
+      <div className="flex flex-wrap items-end justify-between gap-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+        <div>
+          <p className="font-mono text-sm font-bold text-[#10662A]">{active.deal_no}</p>
+          <h2 className="font-display text-xl font-bold text-[#390A5D]">{active.client_name || "Untitled file"}</h2>
+          <p className="mt-1 text-sm text-[#5c4d72]">{active.loan_type || "Loan"} · {active.bank_name || "Bank not set"} · submitted {active.submitted_on || "—"} by {active.submitted_by || "—"}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
           {caseMarks(active).map((mark) => (
-            <span key={mark} className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#390A5D] ring-1 ring-[#d8ecdd]">{mark}</span>
+            <span key={mark} className="rounded-full bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{mark}</span>
           ))}
         </div>
-        <ul className="mt-3 space-y-1 text-sm text-[#390A5D]">
-          <li>Submitted {active.submitted_on || "—"} by {active.submitted_by || "—"}.</li>
-          <li>Sanction date {active.expected_sanction_on || "—"} · {active.client_name || "Client"} · {active.client_phone || "no phone"} · {active.bank_name || "no bank"}.</li>
-          <li>Pipeline is on {active.stage_label}. {active.counted ? "This file is counted." : "This file is not counted."} {active.pod_pending ? `POD is pending${active.pod_remarks ? `: ${active.pod_remarks}` : "."}` : "POD is clear."}</li>
-          <li>Invoice {active.invoice_percent}% · ₹{inr(active.invoice_amount)} · Collection {active.collection_percent}% · ₹{inr(active.collected_amount)}.</li>
-          <li>{active.payout_note || (active.payout_status === "paid" ? "Connector payout is done." : "Connector payout is still pending.")}</li>
-        </ul>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+
+      <FileBlock title="Loan file" hint="Product, source, and the connector who owns this file.">
         <Field label="Loan type" value={active.loan_type} onChange={(loan_type) => onChange({ ...active, loan_type })} />
+        <Field label="Project" value={active.project_name} onChange={(project_name) => onChange({ ...active, project_name })} />
         <Field label="Lead source" value={active.lead_source} onChange={(lead_source) => onChange({ ...active, lead_source })} />
+        <Field label="Sanction date" value={active.expected_sanction_on} onChange={(expected_sanction_on) => onChange({ ...active, expected_sanction_on })} />
         <Field label="Connector code" value={active.partner_code} onChange={(partner_code) => onChange({ ...active, partner_code })} />
         <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => onChange({ ...active, partner_name })} />
+      </FileBlock>
+
+      <FileBlock title="Client" hint="Who the loan is for. Papers stay with the connector.">
         <Field label="Client" value={active.client_name} onChange={(client_name) => onChange({ ...active, client_name })} />
+        <Field label="Phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
+        <Field label="Client access" value={active.client_access} onChange={(client_access) => onChange({ ...active, client_access })} />
+      </FileBlock>
+
+      <FileBlock title="Bank" hint="The lender and the officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => onChange({ ...active, bank_name })} />
         <Field label="Bank RM" value={active.bank_rm} onChange={(bank_rm) => onChange({ ...active, bank_rm })} />
-        <Field label="Sanction date" value={active.expected_sanction_on} onChange={(expected_sanction_on) => onChange({ ...active, expected_sanction_on })} />
+        <Field label="RM phone" value={active.bank_rm_phone} onChange={(bank_rm_phone) => onChange({ ...active, bank_rm_phone })} />
+      </FileBlock>
+
+      <FileBlock title="Payout" hint="Lender payout first. Partner share is their agreement on that payout. The rest is company revenue.">
         <Field label="Loan amount" type="number" value={String(active.loan_amount)} onChange={(value) => onChange({ ...active, loan_amount: Number(value) })} />
         <Field label="Sanctioned amount" type="number" value={String(active.sanctioned_amount)} onChange={(value) => onChange({ ...active, sanctioned_amount: Number(value) })} />
         <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
         <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
+        <Field label="Customer credit name" value={active.loyalty_name} onChange={(loyalty_name) => onChange({ ...active, loyalty_name })} />
         <Field label="Customer credit" type="number" value={String(active.loyalty_amount)} onChange={(value) => onChange({ ...active, loyalty_amount: Number(value) })} />
         <Field label="Invoice amount (to lender)" type="number" value={String(active.invoice_amount)} onChange={(value) => onChange({ ...active, invoice_amount: Number(value) })} />
         <Field label="Collected amount" type="number" value={String(active.collected_amount)} onChange={(value) => onChange({ ...active, collected_amount: Number(value) })} />
         <Field label="POD remarks" value={active.pod_remarks} onChange={(pod_remarks) => onChange({ ...active, pod_remarks })} />
-      </div>
+      </FileBlock>
 
-      <div className="overflow-x-auto rounded-xl border">
+      <FileBlock title="Disbursement" hint="One row for this file. Invoice and collection stay on the Payout desk.">
+      <div className="overflow-x-auto rounded-xl border border-[#d8ecdd] md:col-span-2 xl:col-span-3">
         <table className="min-w-[880px] w-full text-left text-xs">
           <thead className="bg-[#10662A] text-white">
             <tr>
@@ -511,7 +520,7 @@ function CaseForm({
         </table>
       </div>
 
-      <div className="grid gap-2 text-sm sm:grid-cols-3">
+      <div className="grid gap-2 text-sm sm:grid-cols-3 md:col-span-2 xl:col-span-3">
         <div className="rounded-xl bg-[#14301c] px-3 py-3 text-white">
           <div className="text-xs opacity-80">Lender payout</div>
           <div className="text-lg font-bold">₹{inr(money.receivable)}</div>
@@ -525,11 +534,12 @@ function CaseForm({
           <div className="text-lg font-bold text-[#10662A]">₹{inr(money.net)}</div>
         </div>
       </div>
-      <p className="text-xs text-[#5c4d72]">
+      <p className="text-xs text-[#5c4d72] md:col-span-2 xl:col-span-3">
         ₹{inr(money.base)} × {active.receivable_percent}% = ₹{inr(money.receivable)} lender payout, after any subvention.
         Partner agreement {active.payable_percent}% = ₹{inr(money.payable)}.
         The rest, ₹{inr(money.net)}, is company revenue under the employee mapped to this partner.
       </p>
+      </FileBlock>
       {admin ? (
         <div className="flex flex-wrap gap-2">
           <Button disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save file"}</Button>
@@ -557,6 +567,16 @@ function caseMarks(row: LoanCaseFile) {
   if (row.pod_pending) marks.push("POD Pending");
   marks.push(row.payout_status === "paid" ? "Payout done" : "Payout pending");
   return [...new Set(marks)];
+}
+
+function FileBlock({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+      <h3 className="font-display text-base font-bold text-[#390A5D]">{title}</h3>
+      <p className="mt-0.5 text-xs text-[#5c4d72]">{hint}</p>
+      <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>
+    </section>
+  );
 }
 
 function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) {
