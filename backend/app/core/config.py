@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     smtp_from_name: str = "RupeeDial"
     password_reset_minutes: int = 30
     document_storage_dir: str = ""
+    document_s3_bucket: str = ""
+    document_s3_access_key: str = ""
+    document_s3_secret_key: str = ""
+    document_s3_region: str = "ap-south-1"
+    document_s3_endpoint: str = ""
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
     razorpay_webhook_secret: str = ""
@@ -36,6 +41,10 @@ class Settings(BaseSettings):
     @property
     def razorpay_enabled(self) -> bool:
         return bool(self.razorpay_key_id and self.razorpay_key_secret)
+
+    @property
+    def document_s3_ready(self) -> bool:
+        return bool(self.document_s3_bucket.strip() and self.document_s3_access_key.strip() and self.document_s3_secret_key.strip())
 
     @property
     def telephony_ready(self) -> bool:

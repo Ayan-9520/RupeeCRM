@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -15,7 +15,7 @@ from app.api.customer_workspace import _require_purchase
 from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models import CustomerDocument, CustomerDocumentEvent, CustomerProfile, User
-from app.services.document_files import delete_key, open_key, safe_filename, save_bytes, sniff_mime
+from app.services.document_files import delete_key, read_bytes, safe_filename, save_bytes, sniff_mime
 
 router = APIRouter(prefix="/api", tags=["customer-documents"])
 
@@ -271,16 +271,16 @@ def download_document(
     document_id: UUID,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-) -> FileResponse:
+) -> Response:
     row = _owned_doc(db, user, document_id)
     if not row.storage_key:
         raise HTTPException(status_code=404, detail="File not found")
-    path = open_key(row.storage_key)
-    return FileResponse(
-        path,
+    payload = read_bytes(row.storage_key)
+    name = safe_filename(row.file_name or "document")
+    return Response(
+        content=payload,
         media_type=row.mime_type or "application/octet-stream",
-        filename=row.file_name or "document",
-        content_disposition_type="attachment",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
     )
 
 
