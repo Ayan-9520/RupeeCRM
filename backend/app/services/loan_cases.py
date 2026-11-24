@@ -217,6 +217,8 @@ def serialize(row: LoanCase) -> dict:
         "bank_rm": row.bank_rm,
         "bank_rm_phone": row.bank_rm_phone,
         "bankers": _bankers(row),
+        "customer": _customer(row),
+        "stakeholders": _stakeholders(row),
         "submitted_by": row.submitted_by,
         "pod_pending": bool(row.pod_pending),
         "pod_remarks": row.pod_remarks,
@@ -297,6 +299,45 @@ def create_case(db: Session, user: User, payload: dict) -> dict:
     return serialize(saved)
 
 
+CUSTOMER_KEYS = (
+    "email", "company_name", "country", "state", "city", "address",
+    "corr_country", "corr_state", "corr_city", "corr_address",
+    "pan", "dob", "alternate_email", "alternate_mobile",
+)
+
+
+def _customer(row: LoanCase) -> dict:
+    raw = row.customer if isinstance(row.customer, dict) else {}
+    return {key: str(raw.get(key) or "")[:200] for key in CUSTOMER_KEYS}
+
+
+def _clean_customer(value) -> dict:
+    raw = value if isinstance(value, dict) else {}
+    return {key: str(raw.get(key) or "").strip()[:200] for key in CUSTOMER_KEYS}
+
+
+def _stakeholders(row: LoanCase) -> list[dict]:
+    return _clean_stakeholders(row.stakeholders) or [{"name": "", "share_percent": 0}]
+
+
+def _clean_stakeholders(value) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    clean = []
+    for item in value[:8]:
+        if not isinstance(item, dict):
+            continue
+        try:
+            share = float(item.get("share_percent") or 0)
+        except (TypeError, ValueError):
+            share = 0
+        share = min(max(share, 0), 100)
+        name = str(item.get("name") or "").strip()[:120]
+        if name or share:
+            clean.append({"name": name, "share_percent": share})
+    return clean
+
+
 def _clean_bankers(value) -> list[dict]:
     if not isinstance(value, list):
         return []
@@ -351,6 +392,10 @@ def _apply(row: LoanCase, payload: dict) -> None:
         first = clean[0] if clean else {}
         row.bank_rm = str(first.get("name") or "")
         row.bank_rm_phone = str(first.get("phone") or "")
+    if "customer" in payload and payload["customer"] is not None:
+        row.customer = _clean_customer(payload["customer"])
+    if "stakeholders" in payload and payload["stakeholders"] is not None:
+        row.stakeholders = _clean_stakeholders(payload["stakeholders"])
     for key in ("loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "loyalty_amount", "invoice_amount", "collected_amount"):
         if key in payload and payload[key] is not None:
             value = float(payload[key])
@@ -391,9 +436,11 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
     if not row:
         raise LookupError("Case not found")
     if user.role not in {"admin", "ceo", "super_admin"}:
-        if user.role not in {"dsa", "affiliate"} or "bankers" not in payload:
+        if user.role not in {"dsa", "affiliate"}:
             raise PermissionError("Only admin can edit a case file")
-        payload = {"bankers": payload.get("bankers")}
+        payload = {key: payload.get(key) for key in ("bankers", "customer", "stakeholders") if key in payload}
+        if not payload:
+            raise PermissionError("Only admin can edit a case file")
     _apply(row, payload)
     db.commit()
     db.refresh(row)

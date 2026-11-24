@@ -492,6 +492,8 @@ function CaseForm({
         <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => onChange({ ...active, partner_name })} />
       </FileBlock>
 
+      <CustomerFields active={active} onChange={onChange} onUploaded={onUploaded} />
+
       <FileBlock title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => onChange({ ...active, bank_name })} />
         <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
@@ -500,6 +502,14 @@ function CaseForm({
           rows={bankerRows(active)}
           onChange={(bankers) => onChange({ ...active, bankers })}
           onCommit={(bankers) => void saveCaseFile(active.id, { bankers }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the officer"))}
+        />
+      </FileBlock>
+
+      <FileBlock title="Share" hint="Who inside the company shares this file. The partner payout above is separate.">
+        <StakeList
+          rows={stakeRows(active)}
+          onChange={(stakeholders) => onChange({ ...active, stakeholders })}
+          onCommit={(stakeholders) => void saveCaseFile(active.id, { stakeholders }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the share"))}
         />
       </FileBlock>
 
@@ -609,6 +619,92 @@ async function openPaper(id: string, kind: "sanction_letter" | "bank_confirmatio
   } catch (error) {
     toast.error(error instanceof Error ? error.message : "Could not open the file");
   }
+}
+
+const EMPTY_CUSTOMER: Record<string, string> = {
+  email: "", company_name: "", country: "India", state: "", city: "", address: "",
+  corr_country: "", corr_state: "", corr_city: "", corr_address: "",
+  pan: "", dob: "", alternate_email: "", alternate_mobile: "",
+};
+
+function customerOf(row: LoanCaseFile) {
+  return { ...EMPTY_CUSTOMER, ...(row.customer || {}) };
+}
+
+function CustomerFields({ active, onChange, onUploaded }: { active: LoanCaseFile; onChange: (row: LoanCaseFile) => void; onUploaded: (row: LoanCaseFile) => void }) {
+  const latest = useRef(customerOf(active));
+  latest.current = customerOf(active);
+  const patch = (key: string, value: string) => {
+    const next = { ...latest.current, [key]: value };
+    latest.current = next;
+    onChange({ ...active, customer: next });
+  };
+  const commit = () => {
+    void saveCaseFile(active.id, { customer: latest.current })
+      .then(onUploaded)
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the customer"));
+  };
+  const fields: [string, string][] = [
+    ["email", "Email"],
+    ["company_name", "Company"],
+    ["country", "Country"],
+    ["state", "State"],
+    ["city", "City"],
+    ["address", "Address"],
+    ["pan", "PAN"],
+    ["dob", "Date of birth"],
+    ["alternate_email", "Alternate email"],
+    ["alternate_mobile", "Alternate phone"],
+  ];
+  return (
+    <FileBlock title="Customer" hint="Address and identity for this file. Papers the customer signs stay with the connector.">
+      {fields.map(([key, label]) => (
+        <Field key={key} label={label} value={latest.current[key] || ""} onChange={(value) => patch(key, value)} onBlur={commit} />
+      ))}
+    </FileBlock>
+  );
+}
+
+function stakeRows(row: LoanCaseFile) {
+  return row.stakeholders?.length ? row.stakeholders : [{ name: "", share_percent: 0 }];
+}
+
+function StakeList({
+  rows,
+  onChange,
+  onCommit,
+}: {
+  rows: { name: string; share_percent: number }[];
+  onChange: (rows: { name: string; share_percent: number }[]) => void;
+  onCommit: (rows: { name: string; share_percent: number }[]) => void;
+}) {
+  const latest = useRef(rows);
+  latest.current = rows;
+  const edit = (index: number, next: { name: string; share_percent: number }) => {
+    const list = rows.map((row, at) => (at === index ? next : row));
+    latest.current = list;
+    onChange(list);
+  };
+  const total = rows.reduce((sum, row) => sum + (Number(row.share_percent) || 0), 0);
+  return (
+    <div className="space-y-3 md:col-span-2 xl:col-span-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-[#390A5D]">People on this file · {total}% shared</p>
+        {rows.length < 8 ? (
+          <button type="button" aria-label="Add person" className="grid size-8 place-items-center rounded-full bg-[#10662A] text-lg font-bold leading-none text-white" onClick={() => onChange([...rows, { name: "", share_percent: 0 }])}>+</button>
+        ) : null}
+      </div>
+      {rows.map((row, index) => (
+        <div key={index} className="grid gap-2 rounded-xl border border-[#d8ecdd] p-3 sm:grid-cols-2">
+          <Field label="Name" value={row.name} onChange={(name) => edit(index, { ...row, name })} onBlur={() => onCommit(latest.current)} />
+          <Field label="Share %" type="number" value={String(row.share_percent)} onChange={(value) => edit(index, { ...row, share_percent: Number(value) })} onBlur={() => onCommit(latest.current)} />
+          {rows.length > 1 ? (
+            <button type="button" className="text-left text-xs font-semibold text-[#5c4d72] sm:col-span-2" onClick={() => { const next = rows.filter((_, at) => at !== index); onChange(next); onCommit(next); }}>Remove</button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function bankerRows(row: LoanCaseFile) {
