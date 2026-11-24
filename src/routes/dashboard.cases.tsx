@@ -537,32 +537,21 @@ function CaseForm({
         />
       </FileBlock>
 
-      <FileBlock step="5" title="Payout" hint="The invoice is the same one on Money, Invoices. It is raised there, and only shown here.">
-        <div className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] p-3 md:col-span-2 xl:col-span-3">
-          {active.partner_invoice?.number ? (
-            <>
-              <p className="font-semibold text-[#390A5D]">{active.partner_invoice.number}</p>
-              <p className="mt-1 text-sm text-[#5c4d72]">
-                {active.partner_invoice.status_label}
-                {active.partner_invoice.share != null ? ` · Your share ₹${inr(Number(active.partner_invoice.share))}` : ""}
-                {active.partner_invoice.utr ? ` · UTR ${active.partner_invoice.utr}` : ""}
-              </p>
-            </>
-          ) : (
-            <p className="text-sm text-[#5c4d72]">No invoice yet. Raise it from Money, Invoices. This file will show the same invoice here.</p>
-          )}
-        </div>
-        <Field label="Sanctioned amount" type="number" value={String(active.sanctioned_amount)} onChange={(value) => onChange({ ...active, sanctioned_amount: Number(value) })} />
-        <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
-        <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
-        <Field label="Customer credit name" value={active.loyalty_name} onChange={(loyalty_name) => onChange({ ...active, loyalty_name })} />
-        <Field label="Customer credit" type="number" value={String(active.loyalty_amount)} onChange={(value) => onChange({ ...active, loyalty_amount: Number(value) })} />
-        <Field label="Invoice amount (to lender)" type="number" value={String(active.invoice_amount)} onChange={(value) => onChange({ ...active, invoice_amount: Number(value) })} />
-        <Field label="Collected amount" type="number" value={String(active.collected_amount)} onChange={(value) => onChange({ ...active, collected_amount: Number(value) })} />
-        <Field label="POD remarks" value={active.pod_remarks} onChange={(pod_remarks) => onChange({ ...active, pod_remarks })} />
-      </FileBlock>
-
-      <FileBlock step="6" title="Disbursement" hint="The result of this file: lender payout, partner share, and what the company keeps.">
+      <FileBlock step="5" title="Disbursement" hint="The bank has released the loan. Lender payout is worked out after this.">
+        {admin ? (
+          <>
+            <Field label="Sanctioned amount" type="number" value={String(active.sanctioned_amount)} onChange={(value) => onChange({ ...active, sanctioned_amount: Number(value) })} />
+            <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
+            <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
+            <Field label="Customer credit name" value={active.loyalty_name} onChange={(loyalty_name) => onChange({ ...active, loyalty_name })} />
+            <Field label="Customer credit" type="number" value={String(active.loyalty_amount)} onChange={(value) => onChange({ ...active, loyalty_amount: Number(value) })} />
+            <Field label="Invoice amount (to lender)" type="number" value={String(active.invoice_amount)} onChange={(value) => onChange({ ...active, invoice_amount: Number(value) })} />
+            <Field label="Collected amount" type="number" value={String(active.collected_amount)} onChange={(value) => onChange({ ...active, collected_amount: Number(value) })} />
+            <Field label="POD remarks" value={active.pod_remarks} onChange={(pod_remarks) => onChange({ ...active, pod_remarks })} />
+          </>
+        ) : (
+          <p className="text-sm text-[#5c4d72] md:col-span-2 xl:col-span-3">Your share of the lender payout is ₹{inr(money.payable)}. The company sets the lender percent and confirms collection.</p>
+        )}
       <div className="overflow-x-auto rounded-xl border border-[#d8ecdd] md:col-span-2 xl:col-span-3">
         <table className="min-w-[880px] w-full text-left text-xs">
           <thead className="bg-[#10662A] text-white">
@@ -587,7 +576,7 @@ function CaseForm({
         </table>
       </div>
 
-      <div className="grid gap-2 text-sm sm:grid-cols-3 md:col-span-2 xl:col-span-3">
+        <div className={`grid gap-2 text-sm md:col-span-2 xl:col-span-3 ${admin ? "sm:grid-cols-3" : "sm:grid-cols-1"}`}>
         <div className="rounded-xl bg-[#14301c] px-3 py-3 text-white">
           <div className="text-xs opacity-80">Lender payout</div>
           <div className="text-lg font-bold">₹{inr(money.receivable)}</div>
@@ -596,24 +585,45 @@ function CaseForm({
           <div className="text-xs opacity-80">Partner share · {active.partner_name || "—"}</div>
           <div className="text-lg font-bold">₹{inr(money.payable)}</div>
         </div>
-        <div className="rounded-xl border px-3 py-3">
-          <div className="text-xs text-[#5c4d72]">Company revenue</div>
-          <div className="text-lg font-bold text-[#10662A]">₹{inr(money.net)}</div>
-        </div>
+        {admin ? (
+          <div className="rounded-xl border px-3 py-3">
+            <div className="text-xs text-[#5c4d72]">Company revenue</div>
+            <div className="text-lg font-bold text-[#10662A]">₹{inr(money.net)}</div>
+          </div>
+        ) : null}
       </div>
-      <p className="text-xs text-[#5c4d72] md:col-span-2 xl:col-span-3">
-        ₹{inr(money.base)} × {active.receivable_percent}% = ₹{inr(money.receivable)} lender payout, after any subvention.
-        Partner agreement {active.payable_percent}% = ₹{inr(money.payable)}.
-        The rest, ₹{inr(money.net)}, is company revenue under the employee mapped to this partner.
-      </p>
+      {admin ? (
+        <p className="text-xs text-[#5c4d72] md:col-span-2 xl:col-span-3">
+          ₹{inr(money.base)} × {active.receivable_percent}% = ₹{inr(money.receivable)} lender payout, after any subvention.
+          Partner agreement {active.payable_percent}% = ₹{inr(money.payable)}.
+          The rest, ₹{inr(money.net)}, is company revenue under the employee mapped to this partner.
+        </p>
+      ) : null}
       </FileBlock>
-      <FileBlock step="7" title="Share" hint="Who inside the company shares this file. This is not the partner payout.">
+
+      <FileBlock step="6" title="Payout" hint="This is the partner invoice from Money, Invoices. It is raised there, after disbursement, and only shown here.">
+        <div className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] p-3 md:col-span-2 xl:col-span-3">
+          {active.partner_invoice?.number ? (
+            <>
+              <p className="font-semibold text-[#390A5D]">{active.partner_invoice.number}</p>
+              <p className="mt-1 text-sm text-[#5c4d72]">
+                {active.partner_invoice.status_label}
+                {active.partner_invoice.share != null ? ` · Share on this file ₹${inr(Number(active.partner_invoice.share))}` : ""}
+                {active.partner_invoice.utr ? ` · UTR ${active.partner_invoice.utr}` : ""}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-[#5c4d72]">No partner invoice yet. After disbursement, raise it from Money, Invoices. The same invoice will show on this file.</p>
+          )}
+        </div>
+      </FileBlock>
+      {admin ? <FileBlock step="7" title="Share" hint="Who inside the company shares this file. This is not the partner payout.">
         <StakeList
           rows={stakeRows(active)}
           onChange={(stakeholders) => onChange({ ...active, stakeholders })}
           onCommit={(stakeholders) => void saveCaseFile(active.id, { stakeholders }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the share"))}
         />
-      </FileBlock>
+      </FileBlock> : null}
       <FileBlock step="8" title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
         <div className="overflow-x-auto md:col-span-2 xl:col-span-3">
           <table className="min-w-[640px] w-full text-left text-sm">
