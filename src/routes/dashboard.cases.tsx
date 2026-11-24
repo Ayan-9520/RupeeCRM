@@ -501,7 +501,7 @@ function CaseForm({
         </div>
       </div>
 
-      <FileBlock title="Loan file" hint="Login starts here. Product and amount sit together, then the customer and the connector.">
+      <FileBlock step="1" title="Login" hint="What was logged: product, amount, source, and the sanction date.">
         <label className="block text-xs font-medium text-[#5c4d72]">
           Loan type
           <select className="mt-1 h-10 w-full rounded-md border border-input bg-white px-3 text-sm" value={active.loan_type} onChange={(event) => onChange({ ...active, loan_type: event.target.value })}>
@@ -514,18 +514,19 @@ function CaseForm({
           </select>
         </label>
         <Field label="Loan amount" type="number" value={String(active.loan_amount)} onChange={(value) => onChange({ ...active, loan_amount: Number(value) })} />
-        <Field label="Customer name" value={active.client_name} onChange={(client_name) => onChange({ ...active, client_name })} />
-        <Field label="Customer phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
         <Field label="Project" value={active.project_name} onChange={(project_name) => onChange({ ...active, project_name })} />
         <Field label="Lead source" value={active.lead_source} onChange={(lead_source) => onChange({ ...active, lead_source })} />
         <Field label="Sanction date" type="date" value={(active.expected_sanction_on || "").slice(0, 10)} onChange={(expected_sanction_on) => onChange({ ...active, expected_sanction_on })} />
-        <Field label="Connector code" value={active.partner_code} onChange={(partner_code) => onChange({ ...active, partner_code })} />
-        <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => onChange({ ...active, partner_name })} />
       </FileBlock>
 
       <CustomerFields active={active} onChange={onChange} onUploaded={onUploaded} />
 
-      <FileBlock title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
+      <FileBlock step="3" title="Connector" hint="The partner who owns this file and will be paid.">
+        <Field label="Connector code" value={active.partner_code} onChange={(partner_code) => onChange({ ...active, partner_code })} />
+        <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => onChange({ ...active, partner_name })} />
+      </FileBlock>
+
+      <FileBlock step="4" title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => onChange({ ...active, bank_name })} />
         <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
         <PaperSlot label="Sanction letter" name={active.sanction_letter_name} onPick={(file) => void sendPaper(active.id, "sanction_letter", file, onUploaded)} onOpen={() => void openPaper(active.id, "sanction_letter", active.sanction_letter_name)} />
@@ -536,15 +537,7 @@ function CaseForm({
         />
       </FileBlock>
 
-      <FileBlock title="Share" hint="Who inside the company shares this file. The partner payout above is separate.">
-        <StakeList
-          rows={stakeRows(active)}
-          onChange={(stakeholders) => onChange({ ...active, stakeholders })}
-          onCommit={(stakeholders) => void saveCaseFile(active.id, { stakeholders }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the share"))}
-        />
-      </FileBlock>
-
-      <FileBlock title="Payout" hint="Lender payout first. Partner share is their agreement on that payout. The rest is company revenue.">
+      <FileBlock step="5" title="Payout" hint="Lender payout first. Partner share is their agreement on that payout. The rest is company revenue.">
         <Field label="Sanctioned amount" type="number" value={String(active.sanctioned_amount)} onChange={(value) => onChange({ ...active, sanctioned_amount: Number(value) })} />
         <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
         <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
@@ -555,7 +548,7 @@ function CaseForm({
         <Field label="POD remarks" value={active.pod_remarks} onChange={(pod_remarks) => onChange({ ...active, pod_remarks })} />
       </FileBlock>
 
-      <FileBlock title="Disbursement" hint="One row for this file. Invoice and collection stay on the Payout desk.">
+      <FileBlock step="6" title="Disbursement" hint="The result of this file: lender payout, partner share, and what the company keeps.">
       <div className="overflow-x-auto rounded-xl border border-[#d8ecdd] md:col-span-2 xl:col-span-3">
         <table className="min-w-[880px] w-full text-left text-xs">
           <thead className="bg-[#10662A] text-white">
@@ -600,7 +593,14 @@ function CaseForm({
         The rest, ₹{inr(money.net)}, is company revenue under the employee mapped to this partner.
       </p>
       </FileBlock>
-      <FileBlock title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
+      <FileBlock step="7" title="Share" hint="Who inside the company shares this file. This is not the partner payout.">
+        <StakeList
+          rows={stakeRows(active)}
+          onChange={(stakeholders) => onChange({ ...active, stakeholders })}
+          onCommit={(stakeholders) => void saveCaseFile(active.id, { stakeholders }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the share"))}
+        />
+      </FileBlock>
+      <FileBlock step="8" title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
         <div className="overflow-x-auto md:col-span-2 xl:col-span-3">
           <table className="min-w-[640px] w-full text-left text-sm">
             <thead className="text-[11px] uppercase tracking-wide text-[#5c4d72]">
@@ -719,7 +719,9 @@ function CustomerFields({ active, onChange, onUploaded }: { active: LoanCaseFile
     ["alternate_mobile", "Alternate phone"],
   ];
   return (
-    <FileBlock title="Customer" hint="Address and identity for this file. Papers the customer signs stay with the connector.">
+    <FileBlock step="2" title="Customer" hint="Who the loan is for. Name and phone first, then address and identity.">
+      <Field label="Customer name" value={active.client_name} onChange={(client_name) => onChange({ ...active, client_name })} />
+      <Field label="Customer phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
       {fields.map(([key, label]) => (
         <Field key={key} label={label} value={latest.current[key] || ""} onChange={(value) => patch(key, value)} onBlur={commit} />
       ))}
@@ -832,10 +834,13 @@ function PaperSlot({ label, name, onPick, onOpen }: { label: string; name?: stri
   );
 }
 
-function FileBlock({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+function FileBlock({ step, title, hint, children }: { step?: string; title: string; hint: string; children: ReactNode }) {
   return (
     <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-      <h3 className="font-display text-base font-bold text-[#390A5D]">{title}</h3>
+      <div className="flex items-center gap-2">
+        {step ? <span className="grid size-6 place-items-center rounded-full bg-[#10662A] text-[11px] font-bold text-white">{step}</span> : null}
+        <h3 className="font-display text-base font-bold text-[#390A5D]">{title}</h3>
+      </div>
       <p className="mt-0.5 text-xs text-[#5c4d72]">{hint}</p>
       <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{children}</div>
     </section>
