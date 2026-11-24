@@ -1,6 +1,7 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,12 @@ from app.api.deps import get_current_user
 from app.db.session import get_db
 from app.models import User
 from app.services import loan_cases as service
+from app.services.document_files import delete_key, read_bytes, safe_filename, save_bytes, sniff_mime
+
+PAPERS = {
+    "sanction_letter": ("sanction_letter_key", "sanction_letter_name"),
+    "bank_confirmation": ("bank_confirmation_key", "bank_confirmation_name"),
+}
 
 router = APIRouter(prefix="/api/cases", tags=["cases"])
 READ_ROLES = {"admin", "ceo", "super_admin", "lender", "dsa", "coordinator"}
@@ -97,3 +104,58 @@ def save_case(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+def _paper_case(db: Session, user: User, case_id: UUID):
+    row = service._visible(db, user).filter_by(id=case_id).first()
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case file not found")
+    return row
+
+
+@router.post("/{case_id}/papers/{kind}")
+async def upload_paper(
+    case_id: UUID,
+    kind: str,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_reader),
+) -> dict:
+    fields = PAPERS.get(kind)
+    if fields is None:
+        raise HTTPException(status_code=400, detail="Unknown paper")
+    row = _paper_case(db, user, case_id)
+    payload = await file.read()
+    mime = sniff_mime(payload, file.content_type or "")
+    key_field, name_field = fields
+    previous = getattr(row, key_field)
+    key = save_bytes(str(row.id), kind, payload, mime)
+    setattr(row, key_field, key)
+    setattr(row, name_field, safe_filename(file.filename or kind))
+    db.commit()
+    db.refresh(row)
+    if previous and previous != key:
+        delete_key(previous)
+    return service.serialize(row)
+
+
+@router.get("/{case_id}/papers/{kind}")
+def download_paper(
+    case_id: UUID,
+    kind: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_reader),
+) -> Response:
+    fields = PAPERS.get(kind)
+    if fields is None:
+        raise HTTPException(status_code=400, detail="Unknown paper")
+    row = _paper_case(db, user, case_id)
+    key = getattr(row, fields[0])
+    if not key:
+        raise HTTPException(status_code=404, detail="File not found")
+    name = safe_filename(getattr(row, fields[1]) or kind)
+    return Response(
+        content=read_bytes(key),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{name}"'},
+    )

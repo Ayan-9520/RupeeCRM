@@ -224,6 +224,8 @@ def serialize(row: LoanCase) -> dict:
         "collected_amount": _round(row.collected_amount),
         "payout_status": row.payout_status,
         "payout_note": note,
+        "sanction_letter_name": row.sanction_letter_name or "",
+        "bank_confirmation_name": row.bank_confirmation_name or "",
         "created_at": row.created_at.isoformat() if row.created_at else None,
         "submitted_on": _on_day(row),
         **money,

@@ -1492,6 +1492,8 @@ export type LoanCaseFile = {
   collected_amount: number;
   payout_status: string;
   payout_note: string;
+  sanction_letter_name?: string;
+  bank_confirmation_name?: string;
   submitted_on?: string;
   base_amount: number;
   receivable_amount: number;
@@ -1519,6 +1521,16 @@ export async function createCaseFile(body: Partial<LoanCaseFile>): Promise<LoanC
 
 export async function saveCaseFile(id: string, body: Partial<LoanCaseFile>): Promise<LoanCaseFile> {
   return request(`/api/cases/${id}`, { method: "PUT", body: JSON.stringify(body) });
+}
+
+export async function uploadCasePaper(id: string, kind: "sanction_letter" | "bank_confirmation", file: File): Promise<LoanCaseFile> {
+  const body = new FormData();
+  body.append("file", file);
+  return request(`/api/cases/${id}/papers/${kind}`, { method: "POST", body });
+}
+
+export async function downloadCasePaper(id: string, kind: "sanction_letter" | "bank_confirmation"): Promise<Blob> {
+  return requestBlob(`/api/cases/${id}/papers/${kind}`);
 }
 
 export type PayoutGridRow = {

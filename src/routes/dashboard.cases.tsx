@@ -8,9 +8,11 @@ import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import {
   createCaseFile,
+  downloadCasePaper,
   listCaseFiles,
   openSampleCase,
   saveCaseFile,
+  uploadCasePaper,
   type LoanCaseFile,
 } from "@/lib/python-api";
 
@@ -271,6 +273,7 @@ function CasesPage() {
           onChange={setActive}
           onBack={() => setActive(null)}
           onSave={() => void save(active)}
+          onUploaded={setActive}
         />
       ) : (
         <>
@@ -419,6 +422,7 @@ function CaseForm({
   onChange,
   onBack,
   onSave,
+  onUploaded,
 }: {
   active: LoanCaseFile;
   money: ReturnType<typeof liveMoney>;
@@ -427,6 +431,7 @@ function CaseForm({
   onChange: (row: LoanCaseFile) => void;
   onBack: () => void;
   onSave: () => void;
+  onUploaded: (row: LoanCaseFile) => void;
 }) {
   const reached = STAGES.findIndex(([key]) => key === active.stage);
   return (
@@ -475,6 +480,11 @@ function CaseForm({
         <Field label="Client" value={active.client_name} onChange={(client_name) => onChange({ ...active, client_name })} />
         <Field label="Phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
         <Field label="Client access" value={active.client_access} onChange={(client_access) => onChange({ ...active, client_access })} />
+      </FileBlock>
+
+      <FileBlock title="Bank papers" hint="Two files only. PDF or a photo, up to 10 MB each.">
+        <PaperSlot label="Sanction letter" name={active.sanction_letter_name} onPick={(file) => void sendPaper(active.id, "sanction_letter", file, onUploaded)} onOpen={() => void openPaper(active.id, "sanction_letter", active.sanction_letter_name)} />
+        <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
       </FileBlock>
 
       <FileBlock title="Bank" hint="The lender and the officer on this file.">
@@ -567,6 +577,45 @@ function caseMarks(row: LoanCaseFile) {
   if (row.pod_pending) marks.push("POD Pending");
   marks.push(row.payout_status === "paid" ? "Payout done" : "Payout pending");
   return [...new Set(marks)];
+}
+
+async function sendPaper(id: string, kind: "sanction_letter" | "bank_confirmation", file: File, onUploaded: (row: LoanCaseFile) => void) {
+  try {
+    onUploaded(await uploadCasePaper(id, kind, file));
+    toast.success(kind === "sanction_letter" ? "Sanction letter saved" : "Bank confirmation saved");
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Could not save the file");
+  }
+}
+
+async function openPaper(id: string, kind: "sanction_letter" | "bank_confirmation", name?: string) {
+  try {
+    const blob = await downloadCasePaper(id, kind);
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name || kind;
+    link.click();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    toast.error(error instanceof Error ? error.message : "Could not open the file");
+  }
+}
+
+function PaperSlot({ label, name, onPick, onOpen }: { label: string; name?: string; onPick: (file: File) => void; onOpen: () => void }) {
+  return (
+    <div className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] p-3">
+      <p className="text-xs font-semibold text-[#390A5D]">{label}</p>
+      <p className="mt-1 truncate text-sm text-[#5c4d72]">{name || "Not attached"}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <label className="cursor-pointer rounded-full bg-[#10662A] px-3 py-1.5 text-xs font-semibold text-white">
+          {name ? "Replace" : "Attach"}
+          <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) onPick(file); event.target.value = ""; }} />
+        </label>
+        {name ? <button type="button" className="rounded-full border border-[#d8ecdd] bg-white px-3 py-1.5 text-xs font-semibold text-[#390A5D]" onClick={onOpen}>Download</button> : null}
+      </div>
+    </div>
+  );
 }
 
 function FileBlock({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
