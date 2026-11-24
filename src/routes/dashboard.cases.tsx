@@ -99,6 +99,7 @@ function shownStatus(row: LoanCaseFile, bankDesk: boolean) {
 function CasesPage() {
   const { role, user } = useAuth();
   const admin = isPlatformAdmin(role);
+  const partnerView = role === "dsa" || role === "affiliate";
   const bankDesk = role === "coordinator" && user?.department === "OPS" && !user?.finance_level;
   const [desk, setDesk] = useState<"files" | "payout">("files");
   const [payoutTab, setPayoutTab] = useState<"pay" | "invoice" | "report">("pay");
@@ -322,7 +323,12 @@ function CasesPage() {
                 </label>
                 <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear dates</Button>
               </div>
-              {bankDesk ? null : (
+              {partnerView ? (
+              <div className="text-sm xl:text-right">
+                <div className="font-display text-lg font-bold text-[#10662A]">{dateFrom && dateTo ? counts.all ?? 0 : 0} cases</div>
+                <div className="text-[#5c4d72]">Open a file to see your invoice</div>
+              </div>
+              ) : bankDesk ? null : (
               <div className="text-sm xl:text-right">
                 <div className="font-display text-lg font-bold text-[#10662A]">₹{inr(dateFrom && dateTo && chip ? revenue : 0)} revenue</div>
                 <div className="text-[#5c4d72]">{dateFrom && dateTo && chip ? confirmed : 0} disbursed confirmed in these dates</div>
@@ -367,7 +373,9 @@ function CasesPage() {
                 <tr>
                   {(bankDesk
                     ? ["Status", "Deal number", "Product", "Bank", "Partner", "Client", "Phone", "Loan amount", "Sanctioned", "Submitted", "Submitted by"]
-                    : ["Status", "Deal number", "Product", "Bank", "RM", "Connector", "Client", "Loan amount", "Sanctioned", "Submitted", "Submitted by", "Net"]
+                    : partnerView
+                      ? ["Status", "Deal number", "Product", "Bank", "RM", "Connector", "Client", "Loan amount", "Sanctioned", "Submitted", "Submitted by"]
+                      : ["Status", "Deal number", "Product", "Bank", "RM", "Connector", "Client", "Loan amount", "Sanctioned", "Submitted", "Submitted by", "Net"]
                   ).map((head) => (
                     <th key={head} className="whitespace-nowrap px-3 py-3 text-[11px] font-semibold uppercase tracking-wide">{head}</th>
                   ))}
@@ -375,7 +383,7 @@ function CasesPage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={bankDesk ? 11 : 12} className="px-3 py-10 text-center"><Loader2 className="mx-auto size-5 animate-spin text-[#10662A]" /></td></tr>
+                  <tr><td colSpan={bankDesk || partnerView ? 11 : 12} className="px-3 py-10 text-center"><Loader2 className="mx-auto size-5 animate-spin text-[#10662A]" /></td></tr>
                 ) : items.map((row) => (
                   <tr key={row.id} className="cursor-pointer border-t border-[#eef6f0] hover:bg-[#f7fdf8]" onClick={() => setActive(row)}>
                     <td className="px-3 py-3"><span className="inline-flex whitespace-nowrap rounded-full border border-[#d8ecdd] bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{shownStatus(row, bankDesk)}</span></td>
@@ -393,7 +401,7 @@ function CasesPage() {
                     <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">₹{inr(row.sanctioned_amount)}</td>
                     <td className="whitespace-nowrap px-3 py-3">{row.submitted_on || row.expected_sanction_on || "—"}</td>
                     <td className="whitespace-nowrap px-3 py-3">{row.submitted_by || "—"}</td>
-                    {bankDesk ? null : <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[#10662A]">₹{inr(row.net_revenue)}</td>}
+                    {bankDesk || partnerView ? null : <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[#10662A]">₹{inr(row.net_revenue)}</td>}
                   </tr>
                 ))}
               </tbody>
