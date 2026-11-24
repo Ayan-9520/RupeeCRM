@@ -1487,6 +1487,14 @@ export type LoanCaseFile = {
   bankers?: { name: string; email: string; designation: string; phone: string }[];
   customer?: Record<string, string>;
   stakeholders?: { name: string; share_percent: number }[];
+  partner_invoice?: {
+    number: string;
+    status: string;
+    status_label: string;
+    share?: number | null;
+    net_payable?: number | null;
+    utr?: string;
+  } | null;
   submitted_by: string;
   pod_pending: boolean;
   pod_remarks: string;

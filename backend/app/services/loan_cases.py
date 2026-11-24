@@ -16,7 +16,8 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import Lead, LeadPurchase, LoanCase, User
+from app.models import Lead, LeadPurchase, LoanCase, PayoutRequest, User
+from app.services.invoice_flow import STAGE_LABELS
 
 STAGES = (
     "draft",
@@ -182,7 +183,35 @@ def _insert_numbered(db: Session, row: LoanCase) -> LoanCase | None:
     return None
 
 
-def serialize(row: LoanCase) -> dict:
+def _invoice_index(db: Session) -> dict[str, dict]:
+    found: dict[str, dict] = {}
+    rows = db.query(PayoutRequest).order_by(PayoutRequest.created_at.desc()).all()
+    for req in rows:
+        snap = req.bank_snapshot or {}
+        number = str(snap.get("invoice_number") or req.note or "")
+        stage = req.stage or req.status or ""
+        lines = {
+            str(item.get("purchase_id")): item
+            for item in (snap.get("lines") or [])
+            if isinstance(item, dict)
+        }
+        for purchase_id in snap.get("case_ids") or []:
+            pid = str(purchase_id)
+            if pid in found:
+                continue
+            line = lines.get(pid) or {}
+            found[pid] = {
+                "number": number,
+                "status": stage,
+                "status_label": STAGE_LABELS.get(stage, stage or "Invoice"),
+                "share": line.get("share"),
+                "net_payable": req.net_payable,
+                "utr": req.utr or "",
+            }
+    return found
+
+
+def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
     money = figures(row)
     paid = row.payout_status == "paid"
     complete = money["invoice_percent"] >= 100 and money["collection_percent"] >= 100 and paid
@@ -231,6 +260,7 @@ def serialize(row: LoanCase) -> dict:
         "bank_confirmation_name": row.bank_confirmation_name or "",
         "created_at": row.created_at.isoformat() if row.created_at else None,
         "submitted_on": _on_day(row),
+        "partner_invoice": (invoices or {}).get(str(row.lead_purchase_id or "")) if row.lead_purchase_id else None,
         **money,
     }
 
@@ -273,7 +303,7 @@ def list_cases(db: Session, user: User, chip: str = "all", date_from: str = "", 
         "disbursed_revenue": revenue,
         "confirmed_count": len(confirmed),
         "counts": counts,
-        "items": [serialize(row) for row in rows],
+        "items": [serialize(row, _invoice_index(db)) for row in rows],
     }
 
 
@@ -444,7 +474,7 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
     _apply(row, payload)
     db.commit()
     db.refresh(row)
-    return serialize(row)
+    return serialize(row, _invoice_index(db))
 
 
 def case_for_purchase(db: Session, purchase_id: UUID) -> LoanCase | None:

@@ -222,7 +222,7 @@ function CasesPage() {
             <p className="mt-1 max-w-xl text-sm text-[#5c4d72]">Open a row for the full file. Sanction and disbursement are marked on Submissions. Accounts pays the partner later.</p>
           ) : null}
         </div>
-        {bankDesk ? null : (
+        {bankDesk || role === "dsa" || role === "affiliate" ? null : (
         <div className="inline-flex rounded-xl border border-[#d8ecdd] bg-white p-1">
           <button className={`rounded-lg px-4 py-2 text-sm font-semibold ${desk === "files" ? "bg-[#10662A] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("files"); setActive(null); }}>Case list</button>
           <button className={`rounded-lg px-4 py-2 text-sm font-semibold ${desk === "payout" ? "bg-[#10662A] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("payout"); setActive(null); }}>Payout</button>
@@ -537,7 +537,21 @@ function CaseForm({
         />
       </FileBlock>
 
-      <FileBlock step="5" title="Payout" hint="Lender payout first. Partner share is their agreement on that payout. The rest is company revenue.">
+      <FileBlock step="5" title="Payout" hint="The invoice is the same one on Money, Invoices. It is raised there, and only shown here.">
+        <div className="rounded-xl border border-[#d8ecdd] bg-[#f7fdf8] p-3 md:col-span-2 xl:col-span-3">
+          {active.partner_invoice?.number ? (
+            <>
+              <p className="font-semibold text-[#390A5D]">{active.partner_invoice.number}</p>
+              <p className="mt-1 text-sm text-[#5c4d72]">
+                {active.partner_invoice.status_label}
+                {active.partner_invoice.share != null ? ` · Your share ₹${inr(Number(active.partner_invoice.share))}` : ""}
+                {active.partner_invoice.utr ? ` · UTR ${active.partner_invoice.utr}` : ""}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-[#5c4d72]">No invoice yet. Raise it from Money, Invoices. This file will show the same invoice here.</p>
+          )}
+        </div>
         <Field label="Sanctioned amount" type="number" value={String(active.sanctioned_amount)} onChange={(value) => onChange({ ...active, sanctioned_amount: Number(value) })} />
         <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
         <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
