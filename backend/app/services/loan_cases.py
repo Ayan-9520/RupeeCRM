@@ -216,6 +216,7 @@ def serialize(row: LoanCase) -> dict:
         "bank_name": row.bank_name,
         "bank_rm": row.bank_rm,
         "bank_rm_phone": row.bank_rm_phone,
+        "bankers": _bankers(row),
         "submitted_by": row.submitted_by,
         "pod_pending": bool(row.pod_pending),
         "pod_remarks": row.pod_remarks,
@@ -296,6 +297,33 @@ def create_case(db: Session, user: User, payload: dict) -> dict:
     return serialize(saved)
 
 
+def _clean_bankers(value) -> list[dict]:
+    if not isinstance(value, list):
+        return []
+    clean = []
+    for item in value[:8]:
+        if not isinstance(item, dict):
+            continue
+        row = {
+            "name": str(item.get("name") or "").strip()[:120],
+            "email": str(item.get("email") or "").strip()[:255],
+            "designation": str(item.get("designation") or "").strip()[:80],
+            "phone": str(item.get("phone") or "").strip()[:30],
+        }
+        if any(row.values()):
+            clean.append(row)
+    return clean
+
+
+def _bankers(row: LoanCase) -> list[dict]:
+    stored = _clean_bankers(row.bankers)
+    if stored:
+        return stored
+    if row.bank_rm or row.bank_rm_phone:
+        return [{"name": row.bank_rm or "", "email": "", "designation": "Bank RM", "phone": row.bank_rm_phone or ""}]
+    return [{"name": "", "email": "", "designation": "", "phone": ""}]
+
+
 def _apply(row: LoanCase, payload: dict) -> None:
     text_fields = (
         "loan_type",
@@ -317,6 +345,12 @@ def _apply(row: LoanCase, payload: dict) -> None:
     for key in text_fields:
         if key in payload and payload[key] is not None:
             setattr(row, key, str(payload[key]).strip())
+    if "bankers" in payload and payload["bankers"] is not None:
+        clean = _clean_bankers(payload["bankers"])
+        row.bankers = clean
+        first = clean[0] if clean else {}
+        row.bank_rm = str(first.get("name") or "")
+        row.bank_rm_phone = str(first.get("phone") or "")
     for key in ("loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "loyalty_amount", "invoice_amount", "collected_amount"):
         if key in payload and payload[key] is not None:
             value = float(payload[key])

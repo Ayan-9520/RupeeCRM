@@ -402,6 +402,7 @@ class LoanCase(Base):
     bank_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     bank_rm: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     bank_rm_phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    bankers: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     submitted_by: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     pod_pending: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     pod_remarks: Mapped[str] = mapped_column(Text, nullable=False, default="")

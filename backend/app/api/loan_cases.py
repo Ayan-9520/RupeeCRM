@@ -46,6 +46,7 @@ class CaseIn(BaseModel):
     bank_name: str | None = None
     bank_rm: str | None = None
     bank_rm_phone: str | None = None
+    bankers: list[dict] | None = None
     pod_remarks: str | None = None
     stage: str | None = None
     flag: str | None = None

@@ -1484,6 +1484,7 @@ export type LoanCaseFile = {
   bank_name: string;
   bank_rm: string;
   bank_rm_phone: string;
+  bankers?: { name: string; email: string; designation: string; phone: string }[];
   submitted_by: string;
   pod_pending: boolean;
   pod_remarks: string;

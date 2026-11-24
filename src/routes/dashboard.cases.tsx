@@ -482,15 +482,11 @@ function CaseForm({
         <Field label="Client access" value={active.client_access} onChange={(client_access) => onChange({ ...active, client_access })} />
       </FileBlock>
 
-      <FileBlock title="Bank papers" hint="Two files only. PDF or a photo, up to 10 MB each.">
-        <PaperSlot label="Sanction letter" name={active.sanction_letter_name} onPick={(file) => void sendPaper(active.id, "sanction_letter", file, onUploaded)} onOpen={() => void openPaper(active.id, "sanction_letter", active.sanction_letter_name)} />
-        <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
-      </FileBlock>
-
-      <FileBlock title="Bank" hint="The lender and the officer on this file.">
+      <FileBlock title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => onChange({ ...active, bank_name })} />
-        <Field label="Bank RM" value={active.bank_rm} onChange={(bank_rm) => onChange({ ...active, bank_rm })} />
-        <Field label="RM phone" value={active.bank_rm_phone} onChange={(bank_rm_phone) => onChange({ ...active, bank_rm_phone })} />
+        <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
+        <PaperSlot label="Sanction letter" name={active.sanction_letter_name} onPick={(file) => void sendPaper(active.id, "sanction_letter", file, onUploaded)} onOpen={() => void openPaper(active.id, "sanction_letter", active.sanction_letter_name)} />
+        <BankerList admin={admin} rows={bankerRows(active)} onChange={(bankers) => onChange({ ...active, bankers })} />
       </FileBlock>
 
       <FileBlock title="Payout" hint="Lender payout first. Partner share is their agreement on that payout. The rest is company revenue.">
@@ -600,6 +596,49 @@ async function openPaper(id: string, kind: "sanction_letter" | "bank_confirmatio
   } catch (error) {
     toast.error(error instanceof Error ? error.message : "Could not open the file");
   }
+}
+
+function bankerRows(row: LoanCaseFile) {
+  if (row.bankers && row.bankers.length) return row.bankers;
+  if (row.bank_rm || row.bank_rm_phone) {
+    return [{ name: row.bank_rm || "", email: "", designation: "Bank RM", phone: row.bank_rm_phone || "" }];
+  }
+  return [{ name: "", email: "", designation: "", phone: "" }];
+}
+
+function BankerList({
+  admin,
+  rows,
+  onChange,
+}: {
+  admin: boolean;
+  rows: { name: string; email: string; designation: string; phone: string }[];
+  onChange: (rows: { name: string; email: string; designation: string; phone: string }[]) => void;
+}) {
+  const edit = (index: number, key: "name" | "email" | "designation" | "phone", value: string) => {
+    onChange(rows.map((row, at) => (at === index ? { ...row, [key]: value } : row)));
+  };
+  return (
+    <div className="space-y-3 md:col-span-2 xl:col-span-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-[#390A5D]">Bank officers</p>
+        {admin && rows.length < 8 ? (
+          <button type="button" className="text-xs font-semibold text-[#10662A]" onClick={() => onChange([...rows, { name: "", email: "", designation: "", phone: "" }])}>Add officer</button>
+        ) : null}
+      </div>
+      {rows.map((row, index) => (
+        <div key={index} className="grid gap-2 rounded-xl border border-[#d8ecdd] p-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Field label="Name" value={row.name} onChange={(value) => edit(index, "name", value)} />
+          <Field label="Email" value={row.email} onChange={(value) => edit(index, "email", value)} />
+          <Field label="Designation" value={row.designation} onChange={(value) => edit(index, "designation", value)} />
+          <Field label="Phone" value={row.phone} onChange={(value) => edit(index, "phone", value)} />
+          {admin && rows.length > 1 ? (
+            <button type="button" className="text-left text-xs font-semibold text-[#5c4d72] sm:col-span-2 xl:col-span-4" onClick={() => onChange(rows.filter((_, at) => at !== index))}>Remove this officer</button>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function PaperSlot({ label, name, onPick, onOpen }: { label: string; name?: string; onPick: (file: File) => void; onOpen: () => void }) {
