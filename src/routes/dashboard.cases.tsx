@@ -101,6 +101,7 @@ function CasesPage() {
   const admin = isPlatformAdmin(role);
   const bankDesk = role === "coordinator" && user?.department === "OPS" && !user?.finance_level;
   const [desk, setDesk] = useState<"files" | "payout">("files");
+  const [payoutTab, setPayoutTab] = useState<"pay" | "invoice" | "report">("pay");
   const [chip, setChip] = useState("all");
   const [dateFrom, setDateFrom] = useState(() => `${todayIst().slice(0, 8)}01`);
   const [dateTo, setDateTo] = useState(todayIst);
@@ -231,8 +232,37 @@ function CasesPage() {
 
       {desk === "payout" ? (
         <section className="rounded-2xl border bg-white p-4">
-          <h2 className="text-lg font-bold">Payout payment</h2>
-          <p className="mt-1 text-sm text-[#5c4d72]">Type the deal number. Invoice and collection must both be 100% before the connector is paid.</p>
+          <h2 className="font-display text-lg font-bold text-[#390A5D]">Channel payout</h2>
+          <p className="mt-1 text-sm text-[#5c4d72]">Find the deal, record the lender invoice, then pay the connector. Both invoice and collection must be 100% first.</p>
+          <div className="mt-3 flex gap-2 overflow-x-auto">
+            {([["pay", "Pay connector"], ["invoice", "Invoice"], ["report", "Report"]] as const).map(([id, label]) => (
+              <button key={id} type="button" className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-semibold ${payoutTab === id ? "bg-[#10662A] text-white" : "border border-[#d8ecdd] text-[#390A5D]"}`} onClick={() => setPayoutTab(id)}>{label}</button>
+            ))}
+          </div>
+          {payoutTab === "report" ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="min-w-[720px] w-full text-left text-sm">
+                <thead className="text-[11px] uppercase tracking-wide text-[#5c4d72]">
+                  <tr>{["Deal", "Connector", "Status", "Invoice", "Collection", "Connector payout"].map((head) => <th key={head} className="px-2 py-2">{head}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {payoutRows.filter((row) => (!dateFrom || (row.submitted_on || "") >= dateFrom) && (!dateTo || (row.submitted_on || "") <= dateTo)).map((row) => (
+                    <tr key={row.id} className="border-t">
+                      <td className="px-2 py-2 font-semibold text-[#10662A]">{row.deal_no}</td>
+                      <td className="px-2 py-2">{row.partner_name || "—"}</td>
+                      <td className="px-2 py-2">{row.payout_status === "paid" ? "Paid" : row.payout_status === "rejected" ? "Rejected" : "Pending"}</td>
+                      <td className="px-2 py-2">{row.invoice_percent}%</td>
+                      <td className="px-2 py-2">{row.collection_percent}%</td>
+                      <td className="px-2 py-2">₹{inr(row.payable_amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {payoutLoading ? <p className="mt-3 text-sm text-[#5c4d72]">Loading deals…</p> : null}
+            </div>
+          ) : null}
+          {payoutTab !== "report" ? (<>
+          <p className="mt-4 text-sm text-[#5c4d72]">{payoutTab === "invoice" ? "Invoice is what we bill the lender. Collection is what the lender has paid." : "Type the deal number."}</p>
           <label className="mt-4 block max-w-md text-xs font-semibold text-[#5c4d72]">
             Deal number
             <Input className="mt-1" value={dealQuery} onChange={(event) => setDealQuery(event.target.value)} placeholder="RD-MCF-SAMPLE-0844" />
@@ -264,6 +294,7 @@ function CasesPage() {
           ) : (
             <p className="mt-4 text-sm text-[#5c4d72]">{payoutLoading ? "Loading deals…" : "No deal with that number."}</p>
           )}
+          </>) : null}
         </section>
       ) : active && money && bankDesk ? (
         <BankFile active={active} onBack={() => setActive(null)} />
@@ -487,7 +518,7 @@ function CaseForm({
         <Field label="Customer phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
         <Field label="Project" value={active.project_name} onChange={(project_name) => onChange({ ...active, project_name })} />
         <Field label="Lead source" value={active.lead_source} onChange={(lead_source) => onChange({ ...active, lead_source })} />
-        <Field label="Sanction date" value={active.expected_sanction_on} onChange={(expected_sanction_on) => onChange({ ...active, expected_sanction_on })} />
+        <Field label="Sanction date" type="date" value={(active.expected_sanction_on || "").slice(0, 10)} onChange={(expected_sanction_on) => onChange({ ...active, expected_sanction_on })} />
         <Field label="Connector code" value={active.partner_code} onChange={(partner_code) => onChange({ ...active, partner_code })} />
         <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => onChange({ ...active, partner_name })} />
       </FileBlock>
@@ -569,6 +600,24 @@ function CaseForm({
         The rest, ₹{inr(money.net)}, is company revenue under the employee mapped to this partner.
       </p>
       </FileBlock>
+      <FileBlock title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
+        <div className="overflow-x-auto md:col-span-2 xl:col-span-3">
+          <table className="min-w-[640px] w-full text-left text-sm">
+            <thead className="text-[11px] uppercase tracking-wide text-[#5c4d72]">
+              <tr>{["Step", "Status", "Detail"].map((head) => <th key={head} className="px-2 py-2">{head}</th>)}</tr>
+            </thead>
+            <tbody>
+              {caseHistory(active).map((line) => (
+                <tr key={line.step} className="border-t border-[#eef6f0]">
+                  <td className="px-2 py-2 font-semibold text-[#390A5D]">{line.step}</td>
+                  <td className="px-2 py-2">{line.status}</td>
+                  <td className="px-2 py-2 text-[#5c4d72]">{line.detail}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </FileBlock>
       {admin ? (
         <div className="flex flex-wrap gap-2">
           <Button disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save file"}</Button>
@@ -584,6 +633,19 @@ function CaseForm({
       )}
     </section>
   );
+}
+
+function caseHistory(row: LoanCaseFile) {
+  return [
+    { step: "Submitted", status: row.submitted_on ? "Recorded" : "Pending", detail: row.submitted_on ? `${row.submitted_on} · ${row.submitted_by || "—"}` : "No submit date yet" },
+    { step: "Sanction", status: row.expected_sanction_on ? "Dated" : "Pending", detail: row.expected_sanction_on || "Sanction date is not set" },
+    { step: "File stage", status: row.stage_label || "Draft", detail: row.counted ? "Counted" : "Not counted" },
+    { step: "Bank confirmation", status: row.bank_confirmation_name ? "Attached" : "Pending", detail: row.bank_confirmation_name || "No file" },
+    { step: "Sanction letter", status: row.sanction_letter_name ? "Attached" : "Pending", detail: row.sanction_letter_name || "No file" },
+    { step: "Invoice", status: `${row.invoice_percent}%`, detail: `₹${inr(row.invoice_amount)}` },
+    { step: "Collection", status: `${row.collection_percent}%`, detail: `₹${inr(row.collected_amount)}` },
+    { step: "Connector payout", status: row.payout_status === "paid" ? "Paid" : row.payout_status === "rejected" ? "Rejected" : "Pending", detail: row.payout_note || "Not paid yet" },
+  ];
 }
 
 function caseMarks(row: LoanCaseFile) {
