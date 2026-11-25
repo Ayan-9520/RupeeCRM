@@ -162,7 +162,7 @@ export function LeadStageBar({ purchase }: { purchase: PurchaseContext }) {
           {!rejected ? (
             <button
               type="button"
-              disabled={busy !== null || (partner && (bankHeld || callHeld))}
+              disabled={busy !== null || (partner && bankHeld)}
               onClick={() => {
                 if (confirm("Mark this lead as rejected? Its case file will be cancelled.")) move("rejected");
               }}
