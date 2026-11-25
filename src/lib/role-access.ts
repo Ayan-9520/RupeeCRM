@@ -177,6 +177,7 @@ export const NAV_ITEMS: NavItem[] = [
   { title: "Payouts", url: "/dashboard/admin/payouts", roles: ADMIN_ROLES, group: "admin" },
   { title: "Invoice approvals", url: "/dashboard/invoice-approvals", roles: ADMIN_ROLES, group: "main" },
   { title: "Finance report", url: "/dashboard/finance", roles: ADMIN_ROLES, group: "admin" },
+  { title: "Lenders", url: "/dashboard/lenders", roles: ADMIN_ROLES, group: "admin" },
   { title: "Trust & Audit", url: "/dashboard/admin/trust", roles: ADMIN_ROLES, group: "admin" },
   { title: "Billing Overview", url: "/dashboard/admin/billing", roles: ADMIN_ROLES, group: "admin" },
   { title: "MKT Templates", url: "/dashboard/admin/marketing", roles: ADMIN_ROLES, group: "admin" },

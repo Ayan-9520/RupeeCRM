@@ -1565,7 +1565,7 @@ export async function previewLenderDump(file: File): Promise<{ ready: number; ro
   return request("/api/cases/lender-dump/preview", { method: "POST", body });
 }
 
-export async function applyLenderDump(file: File): Promise<{ applied: number; skipped: number }> {
+export async function applyLenderDump(file: File): Promise<{ applied: number; skipped: number; batch_id?: string }> {
   const body = new FormData();
   body.append("file", file);
   return request("/api/cases/lender-dump/apply", { method: "POST", body });

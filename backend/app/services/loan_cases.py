@@ -278,6 +278,13 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
         "loyalty_name": row.loyalty_name,
         "bank_name": row.bank_name,
         "application_no": row.application_no or "",
+        "lender_status": row.lender_status or "",
+        "missing_papers": [
+            name for name, present, needed in (
+                ("Sanction letter", bool(row.sanction_letter_name), row.stage in {"sanctioned", "disbursed", "disbursed_confirmed", "collected"}),
+                ("Bank confirmation", bool(row.bank_confirmation_name), row.stage in {"disbursed", "disbursed_confirmed", "collected"}),
+            ) if needed and not present
+        ],
         "lan": row.lan or "",
         "roi": float(row.roi or 0),
         "tenure_months": int(row.tenure_months or 0),
@@ -465,6 +472,7 @@ def _apply(row: LoanCase, payload: dict) -> None:
         "bank_name",
         "application_no",
         "lan",
+        "lender_status",
         "bank_rm",
         "bank_rm_phone",
         "pod_remarks",
@@ -713,10 +721,25 @@ def _dump_value(row: dict, *names: str) -> str:
     return ""
 
 
-def _dump_items(raw: bytes) -> list[dict]:
+def _table_rows(raw: bytes) -> list[dict]:
+    if raw[:2] == b"PK":
+        from openpyxl import load_workbook
+        sheet = load_workbook(io.BytesIO(raw), read_only=True, data_only=True).active
+        rows = list(sheet.iter_rows(values_only=True))
+        if not rows:
+            return []
+        headers = [str(cell or "").strip() for cell in rows[0]]
+        parsed = []
+        for values in rows[1:]:
+            parsed.append({headers[i]: "" if i >= len(values) or values[i] is None else str(values[i]) for i in range(len(headers))})
+        return parsed
     text = raw.decode("utf-8-sig")
+    return list(csv.DictReader(io.StringIO(text)))
+
+
+def _dump_items(raw: bytes) -> list[dict]:
     items = []
-    for index, row in enumerate(csv.DictReader(io.StringIO(text)), start=2):
+    for index, row in enumerate(_table_rows(raw), start=2):
         amount_text = _dump_value(row, "amount", "disbursed", "disbursed_amount")
         try:
             amount = round(float(amount_text.replace(",", "") or 0), 2)
@@ -771,14 +794,17 @@ def preview_lender_dump(db: Session, raw: bytes) -> dict:
 
 
 def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str) -> dict:
+    from app.models import ImportBatch
     preview = preview_lender_dump(db, raw)
     applied = 0
+    snapshot = []
     for item in preview["rows"]:
         if item["status"] != "ready":
             continue
         case, _how = _match_dump(db, item)
         if case is None or case.counted:
             continue
+        snapshot.append({"id": str(case.id), "application_no": case.application_no, "lan": case.lan, "disbursements": list(case.disbursements or [])})
         if item["application_no"] and not case.application_no:
             case.application_no = item["application_no"]
         if item["lan"] and not case.lan:
@@ -787,6 +813,8 @@ def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str) -> dic
         if item["amount"] > 0 and not lines:
             case.disbursements = _clean_disbursements([{"date": item["date"], "amount": item["amount"], "reference": item["reference"]}])
         applied += 1
+    batch = ImportBatch(id=uuid4(), filename=filename[:180], created_by=user.id, status="applied", snapshot=snapshot)
+    db.add(batch)
     write_audit(
         db,
         action="lender_dump_import",
@@ -796,7 +824,29 @@ def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str) -> dic
         detail={"filename": filename[:180], "ready": preview["ready"], "applied": applied, "rows": len(preview["rows"])},
     )
     db.commit()
-    return {"applied": applied, "skipped": len(preview["rows"]) - applied, "rows": preview["rows"]}
+    return {"applied": applied, "skipped": len(preview["rows"]) - applied, "batch_id": str(batch.id), "rows": preview["rows"]}
+
+
+def rollback_lender_dump(db: Session, user: User, batch_id: UUID) -> dict:
+    from app.models import ImportBatch
+    batch = db.query(ImportBatch).filter(ImportBatch.id == batch_id).first()
+    if batch is None:
+        raise LookupError("Import batch not found")
+    if batch.status != "applied":
+        raise ValueError("This import was already rolled back")
+    restored = 0
+    for item in batch.snapshot or []:
+        case = db.query(LoanCase).filter(LoanCase.id == item.get("id")).first()
+        if case is None or case.counted:
+            continue
+        case.application_no = item.get("application_no") or ""
+        case.lan = item.get("lan") or ""
+        case.disbursements = item.get("disbursements") or []
+        restored += 1
+    batch.status = "rolled_back"
+    write_audit(db, action="lender_dump_rollback", actor_user_id=user.id, entity_type="import_batch", entity_id=str(batch.id), detail={"restored": restored})
+    db.commit()
+    return {"restored": restored}
 
 
 def finance_report(db: Session, user: User) -> dict:
@@ -823,6 +873,8 @@ def finance_report(db: Session, user: User) -> dict:
             "bonus_amount": money["bonus_amount"],
             "collected_amount": got,
             "outstanding": due,
+            "age_days": max(0, (datetime.now(timezone.utc) - (row.created_at or datetime.now(timezone.utc))).days) if due else 0,
+            "lender_status": row.lender_status or "",
             "counted": bool(row.counted),
             "invoice_number": (invoice or {}).get("number") or "",
             "invoice_status": (invoice or {}).get("status_label") or "",

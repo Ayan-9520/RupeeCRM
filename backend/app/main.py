@@ -23,6 +23,7 @@ from app.api import (
     leaderboard,
     learn,
     loan_cases,
+    los_books,
     partner_profile,
     network,
     partners,
@@ -85,6 +86,7 @@ app.include_router(business.public_router)
 app.include_router(business.router)
 app.include_router(learn.router)
 app.include_router(loan_cases.router)
+app.include_router(los_books.router)
 app.include_router(admin_overview.router)
 app.include_router(leaderboard.router)
 app.include_router(automation_rules.router)

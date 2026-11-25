@@ -342,7 +342,7 @@ function CasesPage() {
                   <Button className="bg-[#10662A] hover:bg-[#0d5522]" onClick={() => void openSampleCase().then(() => { toast.success("Sample file ready"); void refresh("all", dateFrom, dateTo); })}>Sample file</Button>
                   <label className="inline-flex h-9 cursor-pointer items-center rounded-md border border-[#d8ecdd] bg-white px-3 text-sm font-semibold text-[#390A5D]">
                     Lender CSV
-                    <input type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => {
+                    <input type="file" accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" className="hidden" onChange={(event) => {
                       const file = event.target.files?.[0];
                       event.target.value = "";
                       if (!file) return;
@@ -350,7 +350,7 @@ function CasesPage() {
                         const ok = window.confirm(`${preview.ready} of ${preview.rows.length} rows can update a case. Counted files and amount conflicts are skipped. Import the ready rows?`);
                         if (!ok) return;
                         return applyLenderDump(file).then((result) => {
-                          toast.success(`${result.applied} rows imported. ${result.skipped} skipped.`);
+                          toast.success(`${result.applied} rows imported. ${result.skipped} skipped. Batch ${result.batch_id || ""}`);
                           void refresh(chip, dateFrom, dateTo);
                         });
                       }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not read the dump"));

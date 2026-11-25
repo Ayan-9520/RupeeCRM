@@ -1,7 +1,7 @@
 import uuid
 from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint, func
+from sqlalchemy import Boolean, Date, DateTime, Float, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -261,7 +261,7 @@ class PayoutRequest(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
-    amount: Mapped[float] = mapped_column(Float, nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
     status: Mapped[str] = mapped_column(String(40), nullable=False, default="pending", index=True)
     bank_snapshot: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -271,13 +271,13 @@ class PayoutRequest(Base):
     reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     stage: Mapped[str | None] = mapped_column(String(30), nullable=True, index=True)
     queried_stage: Mapped[str | None] = mapped_column(String(30), nullable=True)
-    gst_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
-    tds_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
-    net_payable: Mapped[float | None] = mapped_column(Float, nullable=True)
+    gst_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    tds_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
+    net_payable: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     payment_mode: Mapped[str | None] = mapped_column(String(20), nullable=True)
     payment_bank: Mapped[str | None] = mapped_column(String(120), nullable=True)
     payment_date: Mapped[date | None] = mapped_column(Date, nullable=True)
-    paid_amount: Mapped[float | None] = mapped_column(Float, nullable=True)
+    paid_amount: Mapped[float | None] = mapped_column(Numeric(14, 2), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -393,19 +393,21 @@ class LoanCase(Base):
     project_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     expected_sanction_on: Mapped[str] = mapped_column(String(20), nullable=False, default="")
     client_access: Mapped[str] = mapped_column(String(80), nullable=False, default="")
-    loan_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
-    sanctioned_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    loan_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    sanctioned_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
     receivable_percent: Mapped[float] = mapped_column(Float, nullable=False, default=1.4)
     payable_percent: Mapped[float] = mapped_column(Float, nullable=False, default=90)
     loyalty_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
-    loyalty_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    loyalty_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
     application_no: Mapped[str] = mapped_column(String(80), nullable=False, default="")
     lan: Mapped[str] = mapped_column(String(80), nullable=False, default="")
     roi: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     tenure_months: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     disbursements: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     bonus_name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
-    bonus_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    bonus_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    lender_status: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    paper_history: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     bonus_partner_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     bank_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
     bank_rm: Mapped[str] = mapped_column(String(120), nullable=False, default="")
@@ -417,8 +419,8 @@ class LoanCase(Base):
     pod_pending: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     pod_remarks: Mapped[str] = mapped_column(Text, nullable=False, default="")
     counted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    invoice_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
-    collected_amount: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    invoice_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    collected_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
     payout_status: Mapped[str] = mapped_column(String(20), nullable=False, default="none")
     payout_note: Mapped[str] = mapped_column(Text, nullable=False, default="")
     sanction_letter_key: Mapped[str] = mapped_column(String(240), nullable=False, default="")
@@ -965,6 +967,72 @@ class BillingPayment(Base):
     cycle: Mapped[str | None] = mapped_column(String(20), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class Lender(Base):
+    __tablename__ = "lenders"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    code: Mapped[str] = mapped_column(String(40), nullable=False, unique=True)
+    lender_type: Mapped[str] = mapped_column(String(20), nullable=False, default="bank")
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    gst_treatment: Mapped[str] = mapped_column(String(20), nullable=False, default="exclusive")
+
+
+class LenderBranch(Base):
+    __tablename__ = "lender_branches"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lender_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    city: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+
+
+class CaseApplication(Base):
+    __tablename__ = "case_applications"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    loan_case_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    lender_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    branch_name: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    application_no: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    lan: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    lender_status: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+
+
+class LenderScheme(Base):
+    __tablename__ = "lender_schemes"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lender_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    bonus_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    partner_percent: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class LedgerNote(Base):
+    __tablename__ = "ledger_notes"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    loan_case_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    note: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ImportBatch(Base):
+    __tablename__ = "import_batches"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    filename: Mapped[str] = mapped_column(String(180), nullable=False, default="")
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="applied")
+    snapshot: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class AutomationRulePref(Base):

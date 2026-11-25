@@ -114,6 +114,18 @@ async def apply_dump(file: UploadFile = File(...), db: Session = Depends(get_db)
     return service.apply_lender_dump(db, user, await file.read(), file.filename or "dump.csv")
 
 
+@router.post("/lender-dump/{batch_id}/rollback")
+def rollback_dump(batch_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can roll back a dump")
+    try:
+        return service.rollback_lender_dump(db, user, batch_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.post("/import-disbursed")
 def import_disbursed_leads(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
     if user.role not in ADMIN_ROLES:
@@ -161,13 +173,16 @@ async def upload_paper(
     mime = sniff_mime(payload, file.content_type or "")
     key_field, name_field = fields
     previous = getattr(row, key_field)
+    previous_name = getattr(row, name_field)
     key = save_bytes(str(row.id), kind, payload, mime)
     setattr(row, key_field, key)
     setattr(row, name_field, safe_filename(file.filename or kind))
+    if previous and previous != key:
+        history = list(row.paper_history or [])
+        history.append({"kind": kind, "key": previous, "name": previous_name})
+        row.paper_history = history[-12:]
     db.commit()
     db.refresh(row)
-    if previous and previous != key:
-        delete_key(previous)
     return service.serialize(row)
 
 
