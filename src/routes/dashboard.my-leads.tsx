@@ -233,8 +233,14 @@ function MyLeadsPage() {
       setStages(data.stages);
       if (selected) {
         const fresh = data.items.find((p) => p.id === selected.id) ?? null;
-        setSelected(fresh);
-        if (fresh && !dirty) setForm(buildForm(fresh));
+        if (fresh?.pipeline_stage === "disbursed") {
+          setSelected(null);
+          setForm(null);
+          toast.success("Disbursed. This file is now on Cases.");
+        } else {
+          setSelected(fresh);
+          if (fresh && !dirty) setForm(buildForm(fresh));
+        }
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to load My Leads");
@@ -249,10 +255,12 @@ function MyLeadsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const boardItems = useMemo(() => items.filter((p) => p.pipeline_stage !== "disbursed"), [items]);
+  const boardStages = useMemo(() => stages.filter((s) => s !== "disbursed"), [stages]);
   const filtered = useMemo(() => {
-    if (activeStage === "all") return items;
-    return items.filter((p) => p.pipeline_stage === activeStage);
-  }, [items, activeStage]);
+    if (activeStage === "all") return boardItems;
+    return boardItems.filter((p) => p.pipeline_stage === activeStage);
+  }, [boardItems, activeStage]);
 
   const openLead = (p: CrmPurchase) => {
     setSelected(p);
@@ -377,8 +385,15 @@ function MyLeadsPage() {
     setSaving(true);
     try {
       const updated = await patchMyLead(selected.id, { pipeline_stage: stage });
-      applyLocal(updated);
-      toast.success(`Pipeline → ${STAGE_LABELS[stage] ?? stage}`);
+      if (updated.pipeline_stage === "disbursed") {
+        setSelected(null);
+        setForm(null);
+        setItems((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        toast.success("Disbursed. This file is now on Cases.");
+      } else {
+        applyLocal(updated);
+        toast.success(`Pipeline → ${STAGE_LABELS[stage] ?? stage}`);
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Stage update failed");
     } finally {
@@ -467,10 +482,10 @@ function MyLeadsPage() {
               : "border-[#d8ecdd] bg-white text-[#5c4d72] hover:bg-[#E8F7EC] hover:border-[#10662A]/30"
           }`}
         >
-          All ({items.length})
+          All ({boardItems.length})
         </button>
-        {stages.map((s) => {
-          const count = items.filter((p) => p.pipeline_stage === s).length;
+        {boardStages.map((s) => {
+          const count = boardItems.filter((p) => p.pipeline_stage === s).length;
           return (
             <button
               key={s}
