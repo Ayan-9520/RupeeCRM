@@ -90,6 +90,20 @@ def open_sample(db: Session = Depends(get_db), user: User = Depends(require_read
     return service.sample_file(db, user)
 
 
+@router.post("/lender-dump/preview")
+async def preview_dump(file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    return service.preview_lender_dump(db, await file.read())
+
+
+@router.post("/lender-dump/apply")
+async def apply_dump(file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    return service.apply_lender_dump(db, user, await file.read(), file.filename or "dump.csv")
+
+
 @router.post("/import-disbursed")
 def import_disbursed_leads(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
     if user.role not in ADMIN_ROLES:

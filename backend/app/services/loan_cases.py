@@ -7,6 +7,8 @@ Net is what remains after the connector share and any customer credit.
 
 from __future__ import annotations
 
+import csv
+import io
 from datetime import datetime, timedelta, timezone
 
 IST = timezone(timedelta(hours=5, minutes=30))
@@ -687,6 +689,101 @@ def import_disbursed(db: Session, user: User | None) -> dict:
         "disbursed_leads": len(purchases),
         "items": [serialize(row) for row in created],
     }
+
+
+def _dump_value(row: dict, *names: str) -> str:
+    folded = {str(key or "").strip().lower().replace(" ", "_"): value for key, value in row.items()}
+    for name in names:
+        value = folded.get(name)
+        if value is not None and str(value).strip():
+            return str(value).strip()
+    return ""
+
+
+def _dump_items(raw: bytes) -> list[dict]:
+    text = raw.decode("utf-8-sig")
+    items = []
+    for index, row in enumerate(csv.DictReader(io.StringIO(text)), start=2):
+        amount_text = _dump_value(row, "amount", "disbursed", "disbursed_amount")
+        try:
+            amount = round(float(amount_text.replace(",", "") or 0), 2)
+        except ValueError:
+            amount = 0
+        items.append({
+            "row": index,
+            "application_no": _dump_value(row, "application_no", "application", "app_no")[:80],
+            "lan": _dump_value(row, "lan", "loan_account", "loan_account_number")[:80],
+            "phone": "".join(ch for ch in _dump_value(row, "phone", "mobile") if ch.isdigit())[-10:],
+            "amount": amount,
+            "date": _dump_value(row, "date", "disbursement_date")[:20],
+            "reference": _dump_value(row, "reference", "utr", "txn")[:80],
+        })
+    return items
+
+
+def _match_dump(db: Session, item: dict) -> tuple[LoanCase | None, str]:
+    if item["application_no"]:
+        row = db.query(LoanCase).filter(func.lower(LoanCase.application_no) == item["application_no"].lower()).first()
+        if row:
+            return row, "application number"
+    if item["lan"]:
+        row = db.query(LoanCase).filter(func.lower(LoanCase.lan) == item["lan"].lower()).first()
+        if row:
+            return row, "LAN"
+    if item["phone"]:
+        row = db.query(LoanCase).filter(LoanCase.client_phone.like(f"%{item['phone']}")).first()
+        if row:
+            return row, "phone"
+    return None, ""
+
+
+def preview_lender_dump(db: Session, raw: bytes) -> dict:
+    preview = []
+    for item in _dump_items(raw):
+        case, how = _match_dump(db, item)
+        status = "unmatched"
+        if case is not None:
+            lines = _clean_disbursements(case.disbursements)
+            same = item["reference"] and any(line.get("reference") == item["reference"] for line in lines)
+            if case.counted:
+                status = "conflict"
+            elif same:
+                status = "duplicate"
+            elif lines and abs(sum(float(line.get("amount") or 0) for line in lines) - item["amount"]) > 0.5:
+                status = "conflict"
+            else:
+                status = "ready"
+        preview.append({**item, "status": status, "matched_by": how, "deal_no": case.deal_no if case else ""})
+    return {"rows": preview, "ready": sum(1 for row in preview if row["status"] == "ready")}
+
+
+def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str) -> dict:
+    preview = preview_lender_dump(db, raw)
+    applied = 0
+    for item in preview["rows"]:
+        if item["status"] != "ready":
+            continue
+        case, _how = _match_dump(db, item)
+        if case is None or case.counted:
+            continue
+        if item["application_no"] and not case.application_no:
+            case.application_no = item["application_no"]
+        if item["lan"] and not case.lan:
+            case.lan = item["lan"]
+        lines = _clean_disbursements(case.disbursements)
+        if item["amount"] > 0 and not lines:
+            case.disbursements = _clean_disbursements([{"date": item["date"], "amount": item["amount"], "reference": item["reference"]}])
+        applied += 1
+    write_audit(
+        db,
+        action="lender_dump_import",
+        actor_user_id=user.id,
+        entity_type="lender_dump",
+        entity_id=filename[:80],
+        detail={"filename": filename[:180], "ready": preview["ready"], "applied": applied, "rows": len(preview["rows"])},
+    )
+    db.commit()
+    return {"applied": applied, "skipped": len(preview["rows"]) - applied, "rows": preview["rows"]}
 
 
 def sample_file(db: Session, user: User) -> dict:

@@ -8,9 +8,11 @@ import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { RUPEEDIAL_PRODUCT_MENUS } from "@/lib/rupeedial-products";
 import {
+  applyLenderDump,
   createCaseFile,
   downloadCasePaper,
   listCaseFiles,
+  previewLenderDump,
   openSampleCase,
   saveCaseFile,
   uploadCasePaper,
@@ -338,6 +340,22 @@ function CasesPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => void createCaseFile({ loan_type: "LAP", client_name: "New applicant" }).then((row) => { setActive(row); void refresh("draft", dateFrom, dateTo); })}>New draft</Button>
                   <Button className="bg-[#10662A] hover:bg-[#0d5522]" onClick={() => void openSampleCase().then(() => { toast.success("Sample file ready"); void refresh("all", dateFrom, dateTo); })}>Sample file</Button>
+                  <label className="inline-flex h-9 cursor-pointer items-center rounded-md border border-[#d8ecdd] bg-white px-3 text-sm font-semibold text-[#390A5D]">
+                    Lender CSV
+                    <input type="file" accept=".csv,text/csv" className="hidden" onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (!file) return;
+                      void previewLenderDump(file).then((preview) => {
+                        const ok = window.confirm(`${preview.ready} of ${preview.rows.length} rows can update a case. Counted files and amount conflicts are skipped. Import the ready rows?`);
+                        if (!ok) return;
+                        return applyLenderDump(file).then((result) => {
+                          toast.success(`${result.applied} rows imported. ${result.skipped} skipped.`);
+                          void refresh(chip, dateFrom, dateTo);
+                        });
+                      }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not read the dump"));
+                    }} />
+                  </label>
                 </div>
               ) : null}
             </div>

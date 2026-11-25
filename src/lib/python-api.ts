@@ -1535,6 +1535,18 @@ export async function createCaseFile(body: Partial<LoanCaseFile>): Promise<LoanC
   return request("/api/cases", { method: "POST", body: JSON.stringify(body) });
 }
 
+export async function previewLenderDump(file: File): Promise<{ ready: number; rows: { row: number; status: string; deal_no: string; matched_by: string; amount: number }[] }> {
+  const body = new FormData();
+  body.append("file", file);
+  return request("/api/cases/lender-dump/preview", { method: "POST", body });
+}
+
+export async function applyLenderDump(file: File): Promise<{ applied: number; skipped: number }> {
+  const body = new FormData();
+  body.append("file", file);
+  return request("/api/cases/lender-dump/apply", { method: "POST", body });
+}
+
 export async function saveCaseFile(id: string, body: Partial<LoanCaseFile>): Promise<LoanCaseFile> {
   return request(`/api/cases/${id}`, { method: "PUT", body: JSON.stringify(body) });
 }
