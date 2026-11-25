@@ -42,6 +42,31 @@ STAGE_LABEL = {
 }
 
 
+def disbursed_base(row: LoanCase) -> float:
+    """Released amount. Disbursement lines win. Otherwise sanctioned, then the logged loan."""
+    total = _round(sum(float(line.get("amount") or 0) for line in _clean_disbursements(getattr(row, "disbursements", None))))
+    if total > 0:
+        return total
+    return float(row.sanctioned_amount or 0) or float(row.loan_amount or 0)
+
+
+def _clean_disbursements(value) -> list[dict]:
+    rows = value if isinstance(value, list) else []
+    clean = []
+    for item in rows[:12]:
+        if not isinstance(item, dict):
+            continue
+        amount = float(item.get("amount") or 0)
+        if amount < 0:
+            amount = 0
+        date = str(item.get("date") or "")[:20]
+        reference = str(item.get("reference") or "")[:80]
+        if amount <= 0 and not date and not reference:
+            continue
+        clean.append({"date": date, "amount": _round(amount), "reference": reference})
+    return clean
+
+
 def _round(value: float) -> float:
     return round(float(value or 0), 2)
 
@@ -53,7 +78,7 @@ def figures(row: LoanCase) -> dict:
     A ₹1,00,00,000 LAP at 1.5% is ₹1,50,000. An 85% agreement pays ₹1,27,500.
     The ₹22,500 stays with the company, under the employee mapped to that partner.
     """
-    base = float(row.sanctioned_amount or 0) or float(row.loan_amount or 0)
+    base = disbursed_base(row)
     receivable = _round(base * float(row.receivable_percent or 0) / 100)
     payable = _round(receivable * float(row.payable_percent or 0) / 100)
     loyalty = _round(row.loyalty_amount or 0)
@@ -244,6 +269,11 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
         "payable_percent": float(row.payable_percent or 0),
         "loyalty_name": row.loyalty_name,
         "bank_name": row.bank_name,
+        "application_no": row.application_no or "",
+        "lan": row.lan or "",
+        "roi": float(row.roi or 0),
+        "tenure_months": int(row.tenure_months or 0),
+        "disbursements": _clean_disbursements(row.disbursements),
         "bank_rm": row.bank_rm,
         "bank_rm_phone": row.bank_rm_phone,
         "bankers": _bankers(row),
@@ -421,6 +451,8 @@ def _apply(row: LoanCase, payload: dict) -> None:
         "client_access",
         "loyalty_name",
         "bank_name",
+        "application_no",
+        "lan",
         "bank_rm",
         "bank_rm_phone",
         "pod_remarks",
@@ -439,6 +471,12 @@ def _apply(row: LoanCase, payload: dict) -> None:
         row.customer = _clean_customer(payload["customer"])
     if "stakeholders" in payload and payload["stakeholders"] is not None:
         row.stakeholders = _clean_stakeholders(payload["stakeholders"])
+    if "disbursements" in payload and payload["disbursements"] is not None:
+        row.disbursements = _clean_disbursements(payload["disbursements"])
+    if "roi" in payload and payload["roi"] is not None:
+        row.roi = float(payload["roi"])
+    if "tenure_months" in payload and payload["tenure_months"] is not None:
+        row.tenure_months = max(0, int(float(payload["tenure_months"])))
     for key in ("loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "loyalty_amount", "invoice_amount", "collected_amount"):
         if key in payload and payload[key] is not None:
             value = float(payload[key])
@@ -484,7 +522,7 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
         kept = (
             "bankers", "customer", "stakeholders",
             "loan_type", "loan_amount", "lead_source", "project_name", "expected_sanction_on",
-            "client_name", "client_phone", "bank_name",
+            "client_name", "client_phone", "bank_name", "application_no", "lan",
         )
         payload = {key: payload.get(key) for key in kept if key in payload}
         if not payload:

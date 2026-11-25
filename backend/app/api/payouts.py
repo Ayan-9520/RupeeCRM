@@ -57,12 +57,10 @@ def _disbursed_purchases(db: Session, user_id: UUID) -> list[LeadPurchase]:
 def _case_base(db: Session, purchase: LeadPurchase) -> float:
     case = db.query(LoanCase).filter(LoanCase.lead_purchase_id == purchase.id).first()
     if case is not None:
-        sanctioned = float(case.sanctioned_amount or 0)
-        logged = float(case.loan_amount or 0)
-        if sanctioned > 0:
-            return sanctioned
-        if logged > 0:
-            return logged
+        from app.services.loan_cases import disbursed_base
+        released = disbursed_base(case)
+        if released > 0:
+            return released
     if purchase.deal_value:
         return float(purchase.deal_value)
     lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()

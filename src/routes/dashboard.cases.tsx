@@ -551,6 +551,8 @@ function CaseForm({
 
       <FileBlock step="4" title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => edit({ bank_name })} onBlur={() => commit(["bank_name"])} />
+        <Field label="Application number" value={active.application_no || ""} onChange={(application_no) => edit({ application_no })} onBlur={() => commit(["application_no"])} />
+        <Field label="LAN" value={active.lan || ""} onChange={(lan) => edit({ lan })} onBlur={() => commit(["lan"])} />
         <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
         <PaperSlot label="Sanction letter" name={active.sanction_letter_name} onPick={(file) => void sendPaper(active.id, "sanction_letter", file, onUploaded)} onOpen={() => void openPaper(active.id, "sanction_letter", active.sanction_letter_name)} />
         <BankerList
@@ -564,6 +566,12 @@ function CaseForm({
         {admin ? (
           <>
             <Field label="Sanctioned amount" type="number" value={String(active.sanctioned_amount)} onChange={(value) => onChange({ ...active, sanctioned_amount: Number(value) })} />
+            <Field label="ROI %" type="number" value={String(active.roi || 0)} onChange={(value) => edit({ roi: Number(value) })} onBlur={() => commit(["roi"])} />
+            <Field label="Tenure months" type="number" value={String(active.tenure_months || 0)} onChange={(value) => edit({ tenure_months: Number(value) })} onBlur={() => commit(["tenure_months"])} />
+            <DisbursementLines
+              rows={active.disbursements?.length ? active.disbursements : [{ date: "", amount: 0, reference: "" }]}
+              onCommit={(disbursements) => { edit({ disbursements }); commit(["disbursements"]); }}
+            />
             <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
             <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
             <Field label="Customer credit name" value={active.loyalty_name} onChange={(loyalty_name) => onChange({ ...active, loyalty_name })} />
@@ -775,6 +783,30 @@ function CustomerFields({ active, onChange, onUploaded, onIdentity }: { active: 
         <Field key={key} label={label} value={latest.current[key] || ""} onChange={(value) => patch(key, value)} onBlur={commit} />
       ))}
     </FileBlock>
+  );
+}
+
+function DisbursementLines({ rows, onCommit }: { rows: { date: string; amount: number; reference: string }[]; onCommit: (rows: { date: string; amount: number; reference: string }[]) => void }) {
+  const latest = useRef(rows);
+  latest.current = rows;
+  const edit = (index: number, next: { date: string; amount: number; reference: string }) => {
+    const copy = latest.current.map((item, i) => (i === index ? next : item));
+    latest.current = copy;
+  };
+  return (
+    <div className="md:col-span-2 xl:col-span-3 space-y-2">
+      <div className="text-xs font-semibold text-[#5c4d72]">Disbursement lines. When these have an amount, commission uses their total.</div>
+      {rows.map((row, index) => (
+        <div key={index} className="grid gap-2 sm:grid-cols-3">
+          <Field label="Date" type="date" value={(row.date || "").slice(0, 10)} onChange={(date) => edit(index, { ...row, date })} onBlur={() => onCommit(latest.current)} />
+          <Field label="Amount" type="number" value={String(row.amount || 0)} onChange={(value) => edit(index, { ...row, amount: Number(value) })} onBlur={() => onCommit(latest.current)} />
+          <Field label="Reference" value={row.reference || ""} onChange={(reference) => edit(index, { ...row, reference })} onBlur={() => onCommit(latest.current)} />
+        </div>
+      ))}
+      {rows.length < 8 ? (
+        <button type="button" className="text-sm font-semibold text-[#10662A]" onClick={() => onCommit([...latest.current, { date: "", amount: 0, reference: "" }])}>+ Add disbursement</button>
+      ) : null}
+    </div>
   );
 }
 

@@ -44,6 +44,11 @@ class CaseIn(BaseModel):
     loyalty_name: str | None = None
     loyalty_amount: float | None = None
     bank_name: str | None = None
+    application_no: str | None = None
+    lan: str | None = None
+    roi: float | None = None
+    tenure_months: int | None = None
+    disbursements: list[dict] | None = None
     bank_rm: str | None = None
     bank_rm_phone: str | None = None
     bankers: list[dict] | None = None
