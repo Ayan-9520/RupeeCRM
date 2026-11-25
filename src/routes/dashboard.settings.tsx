@@ -16,7 +16,7 @@ import { isPlatformAdmin } from "@/lib/role-access";
 import type { AppRole } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/dashboard/settings")({
-  head: () => ({ meta: [{ title: "Settings — RupeeDial One" }] }),
+  head: () => ({ meta: [{ title: "Settings — RupeeOne" }] }),
   component: SettingsPage,
 });
 
@@ -34,6 +34,7 @@ function SettingsPage() {
     bank_name: "",
     pan: "",
     gstin: "",
+    gst_treatment: "",
   });
   const [savingBank, setSavingBank] = useState(false);
   const [testingSmtp, setTestingSmtp] = useState(false);
@@ -53,6 +54,7 @@ function SettingsPage() {
           bank_name: b.bank_name || "",
           pan: b.pan || "",
           gstin: b.gstin || "",
+          gst_treatment: b.gst_treatment || "",
         });
       } catch (e) {
         if (!cached) toast.error(e instanceof Error ? e.message : "Could not load profile");
@@ -182,6 +184,7 @@ function SettingsPage() {
               bank_name: saved.bank_name,
               pan: saved.pan,
               gstin: saved.gstin || "",
+              gst_treatment: saved.gst_treatment || "",
             });
             toast.success(saved.complete ? "Bank details saved" : "Saved — fill all fields for payouts");
           } catch (err) {
@@ -203,7 +206,7 @@ function SettingsPage() {
             ["ifsc", "IFSC"],
             ["bank_name", "Bank name"],
             ["pan", "PAN (optional)"],
-            ["gstin", "GSTIN (optional — GST is added to your invoice when set)"],
+            ["gstin", "GSTIN (optional)"],
           ] as const
         ).map(([key, label]) => (
           <label key={key} className="block">
@@ -215,6 +218,19 @@ function SettingsPage() {
             />
           </label>
         ))}
+        <label className="block">
+          <span className="text-xs font-semibold text-[#5c4d72]">GST on your invoice</span>
+          <select
+            className="input-base w-full mt-1"
+            value={bank.gst_treatment}
+            onChange={(e) => setBank((b) => ({ ...b, gst_treatment: e.target.value }))}
+          >
+            <option value="">Same as GSTIN: add GST when a GSTIN is saved</option>
+            <option value="exclusive">Exclusive — GST is added on top</option>
+            <option value="inclusive">Inclusive — GST is already inside the share</option>
+            <option value="none">No GST</option>
+          </select>
+        </label>
         <button
           type="submit"
           disabled={savingBank}

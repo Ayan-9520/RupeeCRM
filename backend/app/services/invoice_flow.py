@@ -45,11 +45,26 @@ def tax_settings(db: Session) -> tuple[float, float]:
     return float(row.gst_percent or 0), float(row.tds_percent or 0)
 
 
-def tax_breakup(db: Session, amount: float, gstin: str | None) -> tuple[float, float, float]:
+def tax_breakup(db: Session, amount: float, gstin: str | None, treatment: str | None = None) -> tuple[float, float, float]:
+    """Exclusive adds GST on top. Inclusive extracts GST from the amount. None charges no GST.
+
+    A GSTIN is required before any GST is added. TDS is on the partner share.
+    """
     gst_pct, tds_pct = tax_settings(db)
-    gst = round(amount * gst_pct / 100, 2) if (gstin or "").strip() else 0.0
+    mode = (treatment or "").strip().lower()
+    if mode not in {"exclusive", "inclusive", "none"}:
+        mode = "exclusive" if (gstin or "").strip() else "none"
+    if mode == "none" or not (gstin or "").strip() or gst_pct <= 0:
+        gst = 0.0
+        net_base = amount
+    elif mode == "inclusive":
+        gst = round(amount * gst_pct / (100 + gst_pct), 2)
+        net_base = amount
+    else:
+        gst = round(amount * gst_pct / 100, 2)
+        net_base = amount + gst
     tds = round(amount * tds_pct / 100, 2)
-    return gst, tds, round(amount + gst - tds, 2)
+    return gst, tds, round(net_base - tds, 2)
 
 
 def is_staff(user: User) -> bool:

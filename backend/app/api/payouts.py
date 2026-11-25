@@ -114,6 +114,7 @@ class BankIn(BaseModel):
     bank_name: str = ""
     pan: str = ""
     gstin: str = ""
+    gst_treatment: str = ""
 
 
 class BankOut(BaseModel):
@@ -123,6 +124,7 @@ class BankOut(BaseModel):
     bank_name: str = ""
     pan: str = ""
     gstin: str = ""
+    gst_treatment: str = ""
     complete: bool = False
 
 
@@ -299,6 +301,7 @@ def payout_summary(db: Session = Depends(get_db), user: User = Depends(get_curre
             bank_name=bank.get("bank_name") or "",
             pan=bank.get("pan") or "",
             gstin=bank.get("gstin") or "",
+            gst_treatment=bank.get("gst_treatment") or "",
             complete=complete,
         ),
         can_request=can,
@@ -317,6 +320,7 @@ def get_bank(user: User = Depends(get_current_user)) -> BankOut:
         bank_name=bank.get("bank_name") or "",
         pan=bank.get("pan") or "",
         gstin=bank.get("gstin") or "",
+        gst_treatment=bank.get("gst_treatment") or "",
         complete=_bank_complete(bank),
     )
 
@@ -335,7 +339,10 @@ def put_bank(
         "bank_name": (body.bank_name or "").strip(),
         "pan": (body.pan or "").strip().upper(),
         "gstin": (body.gstin or "").strip().upper().replace(" ", ""),
+        "gst_treatment": (body.gst_treatment or "").strip().lower(),
     }
+    if data["gst_treatment"] not in {"", "exclusive", "inclusive", "none"}:
+        raise HTTPException(status_code=400, detail="GST treatment must be exclusive, inclusive, or none")
     if data["gstin"] and not GSTIN_RE.match(data["gstin"]):
         raise HTTPException(status_code=400, detail="GSTIN must be 15 characters, e.g. 07ABCDE1234F1Z5")
     user.payout_bank = data
@@ -441,7 +448,8 @@ def reprice_invoice(db: Session, row: PayoutRequest, partner: User) -> None:
             }
         )
     amount = round(sum(line["share"] for line in lines), 2)
-    gst, tds, net = tax_breakup(db, amount, (partner.payout_bank or {}).get("gstin") if partner else None)
+    bank = (partner.payout_bank or {}) if partner else {}
+    gst, tds, net = tax_breakup(db, amount, bank.get("gstin"), bank.get("gst_treatment"))
     snap["lines"] = lines
     snap["lender_payout_total"] = round(sum(line["lender_payout"] for line in lines), 2)
     snap["agreement_percent"] = float(partner.agreement_percent or 0)
@@ -562,7 +570,7 @@ def raise_invoice(
     snapshot["lender_payout_total"] = lender_total
     snapshot["agreement_percent"] = float(user.agreement_percent)
     snapshot["commission_rate"] = float(user.agreement_percent) / 100
-    gst, tds, net = tax_breakup(db, amount, bank.get("gstin"))
+    gst, tds, net = tax_breakup(db, amount, bank.get("gstin"), bank.get("gst_treatment"))
     row = PayoutRequest(
         id=uuid4(),
         user_id=user.id,
@@ -621,7 +629,7 @@ def resubmit_invoice(
     snapshot = dict(row.bank_snapshot or {})
     snapshot.update({k: bank.get(k) or "" for k in ("account_holder", "account_number", "ifsc", "bank_name", "pan", "gstin")})
     row.bank_snapshot = snapshot
-    row.gst_amount, row.tds_amount, row.net_payable = tax_breakup(db, float(row.amount or 0), bank.get("gstin"))
+    row.gst_amount, row.tds_amount, row.net_payable = tax_breakup(db, float(row.amount or 0), bank.get("gstin"), bank.get("gst_treatment"))
     stage = row.queried_stage if row.queried_stage in STAGES else "rm1"
     row.stage = stage
     row.status = status_for(stage)
