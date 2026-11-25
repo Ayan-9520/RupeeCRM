@@ -590,6 +590,9 @@ function CaseForm({
               rows={active.disbursements?.length ? active.disbursements : [{ date: "", amount: 0, reference: "" }]}
               onCommit={(disbursements) => { edit({ disbursements }); commit(["disbursements"]); }}
             />
+            <Field label="Bonus name" value={active.bonus_name || ""} onChange={(bonus_name) => edit({ bonus_name })} onBlur={() => commit(["bonus_name"])} />
+            <Field label="Bonus amount" type="number" value={String(active.bonus_amount || 0)} onChange={(value) => edit({ bonus_amount: Number(value) })} onBlur={() => commit(["bonus_amount"])} />
+            <Field label="Partner bonus %" type="number" value={String(active.bonus_partner_percent || 0)} onChange={(value) => edit({ bonus_partner_percent: Number(value) })} onBlur={() => commit(["bonus_partner_percent"])} />
             <Field label="Receivable %" type="number" value={String(active.receivable_percent)} onChange={(value) => onChange({ ...active, receivable_percent: Number(value) })} />
             <Field label="Connector payable %" type="number" value={String(active.payable_percent)} onChange={(value) => onChange({ ...active, payable_percent: Number(value) })} />
             <Field label="Customer credit name" value={active.loyalty_name} onChange={(loyalty_name) => onChange({ ...active, loyalty_name })} />

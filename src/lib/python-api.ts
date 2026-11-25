@@ -1489,6 +1489,9 @@ export type LoanCaseFile = {
   roi?: number;
   tenure_months?: number;
   disbursements?: { date: string; amount: number; reference: string }[];
+  bonus_name?: string;
+  bonus_amount?: number;
+  bonus_partner_percent?: number;
   bankers?: { name: string; email: string; designation: string; phone: string }[];
   customer?: Record<string, string>;
   stakeholders?: { name: string; share_percent: number }[];

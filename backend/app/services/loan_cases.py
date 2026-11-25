@@ -84,9 +84,11 @@ def figures(row: LoanCase) -> dict:
     receivable = _round(base * float(row.receivable_percent or 0) / 100)
     payable = _round(receivable * float(row.payable_percent or 0) / 100)
     loyalty = _round(row.loyalty_amount or 0)
+    bonus = _round(getattr(row, "bonus_amount", 0) or 0)
+    bonus_partner = _round(bonus * float(getattr(row, "bonus_partner_percent", 0) or 0) / 100)
     margin = _round(receivable - payable - loyalty)
     agent = 0.0
-    net = margin
+    net = _round(margin + bonus - bonus_partner)
     invoice = _round(row.invoice_amount or 0)
     collected = _round(row.collected_amount or 0)
     invoice_pct = _round(invoice / receivable * 100) if receivable else 0
@@ -96,6 +98,8 @@ def figures(row: LoanCase) -> dict:
         "receivable_amount": receivable,
         "payable_amount": payable,
         "loyalty_amount": loyalty,
+        "bonus_amount": bonus,
+        "bonus_partner_amount": bonus_partner,
         "agent_amount": agent,
         "net_revenue": net,
         "invoice_percent": invoice_pct,
@@ -276,6 +280,9 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
         "roi": float(row.roi or 0),
         "tenure_months": int(row.tenure_months or 0),
         "disbursements": _clean_disbursements(row.disbursements),
+        "bonus_name": row.bonus_name or "",
+        "bonus_amount": _round(row.bonus_amount),
+        "bonus_partner_percent": float(row.bonus_partner_percent or 0),
         "bank_rm": row.bank_rm,
         "bank_rm_phone": row.bank_rm_phone,
         "bankers": _bankers(row),
@@ -452,6 +459,7 @@ def _apply(row: LoanCase, payload: dict) -> None:
         "expected_sanction_on",
         "client_access",
         "loyalty_name",
+        "bonus_name",
         "bank_name",
         "application_no",
         "lan",
@@ -479,7 +487,7 @@ def _apply(row: LoanCase, payload: dict) -> None:
         row.roi = float(payload["roi"])
     if "tenure_months" in payload and payload["tenure_months"] is not None:
         row.tenure_months = max(0, int(float(payload["tenure_months"])))
-    for key in ("loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "loyalty_amount", "invoice_amount", "collected_amount"):
+    for key in ("loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "loyalty_amount", "invoice_amount", "collected_amount", "bonus_amount", "bonus_partner_percent"):
         if key in payload and payload[key] is not None:
             value = float(payload[key])
             if value < 0:
@@ -530,7 +538,7 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
         if not payload:
             raise PermissionError("Only admin can edit a case file")
     watched = (
-        "loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent",
+        "loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "bonus_amount", "bonus_partner_percent",
         "loyalty_amount", "invoice_amount", "collected_amount", "counted", "stage", "flag", "payout_status",
     )
     before = {key: getattr(row, key) for key in watched}

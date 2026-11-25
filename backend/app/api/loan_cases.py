@@ -49,6 +49,9 @@ class CaseIn(BaseModel):
     roi: float | None = None
     tenure_months: int | None = None
     disbursements: list[dict] | None = None
+    bonus_name: str | None = None
+    bonus_amount: float | None = None
+    bonus_partner_percent: float | None = None
     bank_rm: str | None = None
     bank_rm_phone: str | None = None
     bankers: list[dict] | None = None
