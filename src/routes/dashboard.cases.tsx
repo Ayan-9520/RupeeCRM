@@ -476,6 +476,21 @@ function CaseForm({
   onUploaded: (row: LoanCaseFile) => void;
 }) {
   const reached = STAGES.findIndex(([key]) => key === active.stage);
+  const latest = useRef(active);
+  latest.current = active;
+  const edit = (patch: Partial<LoanCaseFile>) => {
+    const next = { ...latest.current, ...patch };
+    latest.current = next;
+    onChange(next);
+  };
+  const commit = (keys: (keyof LoanCaseFile)[]) => {
+    const row = latest.current;
+    const body: Partial<LoanCaseFile> = {};
+    for (const key of keys) body[key] = row[key] as never;
+    void saveCaseFile(row.id, body)
+      .then(onUploaded)
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the file"));
+  };
   return (
     <section className="space-y-4">
       <button className="text-sm font-semibold text-[#10662A]" onClick={onBack}>← Back to list</button>
@@ -512,7 +527,7 @@ function CaseForm({
       <FileBlock step="1" title="Login" hint="What was logged: product, amount, source, and the sanction date.">
         <label className="block text-xs font-medium text-[#5c4d72]">
           Loan type
-          <select className="mt-1 h-10 w-full rounded-md border border-input bg-white px-3 text-sm" value={active.loan_type} onChange={(event) => onChange({ ...active, loan_type: event.target.value })}>
+          <select className="mt-1 h-10 w-full rounded-md border border-input bg-white px-3 text-sm" value={active.loan_type} onChange={(event) => { edit({ loan_type: event.target.value }); commit(["loan_type"]); }}>
             {active.loan_type && !loanTypes.includes(active.loan_type) ? <option value={active.loan_type}>{active.loan_type}</option> : null}
             {RUPEEDIAL_PRODUCT_MENUS.map((group) => (
               <optgroup key={group.title} label={group.title}>
@@ -521,21 +536,21 @@ function CaseForm({
             ))}
           </select>
         </label>
-        <Field label="Loan amount" type="number" value={String(active.loan_amount)} onChange={(value) => onChange({ ...active, loan_amount: Number(value) })} />
-        <Field label="Project" value={active.project_name} onChange={(project_name) => onChange({ ...active, project_name })} />
-        <Field label="Lead source" value={active.lead_source} onChange={(lead_source) => onChange({ ...active, lead_source })} />
-        <Field label="Sanction date" type="date" value={(active.expected_sanction_on || "").slice(0, 10)} onChange={(expected_sanction_on) => onChange({ ...active, expected_sanction_on })} />
+        <Field label="Loan amount" type="number" value={String(active.loan_amount)} onChange={(value) => edit({ loan_amount: Number(value) })} onBlur={() => commit(["loan_amount"])} />
+        <Field label="Project" value={active.project_name} onChange={(project_name) => edit({ project_name })} onBlur={() => commit(["project_name"])} />
+        <Field label="Lead source" value={active.lead_source} onChange={(lead_source) => edit({ lead_source })} onBlur={() => commit(["lead_source"])} />
+        <Field label="Sanction date" type="date" value={(active.expected_sanction_on || "").slice(0, 10)} onChange={(expected_sanction_on) => { edit({ expected_sanction_on }); commit(["expected_sanction_on"]); }} />
       </FileBlock>
 
-      <CustomerFields active={active} onChange={onChange} onUploaded={onUploaded} />
+      <CustomerFields active={active} onChange={onChange} onUploaded={onUploaded} onIdentity={(client_name, client_phone) => { edit({ client_name, client_phone }); commit(["client_name", "client_phone"]); }} />
 
       <FileBlock step="3" title="Connector" hint="The partner who owns this file and will be paid.">
-        <Field label="Connector code" value={active.partner_code} onChange={(partner_code) => onChange({ ...active, partner_code })} />
-        <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => onChange({ ...active, partner_name })} />
+        <Field label="Connector code" value={active.partner_code} onChange={(partner_code) => edit({ partner_code })} onBlur={admin ? () => commit(["partner_code"]) : undefined} />
+        <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => edit({ partner_name })} onBlur={admin ? () => commit(["partner_name"]) : undefined} />
       </FileBlock>
 
       <FileBlock step="4" title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
-        <Field label="Bank" value={active.bank_name} onChange={(bank_name) => onChange({ ...active, bank_name })} />
+        <Field label="Bank" value={active.bank_name} onChange={(bank_name) => edit({ bank_name })} onBlur={() => commit(["bank_name"])} />
         <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
         <PaperSlot label="Sanction letter" name={active.sanction_letter_name} onPick={(file) => void sendPaper(active.id, "sanction_letter", file, onUploaded)} onOpen={() => void openPaper(active.id, "sanction_letter", active.sanction_letter_name)} />
         <BankerList
@@ -661,7 +676,7 @@ function CaseForm({
           <Button variant={active.flag === "cancelled" ? "default" : "outline"} onClick={() => onChange({ ...active, flag: active.flag === "cancelled" ? "" : "cancelled" })}>{active.flag === "cancelled" ? "Undo cancel" : "Cancel"}</Button>
         </div>
       ) : (
-        <p className="text-xs text-[#5c4d72]">This login can view the file. An admin saves stage and payout changes.</p>
+        <p className="text-xs text-[#5c4d72]">Loan, customer, and bank save when you leave the field. Stage and payout stay with admin.</p>
       )}
     </section>
   );
@@ -725,9 +740,11 @@ function customerOf(row: LoanCaseFile) {
   return { ...EMPTY_CUSTOMER, ...(row.customer || {}) };
 }
 
-function CustomerFields({ active, onChange, onUploaded }: { active: LoanCaseFile; onChange: (row: LoanCaseFile) => void; onUploaded: (row: LoanCaseFile) => void }) {
+function CustomerFields({ active, onChange, onUploaded, onIdentity }: { active: LoanCaseFile; onChange: (row: LoanCaseFile) => void; onUploaded: (row: LoanCaseFile) => void; onIdentity: (name: string, phone: string) => void }) {
   const latest = useRef(customerOf(active));
   latest.current = customerOf(active);
+  const identity = useRef({ name: active.client_name, phone: active.client_phone });
+  identity.current = { name: active.client_name, phone: active.client_phone };
   const patch = (key: string, value: string) => {
     const next = { ...latest.current, [key]: value };
     latest.current = next;
@@ -752,8 +769,8 @@ function CustomerFields({ active, onChange, onUploaded }: { active: LoanCaseFile
   ];
   return (
     <FileBlock step="2" title="Customer" hint="Who the loan is for. Name and phone first, then address and identity.">
-      <Field label="Customer name" value={active.client_name} onChange={(client_name) => onChange({ ...active, client_name })} />
-      <Field label="Customer phone" value={active.client_phone} onChange={(client_phone) => onChange({ ...active, client_phone })} />
+      <Field label="Customer name" value={active.client_name} onChange={(client_name) => { identity.current = { ...identity.current, name: client_name }; onChange({ ...active, client_name }); }} onBlur={() => onIdentity(identity.current.name, identity.current.phone)} />
+      <Field label="Customer phone" value={active.client_phone} onChange={(client_phone) => { identity.current = { ...identity.current, phone: client_phone }; onChange({ ...active, client_phone }); }} onBlur={() => onIdentity(identity.current.name, identity.current.phone)} />
       {fields.map(([key, label]) => (
         <Field key={key} label={label} value={latest.current[key] || ""} onChange={(value) => patch(key, value)} onBlur={commit} />
       ))}

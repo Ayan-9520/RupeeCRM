@@ -468,7 +468,12 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
     if user.role not in {"admin", "ceo", "super_admin"}:
         if user.role not in {"dsa", "affiliate"}:
             raise PermissionError("Only admin can edit a case file")
-        payload = {key: payload.get(key) for key in ("bankers", "customer", "stakeholders") if key in payload}
+        kept = (
+            "bankers", "customer", "stakeholders",
+            "loan_type", "loan_amount", "lead_source", "project_name", "expected_sanction_on",
+            "client_name", "client_phone", "bank_name",
+        )
+        payload = {key: payload.get(key) for key in kept if key in payload}
         if not payload:
             raise PermissionError("Only admin can edit a case file")
     _apply(row, payload)
