@@ -55,6 +55,14 @@ def _disbursed_purchases(db: Session, user_id: UUID) -> list[LeadPurchase]:
 
 
 def _case_base(db: Session, purchase: LeadPurchase) -> float:
+    case = db.query(LoanCase).filter(LoanCase.lead_purchase_id == purchase.id).first()
+    if case is not None:
+        sanctioned = float(case.sanctioned_amount or 0)
+        logged = float(case.loan_amount or 0)
+        if sanctioned > 0:
+            return sanctioned
+        if logged > 0:
+            return logged
     if purchase.deal_value:
         return float(purchase.deal_value)
     lead = db.query(Lead).filter(Lead.id == purchase.lead_id).first()
@@ -529,7 +537,7 @@ def raise_invoice(
     for row in selected:
         lender_percent, lender_payout, agreement, share = _share(db, row, user)
         if lender_payout <= 0 or share <= 0:
-            raise HTTPException(status_code=400, detail="A disbursed case has no lender payout yet. The company confirms that figure first.")
+            continue
         lines.append(
             {
                 "purchase_id": str(row.id),
@@ -539,6 +547,8 @@ def raise_invoice(
                 "share": share,
             }
         )
+    if not lines:
+        raise HTTPException(status_code=400, detail="A disbursed case has no lender payout yet. The company confirms that figure first.")
     disbursed_total = round(sum(_case_base(db, row) for row in selected), 2)
     lender_total = round(sum(line["lender_payout"] for line in lines), 2)
     amount = round(sum(line["share"] for line in lines), 2)
