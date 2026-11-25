@@ -420,17 +420,8 @@ def patch_my_lead(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not your lead")
     if not owner and not caller and (body.disposition or body.lead is not None or body.deal_value is not None or body.converted is not None):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Bank desk can update the stage only")
-    waits = owner and user.role in PARTNER_ROLES and caller_required(db, p)
-    if waits and body.pipeline_stage == "contacted":
-        raise HTTPException(status_code=400, detail="Your telecaller records the first call")
-    if waits and body.pipeline_stage == "rejected" and p.pipeline_stage in {"new", "contacted"}:
-        raise HTTPException(status_code=400, detail="Your telecaller records this call result")
-    if waits and body.disposition:
-        spec = DISPOSITIONS.get((body.disposition or "").strip().lower())
-        if spec and spec[1] in {None, "contacted", "rejected"}:
-            raise HTTPException(status_code=400, detail="Your telecaller records this call result")
     if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "docs_collected" and p.pipeline_stage != "contacted":
-        raise HTTPException(status_code=400, detail="The telecaller marks the call before documents")
+        raise HTTPException(status_code=400, detail="Record the call before you collect documents")
     if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage == "bank_submitted" and p.pipeline_stage != "docs_collected":
         raise HTTPException(status_code=400, detail="Collect the documents before the bank submission")
     if owner and user.role in {"dsa", "affiliate"} and body.pipeline_stage in {"sanctioned", "disbursed"}:
