@@ -794,6 +794,43 @@ def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str) -> dic
     return {"applied": applied, "skipped": len(preview["rows"]) - applied, "rows": preview["rows"]}
 
 
+def finance_report(db: Session, user: User) -> dict:
+    invoices = _invoice_index(db)
+    rows = []
+    receivable = collected = outstanding = bonus = 0.0
+    for row in _visible(db, user).all():
+        money = figures(row)
+        got = _round(row.collected_amount)
+        due = _round(max(0, money["receivable_amount"] + money["bonus_amount"] - got))
+        invoice = invoices.get(str(row.lead_purchase_id or "")) if row.lead_purchase_id else None
+        receivable += money["receivable_amount"]
+        collected += got
+        outstanding += due
+        bonus += money["bonus_amount"]
+        rows.append({
+            "deal_no": row.deal_no,
+            "partner_name": row.partner_name,
+            "bank_name": row.bank_name,
+            "loan_type": row.loan_type,
+            "base_amount": money["base_amount"],
+            "receivable_amount": money["receivable_amount"],
+            "payable_amount": money["payable_amount"],
+            "bonus_amount": money["bonus_amount"],
+            "collected_amount": got,
+            "outstanding": due,
+            "counted": bool(row.counted),
+            "invoice_number": (invoice or {}).get("number") or "",
+            "invoice_status": (invoice or {}).get("status_label") or "",
+        })
+    return {
+        "receivable": _round(receivable),
+        "collected": _round(collected),
+        "outstanding": _round(outstanding),
+        "bonus": _round(bonus),
+        "rows": rows,
+    }
+
+
 def sample_file(db: Session, user: User) -> dict:
     """One local file with the same sums as a 1.4% / 90% closure. Not a live customer."""
     existing = db.query(LoanCase).filter(LoanCase.deal_no == SAMPLE_DEAL).first()

@@ -1539,6 +1539,26 @@ export async function createCaseFile(body: Partial<LoanCaseFile>): Promise<LoanC
   return request("/api/cases", { method: "POST", body: JSON.stringify(body) });
 }
 
+export type FinanceRow = {
+  deal_no: string;
+  partner_name: string;
+  bank_name: string;
+  loan_type: string;
+  base_amount: number;
+  receivable_amount: number;
+  payable_amount: number;
+  bonus_amount: number;
+  collected_amount: number;
+  outstanding: number;
+  counted: boolean;
+  invoice_number: string;
+  invoice_status: string;
+};
+
+export async function getFinanceReport(): Promise<{ receivable: number; collected: number; outstanding: number; bonus: number; rows: FinanceRow[] }> {
+  return request("/api/cases/finance-report");
+}
+
 export async function previewLenderDump(file: File): Promise<{ ready: number; rows: { row: number; status: string; deal_no: string; matched_by: string; amount: number }[] }> {
   const body = new FormData();
   body.append("file", file);
