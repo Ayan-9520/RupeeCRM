@@ -256,6 +256,8 @@ def set_lender_payout(
     row, partner = _load(db, request_id)
     if row.stage in {"paid", "rejected"}:
         raise HTTPException(status_code=400, detail="This invoice is already closed")
+    if (row.bank_snapshot or {}).get("invoice_confirmed_at"):
+        raise HTTPException(status_code=400, detail="This invoice is confirmed. Its rate can no longer change.")
     if not can_act(user, row, partner) and user.role not in ADMIN_ROLES:
         raise HTTPException(status_code=403, detail="This invoice is not at your approval level")
     if not partner:

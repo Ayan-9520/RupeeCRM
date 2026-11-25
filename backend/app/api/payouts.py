@@ -515,6 +515,7 @@ def invoice_centre(db: Session = Depends(get_db), user: User = Depends(get_curre
 
 @router.post("/invoices", response_model=RequestOut)
 def raise_invoice(
+    purchase_id: UUID | None = Query(default=None),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> RequestOut:
@@ -537,6 +538,10 @@ def raise_invoice(
         raise HTTPException(status_code=400, detail="Your agreement percent is not set. Ask RupeeDial to enter it, from 50 to 95.")
     taken = _taken_case_ids(db, user.id)
     selected = [row for row in _disbursed_purchases(db, user.id) if str(row.id) not in taken]
+    if purchase_id is not None:
+        selected = [row for row in selected if row.id == purchase_id]
+        if not selected:
+            raise HTTPException(status_code=400, detail="That case is not waiting for an invoice")
     if not selected:
         raise HTTPException(status_code=400, detail="No disbursed cases are waiting for an invoice")
     lines = []
@@ -564,12 +569,12 @@ def raise_invoice(
     invoice_number = f"RD-INV-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{uuid4().hex[:6].upper()}"
     snapshot = dict(bank)
     snapshot["invoice_number"] = invoice_number
-    snapshot["case_ids"] = [str(row.id) for row in selected]
+    snapshot["case_ids"] = [line["purchase_id"] for line in lines]
     snapshot["lines"] = lines
     snapshot["disbursed_total"] = disbursed_total
     snapshot["lender_payout_total"] = lender_total
-    snapshot["agreement_percent"] = float(user.agreement_percent)
-    snapshot["commission_rate"] = float(user.agreement_percent) / 100
+    snapshot["agreement_percent"] = lines[0]["agreement_percent"]
+    snapshot["commission_rate"] = float(lines[0]["agreement_percent"]) / 100
     gst, tds, net = tax_breakup(db, amount, bank.get("gstin"), bank.get("gst_treatment"))
     row = PayoutRequest(
         id=uuid4(),

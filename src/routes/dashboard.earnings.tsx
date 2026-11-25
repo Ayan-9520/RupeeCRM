@@ -200,6 +200,20 @@ function InvoiceCentrePage() {
                 <div className="text-right">
                   <div className="font-bold text-[#10662A]">{inr(item.commission)}</div>
                   <div className="text-[10px] uppercase text-[#5c4d72]">{item.invoiced ? "On an invoice" : item.lender_payout ? "Your share" : "Lender payout pending"}</div>
+                  {!item.invoiced && item.lender_payout ? (
+                    <button type="button" className="mt-1 text-xs font-semibold text-[#10662A]" disabled={busy} onClick={() => void (async () => {
+                      setBusy(true);
+                      try {
+                        const invoice = await raiseInvoice(item.purchase_id);
+                        toast.success(`Invoice ${String(invoice.bank_snapshot?.invoice_number || "")} raised for this case`);
+                        await load();
+                      } catch (error) {
+                        toast.error(error instanceof Error ? error.message : "Could not raise the invoice");
+                      } finally {
+                        setBusy(false);
+                      }
+                    })()}>Raise this case</button>
+                  ) : null}
                 </div>
               </li>
             ))}

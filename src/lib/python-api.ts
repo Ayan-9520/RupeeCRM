@@ -983,8 +983,9 @@ export async function getInvoiceCentre(): Promise<InvoiceCentre> {
   return request("/api/payouts/centre");
 }
 
-export async function raiseInvoice(): Promise<PayoutRequest> {
-  return request("/api/payouts/invoices", { method: "POST" });
+export async function raiseInvoice(purchaseId?: string): Promise<PayoutRequest> {
+  const query = purchaseId ? `?purchase_id=${encodeURIComponent(purchaseId)}` : "";
+  return request(`/api/payouts/invoices${query}`, { method: "POST" });
 }
 
 export async function adminPayoutAction(
