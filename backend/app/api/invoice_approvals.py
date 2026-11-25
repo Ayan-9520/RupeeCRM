@@ -6,8 +6,8 @@ import io
 from datetime import date, datetime, timedelta, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,7 @@ from app.api.payouts import HistoryOut, RequestOut, _to_out, history_out, repric
 from app.db.session import get_db
 from app.models import InvoiceApproval, LoanCase, PayoutRequest, User
 from app.services.audit import write_audit
+from app.services.document_files import read_bytes, safe_filename, save_bytes, sniff_mime
 from app.services.invoice_flow import (
     ADMIN_ROLES,
     NOTIFY_LINK_PARTNER,
@@ -275,6 +276,46 @@ def set_lender_payout(
     return _rows_out(db, [row], user)[0]
 
 
+@router.post("/{request_id}/proof", response_model=QueueRow)
+async def upload_proof(
+    request_id: UUID,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_staff),
+) -> QueueRow:
+    row, partner = _load(db, request_id)
+    if row.stage != "accounts":
+        raise HTTPException(status_code=400, detail="Upload the proof when the invoice is with Accounts")
+    if not can_act(user, row, partner):
+        raise HTTPException(status_code=403, detail="Only Accounts can upload the payment proof")
+    data = await file.read()
+    mime = sniff_mime(data, file.content_type or "")
+    key = save_bytes(str(row.id), "payment-proof", data, mime)
+    snap = dict(row.bank_snapshot or {})
+    snap["payment_proof_key"] = key
+    snap["payment_proof_name"] = safe_filename(file.filename or "proof")
+    row.bank_snapshot = snap
+    db.commit()
+    db.refresh(row)
+    return _rows_out(db, [row], user)[0]
+
+
+@router.get("/{request_id}/proof")
+def download_proof(
+    request_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> Response:
+    row, partner = _load(db, request_id)
+    if user.id != row.user_id and not is_staff(user):
+        raise HTTPException(status_code=403, detail="You cannot open this payment proof")
+    key = (row.bank_snapshot or {}).get("payment_proof_key") or ""
+    if not key:
+        raise HTTPException(status_code=404, detail="No payment proof on this invoice")
+    name = (row.bank_snapshot or {}).get("payment_proof_name") or "proof"
+    return Response(content=read_bytes(key), headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
 @router.post("/{request_id}/pay", response_model=QueueRow)
 def pay(
     request_id: UUID,
@@ -290,6 +331,8 @@ def pay(
         raise HTTPException(status_code=400, detail="Invoice is not at the Accounts step")
     if not can_act(user, row, partner):
         raise HTTPException(status_code=403, detail="Only Accounts can record the payment")
+    if not snap.get("payment_proof_key"):
+        raise HTTPException(status_code=400, detail="Upload the payment proof before marking this invoice paid")
     mode = body.payment_mode.strip().upper()
     if mode not in PAYMENT_MODES:
         raise HTTPException(status_code=400, detail="Payment mode must be NEFT, RTGS, IMPS, UPI or CHEQUE")

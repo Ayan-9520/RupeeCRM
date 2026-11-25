@@ -1763,6 +1763,12 @@ export async function setInvoiceLenderPayout(id: string, purchaseId: string, len
   });
 }
 
+export async function uploadInvoiceProof(id: string, file: File): Promise<InvoiceApprovalRow> {
+  const body = new FormData();
+  body.append("file", file);
+  return request(`/api/invoice-approvals/${id}/proof`, { method: "POST", body });
+}
+
 export async function payInvoice(
   id: string,
   body: {

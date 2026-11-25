@@ -10,6 +10,7 @@ import {
   confirmInvoice,
   payInvoice,
   setInvoiceLenderPayout,
+  uploadInvoiceProof,
   saveFinanceSetup,
   type FinanceSetupUser,
   type InvoiceApprovalRow,
@@ -424,6 +425,16 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
                     <input type="date" value={pay.payment_date} max={todayIso()} onChange={(e) => setPay((p) => ({ ...p, payment_date: e.target.value }))} className="h-9 rounded-lg border border-[#d8ecdd] px-2 text-sm" />
                     <input type="number" value={pay.paid_amount} onChange={(e) => setPay((p) => ({ ...p, paid_amount: e.target.value }))} placeholder="Paid amount" className="h-9 rounded-lg border border-[#d8ecdd] px-2 text-sm" />
                     <input value={pay.remarks} onChange={(e) => setPay((p) => ({ ...p, remarks: e.target.value }))} placeholder="Remarks (optional)" className="h-9 rounded-lg border border-[#d8ecdd] px-2 text-sm" />
+                    <label className="inline-flex h-9 cursor-pointer items-center rounded-lg border border-[#d8ecdd] px-2 text-xs font-semibold text-[#390A5D]">
+                      {row.bank_snapshot?.payment_proof_name ? "Proof saved" : "Upload proof"}
+                      <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="hidden" onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        event.target.value = "";
+                        if (!file) return;
+                        setBusy("proof");
+                        void uploadInvoiceProof(row.id, file).then((updated) => { onChange(updated); toast.success("Payment proof saved"); }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not upload the proof")).finally(() => setBusy(null));
+                      }} />
+                    </label>
                   </div>
                   <button type="button" disabled={!!busy || !lenderConfirmed || !invoiceConfirmed} onClick={() => void recordPayment()} className="inline-flex items-center gap-1.5 rounded-lg bg-[#10662A] px-3.5 py-2 text-sm font-semibold text-white disabled:opacity-50">
                     {busy === "pay" ? <Loader2 className="size-4 animate-spin" /> : null} Mark paid
