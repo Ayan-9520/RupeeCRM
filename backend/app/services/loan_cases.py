@@ -87,8 +87,10 @@ def figures(row: LoanCase) -> dict:
     bonus = _round(getattr(row, "bonus_amount", 0) or 0)
     bonus_partner = _round(bonus * float(getattr(row, "bonus_partner_percent", 0) or 0) / 100)
     margin = _round(receivable - payable - loyalty)
-    agent = 0.0
-    net = _round(margin + bonus - bonus_partner)
+    share_pct = sum(float(item.get("share_percent") or 0) for item in _clean_stakeholders(getattr(row, "stakeholders", None)))
+    share_pct = min(share_pct, 100)
+    agent = _round(margin * share_pct / 100) if margin > 0 else 0.0
+    net = _round(margin - agent + bonus - bonus_partner)
     invoice = _round(row.invoice_amount or 0)
     collected = _round(row.collected_amount or 0)
     invoice_pct = _round(invoice / receivable * 100) if receivable else 0
@@ -480,7 +482,10 @@ def _apply(row: LoanCase, payload: dict) -> None:
     if "customer" in payload and payload["customer"] is not None:
         row.customer = _clean_customer(payload["customer"])
     if "stakeholders" in payload and payload["stakeholders"] is not None:
-        row.stakeholders = _clean_stakeholders(payload["stakeholders"])
+        clean = _clean_stakeholders(payload["stakeholders"])
+        if sum(float(item["share_percent"]) for item in clean) > 100:
+            raise ValueError("Employee shares cannot total more than 100%")
+        row.stakeholders = clean
     if "disbursements" in payload and payload["disbursements"] is not None:
         row.disbursements = _clean_disbursements(payload["disbursements"])
     if "roi" in payload and payload["roi"] is not None:
