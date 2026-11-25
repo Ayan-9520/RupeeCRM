@@ -54,19 +54,6 @@ function InvoiceCentrePage() {
     void load();
   }, [load]);
 
-  const raise = async () => {
-    setBusy(true);
-    try {
-      const invoice = await raiseInvoice();
-      toast.success(invoice.note || "Invoice raised");
-      await load();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not raise invoice");
-    } finally {
-      setBusy(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="grid place-items-center py-16">
@@ -139,15 +126,7 @@ function InvoiceCentrePage() {
             <h2 className="font-semibold text-[#390A5D]">Disbursed cases</h2>
             <p className="text-xs text-[#5c4d72]">{openCases.length} waiting · {inr(centre.pending)} eligible</p>
           </div>
-          <button
-            type="button"
-            disabled={busy || openCases.length === 0 || !ready}
-            onClick={() => void raise()}
-            title={ready ? undefined : "Complete the checklist below first"}
-            className="rounded-xl bg-[#10662A] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {busy ? "Raising…" : "Raise invoice"}
-          </button>
+          <p className="text-xs text-[#5c4d72]">Each case has its own invoice. Use Raise this case on the row.</p>
         </div>
         {summary && !ready ? (
           <div className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm">

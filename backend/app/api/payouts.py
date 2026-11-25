@@ -526,13 +526,8 @@ def raise_invoice(
     bank = dict(user.payout_bank or {})
     if not _bank_complete(bank):
         raise HTTPException(status_code=400, detail="Add bank details before raising an invoice")
-    pending = (
-        db.query(PayoutRequest)
-        .filter(PayoutRequest.user_id == user.id, PayoutRequest.status.in_(("pending", "query")))
-        .first()
-    )
-    if pending:
-        raise HTTPException(status_code=400, detail="An invoice is already in approval. Wait for it, or answer its query first.")
+    if purchase_id is None:
+        raise HTTPException(status_code=400, detail="Choose one case. Each disbursed case gets its own invoice.")
 
     if not user.agreement_percent or not 50 <= float(user.agreement_percent) <= 95:
         raise HTTPException(status_code=400, detail="Your agreement percent is not set. Ask RupeeDial to enter it, from 50 to 95.")
