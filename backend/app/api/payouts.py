@@ -412,14 +412,14 @@ def create_request(
 def _share(db: Session, purchase: LeadPurchase, partner: User) -> tuple[float, float, float, float]:
     """Loan base, lender percent, lender payout, partner share.
 
-    The agreement is typed on the partner. The lender percent sits on the case,
-    so a subvented payout can be corrected before the invoice is confirmed.
+    The partner percent is the one stored on the case when the file was opened.
+    A later change to the partner's agreement does not rewrite this file or its invoice.
     """
     case = db.query(LoanCase).filter(LoanCase.lead_purchase_id == purchase.id).first()
     base = _case_base(db, purchase)
     lender_percent = float(case.receivable_percent or 0) if case else 0
     lender_payout = round(base * lender_percent / 100, 2)
-    agreement = float(partner.agreement_percent or 0)
+    agreement = float(case.payable_percent or 0) if case else 0
     share = round(lender_payout * agreement / 100, 2) if agreement else 0
     return lender_percent, lender_payout, agreement, share
 

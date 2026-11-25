@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models import Lead, LeadPurchase, LoanCase, PayoutRequest, User
+from app.services.audit import write_audit
 from app.services.invoice_flow import STAGE_LABELS
 
 STAGES = (
@@ -267,9 +268,21 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
 
 def _visible(db: Session, user: User):
     query = db.query(LoanCase)
-    if user.role not in {"admin", "ceo", "super_admin", "lender", "coordinator"}:
-        query = query.filter(LoanCase.partner_user_id == user.id)
-    return query.order_by(LoanCase.created_at.desc())
+    if user.role in {"admin", "ceo", "super_admin", "lender"}:
+        return query.order_by(LoanCase.created_at.desc())
+    if user.role == "coordinator" and user.department == "OPS" and not user.finance_level:
+        return query.order_by(LoanCase.created_at.desc())
+    if user.role == "coordinator" and user.finance_level in {"manager", "business_head", "accounts"}:
+        return query.order_by(LoanCase.created_at.desc())
+    if user.role == "coordinator" and user.finance_level == "rm":
+        partner_ids = db.query(User.id).filter(
+            User.role.in_(("dsa", "affiliate")),
+            (User.rm1_user_id == user.id) | (User.rm2_user_id == user.id),
+        )
+        return query.filter(LoanCase.partner_user_id.in_(partner_ids)).order_by(LoanCase.created_at.desc())
+    if user.role in {"dsa", "affiliate"}:
+        return query.filter(LoanCase.partner_user_id == user.id).order_by(LoanCase.created_at.desc())
+    return query.filter(LoanCase.id.is_(None))
 
 
 def _on_day(row: LoanCase) -> str:
@@ -476,7 +489,27 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
         payload = {key: payload.get(key) for key in kept if key in payload}
         if not payload:
             raise PermissionError("Only admin can edit a case file")
+    watched = (
+        "loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent",
+        "loyalty_amount", "invoice_amount", "collected_amount", "counted", "stage", "flag", "payout_status",
+    )
+    before = {key: getattr(row, key) for key in watched}
     _apply(row, payload)
+    changes = {}
+    for key in watched:
+        old = before[key]
+        new = getattr(row, key)
+        if old != new:
+            changes[key] = {"old": old, "new": new}
+    if changes:
+        write_audit(
+            db,
+            action="case_money_update",
+            actor_user_id=user.id,
+            entity_type="loan_case",
+            entity_id=str(row.id),
+            detail={"deal_no": row.deal_no, "changes": changes},
+        )
     db.commit()
     db.refresh(row)
     return serialize(row, _invoice_index(db))
