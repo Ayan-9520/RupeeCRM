@@ -59,6 +59,18 @@ function FinancePage() {
       </div>
       {loading ? <Loader2 className="size-5 animate-spin text-[#10662A]" /> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      <section className="grid gap-3 sm:grid-cols-3">
+        {[
+          ["On an invoice", rows.filter((row) => row.invoice_number).length],
+          ["Paid invoice", rows.filter((row) => row.invoice_status === "paid").length],
+          ["Not invoiced", rows.filter((row) => !row.invoice_number).length],
+        ].map(([label, value]) => (
+          <div key={String(label)} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</p>
+            <p className="mt-1 font-display text-2xl font-bold text-[#10662A]">{value}</p>
+          </div>
+        ))}
+      </section>
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
         <h2 className="font-display text-lg font-bold text-[#390A5D]">By lender</h2>
         <div className="mt-3 space-y-3">

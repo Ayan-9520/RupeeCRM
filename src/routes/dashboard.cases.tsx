@@ -659,6 +659,26 @@ function CaseForm({
         <MoneyCard label="Partner share" value={inr(money.payable)} hint={`${active.payable_percent}% of the lender payout`} tone="purple" />
         {admin ? <MoneyCard label="Company net" value={inr(money.net)} hint="After partner share and staff" tone="amber" /> : null}
       </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Customer</p>
+          <h3 className="mt-1 font-display text-lg font-bold text-[#390A5D]">{active.client_name || "Name not saved"}</h3>
+          <dl className="mt-3 space-y-1 text-sm text-[#5c4d72]">
+            <div className="flex justify-between gap-3"><dt>Phone</dt><dd className="font-medium text-[#390A5D]">{active.client_phone || "—"}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Product</dt><dd className="font-medium text-[#390A5D]">{active.loan_type || "—"}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Partner</dt><dd className="text-right font-medium text-[#390A5D]">{active.partner_name || "—"}{active.partner_code ? ` · ${active.partner_code}` : ""}</dd></div>
+          </dl>
+        </div>
+        <div className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Lender</p>
+          <h3 className="mt-1 font-display text-lg font-bold text-[#390A5D]">{active.bank_name || "Bank not set"}</h3>
+          <dl className="mt-3 space-y-1 text-sm text-[#5c4d72]">
+            <div className="flex justify-between gap-3"><dt>Application</dt><dd className="font-medium text-[#390A5D]">{active.application_no || "—"}</dd></div>
+            <div className="flex justify-between gap-3"><dt>LAN</dt><dd className="font-medium text-[#390A5D]">{active.lan || "—"}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Officer</dt><dd className="text-right font-medium text-[#390A5D]">{active.bank_rm || "—"}{active.bank_rm_phone ? ` · ${active.bank_rm_phone}` : ""}</dd></div>
+          </dl>
+        </div>
+      </div>
 
       <FileBlock step="1" title="Login" hint="What was logged: product, amount, source, and the sanction date.">
         <label className="block text-xs font-medium text-[#5c4d72]">
