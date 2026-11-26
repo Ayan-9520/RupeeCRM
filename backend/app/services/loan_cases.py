@@ -913,6 +913,119 @@ def finance_report(db: Session, user: User) -> dict:
     }
 
 
+def stage_counts(db: Session, user: User) -> dict:
+    """One visible case sits in exactly one stage bucket. Money buckets are separate and are not added to the total."""
+    rows = list(_visible(db, user).all())
+    stages = {key: 0 for key in ("draft", "submitted", "logged_in", "sanctioned", "disbursed", "disbursed_confirmed", "collected", "on_hold", "cancelled", "other")}
+    money = {"commission_pending": 0, "commission_received": 0, "partner_payout_pending": 0, "partner_payout_paid": 0}
+    seen = set()
+    for row in rows:
+        if row.id in seen:
+            continue
+        seen.add(row.id)
+        if row.flag == "cancelled":
+            stages["cancelled"] += 1
+        elif row.flag == "hold":
+            stages["on_hold"] += 1
+        elif row.stage in stages:
+            stages[row.stage] += 1
+        else:
+            stages["other"] += 1
+        if row.flag == "cancelled":
+            continue
+        figures_row = figures(row)
+        receivable = figures_row["receivable_amount"]
+        if receivable > 0 and figures_row["collection_percent"] >= 100:
+            money["commission_received"] += 1
+        elif receivable > 0 and row.stage in ("disbursed", "disbursed_confirmed", "collected"):
+            money["commission_pending"] += 1
+        if row.payout_status == "paid":
+            money["partner_payout_paid"] += 1
+        elif row.stage in ("disbursed", "disbursed_confirmed", "collected"):
+            money["partner_payout_pending"] += 1
+    return {"total": len(seen), "stages": stages, "money": money}
+
+
+def case_timeline(db: Session, user: User, case_id: UUID) -> dict:
+    from app.models import AuditEvent, InvoiceApproval
+    row = _visible(db, user).filter(LoanCase.id == case_id).first()
+    if row is None:
+        raise LookupError("Case not found")
+    events = []
+    if row.created_at:
+        events.append({
+            "at": row.created_at.isoformat(),
+            "action": "Case opened",
+            "actor": row.submitted_by or "",
+            "detail": row.deal_no,
+            "ref": "",
+        })
+    if row.updated_at:
+        events.append({
+            "at": row.updated_at.isoformat(),
+            "action": "Current stage",
+            "actor": "",
+            "detail": status_label(row) + (" · counted" if row.counted else ""),
+            "ref": "",
+        })
+    for line in _clean_disbursements(row.disbursements):
+        events.append({
+            "at": f"{line['date']}T00:00:00+05:30" if line["date"] else "",
+            "action": "Disbursement recorded",
+            "actor": "",
+            "detail": f"₹{line['amount']:,.2f}" + (f" · {line['reference']}" if line["reference"] else ""),
+            "ref": line["reference"],
+        })
+    if row.sanction_letter_name:
+        events.append({"at": "", "action": "Sanction letter on file", "actor": "", "detail": row.sanction_letter_name, "ref": "sanction_letter"})
+    if row.bank_confirmation_name:
+        events.append({"at": "", "action": "Bank confirmation on file", "actor": "", "detail": row.bank_confirmation_name, "ref": "bank_confirmation"})
+    for old in row.paper_history or []:
+        if isinstance(old, dict) and old.get("name"):
+            events.append({"at": "", "action": "Earlier paper", "actor": "", "detail": str(old.get("name")), "ref": str(old.get("kind") or "")})
+    if row.lead_purchase_id:
+        for req in db.query(PayoutRequest).order_by(PayoutRequest.created_at.asc()).all():
+            snap = req.bank_snapshot or {}
+            ids = {str(item) for item in (snap.get("case_ids") or [])}
+            if str(row.lead_purchase_id) not in ids:
+                continue
+            number = str(snap.get("invoice_number") or "")
+            if req.created_at:
+                events.append({"at": req.created_at.isoformat(), "action": "Invoice created", "actor": "", "detail": number or req.stage or "", "ref": number})
+            for step in db.query(InvoiceApproval).filter(InvoiceApproval.request_id == req.id).order_by(InvoiceApproval.created_at.asc()).all():
+                events.append({
+                    "at": step.created_at.isoformat() if step.created_at else "",
+                    "action": f"Invoice {step.action or step.stage or 'update'}",
+                    "actor": step.actor_name or "",
+                    "detail": step.comment or step.stage or "",
+                    "ref": number,
+                })
+            if req.utr:
+                events.append({
+                    "at": req.reviewed_at.isoformat() if req.reviewed_at else "",
+                    "action": "UTR recorded",
+                    "actor": "",
+                    "detail": req.utr,
+                    "ref": number,
+                })
+    for audit in db.query(AuditEvent).filter(AuditEvent.entity_type == "loan_case", AuditEvent.entity_id == str(row.id)).order_by(AuditEvent.created_at.asc()).all():
+        actor = ""
+        if audit.actor_user_id:
+            person = db.query(User).filter(User.id == audit.actor_user_id).first()
+            actor = (person.full_name or person.email) if person else ""
+        changes = (audit.detail or {}).get("changes") or {}
+        detail = ", ".join(f"{key}: {item.get('old')} → {item.get('new')}" for key, item in changes.items() if isinstance(item, dict))
+        events.append({
+            "at": audit.created_at.isoformat() if audit.created_at else "",
+            "action": audit.action,
+            "actor": actor,
+            "detail": detail or str((audit.detail or {}).get("deal_no") or ""),
+            "ref": "",
+        })
+    events.sort(key=lambda item: (item["at"] == "", item["at"]))
+    return {"items": events}
+
+
 def sample_file(db: Session, user: User) -> dict:
     """One local file with the same sums as a 1.4% / 90% closure. Not a live customer."""
     existing = db.query(LoanCase).filter(LoanCase.deal_no == SAMPLE_DEAL).first()

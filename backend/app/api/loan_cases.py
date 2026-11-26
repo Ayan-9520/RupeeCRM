@@ -94,6 +94,11 @@ def open_sample(db: Session = Depends(get_db), user: User = Depends(require_read
     return service.sample_file(db, user)
 
 
+@router.get("/stage-counts")
+def read_stage_counts(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    return service.stage_counts(db, user)
+
+
 @router.get("/finance-report")
 def read_finance_report(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
     if user.role not in ADMIN_ROLES:
@@ -176,6 +181,14 @@ def import_disbursed_leads(db: Session = Depends(get_db), user: User = Depends(r
     if user.role not in ADMIN_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import disbursed leads")
     return service.import_disbursed(db, user)
+
+
+@router.get("/{case_id}/timeline")
+def read_timeline(case_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    try:
+        return service.case_timeline(db, user, case_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.put("/{case_id}")

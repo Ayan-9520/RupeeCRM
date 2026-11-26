@@ -11,11 +11,14 @@ import {
   applyLenderDump,
   createCaseFile,
   downloadCasePaper,
+  getCaseTimeline,
+  getStageCounts,
   listCaseFiles,
   previewLenderDump,
   openSampleCase,
   saveCaseFile,
   uploadCasePaper,
+  type CaseEvent,
   type LoanCaseFile,
 } from "@/lib/python-api";
 
@@ -214,6 +217,7 @@ function CasesPage() {
   const [revenue, setRevenue] = useState(0);
   const [confirmed, setConfirmed] = useState(0);
   const [counts, setCounts] = useState<Record<string, number>>({});
+  const [stageBuckets, setStageBuckets] = useState<{ total: number; stages: Record<string, number>; money: Record<string, number> } | null>(null);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState<LoanCaseFile | null>(null);
   const [saving, setSaving] = useState(false);
@@ -244,6 +248,7 @@ function CasesPage() {
       setRevenue(data.revenue);
       setConfirmed(data.confirmed_count);
       setCounts(data.counts ?? {});
+      setStageBuckets(await getStageCounts());
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not load case files");
     } finally {
@@ -328,6 +333,12 @@ function CasesPage() {
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">{bankDesk ? "Bank files" : "Closure desk"}</p>
           <h1 className="font-display text-2xl font-bold text-[#390A5D]">Case files</h1>
+          {stageBuckets ? (
+            <p className="mt-1 max-w-3xl text-xs text-[#5c4d72]">
+              {stageBuckets.total} files you can open. Each file is in one stage: {Object.entries(stageBuckets.stages).filter(([, count]) => count > 0).map(([key, count]) => `${key.replaceAll("_", " ")} ${count}`).join(" · ")}.
+              {" "}Commission pending {stageBuckets.money.commission_pending || 0}, received {stageBuckets.money.commission_received || 0}. Payout pending {stageBuckets.money.partner_payout_pending || 0}, paid {stageBuckets.money.partner_payout_paid || 0}.
+            </p>
+          ) : null}
           {bankDesk ? (
             <p className="mt-1 max-w-xl text-sm text-[#5c4d72]">Open a row for the full file. Sanction and disbursement are marked on Submissions. Accounts pays the partner later.</p>
           ) : null}
@@ -874,24 +885,7 @@ function CaseForm({
         />
       </FileBlock> : null}
       </> : null}
-      {tab === "history" ? <FileBlock step="8" title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
-        <div className="overflow-x-auto md:col-span-2 xl:col-span-3">
-          <table className="min-w-[640px] w-full text-left text-sm">
-            <thead className="text-[11px] uppercase tracking-wide text-[#5c4d72]">
-              <tr>{["Step", "Status", "Detail"].map((head) => <th key={head} className="px-2 py-2">{head}</th>)}</tr>
-            </thead>
-            <tbody>
-              {caseHistory(active).map((line) => (
-                <tr key={line.step} className="border-t border-[#eef6f0]">
-                  <td className="px-2 py-2 font-semibold text-[#390A5D]">{line.step}</td>
-                  <td className="px-2 py-2">{line.status}</td>
-                  <td className="px-2 py-2 text-[#5c4d72]">{line.detail}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </FileBlock> : null}
+      {tab === "history" ? <CaseTimeline caseId={active.id} /> : null}
       {admin ? (
         <div className="flex flex-wrap gap-2">
           <Button disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save file"}</Button>
@@ -909,17 +903,35 @@ function CaseForm({
   );
 }
 
-function caseHistory(row: LoanCaseFile) {
-  return [
-    { step: "Submitted", status: row.submitted_on ? "Recorded" : "Pending", detail: row.submitted_on ? `${row.submitted_on} · ${row.submitted_by || "—"}` : "No submit date yet" },
-    { step: "Sanction", status: row.expected_sanction_on ? "Dated" : "Pending", detail: row.expected_sanction_on || "Sanction date is not set" },
-    { step: "File stage", status: row.stage_label || "Draft", detail: row.counted ? "Counted" : "Not counted" },
-    { step: "Bank confirmation", status: row.bank_confirmation_name ? "Attached" : "Pending", detail: row.bank_confirmation_name || "No file" },
-    { step: "Sanction letter", status: row.sanction_letter_name ? "Attached" : "Pending", detail: row.sanction_letter_name || "No file" },
-    { step: "Invoice", status: `${row.invoice_percent}%`, detail: `₹${inr(row.invoice_amount)}` },
-    { step: "Collection", status: `${row.collection_percent}%`, detail: `₹${inr(row.collected_amount)}` },
-    { step: "Connector payout", status: row.payout_status === "paid" ? "Paid" : row.payout_status === "rejected" ? "Rejected" : "Pending", detail: row.payout_note || "Not paid yet" },
-  ];
+function CaseTimeline({ caseId }: { caseId: string }) {
+  const [items, setItems] = useState<CaseEvent[]>([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    void getCaseTimeline(caseId)
+      .then((data) => { if (!cancelled) setItems(data.items); })
+      .catch((reason) => { if (!cancelled) setError(reason instanceof Error ? reason.message : "Could not load history"); });
+    return () => { cancelled = true; };
+  }, [caseId]);
+  return (
+    <FileBlock step="8" title="History" hint="Only events already stored on this file. A row without a time has no timestamp in the record.">
+      <ol className="space-y-3 md:col-span-2 xl:col-span-3">
+        {items.map((item, index) => (
+          <li key={`${item.action}-${item.at}-${index}`} className="flex gap-3">
+            <span className="mt-1 size-2.5 shrink-0 rounded-full bg-[#10662A]" />
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#390A5D]">{item.action}</p>
+              <p className="text-xs text-[#5c4d72]">{item.at ? item.at.replace("T", " ").slice(0, 16) : "Time not stored"}{item.actor ? ` · ${item.actor}` : ""}</p>
+              {item.detail ? <p className="text-sm text-[#390A5D]">{item.detail}</p> : null}
+              {item.ref ? <p className="text-xs text-[#10662A]">{item.ref}</p> : null}
+            </div>
+          </li>
+        ))}
+        {items.length === 0 && !error ? <li className="text-sm text-[#5c4d72]">No stored events yet.</li> : null}
+        {error ? <li className="text-sm text-[#8a3b3b]">{error}</li> : null}
+      </ol>
+    </FileBlock>
+  );
 }
 
 function caseMarks(row: LoanCaseFile) {

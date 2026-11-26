@@ -1524,6 +1524,20 @@ export type LoanCaseFile = {
   collection_percent: number;
 };
 
+export async function getStageCounts(): Promise<{
+  total: number;
+  stages: Record<string, number>;
+  money: Record<string, number>;
+}> {
+  return request("/api/cases/stage-counts");
+}
+
+export type CaseEvent = { at: string; action: string; actor: string; detail: string; ref: string };
+
+export async function getCaseTimeline(id: string): Promise<{ items: CaseEvent[] }> {
+  return request(`/api/cases/${id}/timeline`);
+}
+
 export async function listCaseFiles(chip = "all", dateFrom = "", dateTo = ""): Promise<{
   revenue: number;
   disbursed_revenue: number;
