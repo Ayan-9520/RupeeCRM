@@ -324,6 +324,8 @@ def pay(
     user: User = Depends(require_staff),
 ) -> QueueRow:
     row, partner = _load(db, request_id)
+    if row.status == "paid" or row.stage == "paid":
+        raise HTTPException(status_code=400, detail="This invoice is already paid")
     snap = dict(row.bank_snapshot or {})
     if not snap.get("lender_confirmed_at") or not snap.get("invoice_confirmed_at"):
         raise HTTPException(status_code=400, detail="Confirm the lender payout, then confirm the invoice, before payment")

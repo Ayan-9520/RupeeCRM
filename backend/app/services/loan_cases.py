@@ -316,7 +316,7 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
 
 def _visible(db: Session, user: User):
     query = db.query(LoanCase)
-    if user.role in {"admin", "ceo", "super_admin", "lender"}:
+    if user.role in {"admin", "ceo", "super_admin"}:
         return query.order_by(LoanCase.created_at.desc())
     if user.role == "coordinator" and user.department == "OPS" and not user.finance_level:
         return query.order_by(LoanCase.created_at.desc())
@@ -543,13 +543,21 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
         if user.role not in {"dsa", "affiliate"}:
             raise PermissionError("Only admin can edit a case file")
         kept = (
-            "bankers", "customer", "stakeholders",
-            "loan_type", "loan_amount", "lead_source", "project_name", "expected_sanction_on",
+            "bankers", "customer",
+            "loan_type", "lead_source", "project_name", "expected_sanction_on",
             "client_name", "client_phone", "bank_name", "application_no", "lan",
         )
         payload = {key: payload.get(key) for key in kept if key in payload}
         if not payload:
             raise PermissionError("Only admin can edit a case file")
+    locked = {
+        "loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent",
+        "disbursements", "bonus_amount", "bonus_partner_percent", "bonus_name",
+        "loyalty_amount", "invoice_amount", "collected_amount", "counted",
+        "stakeholders", "payout_status",
+    }
+    if row.counted and any(key in payload for key in locked):
+        raise ValueError("A counted case keeps its commission, disbursement, and share figures")
     watched = (
         "loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "bonus_amount", "bonus_partner_percent",
         "loyalty_amount", "invoice_amount", "collected_amount", "counted", "stage", "flag", "payout_status",

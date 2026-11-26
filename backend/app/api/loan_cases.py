@@ -213,6 +213,8 @@ async def upload_paper(
     fields = PAPERS.get(kind)
     if fields is None:
         raise HTTPException(status_code=400, detail="Unknown paper")
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can replace a case paper")
     row = _paper_case(db, user, case_id)
     payload = await file.read()
     mime = sniff_mime(payload, file.content_type or "")
