@@ -1483,6 +1483,10 @@ export type LoanCaseFile = {
   loyalty_name: string;
   loyalty_amount: number;
   bank_name: string;
+  lender_id?: string;
+  product_id?: string;
+  branch_id?: string;
+  contact_id?: string;
   bank_rm: string;
   bank_rm_phone: string;
   application_no?: string;

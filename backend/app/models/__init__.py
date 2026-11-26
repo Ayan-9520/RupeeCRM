@@ -410,6 +410,10 @@ class LoanCase(Base):
     paper_history: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     bonus_partner_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
     bank_name: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    lender_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    contact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     bank_rm: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     bank_rm_phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
     bankers: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
@@ -978,6 +982,10 @@ class Lender(Base):
     lender_type: Mapped[str] = mapped_column(String(20), nullable=False, default="bank")
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     gst_treatment: Mapped[str] = mapped_column(String(20), nullable=False, default="exclusive")
+    website: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class LenderBranch(Base):
@@ -987,6 +995,37 @@ class LenderBranch(Base):
     lender_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     city: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    code: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    address: Mapped[str] = mapped_column(String(240), nullable=False, default="")
+    state: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    pincode: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class LenderProduct(Base):
+    __tablename__ = "lender_products"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lender_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    category: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class LenderContact(Base):
+    __tablename__ = "lender_contacts"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lender_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    branch_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    name: Mapped[str] = mapped_column(String(160), nullable=False)
+    designation: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
+    email: Mapped[str] = mapped_column(String(160), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
 class CaseApplication(Base):

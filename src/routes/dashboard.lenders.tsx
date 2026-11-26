@@ -8,7 +8,18 @@ export const Route = createFileRoute("/dashboard/lenders")({
   component: LendersPage,
 });
 
-type Lender = { id: string; name: string; code: string; lender_type: string; branches: { name: string; city: string }[] };
+type Lender = {
+  id: string;
+  name: string;
+  code: string;
+  lender_type: string;
+  active: boolean;
+  phone?: string;
+  website?: string;
+  branches: { id: string; name: string; city: string; active?: boolean }[];
+  products?: { id: string; name: string; category: string; active: boolean }[];
+  contacts?: { id: string; name: string; designation: string; phone: string; active: boolean }[];
+};
 
 function inr(n: number) {
   return `₹${Math.round(n || 0).toLocaleString("en-IN")}`;
@@ -53,6 +64,47 @@ function LenderBook({ name, rows, dumpAmount }: { name: string; rows: FinanceRow
   );
 }
 
+function LenderDesk({ lender, reload }: { lender: Lender; reload: () => void }) {
+  const [product, setProduct] = useState("");
+  const [branch, setBranch] = useState("");
+  const [city, setCity] = useState("");
+  const [person, setPerson] = useState("");
+  const [role, setRole] = useState("Relationship Manager");
+  const save = (path: string, body: object) => {
+    void request(path, { method: "POST", body: JSON.stringify(body) })
+      .then(() => { toast.success("Saved"); reload(); })
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Could not save"));
+  };
+  return (
+    <section className="space-y-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-display text-lg font-bold text-[#390A5D]">{lender.name}</h2>
+        <button type="button" className="rounded-lg bg-[#E8F7EC] px-3 py-1.5 text-sm font-semibold text-[#0D4F20]" onClick={() => {
+          void request(`/api/los/lenders/${lender.id}`, { method: "PATCH", body: JSON.stringify({ name: lender.name, code: lender.code, lender_type: lender.lender_type, active: !lender.active, phone: lender.phone || "", website: lender.website || "" }) })
+            .then(() => { toast.success(lender.active ? "Lender marked inactive" : "Lender marked active"); reload(); })
+            .catch((error) => toast.error(error instanceof Error ? error.message : "Could not update the lender"));
+        }}>{lender.active ? "Mark inactive" : "Mark active"}</button>
+      </div>
+      <form className="flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); save(`/api/los/lenders/${lender.id}/products`, { name: product, category: product }); setProduct(""); }}>
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" placeholder="Product name" value={product} onChange={(event) => setProduct(event.target.value)} />
+        <button className="h-10 rounded-lg bg-[#10662A] px-3 text-sm font-semibold text-white" type="submit">Add product</button>
+      </form>
+      <p className="text-sm text-[#5c4d72]">{(lender.products || []).map((item) => item.name).join(", ") || "No product yet"}</p>
+      <form className="flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); save(`/api/los/lenders/${lender.id}/branches`, { name: branch, city }); setBranch(""); setCity(""); }}>
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" placeholder="Branch" value={branch} onChange={(event) => setBranch(event.target.value)} />
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" placeholder="City" value={city} onChange={(event) => setCity(event.target.value)} />
+        <button className="h-10 rounded-lg bg-[#10662A] px-3 text-sm font-semibold text-white" type="submit">Add branch</button>
+      </form>
+      <form className="flex flex-wrap gap-2" onSubmit={(event) => { event.preventDefault(); save(`/api/los/lenders/${lender.id}/contacts`, { name: person, designation: role }); setPerson(""); }}>
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" placeholder="Banker name" value={person} onChange={(event) => setPerson(event.target.value)} />
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" placeholder="Designation" value={role} onChange={(event) => setRole(event.target.value)} />
+        <button className="h-10 rounded-lg bg-[#10662A] px-3 text-sm font-semibold text-white" type="submit">Add banker</button>
+      </form>
+      <p className="text-sm text-[#5c4d72]">{(lender.contacts || []).map((item) => `${item.name} (${item.designation || "contact"})`).join(", ") || "No banker yet"}</p>
+    </section>
+  );
+}
+
 function LendersPage() {
   const [rows, setRows] = useState<Lender[]>([]);
   const [name, setName] = useState("");
@@ -86,12 +138,13 @@ function LendersPage() {
         <select className="h-10 rounded-lg border border-[#d8ecdd] px-3" value={kind} onChange={(e) => setKind(e.target.value)}>
           <option value="bank">Bank</option>
           <option value="nbfc">NBFC</option>
+          <option value="other">Other</option>
         </select>
         <button className="h-10 rounded-lg bg-[#10662A] px-4 text-sm font-semibold text-white" type="submit">Add lender</button>
       </form>
       <div className="grid gap-3 sm:grid-cols-2">
         {rows.map((row) => (
-          <article key={row.id} className={`cursor-pointer rounded-2xl border bg-white p-4 ${picked === row.name ? "border-[#10662A] ring-1 ring-[#10662A]" : "border-[#d8ecdd]"}`} onClick={() => setPicked(row.name)}>
+          <article key={row.id} className={`cursor-pointer rounded-2xl border bg-white p-4 ${picked === row.id ? "border-[#10662A] ring-1 ring-[#10662A]" : "border-[#d8ecdd]"}`} onClick={() => setPicked(row.id)}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="font-display text-lg font-bold text-[#390A5D]">{row.name}</p>
@@ -99,11 +152,12 @@ function LendersPage() {
               </div>
               <span className="rounded-full bg-[#E8F7EC] px-2 py-1 text-[11px] font-semibold capitalize text-[#0D4F20]">{row.lender_type}</span>
             </div>
-            <p className="mt-3 text-sm text-[#5c4d72]">{row.branches.length ? `${row.branches.length} branches · ${row.branches.map((branch) => branch.name).join(", ")}` : "No branch yet"}</p>
+            <p className="mt-3 text-sm text-[#5c4d72]">{row.active ? "Active" : "Inactive"} · {(row.products || []).length} products · {row.branches.length} branches · {(row.contacts || []).length} bankers</p>
           </article>
         ))}
       </div>
-      {picked ? <LenderBook name={picked} rows={files.filter((row) => (row.bank_name || "Bank not set") === picked)} dumpAmount={dumps.filter((item) => item.lender === picked).reduce((sum, item) => sum + item.dump_amount, 0)} /> : null}
+      {rows.find((row) => row.id === picked) ? <LenderDesk lender={rows.find((row) => row.id === picked)!} reload={load} /> : null}
+      {picked ? <LenderBook name={rows.find((row) => row.id === picked)?.name || ""} rows={files.filter((row) => (row.bank_name || "Bank not set") === (rows.find((item) => item.id === picked)?.name || ""))} dumpAmount={dumps.filter((item) => item.lender === (rows.find((row) => row.id === picked)?.name || "")).reduce((sum, item) => sum + item.dump_amount, 0)} /> : null}
     </div>
   );
 }

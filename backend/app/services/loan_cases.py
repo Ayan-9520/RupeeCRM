@@ -277,6 +277,10 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
         "payable_percent": float(row.payable_percent or 0),
         "loyalty_name": row.loyalty_name,
         "bank_name": row.bank_name,
+        "lender_id": str(row.lender_id) if row.lender_id else "",
+        "product_id": str(row.product_id) if row.product_id else "",
+        "branch_id": str(row.branch_id) if row.branch_id else "",
+        "contact_id": str(row.contact_id) if row.contact_id else "",
         "application_no": row.application_no or "",
         "lender_status": row.lender_status or "",
         "missing_papers": [
@@ -535,6 +539,50 @@ def _apply(row: LoanCase, payload: dict) -> None:
         row.payout_status = status
 
 
+def _as_uuid(value) -> UUID | None:
+    if not value:
+        return None
+    return value if isinstance(value, UUID) else UUID(str(value))
+
+
+def _link_case_master(db: Session, row: LoanCase, payload: dict) -> None:
+    keys = {"lender_id", "product_id", "branch_id", "contact_id"}
+    if not keys.intersection(payload):
+        return
+    from app.models import Lender, LenderBranch, LenderContact, LenderProduct
+    lender_id = _as_uuid(payload["lender_id"]) if "lender_id" in payload else row.lender_id
+    product_id = _as_uuid(payload["product_id"]) if "product_id" in payload else row.product_id
+    branch_id = _as_uuid(payload["branch_id"]) if "branch_id" in payload else row.branch_id
+    contact_id = _as_uuid(payload["contact_id"]) if "contact_id" in payload else row.contact_id
+    if "lender_id" in payload and lender_id != row.lender_id:
+        if "product_id" not in payload:
+            product_id = None
+        if "branch_id" not in payload:
+            branch_id = None
+        if "contact_id" not in payload:
+            contact_id = None
+    lender = db.query(Lender).filter(Lender.id == lender_id).first() if lender_id else None
+    if lender_id and (lender is None or not lender.active):
+        raise ValueError("Choose an active lender")
+    product = db.query(LenderProduct).filter(LenderProduct.id == product_id).first() if product_id else None
+    if product_id and (product is None or product.lender_id != lender_id or not product.active):
+        raise ValueError("That product is not on the selected lender")
+    branch = db.query(LenderBranch).filter(LenderBranch.id == branch_id).first() if branch_id else None
+    if branch_id and (branch is None or branch.lender_id != lender_id or not branch.active):
+        raise ValueError("That branch is not on the selected lender")
+    contact = db.query(LenderContact).filter(LenderContact.id == contact_id).first() if contact_id else None
+    if contact_id and (contact is None or contact.lender_id != lender_id or not contact.active):
+        raise ValueError("That banker is not on the selected lender")
+    if contact and contact.branch_id and branch_id and contact.branch_id != branch_id:
+        raise ValueError("That banker is on a different branch")
+    row.lender_id = lender_id
+    row.product_id = product_id
+    row.branch_id = branch_id
+    row.contact_id = contact_id
+    if lender and not (row.bank_name or "").strip():
+        row.bank_name = lender.name
+
+
 def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
     row = _visible(db, user).filter(LoanCase.id == case_id).first()
     if not row:
@@ -550,6 +598,7 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
         payload = {key: payload.get(key) for key in kept if key in payload}
         if not payload:
             raise PermissionError("Only admin can edit a case file")
+    _link_case_master(db, row, payload)
     locked = {
         "loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent",
         "disbursements", "bonus_amount", "bonus_partner_percent", "bonus_name",

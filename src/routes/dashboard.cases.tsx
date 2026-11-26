@@ -16,6 +16,7 @@ import {
   listCaseFiles,
   previewLenderDump,
   openSampleCase,
+  request,
   saveCaseFile,
   uploadCasePaper,
   type CaseEvent,
@@ -776,6 +777,7 @@ function CaseForm({
 
       {tab === "bank" ? <FileBlock step="4" title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => edit({ bank_name })} onBlur={() => commit(["bank_name"])} />
+        {admin ? <CaseLenderPick active={active} onUploaded={onUploaded} /> : null}
         <Field label="Application number" value={active.application_no || ""} onChange={(application_no) => edit({ application_no })} onBlur={() => commit(["application_no"])} />
         <Field label="LAN" value={active.lan || ""} onChange={(lan) => edit({ lan })} onBlur={() => commit(["lan"])} />
         <PaperSlot label="Bank confirmation" name={active.bank_confirmation_name} onPick={(file) => void sendPaper(active.id, "bank_confirmation", file, onUploaded)} onOpen={() => void openPaper(active.id, "bank_confirmation", active.bank_confirmation_name)} />
@@ -902,6 +904,57 @@ function CaseForm({
     </section>
   );
 }
+
+function CaseLenderPick({ active, onUploaded }: { active: LoanCaseFile; onUploaded: (row: LoanCaseFile) => void }) {
+  const [book, setBook] = useState<LenderBookRow[]>([]);
+  useEffect(() => {
+    void request<{ lenders: LenderBookRow[] }>("/api/los/lenders").then((data) => setBook(data.lenders)).catch(() => setBook([]));
+  }, [active.id]);
+  const lender = book.find((row) => row.id === active.lender_id);
+  const products = (lender?.products || []).filter((row) => row.active);
+  const branches = (lender?.branches || []).filter((row) => row.active !== false);
+  const contacts = (lender?.contacts || []).filter((row) => row.active && (!active.branch_id || !row.branch_id || row.branch_id === active.branch_id));
+  const save = (patch: Partial<LoanCaseFile>) => {
+    void saveCaseFile(active.id, patch).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not link the lender"));
+  };
+  return (
+    <>
+      <label className="block text-[11px] font-semibold text-[#5c4d72]">Lender master
+        <select className="mt-1 h-10 w-full rounded-lg border border-[#d8ecdd] bg-white px-2 text-sm" value={active.lender_id || ""} onChange={(event) => save({ lender_id: event.target.value, product_id: "", branch_id: "", contact_id: "" })}>
+          <option value="">Not linked</option>
+          {book.filter((row) => row.active).map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+        </select>
+      </label>
+      <label className="block text-[11px] font-semibold text-[#5c4d72]">Product
+        <select className="mt-1 h-10 w-full rounded-lg border border-[#d8ecdd] bg-white px-2 text-sm" value={active.product_id || ""} disabled={!lender} onChange={(event) => save({ product_id: event.target.value })}>
+          <option value="">No product</option>
+          {products.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+        </select>
+      </label>
+      <label className="block text-[11px] font-semibold text-[#5c4d72]">Branch
+        <select className="mt-1 h-10 w-full rounded-lg border border-[#d8ecdd] bg-white px-2 text-sm" value={active.branch_id || ""} disabled={!lender} onChange={(event) => save({ branch_id: event.target.value, contact_id: "" })}>
+          <option value="">No branch</option>
+          {branches.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+        </select>
+      </label>
+      <label className="block text-[11px] font-semibold text-[#5c4d72]">Banker
+        <select className="mt-1 h-10 w-full rounded-lg border border-[#d8ecdd] bg-white px-2 text-sm" value={active.contact_id || ""} disabled={!lender} onChange={(event) => save({ contact_id: event.target.value })}>
+          <option value="">No banker</option>
+          {contacts.map((row) => <option key={row.id} value={row.id}>{row.name}{row.designation ? ` · ${row.designation}` : ""}</option>)}
+        </select>
+      </label>
+    </>
+  );
+}
+
+type LenderBookRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  products?: { id: string; name: string; active: boolean }[];
+  branches?: { id: string; name: string; active?: boolean }[];
+  contacts?: { id: string; name: string; designation: string; branch_id?: string; active: boolean }[];
+};
 
 function CaseTimeline({ caseId }: { caseId: string }) {
   const [items, setItems] = useState<CaseEvent[]>([]);
