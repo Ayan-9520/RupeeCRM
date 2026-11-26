@@ -47,7 +47,7 @@ export const NAV_ITEMS: NavItem[] = [
   {
     title: "HRMS & Payroll",
     url: "/dashboard/hrms",
-    roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"],
+    roles: ["ceo", "super_admin", "admin", "coordinator"],
     group: "main",
   },
   { title: "Website Leads", url: "/dashboard/website-leads", roles: ADMIN_ROLES, group: "main" },
@@ -193,7 +193,7 @@ const EXTRA_ROUTE_RULES: { prefix: string; roles: AppRole[] }[] = [
   { prefix: "/dashboard/invoice-approvals", roles: ["ceo", "super_admin", "admin", "coordinator"] },
   { prefix: "/dashboard/profile", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate", "caller", "coordinator", "lender", "customer"] },
   { prefix: "/dashboard/marketing/", roles: ["ceo", "super_admin", "admin", "dsa", "affiliate"] },
-  { prefix: "/dashboard/hrms/", roles: ["ceo", "super_admin", "admin", "dsa", "coordinator"] },
+  { prefix: "/dashboard/hrms/", roles: ["ceo", "super_admin", "admin", "coordinator"] },
 ];
 
 export function isPlatformAdmin(role: AppRole | null): boolean {

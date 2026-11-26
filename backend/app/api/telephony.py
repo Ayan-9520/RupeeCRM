@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import hmac
 import json
+from datetime import datetime, timezone
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, Header, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
@@ -75,3 +77,43 @@ def click_to_call(
     if code >= 300:
         raise HTTPException(status_code=502, detail="The calling account refused this call")
     return {"placed": True}
+
+
+class RecordingIn(BaseModel):
+    reference: UUID
+    recording_url: str = Field(min_length=12, max_length=500)
+
+
+def _bearer(authorization: str | None) -> None:
+    expected = settings.telephony_api_key.strip()
+    token = (authorization or "").removeprefix("Bearer ").strip()
+    if not expected or len(token) != len(expected) or not hmac.compare_digest(token, expected):
+        raise HTTPException(status_code=401, detail="Recording key did not match")
+
+
+@router.post("/recording")
+def save_recording(
+    body: RecordingIn,
+    db: Session = Depends(get_db),
+    authorization: str | None = Header(default=None),
+) -> dict:
+    """Provider posts the recording link. The file stays with the provider. CRM only stores the URL."""
+    _bearer(authorization)
+    url = body.recording_url.strip()
+    if not url.startswith("https://"):
+        raise HTTPException(status_code=400, detail="Recording link must be https")
+    purchase = db.query(LeadPurchase).filter(LeadPurchase.id == body.reference).first()
+    if not purchase:
+        raise HTTPException(status_code=404, detail="Lead not found")
+    notes = list(purchase.notes or [])
+    notes.append(
+        {
+            "at": datetime.now(timezone.utc).isoformat(),
+            "kind": "recording",
+            "text": "Call recording",
+            "url": url,
+        }
+    )
+    purchase.notes = notes
+    db.commit()
+    return {"saved": True}

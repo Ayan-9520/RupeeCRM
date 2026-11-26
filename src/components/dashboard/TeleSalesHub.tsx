@@ -340,6 +340,9 @@ function CallSheet({
         <button type="button" disabled={calling} onClick={onCall} className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#10662A] px-3 py-2.5 font-mono text-sm font-bold text-white disabled:opacity-60">
           <Phone className="size-4" /> {calling ? "Ringing…" : lead.full_phone}
         </button>
+        {row.notes.filter((item) => item.kind === "recording" && item.url).map((item) => (
+          <audio key={item.url} controls src={item.url} className="mt-3 w-full" />
+        ))}
         <dl className="mt-4 space-y-2 text-sm">
           <Fact label="Product" value={`${productLabel(lead.product_subtype)} · ${inr(lead.loan_amount)}`} />
           <Fact label="Work" value={lead.employment_type || "Ask on the call"} />

@@ -274,7 +274,7 @@ export type CrmPurchase = {
   lead_id: string;
   price_paid: number;
   pipeline_stage: string;
-  notes: { at: string; text: string; by?: string; kind?: string; code?: string }[];
+  notes: { at: string; text: string; by?: string; kind?: string; code?: string; url?: string }[];
   next_followup_at: string | null;
   converted: boolean;
   deal_value: number | null;
