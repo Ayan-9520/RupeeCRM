@@ -281,6 +281,7 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
         "product_id": str(row.product_id) if row.product_id else "",
         "branch_id": str(row.branch_id) if row.branch_id else "",
         "contact_id": str(row.contact_id) if row.contact_id else "",
+        "scheme_id": str(row.scheme_id) if getattr(row, "scheme_id", None) else "",
         "application_no": row.application_no or "",
         "lender_status": row.lender_status or "",
         "missing_papers": [
@@ -614,8 +615,18 @@ def _as_uuid(value) -> UUID | None:
 
 
 def _link_case_master(db: Session, row: LoanCase, payload: dict) -> None:
-    keys = {"lender_id", "product_id", "branch_id", "contact_id"}
+    keys = {"lender_id", "product_id", "branch_id", "contact_id", "scheme_id"}
     if not keys.intersection(payload):
+        return
+    if set(payload).issubset({"scheme_id"}):
+        from app.models import LenderScheme
+        scheme_id = _as_uuid(payload.get("scheme_id"))
+        scheme = db.query(LenderScheme).filter(LenderScheme.id == scheme_id).first() if scheme_id else None
+        if scheme_id and scheme is None:
+            raise ValueError("Scheme not found")
+        if scheme and scheme.lender_id and row.lender_id and scheme.lender_id != row.lender_id:
+            raise ValueError("That scheme is for a different lender")
+        row.scheme_id = scheme_id
         return
     from app.models import Lender, LenderBranch, LenderContact, LenderProduct
     lender_id = _as_uuid(payload["lender_id"]) if "lender_id" in payload else row.lender_id

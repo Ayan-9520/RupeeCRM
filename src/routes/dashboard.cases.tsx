@@ -931,8 +931,10 @@ function CaseForm({
 
 function CaseLenderPick({ active, onUploaded }: { active: LoanCaseFile; onUploaded: (row: LoanCaseFile) => void }) {
   const [book, setBook] = useState<LenderBookRow[]>([]);
+  const [schemes, setSchemes] = useState<{ id: string; name: string; current: boolean }[]>([]);
   useEffect(() => {
     void request<{ lenders: LenderBookRow[] }>("/api/los/lenders").then((data) => setBook(data.lenders)).catch(() => setBook([]));
+    void request<{ schemes: { id: string; name: string; current: boolean }[] }>("/api/los/schemes").then((data) => setSchemes(data.schemes)).catch(() => setSchemes([]));
   }, [active.id]);
   const lender = book.find((row) => row.id === active.lender_id);
   const products = (lender?.products || []).filter((row) => row.active);
@@ -965,6 +967,12 @@ function CaseLenderPick({ active, onUploaded }: { active: LoanCaseFile; onUpload
         <select className="mt-1 h-10 w-full rounded-lg border border-[#d8ecdd] bg-white px-2 text-sm" value={active.contact_id || ""} disabled={!lender} onChange={(event) => save({ contact_id: event.target.value })}>
           <option value="">No banker</option>
           {contacts.map((row) => <option key={row.id} value={row.id}>{row.name}{row.designation ? ` · ${row.designation}` : ""}</option>)}
+        </select>
+      </label>
+      <label className="block text-[11px] font-semibold text-[#5c4d72]">Scheme
+        <select className="mt-1 h-10 w-full rounded-lg border border-[#d8ecdd] bg-white px-2 text-sm" value={active.scheme_id || ""} onChange={(event) => save({ scheme_id: event.target.value })}>
+          <option value="">Not linked</option>
+          {schemes.filter((row) => row.current).map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
         </select>
       </label>
     </>

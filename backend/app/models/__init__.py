@@ -414,6 +414,7 @@ class LoanCase(Base):
     product_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     branch_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     contact_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    scheme_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     bank_rm: Mapped[str] = mapped_column(String(120), nullable=False, default="")
     bank_rm_phone: Mapped[str] = mapped_column(String(30), nullable=False, default="")
     bankers: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
@@ -1075,6 +1076,31 @@ class LenderScheme(Base):
     bonus_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
     partner_percent: Mapped[float] = mapped_column(Numeric(6, 2), nullable=False, default=0)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    code: Mapped[str] = mapped_column(String(40), nullable=False, default="")
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    category: Mapped[str] = mapped_column(String(80), nullable=False, default="")
+    start_on: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    end_on: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class SchemeTarget(Base):
+    __tablename__ = "scheme_targets"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lender_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    scheme_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True, index=True)
+    period_kind: Mapped[str] = mapped_column(String(20), nullable=False, default="custom")
+    start_on: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    end_on: Mapped[str] = mapped_column(String(10), nullable=False, default="")
+    metric: Mapped[str] = mapped_column(String(40), nullable=False, default="disbursement_amount")
+    target_value: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class LedgerNote(Base):

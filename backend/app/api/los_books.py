@@ -1,5 +1,6 @@
 """Lender master, a second bank on a case, schemes, and credit or debit notes."""
 
+from datetime import date
 from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -8,7 +9,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
-from app.models import CaseApplication, Lender, LenderBranch, LenderContact, LenderProduct, LenderScheme, LedgerNote, LoanCase, User
+from app.models import CaseApplication, Lender, LenderBranch, LenderContact, LenderProduct, LenderScheme, LedgerNote, LoanCase, SchemeTarget, User
+from app.services.audit import write_audit
+from app.services.loan_cases import _clean_disbursements
 
 router = APIRouter(prefix="/api/los", tags=["los"])
 ADMIN = {"admin", "ceo", "super_admin"}
@@ -77,6 +80,23 @@ class SchemeIn(BaseModel):
     name: str
     bonus_amount: float = 0
     partner_percent: float = 0
+    code: str = ""
+    description: str = ""
+    category: str = ""
+    start_on: str = ""
+    end_on: str = ""
+    notes: str = ""
+    active: bool = True
+
+
+class TargetIn(BaseModel):
+    lender_id: UUID | None = None
+    scheme_id: UUID | None = None
+    period_kind: str = "custom"
+    start_on: str
+    end_on: str
+    metric: str = "disbursement_amount"
+    target_value: float = 0
 
 
 class NoteIn(BaseModel):
@@ -251,16 +271,134 @@ def add_application(case_id: UUID, body: ApplicationIn, db: Session = Depends(ge
     return {"id": str(row.id)}
 
 
+def _current_scheme(row: LenderScheme) -> bool:
+    today = date.today().isoformat()
+    if not row.active:
+        return False
+    if row.start_on and row.start_on > today:
+        return False
+    if row.end_on and row.end_on < today:
+        return False
+    return True
+
+
+def _scheme_out(row: LenderScheme) -> dict:
+    return {
+        "id": str(row.id),
+        "lender_id": str(row.lender_id) if row.lender_id else "",
+        "name": row.name,
+        "code": row.code or "",
+        "category": row.category or "",
+        "start_on": row.start_on or "",
+        "end_on": row.end_on or "",
+        "active": row.active,
+        "current": _current_scheme(row),
+        "bonus_amount": float(row.bonus_amount or 0),
+        "partner_percent": float(row.partner_percent or 0),
+    }
+
+
 @router.get("/schemes")
 def list_schemes(db: Session = Depends(get_db), _: User = Depends(_admin)) -> dict:
-    rows = db.query(LenderScheme).all()
-    return {"schemes": [{"id": str(row.id), "name": row.name, "bonus_amount": float(row.bonus_amount or 0), "partner_percent": float(row.partner_percent or 0), "active": row.active} for row in rows]}
+    rows = db.query(LenderScheme).order_by(LenderScheme.name).all()
+    return {"schemes": [_scheme_out(row) for row in rows]}
 
 
 @router.post("/schemes")
-def add_scheme(body: SchemeIn, db: Session = Depends(get_db), _: User = Depends(_admin)) -> dict:
-    row = LenderScheme(id=uuid4(), lender_id=body.lender_id, name=body.name.strip()[:160], bonus_amount=round(body.bonus_amount, 2), partner_percent=round(body.partner_percent, 2), active=True)
+def add_scheme(body: SchemeIn, db: Session = Depends(get_db), user: User = Depends(_admin)) -> dict:
+    row = LenderScheme(
+        id=uuid4(),
+        lender_id=body.lender_id,
+        name=body.name.strip()[:160],
+        bonus_amount=round(body.bonus_amount, 2),
+        partner_percent=round(body.partner_percent, 2),
+        active=body.active,
+        code=body.code.strip()[:40],
+        description=body.description.strip()[:500],
+        category=body.category.strip()[:80],
+        start_on=body.start_on.strip()[:10],
+        end_on=body.end_on.strip()[:10],
+        notes=body.notes.strip()[:500],
+        created_by=user.id,
+    )
     db.add(row)
+    write_audit(db, action="scheme_saved", actor_user_id=user.id, entity_type="lender_scheme", entity_id=str(row.id), detail={"name": row.name})
+    db.commit()
+    return {"id": str(row.id)}
+
+
+def _in_period(when: str, start: str, end: str) -> bool:
+    if not when or not start or not end:
+        return False
+    return start <= when[:10] <= end
+
+
+def _achievement(db: Session, target: SchemeTarget) -> dict:
+    amount = 0.0
+    cases = 0
+    seen = set()
+    for row in db.query(LoanCase).all():
+        if row.flag in {"cancelled", "hold"} or not row.counted:
+            continue
+        if target.lender_id and row.lender_id != target.lender_id:
+            continue
+        if target.scheme_id and row.scheme_id != target.scheme_id:
+            continue
+        dated = [line for line in _clean_disbursements(row.disbursements) if _in_period(str(line.get("date") or ""), target.start_on, target.end_on)]
+        if not dated or row.id in seen:
+            continue
+        seen.add(row.id)
+        cases += 1
+        amount += sum(float(line.get("amount") or 0) for line in dated)
+    achieved = cases if target.metric == "case_count" else round(amount, 2)
+    target_value = float(target.target_value or 0)
+    percent = None if target_value <= 0 else round(achieved / target_value * 100, 1)
+    return {
+        "achieved": achieved,
+        "cases": cases,
+        "remaining": None if target_value <= 0 else round(target_value - achieved, 2),
+        "percent": percent,
+    }
+
+
+@router.get("/targets")
+def list_targets(db: Session = Depends(get_db), _: User = Depends(_admin)) -> dict:
+    rows = db.query(SchemeTarget).order_by(SchemeTarget.start_on.desc()).all()
+    return {"targets": [{
+        "id": str(row.id),
+        "lender_id": str(row.lender_id) if row.lender_id else "",
+        "scheme_id": str(row.scheme_id) if row.scheme_id else "",
+        "period_kind": row.period_kind,
+        "start_on": row.start_on,
+        "end_on": row.end_on,
+        "metric": row.metric,
+        "target_value": float(row.target_value or 0),
+        "active": row.active,
+        **_achievement(db, row),
+    } for row in rows]}
+
+
+@router.post("/targets")
+def add_target(body: TargetIn, db: Session = Depends(get_db), user: User = Depends(_admin)) -> dict:
+    if body.metric not in {"disbursement_amount", "case_count"}:
+        raise HTTPException(status_code=400, detail="Target must be disbursement amount or case count")
+    if body.period_kind not in {"month", "quarter", "custom"}:
+        raise HTTPException(status_code=400, detail="Period must be month, quarter, or custom")
+    if not body.start_on or not body.end_on or body.start_on > body.end_on:
+        raise HTTPException(status_code=400, detail="Enter a start date on or before the end date")
+    row = SchemeTarget(
+        id=uuid4(),
+        lender_id=body.lender_id,
+        scheme_id=body.scheme_id,
+        period_kind=body.period_kind,
+        start_on=body.start_on[:10],
+        end_on=body.end_on[:10],
+        metric=body.metric,
+        target_value=round(body.target_value, 2),
+        created_by=user.id,
+    )
+    db.add(row)
+    write_audit(db, action="target_saved", actor_user_id=user.id, entity_type="scheme_target", entity_id=str(row.id), detail={"metric": row.metric, "target_value": row.target_value})
     db.commit()
     return {"id": str(row.id)}
 

@@ -55,6 +55,7 @@ class CaseIn(BaseModel):
     product_id: str | None = None
     branch_id: str | None = None
     contact_id: str | None = None
+    scheme_id: str | None = None
     application_no: str | None = None
     lan: str | None = None
     roi: float | None = None

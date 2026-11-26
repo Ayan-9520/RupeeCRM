@@ -105,6 +105,59 @@ function LenderDesk({ lender, reload }: { lender: Lender; reload: () => void }) 
   );
 }
 
+function SchemeBoard() {
+  const [schemes, setSchemes] = useState<{ id: string; name: string; current: boolean; start_on: string; end_on: string }[]>([]);
+  const [targets, setTargets] = useState<{ id: string; metric: string; start_on: string; end_on: string; target_value: number; achieved: number; percent: number | null; cases: number; remaining: number | null }[]>([]);
+  const [name, setName] = useState("");
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
+  const [goal, setGoal] = useState("");
+  const [schemeId, setSchemeId] = useState("");
+  const load = () => {
+    void request<{ schemes: typeof schemes }>("/api/los/schemes").then((data) => setSchemes(data.schemes)).catch(() => setSchemes([]));
+    void request<{ targets: typeof targets }>("/api/los/targets").then((data) => setTargets(data.targets)).catch(() => setTargets([]));
+  };
+  useEffect(() => { load(); }, []);
+  return (
+    <section className="space-y-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+      <h2 className="font-display text-lg font-bold text-[#390A5D]">Schemes and targets</h2>
+      <p className="text-sm text-[#5c4d72]">Achievement uses counted cases only. A disbursement line counts when its date is inside the target period. Cancelled and on-hold files are left out. A scheme does not change commission.</p>
+      <form className="flex flex-wrap gap-2" onSubmit={(event) => {
+        event.preventDefault();
+        void request("/api/los/schemes", { method: "POST", body: JSON.stringify({ name, start_on: start, end_on: end }) })
+          .then(() => { setName(""); toast.success("Scheme saved"); load(); })
+          .catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the scheme"));
+      }}>
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" placeholder="Scheme name" value={name} onChange={(event) => setName(event.target.value)} />
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" type="date" value={start} onChange={(event) => setStart(event.target.value)} />
+        <input className="h-10 rounded-lg border border-[#d8ecdd] px-3" type="date" value={end} onChange={(event) => setEnd(event.target.value)} />
+        <button className="h-10 rounded-lg bg-[#10662A] px-3 text-sm font-semibold text-white" type="submit">Add scheme</button>
+      </form>
+      <p className="text-sm text-[#5c4d72]">{schemes.map((row) => `${row.name}${row.current ? "" : " (not current)"}`).join(", ") || "No scheme yet"}</p>
+      <form className="flex flex-wrap gap-2" onSubmit={(event) => {
+        event.preventDefault();
+        void request("/api/los/targets", { method: "POST", body: JSON.stringify({ scheme_id: schemeId || null, period_kind: "custom", start_on: start, end_on: end, metric: "disbursement_amount", target_value: Number(goal || 0) }) })
+          .then(() => { setGoal(""); toast.success("Target saved"); load(); })
+          .catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the target"));
+      }}>
+        <select className="h-10 rounded-lg border border-[#d8ecdd] px-3" value={schemeId} onChange={(event) => setSchemeId(event.target.value)}>
+          <option value="">All linked cases</option>
+          {schemes.filter((row) => row.current).map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+        </select>
+        <input className="h-10 w-36 rounded-lg border border-[#d8ecdd] px-3" placeholder="Target amount" value={goal} onChange={(event) => setGoal(event.target.value)} />
+        <button className="h-10 rounded-lg bg-[#10662A] px-3 text-sm font-semibold text-white" type="submit">Add disbursement target</button>
+      </form>
+      {targets.map((row) => (
+        <div key={row.id}>
+          <div className="flex justify-between text-sm"><span className="font-semibold text-[#390A5D]">{row.start_on} to {row.end_on}</span><span className="text-[#10662A]">{row.percent == null ? "No target" : `${row.percent}%`}</span></div>
+          <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#E8F7EC]"><div className="h-full rounded-full bg-[#10662A]" style={{ width: `${Math.min(row.percent || 0, 100)}%` }} /></div>
+          <p className="mt-1 text-xs text-[#5c4d72]">Achieved {row.metric === "case_count" ? row.achieved : inr(row.achieved)} of {row.metric === "case_count" ? row.target_value : inr(row.target_value)}. {row.cases} cases. {row.remaining == null ? "" : `Remaining ${inr(row.remaining)}.`} The bar stops at 100%. The percent does not.</p>
+        </div>
+      ))}
+    </section>
+  );
+}
+
 function LendersPage() {
   const [rows, setRows] = useState<Lender[]>([]);
   const [name, setName] = useState("");
@@ -127,6 +180,7 @@ function LendersPage() {
   return (
     <div className="space-y-4 p-4">
       <h1 className="font-display text-2xl font-bold text-[#390A5D]">Lenders</h1>
+      <SchemeBoard />
       <form className="flex flex-wrap gap-2" onSubmit={(event) => {
         event.preventDefault();
         void request("/api/los/lenders", { method: "POST", body: JSON.stringify({ name, code, lender_type: kind }) })

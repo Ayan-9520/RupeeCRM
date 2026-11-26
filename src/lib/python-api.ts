@@ -1487,6 +1487,7 @@ export type LoanCaseFile = {
   product_id?: string;
   branch_id?: string;
   contact_id?: string;
+  scheme_id?: string;
   bank_rm: string;
   bank_rm_phone: string;
   application_no?: string;
