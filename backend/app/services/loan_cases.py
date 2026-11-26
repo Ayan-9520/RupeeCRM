@@ -416,6 +416,40 @@ def _clean_customer(value) -> dict:
     return {key: str(raw.get(key) or "").strip()[:200] for key in CUSTOMER_KEYS}
 
 
+def _stake_for_save(value) -> list[dict]:
+    """Reject a bad share list. Reading an old file still uses the softer cleaner."""
+    if not isinstance(value, list):
+        raise ValueError("Shares must be a list")
+    if len(value) > 8:
+        raise ValueError("A file can list at most 8 people")
+    clean = []
+    seen = set()
+    for item in value:
+        if not isinstance(item, dict):
+            raise ValueError("Each share must be a person and a percent")
+        name = str(item.get("name") or "").strip()[:120]
+        try:
+            share = round(float(item.get("share_percent") or 0), 2)
+        except (TypeError, ValueError):
+            raise ValueError("Share percent must be a number")
+        if share < 0:
+            raise ValueError("Share percent cannot be negative")
+        if share > 100:
+            raise ValueError("One person cannot take more than 100%")
+        if not name and share == 0:
+            continue
+        if not name:
+            raise ValueError("Each share needs a name")
+        key = name.lower()
+        if key in seen:
+            raise ValueError("The same person is listed twice")
+        seen.add(key)
+        clean.append({"name": name, "share_percent": share})
+    if round(sum(item["share_percent"] for item in clean), 2) > 100:
+        raise ValueError("Employee shares cannot total more than 100% of the company margin")
+    return clean
+
+
 def _stakeholders(row: LoanCase) -> list[dict]:
     return _clean_stakeholders(row.stakeholders) or [{"name": "", "share_percent": 0}]
 
@@ -499,10 +533,7 @@ def _apply(row: LoanCase, payload: dict) -> None:
     if "customer" in payload and payload["customer"] is not None:
         row.customer = _clean_customer(payload["customer"])
     if "stakeholders" in payload and payload["stakeholders"] is not None:
-        clean = _clean_stakeholders(payload["stakeholders"])
-        if sum(float(item["share_percent"]) for item in clean) > 100:
-            raise ValueError("Employee shares cannot total more than 100%")
-        row.stakeholders = clean
+        row.stakeholders = _stake_for_save(payload["stakeholders"])
     if "disbursements" in payload and payload["disbursements"] is not None:
         row.disbursements = _clean_disbursements(payload["disbursements"])
     if "roi" in payload and payload["roi"] is not None:
@@ -690,6 +721,7 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
         "loan_amount", "sanctioned_amount", "receivable_percent", "payable_percent", "bonus_amount", "bonus_partner_percent",
         "loyalty_amount", "invoice_amount", "collected_amount", "counted", "stage", "flag", "payout_status",
     )
+    before_shares = _clean_stakeholders(row.stakeholders)
     before = {key: getattr(row, key) for key in watched}
     _apply(row, payload)
     changes = {}
@@ -706,6 +738,16 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
             entity_type="loan_case",
             entity_id=str(row.id),
             detail={"deal_no": row.deal_no, "changes": changes},
+        )
+    after_shares = _clean_stakeholders(row.stakeholders)
+    if after_shares != before_shares:
+        write_audit(
+            db,
+            action="case_share_update",
+            actor_user_id=user.id,
+            entity_type="loan_case",
+            entity_id=str(row.id),
+            detail={"deal_no": row.deal_no, "old": before_shares, "new": after_shares},
         )
     if not before["counted"] and row.counted:
         _freeze_commission(db, user, row)

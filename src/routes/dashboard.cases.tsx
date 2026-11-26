@@ -1150,7 +1150,7 @@ function StakeList({
   return (
     <div className="space-y-3 md:col-span-2 xl:col-span-3">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-semibold text-[#390A5D]">People on this file · {total}% shared</p>
+        <p className={`text-sm font-semibold ${total > 100 ? "text-[#8a3b3b]" : "text-[#390A5D]"}`}>People on this file · {Math.round(total * 100) / 100}% of the company margin{total > 100 ? " · over 100%" : total < 100 ? " · the rest stays with the company" : ""}</p>
         {rows.length < 8 ? (
           <button type="button" aria-label="Add person" className="grid size-8 place-items-center rounded-full bg-[#10662A] text-lg font-bold leading-none text-white" onClick={() => onChange([...rows, { name: "", share_percent: 0 }])}>+</button>
         ) : null}
