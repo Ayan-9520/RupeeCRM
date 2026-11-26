@@ -564,7 +564,7 @@ function BankFile({ active, onBack }: { active: LoanCaseFile; onBack: () => void
   );
 }
 
-function MoneyCard({ label, value, hint, tone }: { label: string; value: string; hint: string; tone: "green" | "mint" | "purple" | "amber" }) {
+function MoneyCard({ label, value, hint, tone, money = true }: { label: string; value: string; hint: string; tone: "green" | "mint" | "purple" | "amber"; money?: boolean }) {
   const toneClass = {
     green: "border-[#d8ecdd] bg-gradient-to-br from-[#E8F7EC] to-white",
     mint: "border-[#d7efe4] bg-gradient-to-br from-[#f3fff8] to-white",
@@ -574,7 +574,7 @@ function MoneyCard({ label, value, hint, tone }: { label: string; value: string;
   return (
     <div className={`rounded-2xl border px-4 py-3 ${toneClass}`}>
       <p className="text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</p>
-      <p className="mt-1 font-display text-xl font-bold text-[#390A5D]">₹{value}</p>
+      <p className="mt-1 font-display text-xl font-bold text-[#390A5D]">{money ? `₹${value}` : value}</p>
       <p className="mt-0.5 text-[11px] text-[#5c4d72]">{hint}</p>
     </div>
   );
@@ -646,6 +646,12 @@ function CaseForm({
             <span key={mark} className="rounded-full bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{mark}</span>
           ))}
         </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MoneyCard label="File status" value={active.stage_label || "Draft"} hint={active.flag === "cancelled" ? "Cancelled" : active.counted ? "Counted" : "Not counted"} tone="green" money={false} />
+        <MoneyCard label="Sanctioned" value={inr(active.sanctioned_amount)} hint={active.bank_name || "Bank not set"} tone="mint" />
+        <MoneyCard label="Disbursed lines" value={inr((active.disbursements || []).reduce((sum, line) => sum + Number(line.amount || 0), 0))} hint={`${(active.disbursements || []).filter((line) => Number(line.amount) > 0).length} lines with an amount`} tone="purple" />
+        <MoneyCard label="Lender rate" value={`${active.receivable_percent}%`} hint={`Partner ${active.payable_percent}% of that payout`} tone="amber" money={false} />
       </div>
       <div className={`grid gap-3 ${admin ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"}`}>
         <MoneyCard label="Loan amount" value={inr(active.loan_amount)} hint={active.loan_type || "Product"} tone="green" />
