@@ -38,14 +38,20 @@ function LendersPage() {
         </select>
         <button className="h-10 rounded-lg bg-[#10662A] px-4 text-sm font-semibold text-white" type="submit">Add lender</button>
       </form>
-      <ul className="space-y-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {rows.map((row) => (
-          <li key={row.id} className="rounded-xl border border-[#d8ecdd] bg-white p-3">
-            <div className="font-semibold text-[#390A5D]">{row.name} · {row.code} · {row.lender_type}</div>
-            <div className="text-xs text-[#5c4d72]">{row.branches.length ? row.branches.map((b) => b.name).join(", ") : "No branch yet"}</div>
-          </li>
+          <article key={row.id} className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="font-display text-lg font-bold text-[#390A5D]">{row.name}</p>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[#10662A]">{row.code}</p>
+              </div>
+              <span className="rounded-full bg-[#E8F7EC] px-2 py-1 text-[11px] font-semibold capitalize text-[#0D4F20]">{row.lender_type}</span>
+            </div>
+            <p className="mt-3 text-sm text-[#5c4d72]">{row.branches.length ? `${row.branches.length} branches · ${row.branches.map((branch) => branch.name).join(", ")}` : "No branch yet"}</p>
+          </article>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

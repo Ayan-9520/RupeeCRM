@@ -78,6 +78,78 @@ function liveMoney(row: Pick<LoanCaseFile, "loan_amount" | "sanctioned_amount" |
   };
 }
 
+function DumpReview({
+  fileName,
+  preview,
+  busy,
+  onClear,
+  onApply,
+}: {
+  fileName: string;
+  preview: Awaited<ReturnType<typeof previewLenderDump>>;
+  busy: boolean;
+  onClear: () => void;
+  onApply: () => void;
+}) {
+  const count = (status: string) => preview.rows.filter((row) => row.status === status).length;
+  const cards = [
+    ["Ready", preview.ready, "These rows can update a case"],
+    ["Unmatched", count("unmatched"), "No case for this application, LAN, or phone"],
+    ["Duplicate", count("duplicate"), "This reference is already on the case"],
+    ["Conflict", count("conflict"), "Counted file, or the amount does not match"],
+  ] as const;
+  return (
+    <div className="mt-4 space-y-3 rounded-2xl border border-[#d8ecdd] bg-[#f7fdf8] p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Lender dump · review</p>
+          <p className="font-semibold text-[#390A5D]">{fileName}</p>
+        </div>
+        <div className="flex gap-2 text-xs font-semibold text-[#5c4d72]">
+          <span className="rounded-full bg-[#10662A] px-2 py-1 text-white">1 Upload</span>
+          <span className="rounded-full bg-[#E8F7EC] px-2 py-1 text-[#0D4F20]">2 Review</span>
+          <span className="rounded-full bg-white px-2 py-1">3 Import</span>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+        {cards.map(([label, value, hint]) => (
+          <div key={label} className="rounded-xl border border-[#d8ecdd] bg-white px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase text-[#5c4d72]">{label}</p>
+            <p className="font-display text-xl font-bold text-[#10662A]">{value}</p>
+            <p className="text-[10px] text-[#5c4d72]">{hint}</p>
+          </div>
+        ))}
+      </div>
+      <div className="max-h-64 overflow-auto rounded-xl border border-[#d8ecdd] bg-white">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-[#E8F7EC] text-[#0D4F20]">
+            <tr>
+              {["Row", "Status", "Case", "Matched by", "Amount"].map((head) => <th key={head} className="px-3 py-2">{head}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {preview.rows.slice(0, 40).map((row) => (
+              <tr key={row.row} className="border-t border-[#eef6f0]">
+                <td className="px-3 py-2">{row.row}</td>
+                <td className="px-3 py-2 capitalize">{row.status}</td>
+                <td className="px-3 py-2">{row.deal_no || "—"}</td>
+                <td className="px-3 py-2">{row.matched_by || "—"}</td>
+                <td className="px-3 py-2">₹{inr(row.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" disabled={busy} onClick={onClear}>Back</Button>
+        <Button className="bg-[#10662A] text-white hover:bg-[#0d5522]" disabled={busy || preview.ready === 0} onClick={onApply}>
+          {busy ? "Working…" : `Import ${preview.ready} ready`}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function todayIst() {
   return new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
 }
@@ -118,6 +190,9 @@ function CasesPage() {
   const [dealQuery, setDealQuery] = useState("RD-MCF-SAMPLE-0844");
   const [payoutRows, setPayoutRows] = useState<LoanCaseFile[]>([]);
   const [payoutLoading, setPayoutLoading] = useState(false);
+  const [dumpFile, setDumpFile] = useState<File | null>(null);
+  const [dumpPreview, setDumpPreview] = useState<Awaited<ReturnType<typeof previewLenderDump>> | null>(null);
+  const [dumpBusy, setDumpBusy] = useState(false);
 
   const refresh = async (nextChip = chip, from = dateFrom, to = dateTo) => {
     if (!from || !to || !nextChip) {
@@ -346,14 +421,11 @@ function CasesPage() {
                       const file = event.target.files?.[0];
                       event.target.value = "";
                       if (!file) return;
+                      setDumpBusy(true);
                       void previewLenderDump(file).then((preview) => {
-                        const ok = window.confirm(`${preview.ready} of ${preview.rows.length} rows can update a case. Counted files and amount conflicts are skipped. Import the ready rows?`);
-                        if (!ok) return;
-                        return applyLenderDump(file).then((result) => {
-                          toast.success(`${result.applied} rows imported. ${result.skipped} skipped. Batch ${result.batch_id || ""}`);
-                          void refresh(chip, dateFrom, dateTo);
-                        });
-                      }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not read the dump"));
+                        setDumpFile(file);
+                        setDumpPreview(preview);
+                      }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not read the dump")).finally(() => setDumpBusy(false));
                     }} />
                   </label>
                 </div>
@@ -372,6 +444,24 @@ function CasesPage() {
                 </button>
               ))}
             </div>
+            {dumpPreview ? (
+              <DumpReview
+                fileName={dumpFile?.name || "Lender file"}
+                preview={dumpPreview}
+                busy={dumpBusy}
+                onClear={() => { setDumpFile(null); setDumpPreview(null); }}
+                onApply={() => {
+                  if (!dumpFile) return;
+                  setDumpBusy(true);
+                  void applyLenderDump(dumpFile).then((result) => {
+                    toast.success(`${result.applied} rows imported. ${result.skipped} skipped. Batch ${result.batch_id || ""}`);
+                    setDumpFile(null);
+                    setDumpPreview(null);
+                    void refresh(chip, dateFrom, dateTo);
+                  }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not import the dump")).finally(() => setDumpBusy(false));
+                }}
+              />
+            ) : null}
           </section>
 
           {!(dateFrom && dateTo && chip) || (items.length === 0 && !loading) ? (

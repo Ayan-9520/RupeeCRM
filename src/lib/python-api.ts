@@ -1559,7 +1559,17 @@ export async function getFinanceReport(): Promise<{ receivable: number; collecte
   return request("/api/cases/finance-report");
 }
 
-export async function previewLenderDump(file: File): Promise<{ ready: number; rows: { row: number; status: string; deal_no: string; matched_by: string; amount: number }[] }> {
+export type LenderDumpRow = {
+  row: number;
+  status: string;
+  deal_no: string;
+  matched_by: string;
+  amount: number;
+  application_no?: string;
+  lan?: string;
+};
+
+export async function previewLenderDump(file: File): Promise<{ ready: number; rows: LenderDumpRow[] }> {
   const body = new FormData();
   body.append("file", file);
   return request("/api/cases/lender-dump/preview", { method: "POST", body });
