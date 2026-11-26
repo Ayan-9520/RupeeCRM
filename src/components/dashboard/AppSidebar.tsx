@@ -158,13 +158,13 @@ export function AppSidebar() {
 
   const railBtn = (active: boolean) =>
     `group/rail flex w-full flex-col items-center gap-1 rounded-xl px-1 py-2 text-[10.5px] font-semibold transition-colors ${
-      active ? "bg-[#16345c] text-white" : "text-[#c5d4ea] hover:bg-[#16345c] hover:text-white"
+      active ? "bg-[#E8F7EC] text-[#10662A]" : "text-[#5c4d72] hover:bg-[#f3f7f4] hover:text-[#10662A]"
     }`;
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-[#0c2344]">
-      <div className="flex h-full min-h-0 bg-[#0e2a4a]">
-        <div className="flex w-[4.75rem] shrink-0 flex-col items-center border-r border-[#16345c] bg-[#0c2344] py-3">
+    <Sidebar collapsible="icon" className="border-r border-[#e3ece6]">
+      <div className="flex h-full min-h-0">
+        <div className="flex w-[4.75rem] shrink-0 flex-col items-center border-r border-[#e3ece6] bg-white py-3">
           <Link
             to="/dashboard"
             className="mb-3 grid size-10 place-items-center rounded-xl bg-[#10662A] font-display text-base font-bold text-white shadow-[0_6px_16px_rgba(16,102,42,0.3)]"
@@ -202,10 +202,10 @@ export function AppSidebar() {
         </div>
 
         {!collapsed && current ? (
-          <div className="flex min-w-0 flex-1 flex-col bg-[#0e2a4a]">
+          <div className="flex min-w-0 flex-1 flex-col bg-[#F7FAF8]">
             <div className="px-4 pb-2 pt-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#9dcead]">RupeeDial</div>
-              <div className="mt-0.5 text-base font-bold text-white">{current.title}</div>
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#10662A]">RupeeDial</div>
+              <div className="mt-0.5 text-base font-bold text-[#390A5D]">{current.title}</div>
             </div>
             <nav className="flex-1 space-y-0.5 overflow-y-auto px-2.5 pb-3">
               {current.items.map((item) => {
@@ -218,21 +218,21 @@ export function AppSidebar() {
                     onClick={() => isMobile && setOpenMobile(false)}
                     className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13.5px] transition-colors ${
                       active
-                        ? "bg-[#16345c] font-semibold text-white"
-                        : "font-medium text-[#d5e2f2] hover:bg-[#16345c] hover:text-white"
+                        ? "bg-white font-semibold text-[#10662A] shadow-[0_2px_10px_rgba(16,102,42,0.08)] ring-1 ring-[#d8ecdd]"
+                        : "font-medium text-[#3d3550] hover:bg-white hover:text-[#10662A]"
                     }`}
                   >
-                    <Icon className={`size-[18px] shrink-0 ${active ? "text-[#b7e4c4]" : "text-[#9bb0c9]"}`} />
+                    <Icon className={`size-[18px] shrink-0 ${active ? "text-[#10662A]" : "text-[#7a7190]"}`} />
                     <span className="truncate">{item.title}</span>
                   </Link>
                 );
               })}
             </nav>
             {user ? (
-              <div className="border-t border-[#16345c] px-4 py-3">
-                <div className="truncate text-xs font-medium text-[#d5e2f2]">{user.email}</div>
+              <div className="border-t border-[#e3ece6] px-4 py-3">
+                <div className="truncate text-xs font-medium text-[#3d3550]">{user.email}</div>
                 {role ? (
-                  <span className="mt-1 inline-block rounded-full bg-[#16345c] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#b7e4c4]">
+                  <span className="mt-1 inline-block rounded-full border border-[#d8ecdd] bg-[#E8F7EC] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#10662A]">
                     {getRoleLabel(role)}
                   </span>
                 ) : null}

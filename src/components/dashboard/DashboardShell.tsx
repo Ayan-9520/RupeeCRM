@@ -31,11 +31,11 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex w-full bg-[#f5fcf7]">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[#0c2344] bg-[#0e2a4a] px-3 sm:px-5">
-            <SidebarTrigger className="text-white" />
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[#d8ecdd] bg-white px-3 shadow-[0_8px_24px_rgba(57,10,93,0.04)] sm:px-5">
+            <SidebarTrigger className="text-[#10662A]" />
             <div className="hidden min-w-0 sm:block">
-              <div className="font-display text-sm font-bold tracking-wide text-white">RupeeDial CRM</div>
-              <div className="truncate text-[11px] text-[#b7cbe4]">Cases, lender payout, and partner invoices</div>
+              <div className="font-display text-sm font-bold tracking-wide text-[#10662A]">RupeeDial</div>
+              <div className="truncate text-[11px] text-[#5c4d72]">CRM · one desk for every role</div>
             </div>
             <div className="mx-auto hidden max-w-md flex-1 md:block">
               <WorkspaceSwitcher />
