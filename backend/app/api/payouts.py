@@ -24,7 +24,9 @@ from app.services.invoice_flow import (
     log_step,
     notify_stage,
     status_for,
+    gst_lines,
     tax_breakup,
+    tax_settings,
 )
 
 GSTIN_RE = re.compile(r"^[0-9]{2}[A-Z0-9]{13}$")
@@ -115,6 +117,7 @@ class BankIn(BaseModel):
     pan: str = ""
     gstin: str = ""
     gst_treatment: str = ""
+    gst_supply: str = ""
 
 
 class BankOut(BaseModel):
@@ -125,6 +128,7 @@ class BankOut(BaseModel):
     pan: str = ""
     gstin: str = ""
     gst_treatment: str = ""
+    gst_supply: str = ""
     complete: bool = False
 
 
@@ -302,6 +306,7 @@ def payout_summary(db: Session = Depends(get_db), user: User = Depends(get_curre
             pan=bank.get("pan") or "",
             gstin=bank.get("gstin") or "",
             gst_treatment=bank.get("gst_treatment") or "",
+        gst_supply=bank.get("gst_supply") or "",
             complete=complete,
         ),
         can_request=can,
@@ -321,6 +326,7 @@ def get_bank(user: User = Depends(get_current_user)) -> BankOut:
         pan=bank.get("pan") or "",
         gstin=bank.get("gstin") or "",
         gst_treatment=bank.get("gst_treatment") or "",
+        gst_supply=bank.get("gst_supply") or "",
         complete=_bank_complete(bank),
     )
 
@@ -340,7 +346,10 @@ def put_bank(
         "pan": (body.pan or "").strip().upper(),
         "gstin": (body.gstin or "").strip().upper().replace(" ", ""),
         "gst_treatment": (body.gst_treatment or "").strip().lower(),
+        "gst_supply": (body.gst_supply or "").strip().lower(),
     }
+    if data["gst_supply"] not in {"", "intra", "inter"}:
+        raise HTTPException(status_code=400, detail="GST supply must be intra-state, inter-state, or left blank")
     if data["gst_treatment"] not in {"", "exclusive", "inclusive", "none"}:
         raise HTTPException(status_code=400, detail="GST treatment must be exclusive, inclusive, or none")
     if data["gstin"] and not GSTIN_RE.match(data["gstin"]):
@@ -450,6 +459,9 @@ def reprice_invoice(db: Session, row: PayoutRequest, partner: User) -> None:
     amount = round(sum(line["share"] for line in lines), 2)
     bank = (partner.payout_bank or {}) if partner else {}
     gst, tds, net = tax_breakup(db, amount, bank.get("gstin"), bank.get("gst_treatment"))
+    if row.status != "paid" and row.stage != "paid":
+        gst_pct, _tds_pct = tax_settings(db)
+        snap["gst_lines"] = gst_lines(amount, gst, gst_pct, bank.get("gst_treatment"), bank.get("gst_supply"))
     snap["lines"] = lines
     snap["lender_payout_total"] = round(sum(line["lender_payout"] for line in lines), 2)
     snap["agreement_percent"] = float(partner.agreement_percent or 0)
@@ -571,6 +583,8 @@ def raise_invoice(
     snapshot["agreement_percent"] = lines[0]["agreement_percent"]
     snapshot["commission_rate"] = float(lines[0]["agreement_percent"]) / 100
     gst, tds, net = tax_breakup(db, amount, bank.get("gstin"), bank.get("gst_treatment"))
+    gst_pct, _tds_pct = tax_settings(db)
+    snapshot["gst_lines"] = gst_lines(amount, gst, gst_pct, bank.get("gst_treatment"), bank.get("gst_supply"))
     row = PayoutRequest(
         id=uuid4(),
         user_id=user.id,

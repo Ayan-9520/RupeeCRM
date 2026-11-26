@@ -888,6 +888,9 @@ export type PayoutBank = {
   ifsc: string;
   bank_name: string;
   pan: string;
+  gstin?: string;
+  gst_treatment?: string;
+  gst_supply?: string;
   complete?: boolean;
 };
 

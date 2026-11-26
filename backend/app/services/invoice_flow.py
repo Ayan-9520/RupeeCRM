@@ -67,6 +67,28 @@ def tax_breakup(db: Session, amount: float, gstin: str | None, treatment: str | 
     return gst, tds, round(net_base - tds, 2)
 
 
+def gst_lines(amount: float, gst: float, gst_pct: float, treatment: str | None, supply: str | None) -> dict:
+    """Split the GST already calculated. Blank supply keeps one GST total and does not guess CGST or IGST."""
+    mode = (treatment or "").strip().lower()
+    place = (supply or "").strip().lower()
+    taxable = round(amount - gst, 2) if mode == "inclusive" else round(amount, 2)
+    cgst = sgst = igst = 0.0
+    if gst > 0 and place == "intra":
+        cgst = round(gst / 2, 2)
+        sgst = round(gst - cgst, 2)
+    elif gst > 0 and place == "inter":
+        igst = round(gst, 2)
+    return {
+        "taxable_amount": taxable,
+        "gst_rate": gst_pct if gst > 0 else 0,
+        "cgst": cgst,
+        "sgst": sgst,
+        "igst": igst,
+        "total_gst": round(gst, 2),
+        "supply": place if place in {"intra", "inter"} else "",
+    }
+
+
 def is_staff(user: User) -> bool:
     return user.role in ADMIN_ROLES or (user.finance_level or "") in FINANCE_LEVELS
 

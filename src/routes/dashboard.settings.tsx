@@ -35,6 +35,7 @@ function SettingsPage() {
     pan: "",
     gstin: "",
     gst_treatment: "",
+    gst_supply: "",
   });
   const [savingBank, setSavingBank] = useState(false);
   const [testingSmtp, setTestingSmtp] = useState(false);
@@ -55,6 +56,7 @@ function SettingsPage() {
           pan: b.pan || "",
           gstin: b.gstin || "",
           gst_treatment: b.gst_treatment || "",
+          gst_supply: b.gst_supply || "",
         });
       } catch (e) {
         if (!cached) toast.error(e instanceof Error ? e.message : "Could not load profile");
@@ -185,6 +187,7 @@ function SettingsPage() {
               pan: saved.pan,
               gstin: saved.gstin || "",
               gst_treatment: saved.gst_treatment || "",
+              gst_supply: saved.gst_supply || "",
             });
             toast.success(saved.complete ? "Bank details saved" : "Saved — fill all fields for payouts");
           } catch (err) {
@@ -229,6 +232,14 @@ function SettingsPage() {
             <option value="exclusive">Exclusive — GST is added on top</option>
             <option value="inclusive">Inclusive — GST is already inside the share</option>
             <option value="none">No GST</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-xs font-semibold text-[#5c4d72]">State supply, only if your CA has confirmed it</span>
+          <select className="input-base w-full mt-1" value={bank.gst_supply || ""} onChange={(e) => setBank((b) => ({ ...b, gst_supply: e.target.value }))}>
+            <option value="">Not set — invoice shows one GST total</option>
+            <option value="intra">Intra-state — split the GST into CGST and SGST</option>
+            <option value="inter">Inter-state — the GST is IGST</option>
           </select>
         </label>
         <button

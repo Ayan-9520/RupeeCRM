@@ -347,6 +347,7 @@ function ApprovalCard({ row, onChange }: { row: InvoiceApprovalRow; onChange: (r
           <div className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
             <Info label="Commission" value={inr(row.amount)} />
             <Info label="GST" value={inr(row.gst_amount ?? 0)} />
+            {snap.gst_lines ? <Info label="CGST / SGST / IGST" value={`${inr(Number((snap.gst_lines as { cgst?: number }).cgst || 0))} / ${inr(Number((snap.gst_lines as { sgst?: number }).sgst || 0))} / ${inr(Number((snap.gst_lines as { igst?: number }).igst || 0))}`} /> : null}
             <Info label="TDS" value={`− ${inr(row.tds_amount ?? 0)}`} />
             <Info label="Net payable" value={inr(row.net_payable ?? row.amount)} strong />
             <Info label="Cases" value={String((snap.case_ids as unknown[] | undefined)?.length ?? 0)} />
