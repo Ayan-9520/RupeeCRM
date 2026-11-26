@@ -600,6 +600,7 @@ function CaseForm({
   onUploaded: (row: LoanCaseFile) => void;
 }) {
   const reached = STAGES.findIndex(([key]) => key === active.stage);
+  const [tab, setTab] = useState<"login" | "bank" | "money" | "history">("login");
   const latest = useRef(active);
   latest.current = active;
   const edit = (patch: Partial<LoanCaseFile>) => {
@@ -680,6 +681,17 @@ function CaseForm({
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {([
+          ["login", "Login"],
+          ["bank", "Bank and papers"],
+          ["money", "Disbursement and payout"],
+          ["history", "History"],
+        ] as const).map(([id, label]) => (
+          <button key={id} type="button" onClick={() => setTab(id)} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${tab === id ? "bg-[#10662A] text-white" : "border border-[#d8ecdd] bg-white text-[#390A5D]"}`}>{label}</button>
+        ))}
+      </div>
+      {tab === "login" ? <>
       <FileBlock step="1" title="Login" hint="What was logged: product, amount, source, and the sanction date.">
         <label className="block text-xs font-medium text-[#5c4d72]">
           Loan type
@@ -704,8 +716,9 @@ function CaseForm({
         <Field label="Connector code" value={active.partner_code} onChange={(partner_code) => edit({ partner_code })} onBlur={admin ? () => commit(["partner_code"]) : undefined} />
         <Field label="Connector name" value={active.partner_name} onChange={(partner_name) => edit({ partner_name })} onBlur={admin ? () => commit(["partner_name"]) : undefined} />
       </FileBlock>
+      </> : null}
 
-      <FileBlock step="4" title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
+      {tab === "bank" ? <FileBlock step="4" title="Bank" hint="Lender, the confirmation and sanction letter, then every officer on this file.">
         <Field label="Bank" value={active.bank_name} onChange={(bank_name) => edit({ bank_name })} onBlur={() => commit(["bank_name"])} />
         <Field label="Application number" value={active.application_no || ""} onChange={(application_no) => edit({ application_no })} onBlur={() => commit(["application_no"])} />
         <Field label="LAN" value={active.lan || ""} onChange={(lan) => edit({ lan })} onBlur={() => commit(["lan"])} />
@@ -716,8 +729,9 @@ function CaseForm({
           onChange={(bankers) => onChange({ ...active, bankers })}
           onCommit={(bankers) => void saveCaseFile(active.id, { bankers }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the officer"))}
         />
-      </FileBlock>
+      </FileBlock> : null}
 
+      {tab === "money" ? <>
       <FileBlock step="5" title="Disbursement" hint="The bank has released the loan. Lender payout is worked out after this.">
         {admin ? (
           <>
@@ -813,8 +827,9 @@ function CaseForm({
           onChange={(stakeholders) => onChange({ ...active, stakeholders })}
           onCommit={(stakeholders) => void saveCaseFile(active.id, { stakeholders }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the share"))}
         />
-      </FileBlock> : null}
-      <FileBlock step="8" title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
+      </FileBlock>
+      </> : null}
+      {tab === "history" ? <FileBlock step="8" title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
         <div className="overflow-x-auto md:col-span-2 xl:col-span-3">
           <table className="min-w-[640px] w-full text-left text-sm">
             <thead className="text-[11px] uppercase tracking-wide text-[#5c4d72]">
@@ -831,7 +846,7 @@ function CaseForm({
             </tbody>
           </table>
         </div>
-      </FileBlock>
+      </FileBlock> : null}
       {admin ? (
         <div className="flex flex-wrap gap-2">
           <Button disabled={saving} onClick={onSave}>{saving ? "Saving…" : "Save file"}</Button>
