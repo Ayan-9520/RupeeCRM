@@ -879,11 +879,14 @@ def _dump_items(raw: bytes, mapping: dict | None = None) -> list[dict]:
     items = []
     for index, row in enumerate(_table_rows(raw), start=2):
         amount_text = _mapped(row, str(chosen.get("amount") or "")) or _dump_value(row, "amount", "disbursed", "disbursed_amount")
+        invalid_amount = False
         try:
-            amount = round(float(amount_text.replace(",", "") or 0), 2)
+            amount = round(float(str(amount_text).replace(",", "") or 0), 2)
         except ValueError:
             amount = 0
+            invalid_amount = bool(str(amount_text).strip())
         items.append({
+            "invalid_amount": invalid_amount,
             "row": index,
             "application_no": (_mapped(row, str(chosen.get("application_no") or "")) or _dump_value(row, "application_no", "application", "app_no"))[:80],
             "lan": (_mapped(row, str(chosen.get("lan") or "")) or _dump_value(row, "lan", "loan_account", "loan_account_number"))[:80],
@@ -895,19 +898,31 @@ def _dump_items(raw: bytes, mapping: dict | None = None) -> list[dict]:
     return items
 
 
+def _one_match(rows: list, how: str) -> tuple[LoanCase | None, str]:
+    if len(rows) > 1:
+        return None, "ambiguous"
+    if rows:
+        return rows[0], how
+    return None, ""
+
+
 def _match_dump(db: Session, item: dict) -> tuple[LoanCase | None, str]:
-    if item["application_no"]:
-        row = db.query(LoanCase).filter(func.lower(LoanCase.application_no) == item["application_no"].lower()).first()
-        if row:
-            return row, "application number"
-    if item["lan"]:
-        row = db.query(LoanCase).filter(func.lower(LoanCase.lan) == item["lan"].lower()).first()
-        if row:
-            return row, "LAN"
-    if item["phone"]:
-        row = db.query(LoanCase).filter(LoanCase.client_phone.like(f"%{item['phone']}")).first()
-        if row:
-            return row, "phone"
+    if item.get("deal_no"):
+        found, how = _one_match(db.query(LoanCase).filter(LoanCase.deal_no == item["deal_no"]).limit(2).all(), "case number")
+        if found or how == "ambiguous":
+            return found, how
+    if item.get("application_no"):
+        found, how = _one_match(db.query(LoanCase).filter(func.lower(LoanCase.application_no) == item["application_no"].lower()).limit(2).all(), "application number")
+        if found or how == "ambiguous":
+            return found, how
+    if item.get("lan"):
+        found, how = _one_match(db.query(LoanCase).filter(func.lower(LoanCase.lan) == item["lan"].lower()).limit(2).all(), "LAN")
+        if found or how == "ambiguous":
+            return found, how
+    if item.get("phone"):
+        found, how = _one_match(db.query(LoanCase).filter(LoanCase.client_phone.like(f"%{item['phone']}")).limit(2).all(), "phone")
+        if found or how == "ambiguous":
+            return found, how
     return None, ""
 
 
@@ -917,7 +932,11 @@ def preview_lender_dump(db: Session, raw: bytes, mapping: dict | None = None) ->
     for item in _dump_items(raw, mapping):
         case, how = _match_dump(db, item)
         status = "unmatched"
-        if case is not None:
+        if item.get("invalid_amount"):
+            status = "invalid"
+        elif how == "ambiguous":
+            status = "ambiguous"
+        elif case is not None:
             lines = _clean_disbursements(case.disbursements)
             same = item["reference"] and any(line.get("reference") == item["reference"] for line in lines)
             if case.counted:
@@ -932,40 +951,93 @@ def preview_lender_dump(db: Session, raw: bytes, mapping: dict | None = None) ->
     return {"rows": preview, "ready": sum(1 for row in preview if row["status"] == "ready"), "headers": [header for header in headers if header]}
 
 
+def _public_dump_row(item: dict) -> dict:
+    return {key: item.get(key) for key in ("row", "application_no", "lan", "amount", "date", "reference", "status", "matched_by", "deal_no")}
+
+
 def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str, mapping: dict | None = None, lender: str = "") -> dict:
+    """Stage the file. Cases change only after a different admin approves and someone applies that batch."""
     from app.models import ImportBatch
     preview = preview_lender_dump(db, raw, mapping)
+    ready_amount = round(sum(float(item.get("amount") or 0) for item in preview["rows"] if item["status"] == "ready"), 2)
+    status = "pending_approval" if preview["rows"] else "validation_failed"
+    batch = ImportBatch(
+        id=uuid4(),
+        filename=filename[:180],
+        created_by=user.id,
+        status=status,
+        snapshot=[{"kind": "summary", "lender": lender.strip()[:160], "dump_amount": ready_amount, "rows": len(preview["rows"])}],
+        preview=[_public_dump_row(item) for item in preview["rows"]],
+        mapping=mapping or {},
+    )
+    db.add(batch)
+    write_audit(db, action="lender_dump_staged", actor_user_id=user.id, entity_type="lender_dump", entity_id=str(batch.id), detail={"filename": filename[:180], "status": status, "ready": preview["ready"]})
+    db.commit()
+    return {"applied": 0, "skipped": len(preview["rows"]) - preview["ready"], "batch_id": str(batch.id), "status": status, "ready": preview["ready"], "rows": preview["rows"]}
+
+
+def approve_lender_dump(db: Session, user: User, batch_id: UUID) -> dict:
+    from app.models import ImportBatch
+    batch = db.query(ImportBatch).filter(ImportBatch.id == batch_id).first()
+    if batch is None:
+        raise LookupError("Import batch not found")
+    if batch.status != "pending_approval":
+        raise ValueError("This import is not waiting for approval")
+    if batch.created_by == user.id:
+        raise PermissionError("Another admin must approve this import")
+    batch.status = "approved"
+    batch.approved_by = user.id
+    batch.approved_at = datetime.now(timezone.utc)
+    write_audit(db, action="lender_dump_approved", actor_user_id=user.id, entity_type="lender_dump", entity_id=str(batch.id), detail={"filename": batch.filename})
+    db.commit()
+    return {"id": str(batch.id), "status": batch.status}
+
+
+def reject_lender_dump(db: Session, user: User, batch_id: UUID) -> dict:
+    from app.models import ImportBatch
+    batch = db.query(ImportBatch).filter(ImportBatch.id == batch_id).first()
+    if batch is None:
+        raise LookupError("Import batch not found")
+    if batch.status != "pending_approval":
+        raise ValueError("This import is not waiting for approval")
+    batch.status = "rejected"
+    write_audit(db, action="lender_dump_rejected", actor_user_id=user.id, entity_type="lender_dump", entity_id=str(batch.id), detail={"filename": batch.filename})
+    db.commit()
+    return {"id": str(batch.id), "status": batch.status}
+
+
+def apply_approved_dump(db: Session, user: User, batch_id: UUID) -> dict:
+    from app.models import ImportBatch
+    batch = db.query(ImportBatch).filter(ImportBatch.id == batch_id).first()
+    if batch is None:
+        raise LookupError("Import batch not found")
+    if batch.status != "approved":
+        raise ValueError("Approve the import before it can be applied")
     applied = 0
-    snapshot = []
-    for item in preview["rows"]:
-        if item["status"] != "ready":
+    skipped = 0
+    snapshot = [item for item in (batch.snapshot or []) if item.get("kind") == "summary"]
+    for item in batch.preview or []:
+        if item.get("status") != "ready":
+            skipped += 1
             continue
         case, _how = _match_dump(db, item)
         if case is None or case.counted:
+            skipped += 1
             continue
         snapshot.append({"id": str(case.id), "application_no": case.application_no, "lan": case.lan, "disbursements": list(case.disbursements or [])})
-        if item["application_no"] and not case.application_no:
+        if item.get("application_no") and not case.application_no:
             case.application_no = item["application_no"]
-        if item["lan"] and not case.lan:
+        if item.get("lan") and not case.lan:
             case.lan = item["lan"]
         lines = _clean_disbursements(case.disbursements)
-        if item["amount"] > 0 and not lines:
-            case.disbursements = _clean_disbursements([{"date": item["date"], "amount": item["amount"], "reference": item["reference"]}])
+        if float(item.get("amount") or 0) > 0 and not lines:
+            case.disbursements = _clean_disbursements([{"date": item.get("date") or "", "amount": item.get("amount") or 0, "reference": item.get("reference") or ""}])
         applied += 1
-    ready_amount = round(sum(float(item.get("amount") or 0) for item in preview["rows"] if item["status"] == "ready"), 2)
-    snapshot.insert(0, {"kind": "summary", "lender": lender.strip()[:160], "dump_amount": ready_amount, "rows": len(preview["rows"])})
-    batch = ImportBatch(id=uuid4(), filename=filename[:180], created_by=user.id, status="applied", snapshot=snapshot)
-    db.add(batch)
-    write_audit(
-        db,
-        action="lender_dump_import",
-        actor_user_id=user.id,
-        entity_type="lender_dump",
-        entity_id=filename[:80],
-        detail={"filename": filename[:180], "ready": preview["ready"], "applied": applied, "rows": len(preview["rows"])},
-    )
+    batch.snapshot = snapshot
+    batch.status = "applied" if skipped == 0 else "partially_applied"
+    write_audit(db, action="lender_dump_import", actor_user_id=user.id, entity_type="lender_dump", entity_id=str(batch.id), detail={"applied": applied, "skipped": skipped})
     db.commit()
-    return {"applied": applied, "skipped": len(preview["rows"]) - applied, "batch_id": str(batch.id), "rows": preview["rows"]}
+    return {"applied": applied, "skipped": skipped, "batch_id": str(batch.id), "status": batch.status}
 
 
 def rollback_lender_dump(db: Session, user: User, batch_id: UUID) -> dict:
@@ -973,7 +1045,7 @@ def rollback_lender_dump(db: Session, user: User, batch_id: UUID) -> dict:
     batch = db.query(ImportBatch).filter(ImportBatch.id == batch_id).first()
     if batch is None:
         raise LookupError("Import batch not found")
-    if batch.status != "applied":
+    if batch.status not in {"applied", "partially_applied"}:
         raise ValueError("This import was already rolled back")
     restored = 0
     for item in batch.snapshot or []:

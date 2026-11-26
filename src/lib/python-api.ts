@@ -1600,7 +1600,7 @@ export async function previewLenderDump(file: File, mapping: Record<string, stri
   return request("/api/cases/lender-dump/preview", { method: "POST", body });
 }
 
-export async function applyLenderDump(file: File, mapping: Record<string, string> = {}, lender = ""): Promise<{ applied: number; skipped: number; batch_id?: string }> {
+export async function applyLenderDump(file: File, mapping: Record<string, string> = {}, lender = ""): Promise<{ applied: number; skipped: number; batch_id?: string; status?: string; ready?: number }> {
   const body = new FormData();
   body.append("file", file);
   body.append("mapping", JSON.stringify(mapping));
@@ -1608,7 +1608,27 @@ export async function applyLenderDump(file: File, mapping: Record<string, string
   return request("/api/cases/lender-dump/apply", { method: "POST", body });
 }
 
-export async function listDumpHistory(): Promise<{ items: { id: string; filename: string; lender: string; dump_amount: number; rows: number; status: string }[] }> {
+export async function approveLenderDump(id: string): Promise<{ id: string; status: string }> {
+  return request(`/api/cases/lender-dump/${id}/approve`, { method: "POST" });
+}
+
+export async function rejectLenderDump(id: string): Promise<{ id: string; status: string }> {
+  return request(`/api/cases/lender-dump/${id}/reject`, { method: "POST" });
+}
+
+export async function applyApprovedDump(id: string): Promise<{ applied: number; skipped: number; status: string }> {
+  return request(`/api/cases/lender-dump/${id}/apply-approved`, { method: "POST" });
+}
+
+export async function listDumpTemplates(): Promise<{ items: { id: string; name: string; lender_name: string; mapping: Record<string, string> }[] }> {
+  return request("/api/cases/dump-templates");
+}
+
+export async function saveDumpTemplate(name: string, lenderName: string, mapping: Record<string, string>): Promise<{ id: string }> {
+  return request("/api/cases/dump-templates", { method: "POST", body: JSON.stringify({ name, lender_name: lenderName, mapping }) });
+}
+
+export async function listDumpHistory(): Promise<{ items: { id: string; filename: string; lender: string; dump_amount: number; rows: number; status: string; created_by?: string }[] }> {
   return request("/api/cases/lender-dump/history");
 }
 

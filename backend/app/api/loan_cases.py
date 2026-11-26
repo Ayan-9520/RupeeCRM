@@ -1,5 +1,5 @@
 import json
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
@@ -26,6 +26,12 @@ def require_reader(user: User = Depends(get_current_user)) -> User:
     if user.role not in READ_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Case files are not on this login")
     return user
+
+
+class DumpTemplateIn(BaseModel):
+    name: str
+    lender_name: str = ""
+    mapping: dict = {}
 
 
 class CaseIn(BaseModel):
@@ -146,6 +152,68 @@ async def apply_dump(
     return service.apply_lender_dump(db, user, await file.read(), file.filename or "dump.csv", _dump_mapping(mapping), lender)
 
 
+@router.post("/lender-dump/{batch_id}/approve")
+def approve_dump(batch_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    try:
+        return service.approve_lender_dump(db, user, batch_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/lender-dump/{batch_id}/reject")
+def reject_dump(batch_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    try:
+        return service.reject_lender_dump(db, user, batch_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/lender-dump/{batch_id}/apply-approved")
+def apply_approved(batch_id: UUID, db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    try:
+        return service.apply_approved_dump(db, user, batch_id)
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.get("/dump-templates")
+def dump_templates(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    from app.models import LenderImportTemplate
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    rows = db.query(LenderImportTemplate).filter(LenderImportTemplate.active.is_(True)).order_by(LenderImportTemplate.created_at.desc()).limit(30).all()
+    return {"items": [{"id": str(row.id), "name": row.name, "lender_name": row.lender_name, "mapping": row.mapping or {}, "version": row.version} for row in rows]}
+
+
+@router.post("/dump-templates")
+def save_dump_template(body: DumpTemplateIn, db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    from app.models import LenderImportTemplate
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    name = body.name.strip()[:120]
+    if not name:
+        raise HTTPException(status_code=400, detail="Template name is required")
+    mapping = _dump_mapping(json.dumps(body.mapping or {}))
+    row = LenderImportTemplate(id=uuid4(), name=name, lender_name=body.lender_name.strip()[:160], mapping=mapping, version=1, created_by=user.id)
+    db.add(row)
+    db.commit()
+    return {"id": str(row.id)}
+
+
 @router.get("/lender-dump/history")
 def dump_history(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
     from app.models import ImportBatch
@@ -154,15 +222,16 @@ def dump_history(db: Session = Depends(get_db), user: User = Depends(require_rea
     items = []
     for batch in db.query(ImportBatch).order_by(ImportBatch.created_at.desc()).limit(40).all():
         summary = next((row for row in (batch.snapshot or []) if row.get("kind") == "summary"), None)
-        if not summary:
+        if not summary and not batch.preview:
             continue
         items.append({
             "id": str(batch.id),
             "filename": batch.filename,
-            "lender": summary.get("lender") or "",
-            "dump_amount": float(summary.get("dump_amount") or 0),
-            "rows": int(summary.get("rows") or 0),
+            "lender": (summary or {}).get("lender") or "",
+            "dump_amount": float((summary or {}).get("dump_amount") or 0),
+            "rows": int((summary or {}).get("rows") or len(batch.preview or [])),
             "status": batch.status,
+            "created_by": str(batch.created_by or ""),
             "created_at": batch.created_at.isoformat() if batch.created_at else "",
         })
     return {"items": items}

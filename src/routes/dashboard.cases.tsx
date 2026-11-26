@@ -8,7 +8,11 @@ import { useAuth } from "@/lib/auth-context";
 import { isPlatformAdmin } from "@/lib/role-access";
 import { RUPEEDIAL_PRODUCT_MENUS } from "@/lib/rupeedial-products";
 import {
+  applyApprovedDump,
   applyLenderDump,
+  approveLenderDump,
+  listDumpHistory,
+  rejectLenderDump,
   createCaseFile,
   downloadCasePaper,
   getCaseTimeline,
@@ -177,7 +181,7 @@ function DumpReview({
       <div className="flex justify-end gap-2">
         <Button variant="outline" disabled={busy} onClick={onClear}>Back</Button>
         <Button className="bg-[#10662A] text-white hover:bg-[#0d5522]" disabled={busy || preview.ready === 0} onClick={onApply}>
-          {busy ? "Working…" : `Import ${preview.ready} ready`}
+          {busy ? "Working…" : `Submit ${preview.ready} ready for approval`}
         </Button>
       </div>
     </div>
@@ -230,6 +234,10 @@ function CasesPage() {
   const [dumpLender, setDumpLender] = useState("");
   const [dumpPreview, setDumpPreview] = useState<Awaited<ReturnType<typeof previewLenderDump>> | null>(null);
   const [dumpBusy, setDumpBusy] = useState(false);
+  const [dumpQueue, setDumpQueue] = useState<{ id: string; filename: string; status: string; created_by?: string }[]>([]);
+  const loadDumpQueue = () => {
+    void listDumpHistory().then((data) => setDumpQueue(data.items.filter((item) => item.status === "pending_approval" || item.status === "approved"))).catch(() => setDumpQueue([]));
+  };
 
   const refresh = async (nextChip = chip, from = dateFrom, to = dateTo) => {
     if (!from || !to || !nextChip) {
@@ -265,6 +273,7 @@ function CasesPage() {
       return;
     }
     void refresh("all", dateFrom, dateTo);
+    if (admin) loadDumpQueue();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -474,6 +483,20 @@ function CasesPage() {
                   </label>
                 </div>
               ) : null}
+              {admin && dumpQueue.length ? (
+                <div className="mt-3 space-y-2">
+                  {dumpQueue.map((item) => (
+                    <div key={item.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#d8ecdd] bg-white px-3 py-2 text-sm">
+                      <span className="text-[#390A5D]">{item.filename} · {item.status.replaceAll("_", " ")}</span>
+                      <span className="flex gap-2">
+                        {item.status === "pending_approval" && item.created_by !== user?.id ? <button className="font-semibold text-[#10662A]" onClick={() => void approveLenderDump(item.id).then(() => { toast.success("Approved. Apply it when you are ready."); loadDumpQueue(); }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not approve"))}>Approve</button> : null}
+                        {item.status === "pending_approval" ? <button className="font-semibold text-[#8a3b3b]" onClick={() => void rejectLenderDump(item.id).then(() => { toast.success("Import rejected"); loadDumpQueue(); }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not reject"))}>Reject</button> : null}
+                        {item.status === "approved" ? <button className="font-semibold text-[#10662A]" onClick={() => void applyApprovedDump(item.id).then((result) => { toast.success(`${result.applied} rows applied. ${result.skipped} left unchanged.`); loadDumpQueue(); void refresh(chip, dateFrom, dateTo); }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not apply"))}>Apply</button> : null}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               <button className={statusButton(chip === "all")} onClick={() => { setChip("all"); void refresh("all", dateFrom, dateTo); }}>All{dateFrom && dateTo ? ` (${counts.all ?? 0})` : ""}</button>
@@ -509,11 +532,12 @@ function CasesPage() {
                   if (!dumpFile) return;
                   setDumpBusy(true);
                   void applyLenderDump(dumpFile, dumpMap, dumpLender).then((result) => {
-                    toast.success(`${result.applied} rows imported. ${result.skipped} skipped. Batch ${result.batch_id || ""}`);
+                    toast.success(result.status === "validation_failed" ? "The file has no rows to review." : "Submitted. Another admin must approve it before any case changes.");
                     setDumpFile(null);
                     setDumpPreview(null);
                     setDumpMap({});
                     setDumpLender("");
+                    loadDumpQueue();
                     void refresh(chip, dateFrom, dateTo);
                   }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not import the dump")).finally(() => setDumpBusy(false));
                 }}
