@@ -208,8 +208,18 @@ export function hasRole(role: AppRole | null, allowed: AppRole[]): boolean {
 const FINANCE_SEATS = new Set(["rm", "manager", "business_head", "accounts"]);
 
 function financeSeatUrls(level: string): Set<string> {
-  const urls = new Set(["/dashboard", "/dashboard/performance", "/dashboard/invoice-approvals", "/dashboard/profile", "/dashboard/settings"]);
-  if (level === "accounts" || level === "business_head") urls.add("/dashboard/admin/payouts");
+  const urls = new Set([
+    "/dashboard",
+    "/dashboard/performance",
+    "/dashboard/cases",
+    "/dashboard/invoice-approvals",
+    "/dashboard/profile",
+    "/dashboard/settings",
+  ]);
+  if (level === "accounts" || level === "business_head") {
+    urls.add("/dashboard/admin/payouts");
+    urls.add("/dashboard/finance");
+  }
   return urls;
 }
 
