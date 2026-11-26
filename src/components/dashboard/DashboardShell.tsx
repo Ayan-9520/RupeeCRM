@@ -6,6 +6,7 @@ import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 import { useAuth } from "@/lib/auth-context";
 import { useDailyLogin } from "@/hooks/use-daily-login";
 import { Loader2, LogOut, UserCircle } from "lucide-react";
+import { getRoleLabel } from "@/lib/role-access";
 import { NotificationCenter } from "@/components/dashboard/NotificationCenter";
 
 export function DashboardShell({ children }: { children: ReactNode }) {
@@ -30,12 +31,22 @@ export function DashboardShell({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex w-full bg-[#f5fcf7]">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
-          <header className="h-14 flex items-center gap-3 border-b border-[#d8ecdd] bg-white px-4 sticky top-0 z-30 shadow-[0_1px_0_rgba(16,102,42,0.04)]">
-            <SidebarTrigger className="text-[#10662A]" />
-            <WorkspaceSwitcher />
-            <NotificationCenter />
-            <div className="flex-1" />
-            <ProfileMenu />
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-[#0c2344] bg-[#0e2a4a] px-3 sm:px-5">
+            <SidebarTrigger className="text-white" />
+            <div className="hidden min-w-0 sm:block">
+              <div className="font-display text-sm font-bold tracking-wide text-white">RupeeDial CRM</div>
+              <div className="truncate text-[11px] text-[#b7cbe4]">Cases, lender payout, and partner invoices</div>
+            </div>
+            <div className="mx-auto hidden max-w-md flex-1 md:block">
+              <WorkspaceSwitcher />
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              <div className="md:hidden">
+                <WorkspaceSwitcher />
+              </div>
+              <NotificationCenter />
+              <ProfileMenu />
+            </div>
           </header>
           <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
         </div>
@@ -45,7 +56,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
 }
 
 function ProfileMenu() {
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
   const initial = (user?.full_name || user?.email || "?").trim().charAt(0).toUpperCase();
@@ -64,10 +75,14 @@ function ProfileMenu() {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="grid size-9 place-items-center rounded-full bg-[#10662A] text-sm font-bold text-white"
+        className="flex items-center gap-2 rounded-full border border-[#d8ecdd] bg-white py-1 pl-1 pr-3"
         aria-label="Account menu"
       >
-        {initial}
+        <span className="grid size-8 place-items-center rounded-full bg-[#10662A] text-sm font-bold text-white">{initial}</span>
+        <span className="hidden text-left sm:block">
+          <span className="block max-w-32 truncate text-xs font-semibold text-[#390A5D]">{user?.full_name || "Account"}</span>
+          <span className="block text-[10px] font-medium uppercase tracking-wide text-[#10662A]">{role ? getRoleLabel(role) : ""}</span>
+        </span>
       </button>
       {open ? (
         <div className="absolute right-0 top-11 z-40 w-64 rounded-2xl border border-[#d8ecdd] bg-white p-4 shadow-[0_16px_40px_rgba(16,102,42,0.12)]">

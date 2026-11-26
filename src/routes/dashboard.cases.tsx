@@ -474,6 +474,22 @@ function BankFile({ active, onBack }: { active: LoanCaseFile; onBack: () => void
   );
 }
 
+function MoneyCard({ label, value, hint, tone }: { label: string; value: string; hint: string; tone: "green" | "mint" | "purple" | "amber" }) {
+  const toneClass = {
+    green: "border-[#d8ecdd] bg-gradient-to-br from-[#E8F7EC] to-white",
+    mint: "border-[#d7efe4] bg-gradient-to-br from-[#f3fff8] to-white",
+    purple: "border-[#eadff3] bg-gradient-to-br from-[#f7f0fb] to-white",
+    amber: "border-[#f3e6c8] bg-gradient-to-br from-[#fff8ea] to-white",
+  }[tone];
+  return (
+    <div className={`rounded-2xl border px-4 py-3 ${toneClass}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-wide text-[#5c4d72]">{label}</p>
+      <p className="mt-1 font-display text-xl font-bold text-[#390A5D]">₹{value}</p>
+      <p className="mt-0.5 text-[11px] text-[#5c4d72]">{hint}</p>
+    </div>
+  );
+}
+
 function CaseForm({
   active,
   money,
@@ -540,6 +556,12 @@ function CaseForm({
             <span key={mark} className="rounded-full bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{mark}</span>
           ))}
         </div>
+      </div>
+      <div className={`grid gap-3 ${admin ? "sm:grid-cols-2 xl:grid-cols-4" : "sm:grid-cols-3"}`}>
+        <MoneyCard label="Loan amount" value={inr(active.loan_amount)} hint={active.loan_type || "Product"} tone="green" />
+        <MoneyCard label="Lender payout" value={inr(money.receivable)} hint={`${active.receivable_percent}% of the base`} tone="mint" />
+        <MoneyCard label="Partner share" value={inr(money.payable)} hint={`${active.payable_percent}% of the lender payout`} tone="purple" />
+        {admin ? <MoneyCard label="Company net" value={inr(money.net)} hint="After partner share and staff" tone="amber" /> : null}
       </div>
 
       <FileBlock step="1" title="Login" hint="What was logged: product, amount, source, and the sanction date.">
