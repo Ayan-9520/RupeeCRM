@@ -827,7 +827,7 @@ function CaseForm({
           onChange={(stakeholders) => onChange({ ...active, stakeholders })}
           onCommit={(stakeholders) => void saveCaseFile(active.id, { stakeholders }).then(onUploaded).catch((error) => toast.error(error instanceof Error ? error.message : "Could not save the share"))}
         />
-      </FileBlock>
+      </FileBlock> : null}
       </> : null}
       {tab === "history" ? <FileBlock step="8" title="History" hint="What has already happened on this file. A step shows only when it is recorded.">
         <div className="overflow-x-auto md:col-span-2 xl:col-span-3">
