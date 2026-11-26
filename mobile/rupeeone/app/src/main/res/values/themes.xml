@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.RupeeOne" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:statusBarColor">#10662A</item>
+        <item name="android:navigationBarColor">#390A5D</item>
+        <item name="android:windowBackground">#F7FAF8</item>
+    </style>
+</resources>
