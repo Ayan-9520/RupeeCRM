@@ -1569,15 +1569,17 @@ export type LenderDumpRow = {
   lan?: string;
 };
 
-export async function previewLenderDump(file: File): Promise<{ ready: number; rows: LenderDumpRow[] }> {
+export async function previewLenderDump(file: File, mapping: Record<string, string> = {}): Promise<{ ready: number; headers?: string[]; rows: LenderDumpRow[] }> {
   const body = new FormData();
   body.append("file", file);
+  body.append("mapping", JSON.stringify(mapping));
   return request("/api/cases/lender-dump/preview", { method: "POST", body });
 }
 
-export async function applyLenderDump(file: File): Promise<{ applied: number; skipped: number; batch_id?: string }> {
+export async function applyLenderDump(file: File, mapping: Record<string, string> = {}): Promise<{ applied: number; skipped: number; batch_id?: string }> {
   const body = new FormData();
   body.append("file", file);
+  body.append("mapping", JSON.stringify(mapping));
   return request("/api/cases/lender-dump/apply", { method: "POST", body });
 }
 

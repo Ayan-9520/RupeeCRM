@@ -1,6 +1,7 @@
+import json
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -100,18 +101,39 @@ def read_finance_report(db: Session = Depends(get_db), user: User = Depends(requ
     return service.finance_report(db, user)
 
 
+def _dump_mapping(raw: str) -> dict:
+    try:
+        parsed = json.loads(raw or "{}")
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(parsed, dict):
+        return {}
+    allowed = {"application_no", "lan", "phone", "amount", "date", "reference"}
+    return {key: str(value) for key, value in parsed.items() if key in allowed and str(value).strip()}
+
+
 @router.post("/lender-dump/preview")
-async def preview_dump(file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+async def preview_dump(
+    file: UploadFile = File(...),
+    mapping: str = Form("{}"),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_reader),
+) -> dict:
     if user.role not in ADMIN_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
-    return service.preview_lender_dump(db, await file.read())
+    return service.preview_lender_dump(db, await file.read(), _dump_mapping(mapping))
 
 
 @router.post("/lender-dump/apply")
-async def apply_dump(file: UploadFile = File(...), db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+async def apply_dump(
+    file: UploadFile = File(...),
+    mapping: str = Form("{}"),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_reader),
+) -> dict:
     if user.role not in ADMIN_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
-    return service.apply_lender_dump(db, user, await file.read(), file.filename or "dump.csv")
+    return service.apply_lender_dump(db, user, await file.read(), file.filename or "dump.csv", _dump_mapping(mapping))
 
 
 @router.post("/lender-dump/{batch_id}/rollback")

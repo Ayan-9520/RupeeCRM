@@ -737,22 +737,33 @@ def _table_rows(raw: bytes) -> list[dict]:
     return list(csv.DictReader(io.StringIO(text)))
 
 
-def _dump_items(raw: bytes) -> list[dict]:
+def _mapped(row: dict, header: str) -> str:
+    if not header:
+        return ""
+    value = row.get(header)
+    if value is None:
+        folded = {str(key or "").strip(): value for key, value in row.items()}
+        value = folded.get(header.strip())
+    return "" if value is None else str(value).strip()
+
+
+def _dump_items(raw: bytes, mapping: dict | None = None) -> list[dict]:
+    chosen = mapping or {}
     items = []
     for index, row in enumerate(_table_rows(raw), start=2):
-        amount_text = _dump_value(row, "amount", "disbursed", "disbursed_amount")
+        amount_text = _mapped(row, str(chosen.get("amount") or "")) or _dump_value(row, "amount", "disbursed", "disbursed_amount")
         try:
             amount = round(float(amount_text.replace(",", "") or 0), 2)
         except ValueError:
             amount = 0
         items.append({
             "row": index,
-            "application_no": _dump_value(row, "application_no", "application", "app_no")[:80],
-            "lan": _dump_value(row, "lan", "loan_account", "loan_account_number")[:80],
-            "phone": "".join(ch for ch in _dump_value(row, "phone", "mobile") if ch.isdigit())[-10:],
+            "application_no": (_mapped(row, str(chosen.get("application_no") or "")) or _dump_value(row, "application_no", "application", "app_no"))[:80],
+            "lan": (_mapped(row, str(chosen.get("lan") or "")) or _dump_value(row, "lan", "loan_account", "loan_account_number"))[:80],
+            "phone": "".join(ch for ch in (_mapped(row, str(chosen.get("phone") or "")) or _dump_value(row, "phone", "mobile")) if ch.isdigit())[-10:],
             "amount": amount,
-            "date": _dump_value(row, "date", "disbursement_date")[:20],
-            "reference": _dump_value(row, "reference", "utr", "txn")[:80],
+            "date": (_mapped(row, str(chosen.get("date") or "")) or _dump_value(row, "date", "disbursement_date"))[:20],
+            "reference": (_mapped(row, str(chosen.get("reference") or "")) or _dump_value(row, "reference", "utr", "txn"))[:80],
         })
     return items
 
@@ -773,9 +784,10 @@ def _match_dump(db: Session, item: dict) -> tuple[LoanCase | None, str]:
     return None, ""
 
 
-def preview_lender_dump(db: Session, raw: bytes) -> dict:
+def preview_lender_dump(db: Session, raw: bytes, mapping: dict | None = None) -> dict:
     preview = []
-    for item in _dump_items(raw):
+    headers = list(_table_rows(raw)[0].keys()) if _table_rows(raw) else []
+    for item in _dump_items(raw, mapping):
         case, how = _match_dump(db, item)
         status = "unmatched"
         if case is not None:
@@ -790,12 +802,12 @@ def preview_lender_dump(db: Session, raw: bytes) -> dict:
             else:
                 status = "ready"
         preview.append({**item, "status": status, "matched_by": how, "deal_no": case.deal_no if case else ""})
-    return {"rows": preview, "ready": sum(1 for row in preview if row["status"] == "ready")}
+    return {"rows": preview, "ready": sum(1 for row in preview if row["status"] == "ready"), "headers": [header for header in headers if header]}
 
 
-def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str) -> dict:
+def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str, mapping: dict | None = None) -> dict:
     from app.models import ImportBatch
-    preview = preview_lender_dump(db, raw)
+    preview = preview_lender_dump(db, raw, mapping)
     applied = 0
     snapshot = []
     for item in preview["rows"]:
