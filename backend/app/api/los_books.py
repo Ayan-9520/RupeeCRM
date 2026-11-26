@@ -180,6 +180,23 @@ def edit_product(product_id: UUID, body: ProductIn, db: Session = Depends(get_db
     return {"id": str(row.id)}
 
 
+@router.patch("/branches/{branch_id}")
+def edit_branch(branch_id: UUID, body: BranchIn, db: Session = Depends(get_db), _: User = Depends(_admin)) -> dict:
+    row = db.query(LenderBranch).filter(LenderBranch.id == branch_id).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Branch not found")
+    row.name = body.name.strip()[:160]
+    row.city = body.city.strip()[:80]
+    row.code = body.code.strip()[:40]
+    row.address = body.address.strip()[:240]
+    row.state = body.state.strip()[:80]
+    row.pincode = body.pincode.strip()[:10]
+    row.phone = body.phone.strip()[:30]
+    row.active = body.active
+    db.commit()
+    return {"id": str(row.id)}
+
+
 @router.post("/lenders/{lender_id}/contacts")
 def add_contact(lender_id: UUID, body: ContactIn, db: Session = Depends(get_db), _: User = Depends(_admin)) -> dict:
     if db.query(Lender).filter(Lender.id == lender_id).first() is None:
@@ -188,6 +205,24 @@ def add_contact(lender_id: UUID, body: ContactIn, db: Session = Depends(get_db),
         raise HTTPException(status_code=400, detail="That branch is not on this lender")
     row = LenderContact(id=uuid4(), lender_id=lender_id, branch_id=body.branch_id, name=body.name.strip()[:160], designation=body.designation.strip()[:80], phone=body.phone.strip()[:30], email=body.email.strip()[:160], notes=body.notes.strip()[:500], active=body.active)
     db.add(row)
+    db.commit()
+    return {"id": str(row.id)}
+
+
+@router.patch("/contacts/{contact_id}")
+def edit_contact(contact_id: UUID, body: ContactIn, db: Session = Depends(get_db), _: User = Depends(_admin)) -> dict:
+    row = db.query(LenderContact).filter(LenderContact.id == contact_id).first()
+    if row is None:
+        raise HTTPException(status_code=404, detail="Banker not found")
+    if body.branch_id and db.query(LenderBranch).filter(LenderBranch.id == body.branch_id, LenderBranch.lender_id == row.lender_id).first() is None:
+        raise HTTPException(status_code=400, detail="That branch is not on this lender")
+    row.name = body.name.strip()[:160]
+    row.designation = body.designation.strip()[:80]
+    row.branch_id = body.branch_id
+    row.phone = body.phone.strip()[:30]
+    row.email = body.email.strip()[:160]
+    row.notes = body.notes.strip()[:500]
+    row.active = body.active
     db.commit()
     return {"id": str(row.id)}
 
