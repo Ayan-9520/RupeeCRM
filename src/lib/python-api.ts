@@ -1526,6 +1526,11 @@ export type LoanCaseFile = {
   net_revenue: number;
   invoice_percent: number;
   collection_percent: number;
+  snapshot_status?: "open" | "frozen" | "legacy";
+  snapshot_version?: number;
+  snapshot_at?: string;
+  snapshot_receivable?: number;
+  snapshot_payable?: number;
 };
 
 export async function getStageCounts(): Promise<{

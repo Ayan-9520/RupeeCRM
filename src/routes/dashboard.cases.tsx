@@ -706,7 +706,7 @@ function CaseForm({
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MoneyCard label="File status" value={active.stage_label || "Draft"} hint={active.flag === "cancelled" ? "Cancelled" : active.counted ? "Counted" : "Not counted"} tone="green" money={false} />
+        <MoneyCard label="File status" value={active.stage_label || "Draft"} hint={active.snapshot_status === "frozen" ? `Frozen v${active.snapshot_version || 1}` : active.snapshot_status === "legacy" ? "Counted before snapshots" : active.counted ? "Counted" : "Not frozen"} tone="green" money={false} />
         <MoneyCard label="Sanctioned" value={inr(active.sanctioned_amount)} hint={active.bank_name || "Bank not set"} tone="mint" />
         <MoneyCard label="Disbursed lines" value={inr((active.disbursements || []).reduce((sum, line) => sum + Number(line.amount || 0), 0))} hint={`${(active.disbursements || []).filter((line) => Number(line.amount) > 0).length} lines with an amount`} tone="purple" />
         <MoneyCard label="Lender rate" value={`${active.receivable_percent}%`} hint={`Partner ${active.payable_percent}% of that payout`} tone="amber" money={false} />

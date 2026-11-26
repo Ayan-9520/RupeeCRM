@@ -1003,6 +1003,31 @@ class LenderBranch(Base):
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
 
+class CommissionSnapshot(Base):
+    """Copy of the case money inputs at the moment the file was first counted. Not a second calculator."""
+
+    __tablename__ = "commission_snapshots"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    loan_case_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    lender_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    product_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    method: Mapped[str] = mapped_column(String(40), nullable=False, default="percent_of_disbursed_base")
+    base_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    receivable_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    payable_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    receivable_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    payable_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    bonus_name: Mapped[str] = mapped_column(String(120), nullable=False, default="")
+    bonus_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    bonus_partner_percent: Mapped[float] = mapped_column(Float, nullable=False, default=0)
+    loyalty_amount: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+    inputs: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class LenderProduct(Base):
     __tablename__ = "lender_products"
 

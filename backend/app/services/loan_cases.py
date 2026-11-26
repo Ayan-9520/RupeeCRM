@@ -16,7 +16,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session
 
 from app.models import Lead, LeadPurchase, LoanCase, PayoutRequest, User
 from app.services.audit import write_audit
@@ -315,6 +315,10 @@ def serialize(row: LoanCase, invoices: dict[str, dict] | None = None) -> dict:
         "submitted_on": _on_day(row),
         "partner_invoice": (invoices or {}).get(str(row.lead_purchase_id or "")) if row.lead_purchase_id else None,
         **money,
+        **(_snapshot_status(object_session(row), row) if object_session(row) is not None else {
+            "snapshot_status": "open", "snapshot_version": 0, "snapshot_at": "",
+            "snapshot_base": 0, "snapshot_receivable": 0, "snapshot_payable": 0,
+        }),
     }
 
 
@@ -539,6 +543,70 @@ def _apply(row: LoanCase, payload: dict) -> None:
         row.payout_status = status
 
 
+def _freeze_commission(db: Session, user: User, row: LoanCase) -> None:
+    """Write version 1 once. A later save does not replace it and does not recalculate the case."""
+    from app.models import CommissionSnapshot
+    existing = db.query(CommissionSnapshot).filter(CommissionSnapshot.loan_case_id == row.id).first()
+    if existing is not None:
+        return
+    money = figures(row)
+    db.add(CommissionSnapshot(
+        id=uuid4(),
+        loan_case_id=row.id,
+        version=1,
+        lender_id=row.lender_id,
+        product_id=row.product_id,
+        method="percent_of_disbursed_base",
+        base_amount=money["base_amount"],
+        receivable_percent=float(row.receivable_percent or 0),
+        payable_percent=float(row.payable_percent or 0),
+        receivable_amount=money["receivable_amount"],
+        payable_amount=money["payable_amount"],
+        bonus_name=row.bonus_name or "",
+        bonus_amount=money["bonus_amount"],
+        bonus_partner_percent=float(row.bonus_partner_percent or 0),
+        loyalty_amount=money["loyalty_amount"],
+        inputs={
+            "disbursements": _clean_disbursements(row.disbursements),
+            "stakeholders": _clean_stakeholders(row.stakeholders),
+            "loan_amount": _round(row.loan_amount),
+            "sanctioned_amount": _round(row.sanctioned_amount),
+            "formula": "base x receivable percent; partner payable is that amount x payable percent",
+        },
+        created_by=user.id,
+    ))
+    write_audit(
+        db,
+        action="commission_snapshot",
+        actor_user_id=user.id,
+        entity_type="loan_case",
+        entity_id=str(row.id),
+        detail={"deal_no": row.deal_no, "version": 1, "receivable_amount": money["receivable_amount"]},
+    )
+
+
+def _snapshot_status(db: Session, row: LoanCase) -> dict:
+    from app.models import CommissionSnapshot
+    snap = (
+        db.query(CommissionSnapshot)
+        .filter(CommissionSnapshot.loan_case_id == row.id)
+        .order_by(CommissionSnapshot.version.desc())
+        .first()
+    )
+    if snap is not None:
+        return {
+            "snapshot_status": "frozen",
+            "snapshot_version": snap.version,
+            "snapshot_at": snap.created_at.isoformat() if snap.created_at else "",
+            "snapshot_base": float(snap.base_amount or 0),
+            "snapshot_receivable": float(snap.receivable_amount or 0),
+            "snapshot_payable": float(snap.payable_amount or 0),
+        }
+    if row.counted:
+        return {"snapshot_status": "legacy", "snapshot_version": 0, "snapshot_at": "", "snapshot_base": 0, "snapshot_receivable": 0, "snapshot_payable": 0}
+    return {"snapshot_status": "open", "snapshot_version": 0, "snapshot_at": "", "snapshot_base": 0, "snapshot_receivable": 0, "snapshot_payable": 0}
+
+
 def _as_uuid(value) -> UUID | None:
     if not value:
         return None
@@ -628,6 +696,8 @@ def update_case(db: Session, user: User, case_id: UUID, payload: dict) -> dict:
             entity_id=str(row.id),
             detail={"deal_no": row.deal_no, "changes": changes},
         )
+    if not before["counted"] and row.counted:
+        _freeze_commission(db, user, row)
     db.commit()
     db.refresh(row)
     return serialize(row, _invoice_index(db))
