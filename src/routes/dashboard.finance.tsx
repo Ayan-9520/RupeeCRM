@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { getFinanceReport, type FinanceRow } from "@/lib/python-api";
+import { getFinanceReport, request, type FinanceRow } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/finance")({
   head: () => ({ meta: [{ title: "Finance report — RupeeOne" }] }),
@@ -17,6 +17,7 @@ function FinancePage() {
   const [totals, setTotals] = useState({ receivable: 0, collected: 0, outstanding: 0, bonus: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [schemes, setSchemes] = useState<{ name: string; bonus_amount: number }[]>([]);
 
   useEffect(() => {
     void getFinanceReport()
@@ -26,6 +27,9 @@ function FinancePage() {
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Could not load the report"))
       .finally(() => setLoading(false));
+    void request<{ schemes: { name: string; bonus_amount: number }[] }>("/api/los/schemes")
+      .then((data) => setSchemes(data.schemes))
+      .catch(() => setSchemes([]));
   }, []);
 
   const disbursed = rows.reduce((sum, row) => sum + Number(row.base_amount || 0), 0);
@@ -43,6 +47,7 @@ function FinancePage() {
     return [...map.entries()].sort((a, b) => b[1].receivable - a[1].receivable);
   }, [rows]);
   const widest = Math.max(1, ...lenders.map(([, row]) => row.receivable));
+  const receivedPct = totals.receivable > 0 ? Math.min(100, Math.round((totals.collected / totals.receivable) * 100)) : 0;
 
   return (
     <div className="max-w-6xl space-y-4">
@@ -59,6 +64,23 @@ function FinancePage() {
       </div>
       {loading ? <Loader2 className="size-5 animate-spin text-[#10662A]" /> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      <section className="flex flex-wrap items-center gap-6 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+        <div
+          className="grid size-28 place-items-center rounded-full"
+          style={{ background: `conic-gradient(#10662A ${receivedPct * 3.6}deg, #E8F7EC 0deg)` }}
+        >
+          <div className="grid size-20 place-items-center rounded-full bg-white text-center">
+            <div>
+              <p className="font-display text-xl font-bold text-[#10662A]">{receivedPct}%</p>
+              <p className="text-[10px] text-[#5c4d72]">collected</p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p className="font-display text-lg font-bold text-[#390A5D]">{rows.length} case files</p>
+          <p className="text-sm text-[#5c4d72]">Collected {inr(totals.collected)} of {inr(totals.receivable)} expected from lenders.</p>
+        </div>
+      </section>
       <section className="grid gap-3 sm:grid-cols-3">
         {[
           ["On an invoice", rows.filter((row) => row.invoice_number).length],
@@ -70,6 +92,23 @@ function FinancePage() {
             <p className="mt-1 font-display text-2xl font-bold text-[#10662A]">{value}</p>
           </div>
         ))}
+      </section>
+      <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
+        <h2 className="font-display text-lg font-bold text-[#390A5D]">Schemes</h2>
+        <div className="mt-3 space-y-3">
+          {schemes.map((scheme) => {
+            const got = rows.filter((row) => (row.bonus_name || "") === scheme.name).reduce((sum, row) => sum + Number(row.bonus_amount || 0), 0);
+            const pct = scheme.bonus_amount > 0 ? Math.min(100, Math.round((got / scheme.bonus_amount) * 100)) : 0;
+            return (
+              <div key={scheme.name}>
+                <div className="flex justify-between text-sm"><span className="font-semibold text-[#390A5D]">{scheme.name}</span><span className="text-[#10662A]">{scheme.bonus_amount > 0 ? `${pct}%` : "No target"}</span></div>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-[#E8F7EC]"><div className="h-full rounded-full bg-[#10662A]" style={{ width: `${scheme.bonus_amount > 0 ? Math.max(pct, 4) : 0}%` }} /></div>
+                <p className="mt-1 text-xs text-[#5c4d72]">Booked {inr(got)} of scheme {inr(scheme.bonus_amount)}. The case bonus name must match the scheme name.</p>
+              </div>
+            );
+          })}
+          {schemes.length === 0 ? <p className="text-sm text-[#5c4d72]">No scheme saved yet.</p> : null}
+        </div>
       </section>
       <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
         <h2 className="font-display text-lg font-bold text-[#390A5D]">By lender</h2>

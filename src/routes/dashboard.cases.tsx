@@ -83,6 +83,8 @@ function DumpReview({
   preview,
   busy,
   mapping,
+  lender,
+  onLender,
   onMap,
   onClear,
   onApply,
@@ -91,6 +93,8 @@ function DumpReview({
   preview: Awaited<ReturnType<typeof previewLenderDump>>;
   busy: boolean;
   mapping: Record<string, string>;
+  lender: string;
+  onLender: (value: string) => void;
   onMap: (key: string, value: string) => void;
   onClear: () => void;
   onApply: () => void;
@@ -109,12 +113,16 @@ function DumpReview({
           <p className="text-[11px] font-bold uppercase tracking-wide text-[#10662A]">Lender dump · review</p>
           <p className="font-semibold text-[#390A5D]">{fileName}</p>
         </div>
-        <div className="flex gap-2 text-xs font-semibold text-[#5c4d72]">
-          <span className="rounded-full bg-[#10662A] px-2 py-1 text-white">1 Upload</span>
-          <span className="rounded-full bg-[#E8F7EC] px-2 py-1 text-[#0D4F20]">2 Review</span>
-          <span className="rounded-full bg-white px-2 py-1">3 Import</span>
+        <div className="flex flex-wrap gap-2 text-xs font-semibold text-[#5c4d72]">
+          {["1 Upload", "2 Lender", "3 Columns", "4 Match", "5 Review", "6 Import"].map((step) => (
+            <span key={step} className="rounded-full bg-[#E8F7EC] px-2 py-1 text-[#0D4F20]">{step}</span>
+          ))}
         </div>
       </div>
+      <label className="block text-[11px] font-semibold text-[#5c4d72]">
+        Lender for this file
+        <input className="mt-1 h-9 w-full max-w-sm rounded-lg border border-[#d8ecdd] bg-white px-2 text-sm text-[#390A5D]" value={lender} placeholder="Same name as the case bank" onChange={(event) => onLender(event.target.value)} />
+      </label>
       <div className="grid gap-2 sm:grid-cols-3">
         {([
           ["application_no", "Application number"],
@@ -214,6 +222,7 @@ function CasesPage() {
   const [payoutLoading, setPayoutLoading] = useState(false);
   const [dumpFile, setDumpFile] = useState<File | null>(null);
   const [dumpMap, setDumpMap] = useState<Record<string, string>>({});
+  const [dumpLender, setDumpLender] = useState("");
   const [dumpPreview, setDumpPreview] = useState<Awaited<ReturnType<typeof previewLenderDump>> | null>(null);
   const [dumpBusy, setDumpBusy] = useState(false);
 
@@ -473,6 +482,8 @@ function CasesPage() {
                 preview={dumpPreview}
                 busy={dumpBusy}
                 mapping={dumpMap}
+                lender={dumpLender}
+                onLender={setDumpLender}
                 onMap={(key, value) => {
                   const next = { ...dumpMap, [key]: value };
                   if (!value) delete next[key];
@@ -481,15 +492,16 @@ function CasesPage() {
                   setDumpBusy(true);
                   void previewLenderDump(dumpFile, next).then(setDumpPreview).catch((error) => toast.error(error instanceof Error ? error.message : "Could not read the dump")).finally(() => setDumpBusy(false));
                 }}
-                onClear={() => { setDumpFile(null); setDumpPreview(null); setDumpMap({}); }}
+                onClear={() => { setDumpFile(null); setDumpPreview(null); setDumpMap({}); setDumpLender(""); }}
                 onApply={() => {
                   if (!dumpFile) return;
                   setDumpBusy(true);
-                  void applyLenderDump(dumpFile, dumpMap).then((result) => {
+                  void applyLenderDump(dumpFile, dumpMap, dumpLender).then((result) => {
                     toast.success(`${result.applied} rows imported. ${result.skipped} skipped. Batch ${result.batch_id || ""}`);
                     setDumpFile(null);
                     setDumpPreview(null);
                     setDumpMap({});
+                    setDumpLender("");
                     void refresh(chip, dateFrom, dateTo);
                   }).catch((error) => toast.error(error instanceof Error ? error.message : "Could not import the dump")).finally(() => setDumpBusy(false));
                 }}

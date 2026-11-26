@@ -805,7 +805,7 @@ def preview_lender_dump(db: Session, raw: bytes, mapping: dict | None = None) ->
     return {"rows": preview, "ready": sum(1 for row in preview if row["status"] == "ready"), "headers": [header for header in headers if header]}
 
 
-def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str, mapping: dict | None = None) -> dict:
+def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str, mapping: dict | None = None, lender: str = "") -> dict:
     from app.models import ImportBatch
     preview = preview_lender_dump(db, raw, mapping)
     applied = 0
@@ -825,6 +825,8 @@ def apply_lender_dump(db: Session, user: User, raw: bytes, filename: str, mappin
         if item["amount"] > 0 and not lines:
             case.disbursements = _clean_disbursements([{"date": item["date"], "amount": item["amount"], "reference": item["reference"]}])
         applied += 1
+    ready_amount = round(sum(float(item.get("amount") or 0) for item in preview["rows"] if item["status"] == "ready"), 2)
+    snapshot.insert(0, {"kind": "summary", "lender": lender.strip()[:160], "dump_amount": ready_amount, "rows": len(preview["rows"])})
     batch = ImportBatch(id=uuid4(), filename=filename[:180], created_by=user.id, status="applied", snapshot=snapshot)
     db.add(batch)
     write_audit(
@@ -848,6 +850,8 @@ def rollback_lender_dump(db: Session, user: User, batch_id: UUID) -> dict:
         raise ValueError("This import was already rolled back")
     restored = 0
     for item in batch.snapshot or []:
+        if item.get("kind") == "summary" or not item.get("id"):
+            continue
         case = db.query(LoanCase).filter(LoanCase.id == item.get("id")).first()
         if case is None or case.counted:
             continue
@@ -883,6 +887,7 @@ def finance_report(db: Session, user: User) -> dict:
             "receivable_amount": money["receivable_amount"],
             "payable_amount": money["payable_amount"],
             "bonus_amount": money["bonus_amount"],
+            "bonus_name": row.bonus_name or "",
             "collected_amount": got,
             "outstanding": due,
             "age_days": max(0, (datetime.now(timezone.utc) - (row.created_at or datetime.now(timezone.utc))).days) if due else 0,

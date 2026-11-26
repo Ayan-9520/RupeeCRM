@@ -128,12 +128,35 @@ async def preview_dump(
 async def apply_dump(
     file: UploadFile = File(...),
     mapping: str = Form("{}"),
+    lender: str = Form(""),
     db: Session = Depends(get_db),
     user: User = Depends(require_reader),
 ) -> dict:
     if user.role not in ADMIN_ROLES:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
-    return service.apply_lender_dump(db, user, await file.read(), file.filename or "dump.csv", _dump_mapping(mapping))
+    return service.apply_lender_dump(db, user, await file.read(), file.filename or "dump.csv", _dump_mapping(mapping), lender)
+
+
+@router.get("/lender-dump/history")
+def dump_history(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
+    from app.models import ImportBatch
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can import a lender dump")
+    items = []
+    for batch in db.query(ImportBatch).order_by(ImportBatch.created_at.desc()).limit(40).all():
+        summary = next((row for row in (batch.snapshot or []) if row.get("kind") == "summary"), None)
+        if not summary:
+            continue
+        items.append({
+            "id": str(batch.id),
+            "filename": batch.filename,
+            "lender": summary.get("lender") or "",
+            "dump_amount": float(summary.get("dump_amount") or 0),
+            "rows": int(summary.get("rows") or 0),
+            "status": batch.status,
+            "created_at": batch.created_at.isoformat() if batch.created_at else "",
+        })
+    return {"items": items}
 
 
 @router.post("/lender-dump/{batch_id}/rollback")

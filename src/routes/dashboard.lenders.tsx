@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { getFinanceReport, request, type FinanceRow } from "@/lib/python-api";
+import { getFinanceReport, listDumpHistory, request, type FinanceRow } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/lenders")({
   head: () => ({ meta: [{ title: "Lenders — RupeeOne" }] }),
@@ -14,13 +14,13 @@ function inr(n: number) {
   return `₹${Math.round(n || 0).toLocaleString("en-IN")}`;
 }
 
-function LenderBook({ name, rows }: { name: string; rows: FinanceRow[] }) {
+function LenderBook({ name, rows, dumpAmount }: { name: string; rows: FinanceRow[]; dumpAmount: number }) {
   const expected = rows.reduce((sum, row) => sum + Number(row.receivable_amount || 0), 0);
   const received = rows.reduce((sum, row) => sum + Number(row.collected_amount || 0), 0);
   return (
     <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
       <h2 className="font-display text-lg font-bold text-[#390A5D]">{name}</h2>
-      <p className="text-sm text-[#5c4d72]">CRM book versus what Accounts has marked collected. A lender dump does not keep a second total.</p>
+      <p className="text-sm text-[#5c4d72]">CRM book versus collected, and the saved dump total for this lender name. Type the same bank name when you import the file.</p>
       <table className="mt-3 w-full text-left text-sm">
         <thead className="text-[11px] uppercase text-[#5c4d72]">
           <tr><th className="py-2">Line</th><th>On the case</th><th>Collected</th><th>Still open</th></tr>
@@ -31,6 +31,12 @@ function LenderBook({ name, rows }: { name: string; rows: FinanceRow[] }) {
             <td>{inr(expected)}</td>
             <td>{inr(received)}</td>
             <td className="text-[#10662A]">{inr(expected - received)}</td>
+          </tr>
+          <tr className="border-t border-[#eef6f0]">
+            <td className="py-2">Saved dumps</td>
+            <td>{inr(dumpAmount)}</td>
+            <td>{inr(received)}</td>
+            <td>{inr(dumpAmount - received)}</td>
           </tr>
           {rows.map((row) => (
             <tr key={row.deal_no} className="border-t border-[#eef6f0]">
@@ -54,9 +60,11 @@ function LendersPage() {
   const [kind, setKind] = useState("bank");
   const [picked, setPicked] = useState("");
   const [files, setFiles] = useState<FinanceRow[]>([]);
+  const [dumps, setDumps] = useState<{ lender: string; dump_amount: number; status: string }[]>([]);
 
   useEffect(() => {
     void getFinanceReport().then((report) => setFiles(report.rows)).catch(() => setFiles([]));
+    void listDumpHistory().then((data) => setDumps(data.items.filter((item) => item.status === "applied"))).catch(() => setDumps([]));
   }, []);
 
   const load = () => {
@@ -95,7 +103,7 @@ function LendersPage() {
           </article>
         ))}
       </div>
-      {picked ? <LenderBook name={picked} rows={files.filter((row) => (row.bank_name || "Bank not set") === picked)} /> : null}
+      {picked ? <LenderBook name={picked} rows={files.filter((row) => (row.bank_name || "Bank not set") === picked)} dumpAmount={dumps.filter((item) => item.lender === picked).reduce((sum, item) => sum + item.dump_amount, 0)} /> : null}
     </div>
   );
 }

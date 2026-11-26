@@ -1548,6 +1548,7 @@ export type FinanceRow = {
   receivable_amount: number;
   payable_amount: number;
   bonus_amount: number;
+  bonus_name?: string;
   collected_amount: number;
   outstanding: number;
   counted: boolean;
@@ -1576,11 +1577,16 @@ export async function previewLenderDump(file: File, mapping: Record<string, stri
   return request("/api/cases/lender-dump/preview", { method: "POST", body });
 }
 
-export async function applyLenderDump(file: File, mapping: Record<string, string> = {}): Promise<{ applied: number; skipped: number; batch_id?: string }> {
+export async function applyLenderDump(file: File, mapping: Record<string, string> = {}, lender = ""): Promise<{ applied: number; skipped: number; batch_id?: string }> {
   const body = new FormData();
   body.append("file", file);
   body.append("mapping", JSON.stringify(mapping));
+  body.append("lender", lender);
   return request("/api/cases/lender-dump/apply", { method: "POST", body });
+}
+
+export async function listDumpHistory(): Promise<{ items: { id: string; filename: string; lender: string; dump_amount: number; rows: number; status: string }[] }> {
+  return request("/api/cases/lender-dump/history");
 }
 
 export async function saveCaseFile(id: string, body: Partial<LoanCaseFile>): Promise<LoanCaseFile> {
