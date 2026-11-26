@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
-from app.api.payouts import HistoryOut, RequestOut, _to_out, history_out, reprice_invoice
+from app.api.payouts import HistoryOut, RequestOut, _require_unique_utr, _to_out, history_out, reprice_invoice
 from app.db.session import get_db
 from app.models import InvoiceApproval, LoanCase, PayoutRequest, User
 from app.services.audit import write_audit
@@ -335,6 +335,8 @@ def pay(
         raise HTTPException(status_code=403, detail="Only Accounts can record the payment")
     if not snap.get("payment_proof_key"):
         raise HTTPException(status_code=400, detail="Upload the payment proof before marking this invoice paid")
+    ref = body.transaction_id.strip()
+    _require_unique_utr(db, ref, row.id)
     mode = body.payment_mode.strip().upper()
     if mode not in PAYMENT_MODES:
         raise HTTPException(status_code=400, detail="Payment mode must be NEFT, RTGS, IMPS, UPI or CHEQUE")
@@ -342,7 +344,7 @@ def pay(
         raise HTTPException(status_code=400, detail="Payment date cannot be in the future")
     row.payment_mode = mode
     row.payment_bank = body.payment_bank.strip()
-    row.utr = body.transaction_id.strip()
+    row.utr = ref
     row.payment_date = body.payment_date
     row.paid_amount = round(float(body.paid_amount or row.net_payable or row.amount or 0), 2)
     row.stage = "paid"

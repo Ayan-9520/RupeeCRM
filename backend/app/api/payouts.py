@@ -31,6 +31,16 @@ from app.services.invoice_flow import (
 
 GSTIN_RE = re.compile(r"^[0-9]{2}[A-Z0-9]{13}$")
 
+
+def _require_unique_utr(db: Session, ref: str, request_id: UUID) -> None:
+    taken = (
+        db.query(PayoutRequest.id)
+        .filter(PayoutRequest.utr == ref, PayoutRequest.id != request_id, PayoutRequest.status == "paid")
+        .first()
+    )
+    if taken:
+        raise HTTPException(status_code=400, detail="This payment reference is already on a settled invoice")
+
 router = APIRouter(prefix="/api/payouts", tags=["payouts"])
 
 ADMIN_ROLES = {"admin", "ceo", "super_admin"}
@@ -686,8 +696,11 @@ def admin_action(
     row = db.query(PayoutRequest).filter(PayoutRequest.id == request_id).first()
     if not row:
         raise HTTPException(status_code=404, detail="Request not found")
+    if row.status == "paid" or row.stage == "paid":
+        raise HTTPException(status_code=400, detail="This invoice is already settled")
     if row.stage:
         raise HTTPException(status_code=409, detail="This invoice follows the approval chain. Open Invoice approvals.")
+    previous = row.status
     if body.action == "approve":
         if row.status not in {"pending", "query"}:
             raise HTTPException(status_code=400, detail="Only a raised or queried invoice can be approved")
@@ -698,10 +711,16 @@ def admin_action(
             raise HTTPException(status_code=400, detail="Approve the invoice before payment processing")
         row.status = "processing"
     elif body.action == "paid":
-        if row.status not in {"pending", "approved", "processing"}:
-            raise HTTPException(status_code=400, detail="Invalid status for paid")
+        if row.status not in {"approved", "processing"}:
+            raise HTTPException(status_code=400, detail="Approve the invoice before marking it paid")
+        ref = (body.utr or "").strip()
+        if len(ref) < 4:
+            raise HTTPException(status_code=400, detail="Enter the payment reference (UTR) before marking this invoice paid")
+        _require_unique_utr(db, ref, row.id)
         row.status = "paid"
-        row.utr = (body.utr or row.utr or "").strip() or None
+        row.utr = ref
+        if row.paid_amount is None:
+            row.paid_amount = row.net_payable if row.net_payable is not None else row.amount
     elif body.action == "query":
         if row.status not in {"pending", "approved"}:
             raise HTTPException(status_code=400, detail="Query is only for a raised or approved invoice")
@@ -712,8 +731,18 @@ def admin_action(
             raise HTTPException(status_code=400, detail="Only a raised or queried invoice can be rejected")
         row.status = "rejected"
         row.rejection_reason = (body.rejection_reason or "").strip() or "Rejected"
+    else:
+        raise HTTPException(status_code=400, detail="Unknown payout action")
     row.reviewed_by = user.id
     row.reviewed_at = datetime.now(timezone.utc)
+    write_audit(
+        db,
+        action="payout_status",
+        actor_user_id=user.id,
+        entity_type="payout_request",
+        entity_id=str(row.id),
+        detail={"from": previous, "to": row.status, "utr": row.utr if row.status == "paid" else None},
+    )
     db.commit()
     db.refresh(row)
     u = db.query(User).filter(User.id == row.user_id).first()

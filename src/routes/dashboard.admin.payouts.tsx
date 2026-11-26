@@ -125,8 +125,8 @@ function AdminPayouts() {
                       Start processing
                     </button>
                   )}
-                  {(row.status === "approved" || row.status === "processing" || row.status === "pending") && (
-                    <button type="button" disabled={busy === row.id} onClick={() => void act(row.id, "paid")} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-xs font-semibold text-[#390A5D]">
+                  {(row.status === "approved" || row.status === "processing") && (
+                    <button type="button" disabled={busy === row.id || (utr[row.id] || "").trim().length < 4} onClick={() => void act(row.id, "paid")} className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 text-xs font-semibold text-[#390A5D] disabled:opacity-50">
                       Mark paid
                     </button>
                   )}
