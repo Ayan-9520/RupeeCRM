@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { getFinanceReport, request, type FinanceRow } from "@/lib/python-api";
+import { getFinanceReport, request, requestBlob, type FinanceRow } from "@/lib/python-api";
 
 export const Route = createFileRoute("/dashboard/finance")({
   head: () => ({ meta: [{ title: "Finance report — RupeeOne" }] }),
@@ -64,6 +64,7 @@ function FinancePage() {
       </div>
       {loading ? <Loader2 className="size-5 animate-spin text-[#10662A]" /> : null}
       {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      <BooksPanel />
       <section className="flex flex-wrap items-center gap-6 rounded-2xl border border-[#d8ecdd] bg-white p-4">
         <div
           className="grid size-28 place-items-center rounded-full"
@@ -157,6 +158,145 @@ function FinancePage() {
         </table>
       </div>
     </div>
+  );
+}
+
+type Books = {
+  filtered_on: string;
+  from: string;
+  to: string;
+  generated_note: string;
+  cases: number;
+  counted: number;
+  frozen: number;
+  legacy: number;
+  open: number;
+  disbursement_base: number;
+  snapshot_receivable: number;
+  snapshot_payable: number;
+  calculated_receivable: number;
+  calculated_payable: number;
+  unlinked_lender_cases: number;
+  invoice_pending: number;
+  invoice_approved: number;
+  invoice_paid: number;
+  recorded_paid: number;
+  open_invoice_net: number;
+  stages: Record<string, { count: number; disbursement_base: number }>;
+  lenders: { lender: string; cases: number; disbursement: number; receivable: number }[];
+  invoices: { number: string; status: string; gst_lines: string; net: number | null; paid_amount: number | null; utr: string }[];
+  schemes: { period: string; target: number; achieved: number; percent: number | null; remaining: number | null; note: string }[];
+};
+
+function moneyOrBlank(value: number | null) {
+  return value == null ? "Not recorded" : inr(value);
+}
+
+function BooksPanel() {
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [books, setBooks] = useState<Books | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const load = (start: string, end: string) => {
+    setLoading(true);
+    const query = new URLSearchParams();
+    if (start) query.set("date_from", start);
+    if (end) query.set("date_to", end);
+    void request<Books>(`/api/cases/books${query.toString() ? `?${query}` : ""}`)
+      .then((data) => {
+        setBooks(data);
+        setError("");
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Could not load books"))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load("", "");
+  }, []);
+
+  return (
+    <section className="space-y-3 rounded-2xl border border-[#d8ecdd] bg-white p-4">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-bold text-[#390A5D]">Books</h2>
+          <p className="text-xs text-[#5c4d72]">Read only. Filtered on case opened date. Paid figures are recorded settlements, not approvals.</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <input type="date" value={from} onChange={(event) => setFrom(event.target.value)} className="rounded-lg border border-[#d8ecdd] px-2 py-1" />
+          <input type="date" value={to} onChange={(event) => setTo(event.target.value)} className="rounded-lg border border-[#d8ecdd] px-2 py-1" />
+          <button type="button" onClick={() => load(from, to)} className="rounded-lg bg-[#10662A] px-3 py-1.5 font-semibold text-white">Apply</button>
+          <button
+            type="button"
+            className="rounded-lg border border-[#d8ecdd] px-3 py-1.5 font-semibold text-[#390A5D]"
+            onClick={() => {
+              const query = new URLSearchParams();
+              if (from) query.set("date_from", from);
+              if (to) query.set("date_to", to);
+              void requestBlob(`/api/cases/books.csv${query.toString() ? `?${query}` : ""}`).then((blob) => {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = url;
+                link.download = "rupeedial-books.csv";
+                link.click();
+                URL.revokeObjectURL(url);
+              });
+            }}
+          >
+            CSV
+          </button>
+        </div>
+      </div>
+      {loading ? <Loader2 className="size-5 animate-spin text-[#10662A]" /> : null}
+      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {books ? (
+        <>
+          <p className="text-xs text-[#5c4d72]">{books.generated_note}</p>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <Tile label="Visible cases" value={String(books.cases)} hint={`${books.counted} counted · ${books.open} still open`} tone="bg-[#f7fbf8]" />
+            <Tile label="Snapshot receivable" value={inr(books.snapshot_receivable)} hint={`${books.frozen} frozen files. Not a new calculation.`} tone="bg-[#f7fbf8]" />
+            <Tile label="Calculated receivable" value={inr(books.calculated_receivable)} hint={`${books.legacy} legacy counted files plus open files`} tone="bg-[#f7fbf8]" />
+            <Tile label="Recorded paid" value={inr(books.recorded_paid)} hint={`${books.invoice_paid} settled · ${inr(books.open_invoice_net)} stored net still open`} tone="bg-[#f7fbf8]" />
+          </div>
+          <p className="text-xs text-[#5c4d72]">Lender totals include linked lenders only. {books.unlinked_lender_cases} cases have no lender link and stay out of those totals.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="text-[#5c4d72]">
+                <tr>
+                  <th className="py-2">Invoice</th>
+                  <th>Status</th>
+                  <th>GST lines</th>
+                  <th className="text-right">Stored net</th>
+                  <th className="text-right">Paid</th>
+                </tr>
+              </thead>
+              <tbody>
+                {books.invoices.map((row, index) => (
+                  <tr key={`${row.number}-${index}`} className="border-t border-[#eef6f0]">
+                    <td className="py-2">{row.number || "—"}</td>
+                    <td>{row.status}</td>
+                    <td>{row.gst_lines}</td>
+                    <td className="text-right">{moneyOrBlank(row.net)}</td>
+                    <td className="text-right">{moneyOrBlank(row.paid_amount)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {books.schemes.length ? (
+            <ul className="space-y-1 text-xs text-[#5c4d72]">
+              {books.schemes.map((scheme) => (
+                <li key={scheme.period}>
+                  {scheme.period}: {scheme.note || `${scheme.percent ?? 0}% of target`} · achieved {scheme.achieved} · remaining {scheme.remaining ?? "—"}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </>
+      ) : null}
+    </section>
   );
 }
 

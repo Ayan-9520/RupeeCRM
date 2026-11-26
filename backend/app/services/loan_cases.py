@@ -1117,6 +1117,261 @@ def rollback_lender_dump(db: Session, user: User, batch_id: UUID) -> dict:
     return {"restored": restored}
 
 
+def _books_window(date_from: str | None, date_to: str | None):
+    start = (date_from or "")[:10]
+    end = (date_to or "")[:10]
+    if start and len(start) != 10:
+        start = ""
+    if end and len(end) != 10:
+        end = ""
+    return start, end
+
+
+def _csv_cell(value) -> str:
+    text = "" if value is None else str(value)
+    if text[:1] in {"=", "+", "-", "@", "\t"}:
+        text = "'" + text
+    return text
+
+
+def books_report(db: Session, user: User, date_from: str | None = None, date_to: str | None = None) -> dict:
+    """Read-only totals. Does not write cases, invoices, snapshots, or payments."""
+    from sqlalchemy.exc import ProgrammingError
+    from app.models import CommissionSnapshot, Lender, PayoutRequest, SchemeTarget
+
+    start, end = _books_window(date_from, date_to)
+    query = _visible(db, user)
+    rows = []
+    for row in query.all():
+        opened = (row.created_at.date().isoformat() if row.created_at else "")
+        if start and opened and opened < start:
+            continue
+        if end and opened and opened > end:
+            continue
+        if (start or end) and not opened:
+            continue
+        rows.append(row)
+
+    snaps: dict = {}
+    try:
+        ids = [row.id for row in rows]
+        if ids:
+            for snap in db.query(CommissionSnapshot).filter(CommissionSnapshot.loan_case_id.in_(ids)).all():
+                current = snaps.get(snap.loan_case_id)
+                if current is None or snap.version > current.version:
+                    snaps[snap.loan_case_id] = snap
+    except ProgrammingError:
+        db.rollback()
+        snaps = {}
+
+    stages = {key: {"count": 0, "disbursement_base": 0.0} for key in (
+        "draft", "submitted", "logged_in", "sanctioned", "disbursed", "disbursed_confirmed", "collected", "on_hold", "cancelled", "other",
+    )}
+    legacy = frozen = open_cases = 0
+    disbursement = receivable_calc = payable_calc = 0.0
+    frozen_receivable = frozen_payable = 0.0
+    lenders: dict = {}
+    unlinked = 0
+    partners: dict = {}
+    commission_rows = []
+    seen = set()
+    lender_names = {}
+    try:
+        for lender in db.query(Lender).all():
+            lender_names[lender.id] = lender.name
+    except ProgrammingError:
+        db.rollback()
+
+    for row in rows:
+        if row.id in seen:
+            continue
+        seen.add(row.id)
+        money = figures(row)
+        if row.flag == "cancelled":
+            bucket = "cancelled"
+        elif row.flag == "hold":
+            bucket = "on_hold"
+        elif row.stage in stages:
+            bucket = row.stage
+        else:
+            bucket = "other"
+        stages[bucket]["count"] += 1
+        stages[bucket]["disbursement_base"] = _round(stages[bucket]["disbursement_base"] + money["base_amount"])
+        disbursement += money["base_amount"]
+        snap = snaps.get(row.id)
+        if snap is not None:
+            frozen += 1
+            show_receivable = float(snap.receivable_amount or 0)
+            show_payable = float(snap.payable_amount or 0)
+            show_base = float(snap.base_amount or 0)
+            source = "snapshot"
+            frozen_receivable += show_receivable
+            frozen_payable += show_payable
+        elif row.counted:
+            legacy += 1
+            show_receivable = money["receivable_amount"]
+            show_payable = money["payable_amount"]
+            show_base = money["base_amount"]
+            source = "legacy"
+            receivable_calc += show_receivable
+            payable_calc += show_payable
+        else:
+            open_cases += 1
+            show_receivable = money["receivable_amount"]
+            show_payable = money["payable_amount"]
+            show_base = money["base_amount"]
+            source = "calculated"
+            receivable_calc += show_receivable
+            payable_calc += show_payable
+        if row.lender_id:
+            name = lender_names.get(row.lender_id) or (row.bank_name or "Linked lender")
+            slot = lenders.setdefault(str(row.lender_id), {"lender": name, "cases": 0, "active": 0, "disbursed": 0, "disbursement": 0.0, "receivable": 0.0, "payable": 0.0, "schemes": 0})
+            slot["cases"] += 1
+            if row.flag not in {"cancelled", "hold"} and row.stage not in {"collected", "draft"}:
+                slot["active"] += 1
+            if row.stage in {"disbursed", "disbursed_confirmed", "collected"}:
+                slot["disbursed"] += 1
+            slot["disbursement"] = _round(slot["disbursement"] + show_base)
+            slot["receivable"] = _round(slot["receivable"] + show_receivable)
+            slot["payable"] = _round(slot["payable"] + show_payable)
+            if row.scheme_id:
+                slot["schemes"] += 1
+        else:
+            unlinked += 1
+        partner = (row.partner_name or "Partner not set").strip()
+        pslot = partners.setdefault(partner, {"partner": partner, "cases": 0, "disbursement": 0.0, "receivable": 0.0, "payable": 0.0})
+        pslot["cases"] += 1
+        pslot["disbursement"] = _round(pslot["disbursement"] + show_base)
+        pslot["receivable"] = _round(pslot["receivable"] + show_receivable)
+        pslot["payable"] = _round(pslot["payable"] + show_payable)
+        if len(commission_rows) < 40:
+            commission_rows.append({
+                "deal_no": row.deal_no,
+                "lender": lender_names.get(row.lender_id) or row.bank_name or "",
+                "product": row.loan_type or "",
+                "base": _round(show_base),
+                "receivable": _round(show_receivable),
+                "payable": _round(show_payable),
+                "source": source,
+                "counted": bool(row.counted),
+            })
+
+    invoices = []
+    paid_total = 0.0
+    paid_count = pending_count = approved_count = 0
+    pending_net = 0.0
+    try:
+        for inv in db.query(PayoutRequest).order_by(PayoutRequest.created_at.desc()).limit(200).all():
+            opened = inv.created_at.date().isoformat() if inv.created_at else ""
+            if start and opened and opened < start:
+                continue
+            if end and opened and opened > end:
+                continue
+            snap = inv.bank_snapshot or {}
+            lines = snap.get("gst_lines") if isinstance(snap.get("gst_lines"), dict) else None
+            paid = inv.status == "paid"
+            recorded = float(inv.paid_amount) if paid and inv.paid_amount is not None else None
+            if paid:
+                paid_count += 1
+                if recorded is not None:
+                    paid_total += recorded
+            elif inv.status in {"pending", "query"}:
+                pending_count += 1
+                if inv.net_payable is not None:
+                    pending_net += float(inv.net_payable)
+            elif inv.status in {"approved", "processing"}:
+                approved_count += 1
+                if inv.net_payable is not None:
+                    pending_net += float(inv.net_payable)
+            if len(invoices) < 40:
+                invoices.append({
+                    "number": snap.get("invoice_number") or inv.note or "",
+                    "status": inv.status,
+                    "stage": inv.stage or "",
+                    "opened": opened,
+                    "taxable": (lines or {}).get("taxable_amount"),
+                    "gst": float(inv.gst_amount) if inv.gst_amount is not None else None,
+                    "cgst": (lines or {}).get("cgst"),
+                    "sgst": (lines or {}).get("sgst"),
+                    "igst": (lines or {}).get("igst"),
+                    "gst_lines": "stored" if lines else "not stored",
+                    "tds": float(inv.tds_amount) if inv.tds_amount is not None else None,
+                    "net": float(inv.net_payable) if inv.net_payable is not None else None,
+                    "paid_amount": recorded,
+                    "payment_date": inv.payment_date.isoformat() if inv.payment_date else "",
+                    "payment_mode": inv.payment_mode or "",
+                    "utr": inv.utr or "",
+                })
+    except ProgrammingError:
+        db.rollback()
+
+    schemes = []
+    try:
+        from app.api.los_books import _achievement
+        for target in db.query(SchemeTarget).order_by(SchemeTarget.start_on.desc()).limit(20).all():
+            achieved = _achievement(db, target)
+            schemes.append({
+                "period": f"{target.start_on} to {target.end_on}",
+                "metric": target.metric,
+                "target": float(target.target_value or 0),
+                "achieved": achieved["achieved"],
+                "percent": achieved["percent"],
+                "remaining": achieved["remaining"],
+                "cases": achieved["cases"],
+                "note": "No target" if float(target.target_value or 0) <= 0 else "",
+            })
+    except ProgrammingError:
+        db.rollback()
+    except Exception:
+        db.rollback()
+
+    return {
+        "filtered_on": "case opened date",
+        "from": start,
+        "to": end,
+        "generated_note": "Calculated and snapshot amounts are estimates or frozen books. Paid amounts are recorded settlements only.",
+        "cases": len(seen),
+        "counted": frozen + legacy,
+        "frozen": frozen,
+        "legacy": legacy,
+        "open": open_cases,
+        "disbursement_base": _round(disbursement),
+        "snapshot_receivable": _round(frozen_receivable),
+        "snapshot_payable": _round(frozen_payable),
+        "calculated_receivable": _round(receivable_calc),
+        "calculated_payable": _round(payable_calc),
+        "stages": stages,
+        "unlinked_lender_cases": unlinked,
+        "lenders": sorted(lenders.values(), key=lambda item: item["receivable"], reverse=True)[:20],
+        "partners": sorted(partners.values(), key=lambda item: item["payable"], reverse=True)[:20],
+        "commission_rows": commission_rows,
+        "invoices": invoices,
+        "invoice_pending": pending_count,
+        "invoice_approved": approved_count,
+        "invoice_paid": paid_count,
+        "recorded_paid": _round(paid_total),
+        "open_invoice_net": _round(pending_net),
+        "schemes": schemes,
+    }
+
+
+def books_csv(db: Session, user: User, date_from: str | None = None, date_to: str | None = None) -> str:
+    import csv
+    import io
+    report = books_report(db, user, date_from, date_to)
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["RupeeDial books", report["filtered_on"], report["from"], report["to"]])
+    writer.writerow(["section", "name", "count", "amount", "source", "status"])
+    for key, bucket in report["stages"].items():
+        writer.writerow(["stage", _csv_cell(key), bucket["count"], bucket["disbursement_base"], "calculated disbursement base", ""])
+    for row in report["lenders"]:
+        writer.writerow(["lender", _csv_cell(row["lender"]), row["cases"], row["disbursement"], "linked lender only", ""])
+    for row in report["invoices"]:
+        writer.writerow(["invoice", _csv_cell(row["number"]), "", row["paid_amount"] if row["paid_amount"] is not None else "", row["gst_lines"], _csv_cell(row["status"])])
+    return buffer.getvalue()
+
+
 def finance_report(db: Session, user: User) -> dict:
     invoices = _invoice_index(db)
     rows = []

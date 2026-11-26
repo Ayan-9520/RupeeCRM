@@ -110,6 +110,32 @@ def read_stage_counts(db: Session = Depends(get_db), user: User = Depends(requir
     return service.stage_counts(db, user)
 
 
+@router.get("/books")
+def read_books(
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_reader),
+) -> dict:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can open the books report")
+    return service.books_report(db, user, date_from, date_to)
+
+
+@router.get("/books.csv")
+def read_books_csv(
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    user: User = Depends(require_reader),
+):
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only admin can export the books report")
+    from fastapi.responses import Response
+    body = service.books_csv(db, user, date_from, date_to)
+    return Response(content=body, media_type="text/csv", headers={"Content-Disposition": 'attachment; filename="rupeedial-books.csv"'})
+
+
 @router.get("/finance-report")
 def read_finance_report(db: Session = Depends(get_db), user: User = Depends(require_reader)) -> dict:
     if user.role not in ADMIN_ROLES:
