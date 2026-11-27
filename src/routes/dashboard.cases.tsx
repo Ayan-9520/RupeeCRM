@@ -1000,21 +1000,33 @@ function CaseTimeline({ caseId }: { caseId: string }) {
   }, [caseId]);
   return (
     <FileBlock step="8" title="History" hint="Only events already stored on this file. A row without a time has no timestamp in the record.">
-      <ol className="space-y-3 md:col-span-2 xl:col-span-3">
-        {items.map((item, index) => (
-          <li key={`${item.action}-${item.at}-${index}`} className="flex gap-3">
-            <span className="mt-1 size-2.5 shrink-0 rounded-full bg-[#10662A]" />
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#390A5D]">{item.action}</p>
-              <p className="text-xs text-[#5c4d72]">{item.at ? item.at.replace("T", " ").slice(0, 16) : "Time not stored"}{item.actor ? ` · ${item.actor}` : ""}</p>
-              {item.detail ? <p className="text-sm text-[#390A5D]">{item.detail}</p> : null}
-              {item.ref ? <p className="text-xs text-[#10662A]">{item.ref}</p> : null}
-            </div>
-          </li>
-        ))}
-        {items.length === 0 && !error ? <li className="text-sm text-[#5c4d72]">No stored events yet.</li> : null}
-        {error ? <li className="text-sm text-[#8a3b3b]">{error}</li> : null}
-      </ol>
+      <div className="overflow-x-auto md:col-span-2 xl:col-span-3">
+        <table className="w-full text-left text-sm">
+          <thead className="text-[11px] uppercase tracking-wide text-[#5c4d72]">
+            <tr>
+              <th className="px-2 py-2">Time</th>
+              <th className="px-2 py-2">Event</th>
+              <th className="px-2 py-2">Who</th>
+              <th className="px-2 py-2">Detail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr key={`${item.action}-${item.at}-${index}`} className="border-t border-[#eef6f0]">
+                <td className="whitespace-nowrap px-2 py-2 text-xs text-[#5c4d72]">{item.at ? item.at.replace("T", " ").slice(0, 16) : "Time not stored"}</td>
+                <td className="px-2 py-2 font-semibold text-[#390A5D]">{item.action}</td>
+                <td className="px-2 py-2 text-[#5c4d72]">{item.actor || "—"}</td>
+                <td className="px-2 py-2">
+                  {item.detail || "—"}
+                  {item.ref ? <span className="mt-0.5 block text-xs text-[#10662A]">{item.ref}</span> : null}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {items.length === 0 && !error ? <p className="px-2 py-3 text-sm text-[#5c4d72]">No stored events yet.</p> : null}
+        {error ? <p className="px-2 py-3 text-sm text-[#8a3b3b]">{error}</p> : null}
+      </div>
     </FileBlock>
   );
 }
