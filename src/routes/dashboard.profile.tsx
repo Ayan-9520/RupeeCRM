@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { ExternalLink, Loader2, Save } from "lucide-react";
 import {
   getPartnerProfile,
+  request,
   savePartnerProfile,
   type PartnerProfile,
 } from "@/lib/python-api";
@@ -17,8 +18,63 @@ export const Route = createFileRoute("/dashboard/profile")({
 
 function ProfilePage() {
   const { role } = useAuth();
+  if (role === "admin" || role === "ceo" || role === "super_admin") {
+    return (
+      <div className="space-y-8">
+        <ExpertPhotoDesk />
+        <StaffProfile />
+      </div>
+    );
+  }
   if (role && role !== "dsa" && role !== "affiliate") return <StaffProfile />;
   return <PartnerProfilePage />;
+}
+
+function ExpertPhotoDesk() {
+  const [rows, setRows] = useState<{ firm_name: string; slug: string; logo_url?: string | null; contact_name?: string | null }[]>([]);
+  const [busy, setBusy] = useState("");
+  useEffect(() => {
+    void request<{ items: { firm_name: string; slug: string; logo_url?: string | null; contact_name?: string | null }[] }>("/api/public/directory/partners?limit=100")
+      .then((data) => setRows(data.items || []))
+      .catch(() => setRows([]));
+  }, []);
+  const upload = async (slug: string, file: File) => {
+    setBusy(slug);
+    try {
+      const body = new FormData();
+      body.set("file", file);
+      const saved = await request<{ logo_url: string }>(`/api/partner/profile/photo/${slug}`, { method: "POST", body });
+      setRows((current) => current.map((row) => (row.slug === slug ? { ...row, logo_url: `${saved.logo_url}?v=${Date.now()}` } : row)));
+      toast.success("Photo saved. It shows on the expert card.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Photo was not saved");
+    } finally {
+      setBusy("");
+    }
+  };
+  return (
+    <div className="mx-auto max-w-3xl space-y-4">
+      <div>
+        <h1 className="font-display text-2xl font-bold text-[#390A5D]">Expert photos</h1>
+        <p className="mt-1 text-sm text-[#5c4d72]">Choose a photo for each expert. The card uses this instead of the initials.</p>
+      </div>
+      <ul className="divide-y divide-[#d8ecdd] rounded-2xl border border-[#d8ecdd] bg-white">
+        {rows.map((row) => (
+          <li key={row.slug} className="flex items-center gap-3 px-4 py-3">
+            {row.logo_url ? <img src={row.logo_url} alt="" className="size-12 rounded-xl object-cover" /> : <span className="grid size-12 place-items-center rounded-xl bg-[#10662A] text-sm font-bold text-white">{(row.contact_name || row.firm_name || "E").slice(0, 1)}</span>}
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-semibold text-[#390A5D]">{row.contact_name || row.firm_name}</p>
+              <p className="truncate text-xs text-[#5c4d72]">{row.firm_name}</p>
+            </div>
+            <label className="shrink-0 rounded-lg bg-[#10662A] px-3 py-1.5 text-xs font-semibold text-white">
+              {busy === row.slug ? "Saving" : "Set photo"}
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={busy === row.slug} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(row.slug, file); event.target.value = ""; }} />
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function PartnerProfilePage() {
@@ -348,13 +404,26 @@ function PartnerProfilePage() {
           </label>
         </div>
         <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Logo URL</span>
+          <span className="font-semibold text-[#390A5D]">Profile photo</span>
           <input
-            value={form.logo_url || ""}
-            onChange={(e) => setForm({ ...form, logo_url: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
-            placeholder="https://…"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="mt-1 block w-full text-sm"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (!file || !form) return;
+              const body = new FormData();
+              body.set("file", file);
+              void request<{ logo_url: string }>("/api/partner/profile/photo", { method: "POST", body })
+                .then((saved) => {
+                  setForm({ ...form, logo_url: `${saved.logo_url}?v=${Date.now()}` });
+                  toast.success("Photo saved. It shows on your expert card.");
+                })
+                .catch((error) => toast.error(error instanceof Error ? error.message : "Photo was not saved"));
+            }}
           />
+          {form.logo_url ? <img src={form.logo_url} alt="" className="mt-2 size-16 rounded-xl object-cover" /> : null}
         </label>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">{affiliate ? "Products you refer" : "Products you handle"}</span>

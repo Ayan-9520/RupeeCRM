@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
 from app.models import PartnerProfile, User, VisitingCard
+from app.services.document_files import storage_root
 from app.services.partners import backfill_approved_profiles
 
 router = APIRouter(prefix="/api/public", tags=["public-directory"])
@@ -217,3 +221,22 @@ def get_public_profile(slug: str, db: Session = Depends(get_db)) -> PublicProfil
         public_url=f"{PROFILE_ORIGIN}/{row.slug}",
         subdomain_hint=f"pro.rupeedial.com/{row.slug}",
     )
+
+
+@router.get("/partner-photo/{slug}")
+def partner_photo(slug: str, db: Session = Depends(get_db)) -> Response:
+    safe = re.sub(r"[^a-z0-9]", "", (slug or "").lower())[:40]
+    row = (
+        db.query(PartnerProfile)
+        .filter(PartnerProfile.slug == safe, PartnerProfile.published.is_(True), PartnerProfile.suspended.is_(False))
+        .first()
+    )
+    if row is None:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    folder = storage_root() / "partner-photos"
+    types = {".jpg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
+    for ext, mime in types.items():
+        path = folder / f"{safe}{ext}"
+        if path.is_file():
+            return Response(content=path.read_bytes(), media_type=mime, headers={"Cache-Control": "public, max-age=300"})
+    raise HTTPException(status_code=404, detail="Photo not found")
