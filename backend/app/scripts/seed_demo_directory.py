@@ -5,9 +5,13 @@ from __future__ import annotations
 import secrets
 import sys
 
+from pathlib import Path
+
+from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.models import PartnerProfile, User
+from app.services.document_files import storage_root
 from app.services.partners import _slugify
 
 MARK = "demo_directory"
@@ -59,6 +63,9 @@ def _delete(db) -> None:
         profile = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == user.id).first()
         if profile is None or not (profile.theme or {}).get(MARK):
             continue
+        folder = storage_root() / "partner-photos"
+        for old in folder.glob(f"{profile.slug}.*"):
+            old.unlink(missing_ok=True)
         db.delete(profile)
         db.delete(user)
         removed += 1
@@ -120,6 +127,31 @@ def _seed(db) -> None:
     print(f"added {added} demo expert cards, skipped {skipped}")
 
 
+def _photos(db) -> None:
+    folder = storage_root() / "partner-photos"
+    folder.mkdir(parents=True, exist_ok=True)
+    source = Path(__file__).resolve().parent / "demo_photos"
+    base = settings.crm_public_url.rstrip("/")
+    attached = 0
+    for _contact, firm, *_rest in ROWS:
+        slug = _slugify(firm)
+        email = f"demo.directory.{slug}@{EMAIL_DOMAIN}"
+        user = db.query(User).filter(User.email == email).first()
+        if user is None:
+            continue
+        profile = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == user.id).first()
+        picture = source / f"{slug}.png"
+        if profile is None or not picture.is_file() or not (profile.theme or {}).get(MARK):
+            continue
+        for old in folder.glob(f"{profile.slug}.*"):
+            old.unlink(missing_ok=True)
+        (folder / f"{profile.slug}.png").write_bytes(picture.read_bytes())
+        profile.logo_url = f"{base}/api/public/partner-photo/{profile.slug}"
+        attached += 1
+    db.commit()
+    print(f"attached {attached} demo photos")
+
+
 def main() -> None:
     db = SessionLocal()
     try:
@@ -127,6 +159,7 @@ def main() -> None:
             _delete(db)
         else:
             _seed(db)
+            _photos(db)
     finally:
         db.close()
 
