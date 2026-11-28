@@ -96,8 +96,10 @@ def _text(theme: dict, key: str) -> str:
 def _card_bits(row: PartnerProfile, card: VisitingCard | None) -> dict:
     theme = row.theme if isinstance(row.theme, dict) else {}
     show_phone = theme.get("show_phone", True) is not False
-    show_whatsapp = theme.get("show_whatsapp") is True
+    show_whatsapp = theme.get("show_whatsapp", True) is not False
+    show_email = theme.get("show_email", True) is not False
     whatsapp = _text(theme, "whatsapp") or ((card.whatsapp or "").strip() if card else "")
+    email = (row.email or "").strip() or _text(theme, "email") or ((card.email or "").strip() if card else "")
     designation = _text(theme, "designation") or ((card.designation or "").strip() if card else "")
     photo = _demo_icon(row) or (card.photo_url if card and card.photo_url else None) or row.logo_url
     firm_logo = row.logo_url or (card.logo_url if card and card.logo_url else None)
@@ -114,7 +116,8 @@ def _card_bits(row: PartnerProfile, card: VisitingCard | None) -> dict:
         "since": _text(theme, "since") or None,
         "designation": designation or None,
         "whatsapp": whatsapp if show_whatsapp and whatsapp else None,
-        "phone": row.phone if show_phone else None,
+        "phone": ((row.phone or "").strip() or _text(theme, "phone")) if show_phone else None,
+        "email": email if show_email and email else None,
         "logo_url": photo,
         "photo_url": photo,
         "firm_logo_url": firm_logo,
@@ -251,9 +254,9 @@ def get_public_profile(slug: str, db: Session = Depends(get_db)) -> PublicProfil
         city=row.city,
         state=row.state,
         pincode=bits["pincode"],
-        phone=None,
-        email=None,
-        whatsapp=None,
+        phone=bits["phone"] or None,
+        email=bits["email"] or None,
+        whatsapp=bits["whatsapp"] or None,
         designation=bits["designation"],
         languages=bits["languages"],
         years=bits["years"],
