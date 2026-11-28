@@ -20,9 +20,9 @@ function ProfilePage() {
   const { role } = useAuth();
   if (role === "admin" || role === "ceo" || role === "super_admin") {
     return (
-      <div className="space-y-8">
-        <ExpertPhotoDesk />
+      <div className="space-y-6">
         <StaffProfile />
+        <ExpertPhotoDesk />
       </div>
     );
   }
@@ -31,8 +31,10 @@ function ProfilePage() {
 }
 
 function ExpertPhotoDesk() {
+  const icons = ["caller01", "caller02", "caller03", "caller04", "caller05", "caller06", "caller07", "caller08", "caller09", "caller10", "caller11", "caller12"];
   const [rows, setRows] = useState<{ firm_name: string; slug: string; logo_url?: string | null; contact_name?: string | null }[]>([]);
   const [busy, setBusy] = useState("");
+  const [openSlug, setOpenSlug] = useState("");
   useEffect(() => {
     void request<{ items: { firm_name: string; slug: string; logo_url?: string | null; contact_name?: string | null }[] }>("/api/public/directory/partners?limit=100")
       .then((data) => setRows(data.items || []))
@@ -52,27 +54,85 @@ function ExpertPhotoDesk() {
       setBusy("");
     }
   };
+  const pick = async (slug: string, name: string) => {
+    setBusy(slug);
+    try {
+      const saved = await request<{ logo_url: string }>(`/api/partner/profile/photo/${slug}/preset`, { method: "POST", body: JSON.stringify({ name }) });
+      setRows((current) => current.map((row) => (row.slug === slug ? { ...row, logo_url: `${saved.logo_url}?v=${Date.now()}` } : row)));
+      setOpenSlug("");
+      toast.success("Photo saved. It shows on the expert card.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Icon was not saved");
+    } finally {
+      setBusy("");
+    }
+  };
+  const remove = async (slug: string) => {
+    setBusy(slug);
+    try {
+      await request(`/api/partner/profile/photo/${slug}`, { method: "DELETE" });
+      setRows((current) => current.map((row) => (row.slug === slug ? { ...row, logo_url: null } : row)));
+      setOpenSlug("");
+      toast.success("Photo removed.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Photo was not removed");
+    } finally {
+      setBusy("");
+    }
+  };
+  const open = rows.find((row) => row.slug === openSlug);
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-[#390A5D]">Expert photos</h1>
-        <p className="mt-1 text-sm text-[#5c4d72]">Choose a photo for each expert. The card uses this instead of the initials.</p>
-      </div>
-      <ul className="divide-y divide-[#d8ecdd] rounded-2xl border border-[#d8ecdd] bg-white">
-        {rows.map((row) => (
-          <li key={row.slug} className="flex items-center gap-3 px-4 py-3">
-            {row.logo_url ? <img src={row.logo_url} alt="" className="size-12 rounded-xl object-cover" /> : <span className="grid size-12 place-items-center rounded-xl bg-[#10662A] text-sm font-bold text-white">{(row.contact_name || row.firm_name || "E").slice(0, 1)}</span>}
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-[#390A5D]">{row.contact_name || row.firm_name}</p>
-              <p className="truncate text-xs text-[#5c4d72]">{row.firm_name}</p>
+    <div className="mx-auto max-w-5xl">
+      <section className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_12px_32px_rgba(16,102,42,0.06)]">
+        <div className="flex items-center justify-between px-5 py-3">
+          <div>
+            <h2 className="font-display text-lg font-bold text-[#390A5D]">Expert photos</h2>
+            <p className="text-xs text-[#5c4d72]">Click a photo to upload, pick an icon, or remove it.</p>
+          </div>
+        </div>
+        <ul className="grid gap-2 border-t border-[#d8ecdd] p-3 sm:grid-cols-2">
+          {rows.map((row) => (
+            <li key={row.slug}>
+              <button type="button" onClick={() => setOpenSlug(row.slug)} className="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left hover:bg-[#F4FBF6]">
+                {row.logo_url ? <img src={row.logo_url} alt="" className="size-12 rounded-full object-cover ring-2 ring-[#10662A]" /> : <span className="grid size-12 place-items-center rounded-full bg-[#E8F7EC] text-sm font-bold text-[#10662A]">{(row.contact_name || row.firm_name || "E").slice(0, 1)}</span>}
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-[#390A5D]">{row.contact_name || row.firm_name}</span>
+                  <span className="block truncate text-xs text-[#5c4d72]">{row.firm_name}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </section>
+      {open ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[#0D4F20]/45 p-4">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_24px_60px_rgba(13,79,32,0.28)]">
+            <div className="flex items-center justify-between bg-[#0D4F20] px-5 py-4 text-white">
+              <h2 className="font-display text-lg font-bold">Update profile picture</h2>
+              <button type="button" onClick={() => setOpenSlug("")} className="grid size-8 place-items-center rounded-full hover:bg-white/10" aria-label="Close">✕</button>
             </div>
-            <label className="shrink-0 rounded-lg bg-[#10662A] px-3 py-1.5 text-xs font-semibold text-white">
-              {busy === row.slug ? "Saving" : "Set photo"}
-              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={busy === row.slug} onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(row.slug, file); event.target.value = ""; }} />
-            </label>
-          </li>
-        ))}
-      </ul>
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+              <label className="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-[#10662A] bg-[#F4FBF6] px-4 py-6 text-center">
+                <span className="text-sm font-semibold text-[#10662A]">{busy === open.slug ? "Saving" : "Choose a photo"}</span>
+                <span className="mt-1 text-xs text-[#5c4d72]">JPG or PNG, square looks best</span>
+                <input type="file" accept="image/jpeg,image/png,image/webp" className="mt-3 text-sm" disabled={Boolean(busy)} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void upload(open.slug, file).then(() => setOpenSlug("")); }} />
+              </label>
+              <p className="mb-2 mt-4 text-xs font-semibold text-[#390A5D]">Or pick an icon</p>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {icons.map((name) => (
+                  <button key={name} type="button" disabled={Boolean(busy)} onClick={() => void pick(open.slug, name)} className="overflow-hidden rounded-xl bg-white ring-1 ring-[#d8ecdd] hover:ring-2 hover:ring-[#10662A] disabled:opacity-50">
+                    <img src={`/profile-avatars/${name}.jpg`} alt="" className="aspect-square w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                {open.logo_url ? <button type="button" disabled={Boolean(busy)} onClick={() => void remove(open.slug)} className="mr-auto h-10 rounded-full border border-[#d8ecdd] px-5 text-sm font-semibold text-[#390A5D]">Remove</button> : null}
+                <button type="button" onClick={() => setOpenSlug("")} className="h-10 rounded-full border border-[#10662A] bg-white px-5 text-sm font-semibold text-[#10662A]">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -348,8 +348,12 @@ def _store_photo(slug: str, data: bytes, ext: str) -> str:
     return f"{settings.crm_public_url.rstrip('/')}/api/public/partner-photo/{stem}"
 
 
-def _apply_photo(db: Session, row: PartnerProfile, url: str | None) -> str | None:
+def _apply_photo(db: Session, row: PartnerProfile, url: str | None, *, chosen: bool = False) -> str | None:
     row.logo_url = url
+    if chosen:
+        theme = dict(row.theme or {})
+        theme["photo_custom"] = bool(url)
+        row.theme = theme
     card = db.query(VisitingCard).filter(VisitingCard.user_id == row.owner_user_id).first()
     if card:
         card.photo_url = url
@@ -432,4 +436,43 @@ async def upload_profile_photo_for(
     data = await file.read()
     mime = sniff_mime(data, file.content_type or "")
     url = _store_photo(row.slug, data, PHOTO_EXT[mime])
-    return {"logo_url": _apply_photo(db, row, url)}
+    return {"logo_url": _apply_photo(db, row, url, chosen=True)}
+
+
+def _admin_profile(db: Session, user: User, slug: str) -> PartnerProfile:
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Only an admin can set another expert photo")
+    row = db.query(PartnerProfile).filter(PartnerProfile.slug == _safe_stem(slug)).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Expert not found")
+    return row
+
+
+@router.post("/profile/photo/{slug}/preset")
+def choose_profile_preset_for(
+    slug: str,
+    body: PresetIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    row = _admin_profile(db, user, slug)
+    stem = _safe_stem(body.name)
+    src = next((AVATAR_DIR / f"{stem}{ext}" for ext in (".png", ".jpg", ".jpeg") if (AVATAR_DIR / f"{stem}{ext}").is_file()), None)
+    if src is None:
+        raise HTTPException(status_code=404, detail="That icon is not available")
+    url = _store_photo(row.slug, src.read_bytes(), ".jpg" if src.suffix.lower() != ".png" else ".png")
+    return {"logo_url": _apply_photo(db, row, url, chosen=True)}
+
+
+@router.delete("/profile/photo/{slug}")
+def remove_profile_photo_for(
+    slug: str,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    row = _admin_profile(db, user, slug)
+    stem = _safe_stem(row.slug)
+    for old in _photo_folder().glob(f"{stem}.*"):
+        old.unlink(missing_ok=True)
+    _apply_photo(db, row, None, chosen=True)
+    return {"logo_url": None}

@@ -140,7 +140,7 @@ def _photos(db) -> None:
         if user is None or not icons:
             continue
         profile = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == user.id).first()
-        if profile is None or not (profile.theme or {}).get(MARK):
+        if profile is None or not (profile.theme or {}).get(MARK) or (profile.theme or {}).get("photo_custom"):
             continue
         picture = icons[index % len(icons)]
         for old in folder.glob(f"{profile.slug}.*"):

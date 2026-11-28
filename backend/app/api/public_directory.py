@@ -77,7 +77,7 @@ class PublicProfileOut(BaseModel):
 
 def _demo_icon(row: PartnerProfile) -> str | None:
     theme = row.theme if isinstance(row.theme, dict) else {}
-    if not theme.get("demo_directory"):
+    if not theme.get("demo_directory") or theme.get("photo_custom"):
         return None
     icons = sorted(path.stem for path in AVATAR_DIR.glob("caller*") if path.suffix.lower() in {".jpg", ".jpeg", ".png"})
     if not icons:
