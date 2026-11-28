@@ -84,7 +84,7 @@ function ProfilePhotoField({
   logoUrl: string | null | undefined;
   onChange: (logoUrl: string | null) => void;
 }) {
-  const icons = ["avatar01", "avatar02", "avatar03", "avatar04", "avatar05", "avatar06", "avatar07", "avatar08", "avatar09"];
+  const icons = ["caller01", "caller02", "caller03", "caller04", "caller05", "caller06", "caller07", "caller08", "caller09", "caller10", "caller11", "caller12"];
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState("");
   const apply = (logo: string | null, message: string) => {
