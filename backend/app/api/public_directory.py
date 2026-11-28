@@ -11,6 +11,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.models import PartnerProfile, User, VisitingCard
 from app.services.document_files import storage_root
@@ -74,6 +75,17 @@ class PublicProfileOut(BaseModel):
     subdomain_hint: str | None = None
 
 
+def _demo_icon(row: PartnerProfile) -> str | None:
+    theme = row.theme if isinstance(row.theme, dict) else {}
+    if not theme.get("demo_directory"):
+        return None
+    icons = sorted(path.stem for path in AVATAR_DIR.glob("caller*") if path.suffix.lower() in {".jpg", ".jpeg", ".png"})
+    if not icons:
+        return None
+    pick = icons[sum(ord(char) for char in (row.slug or "")) % len(icons)]
+    return f"{settings.crm_public_url.rstrip('/')}/api/public/partner-avatars/{pick}"
+
+
 def _text(theme: dict, key: str) -> str:
     value = theme.get(key)
     if value is None:
@@ -87,7 +99,7 @@ def _card_bits(row: PartnerProfile, card: VisitingCard | None) -> dict:
     show_whatsapp = theme.get("show_whatsapp") is True
     whatsapp = _text(theme, "whatsapp") or ((card.whatsapp or "").strip() if card else "")
     designation = _text(theme, "designation") or ((card.designation or "").strip() if card else "")
-    photo = (card.photo_url if card and card.photo_url else None) or row.logo_url
+    photo = _demo_icon(row) or (card.photo_url if card and card.photo_url else None) or row.logo_url
     firm_logo = row.logo_url or (card.logo_url if card and card.logo_url else None)
     website = _text(theme, "website") or ((card.website or "").strip() if card else "")
     if website and not theme.get("website"):
