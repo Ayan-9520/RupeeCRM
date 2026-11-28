@@ -274,24 +274,6 @@ export function StaffProfile() {
             <Row label="Reports to" value={boss ? `${boss.full_name}${boss.sales_grade ? ` (${boss.sales_grade})` : ""}` : "—"} />
           </div>
         </div>
-        <div className="mt-5 rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] p-4">
-          <p className="font-semibold text-[#390A5D]">Profile photo</p>
-          <p className="mt-1 text-xs text-[#5c4d72]">Upload your photo, pick an icon, or remove it.</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <label className="inline-flex h-10 cursor-pointer items-center rounded-full bg-[#10662A] px-4 text-sm font-semibold text-white">
-              {saving ? "Saving" : "Upload photo"}
-              <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={saving} onChange={(event) => { const file = event.target.files?.[0]; event.target.value = ""; if (file) void createImageBitmap(file).then((bitmap) => savePhoto(bitmap)); }} />
-            </label>
-            {form.photo ? <button type="button" disabled={saving} onClick={() => void savePhoto(null)} className="inline-flex h-10 items-center rounded-full border border-[#d8ecdd] bg-white px-4 text-sm font-semibold text-[#390A5D] disabled:opacity-50">Remove</button> : null}
-          </div>
-          <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-6">
-            {["caller01", "caller02", "caller03", "caller04", "caller05", "caller06", "caller07", "caller08", "caller09", "caller10", "caller11", "caller12"].map((name) => (
-              <button key={name} type="button" disabled={saving} onClick={() => void pickIcon(name)} className="overflow-hidden rounded-xl bg-white ring-1 ring-[#d8ecdd] hover:ring-2 hover:ring-[#10662A] disabled:opacity-50">
-                <img src={`/profile-avatars/${name}.jpg`} alt="" className="aspect-square w-full object-cover" />
-              </button>
-            ))}
-          </div>
-        </div>
         </div>
       </section>
 
