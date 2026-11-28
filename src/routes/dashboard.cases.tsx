@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Briefcase, Car, Check, Eye, FolderOpen, Hourglass, IndianRupee, Loader2, MoreHorizontal, Pencil, Plus, Search, Shield, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
@@ -59,14 +59,6 @@ const CHIPS: { id: string; label: string }[] = [
   { id: "cancelled", label: "Cancelled" },
   { id: "collected", label: "Collected" },
 ];
-
-function statusButton(on: boolean) {
-  return `rounded-lg border px-3 py-2 text-xs font-semibold transition-colors ${
-    on
-      ? "border-[#0D4F20] bg-[#0D4F20] text-white"
-      : "border-[#d8ecdd] bg-white text-[#0D4F20] hover:border-[#0D4F20] hover:bg-[#0D4F20] hover:text-white"
-  }`;
-}
 
 function inr(value: number) {
   return Math.round(value || 0).toLocaleString("en-IN");
@@ -202,6 +194,53 @@ const OPS_CHIPS: { id: string; label: string }[] = [
   { id: "cancelled", label: "Cancelled" },
 ];
 
+const MAIN_TABS = [
+  ["all", "All"],
+  ["draft", "Draft"],
+  ["submitted", "Submitted"],
+  ["logged_in", "Logged In"],
+  ["sanctioned", "Sanctioned"],
+  ["disbursed", "Disbursed"],
+  ["collected", "Collected"],
+] as const;
+
+function loanIcon(name: string) {
+  const low = name.toLowerCase();
+  if (low.includes("car") || low.includes("auto")) return Car;
+  if (low.includes("insur")) return Shield;
+  if (low.includes("home") || low.includes("property") || low.includes("lap")) return Wallet;
+  return Briefcase;
+}
+
+function progressRank(stage: string) {
+  if (["disbursed", "disbursed_confirmed", "disbursed_hold", "collected", "partially_collected", "counted", "counted_pod_pending"].includes(stage)) return 4;
+  return ["submitted", "logged_in", "sanctioned", "disbursed"].indexOf(stage) + 1;
+}
+
+function CaseProgress({ stage }: { stage: string }) {
+  const steps = ["Submitted", "Logged In", "Sanctioned", "Disbursed"];
+  const rank = Math.max(0, progressRank(stage));
+  const pct = Math.round((rank / 4) * 100);
+  return (
+    <div className="min-w-[168px]">
+      <div className="flex items-center">
+        {steps.map((label, index) => (
+          <div key={label} className="flex flex-1 items-center">
+            <span className={`grid size-4 shrink-0 place-items-center rounded-full ${index < rank ? "bg-[#087A35] text-white" : "bg-[#e6eee8] text-[#9aab9f]"}`}>
+              {index < rank ? <Check className="size-2.5" /> : <span className="size-1.5 rounded-full bg-current" />}
+            </span>
+            {index < steps.length - 1 ? <span className={`mx-0.5 h-0.5 flex-1 ${index + 1 < rank ? "bg-[#087A35]" : "bg-[#e6eee8]"}`} /> : null}
+          </div>
+        ))}
+        <span className="ml-1 text-[10px] font-bold text-[#087A35]">{pct}%</span>
+      </div>
+      <div className="mt-1 grid grid-cols-4 text-[8px] leading-3 text-[#7b8b80]">
+        {steps.map((label) => <span key={label}>{label}</span>)}
+      </div>
+    </div>
+  );
+}
+
 function shownStatus(row: LoanCaseFile, bankDesk: boolean) {
   if (!bankDesk) return row.status_label;
   if (row.flag === "cancelled") return "Cancelled";
@@ -235,6 +274,8 @@ function CasesPage() {
   const [dumpPreview, setDumpPreview] = useState<Awaited<ReturnType<typeof previewLenderDump>> | null>(null);
   const [dumpBusy, setDumpBusy] = useState(false);
   const [dumpQueue, setDumpQueue] = useState<{ id: string; filename: string; status: string; created_by?: string }[]>([]);
+  const [query, setQuery] = useState("");
+  const [loanFilter, setLoanFilter] = useState("");
   const loadDumpQueue = () => {
     void listDumpHistory().then((data) => setDumpQueue(data.items.filter((item) => item.status === "pending_approval" || item.status === "approved"))).catch(() => setDumpQueue([]));
   };
@@ -339,10 +380,11 @@ function CasesPage() {
 
   return (
     <div className="mx-auto max-w-[1400px] space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#10662A]">{bankDesk ? "Bank files" : "Closure desk"}</p>
-          <h1 className="font-display text-2xl font-bold text-[#390A5D]">Case files</h1>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#087A35]">{bankDesk ? "Bank files" : "Closure desk"}</p>
+          <h1 className="font-display text-2xl font-bold text-[#390A5D]">Loan Cases</h1>
+          <p className="mt-1 text-sm text-[#5c4d72]">Track, manage and close your loan cases in one place.</p>
           {stageBuckets ? (
             <p className="mt-1 max-w-3xl text-xs text-[#5c4d72]">
               {stageBuckets.total} files you can open. Each file is in one stage: {Object.entries(stageBuckets.stages).filter(([, count]) => count > 0).map(([key, count]) => `${key.replaceAll("_", " ")} ${count}`).join(" · ")}.
@@ -353,12 +395,15 @@ function CasesPage() {
             <p className="mt-1 max-w-xl text-sm text-[#5c4d72]">Open a row for the full file. Sanction and disbursement are marked on Submissions. Accounts pays the partner later.</p>
           ) : null}
         </div>
-        {bankDesk || role === "dsa" || role === "affiliate" ? null : (
-        <div className="inline-flex rounded-xl border border-[#d8ecdd] bg-white p-1">
-          <button className={`rounded-lg px-4 py-2 text-sm font-semibold ${desk === "files" ? "bg-[#10662A] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("files"); setActive(null); }}>Case list</button>
-          <button className={`rounded-lg px-4 py-2 text-sm font-semibold ${desk === "payout" ? "bg-[#10662A] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("payout"); setActive(null); }}>Payout</button>
+        <div className="flex flex-wrap items-center gap-2">
+          {bankDesk || role === "dsa" || role === "affiliate" ? null : (
+          <div className="inline-flex rounded-full border border-[#d8ecdd] bg-white p-1">
+            <button className={`rounded-full px-4 py-1.5 text-sm font-semibold ${desk === "files" ? "bg-[#087A35] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("files"); setActive(null); }}>Case List</button>
+            <button className={`rounded-full px-4 py-1.5 text-sm font-semibold ${desk === "payout" ? "bg-[#087A35] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("payout"); setActive(null); }}>Payout</button>
+          </div>
+          )}
+          {admin ? <Button className="rounded-full bg-[#087A35] text-white hover:bg-[#06662c]" onClick={() => void createCaseFile({ loan_type: "LAP", client_name: "New applicant" }).then((row) => { setActive(row); void refresh("draft", dateFrom, dateTo); })}><Plus className="size-4" /> Add Case</Button> : null}
         </div>
-        )}
       </div>
 
       {desk === "payout" ? (
@@ -442,16 +487,54 @@ function CasesPage() {
         />
       ) : (
         <>
-          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-4">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          {dateFrom && dateTo ? (
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+              {[
+                ["All Cases", String(counts.all ?? 0), "green", FolderOpen],
+                ["Disbursed", String(counts.disbursed ?? 0), "green", Check],
+                ["Collected", String(counts.collected ?? 0), "gold", IndianRupee],
+                ["Pending", String((counts.draft ?? 0) + (counts.submitted ?? 0) + (counts.logged_in ?? 0) + (counts.sanctioned ?? 0)), "purple", Hourglass],
+                ["Not Counted", String(counts.not_counted ?? 0), "purple", Hourglass],
+                [partnerView ? "Open files" : "Total Revenue", partnerView ? String(counts.all ?? 0) : `₹${inr(revenue)}`, "gold", IndianRupee],
+              ].map(([label, value, tone, Icon]) => (
+                <div key={String(label)} className={`rounded-2xl border px-3 py-2.5 shadow-sm ${tone === "gold" ? "border-[#f3e6c8] bg-[#fff8ea]" : tone === "purple" ? "border-[#eadff3] bg-[#f7f0fb]" : "border-[#d8ecdd] bg-[#f3fbf6]"}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] font-semibold text-[#5c4d72]">{label}</p>
+                    <Icon className={`size-4 ${tone === "purple" ? "text-[#7a4ea3]" : tone === "gold" ? "text-[#b8860b]" : "text-[#087A35]"}`} />
+                  </div>
+                  <p className="mt-1 font-display text-xl font-bold text-[#390A5D]">{value}</p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <section className="rounded-2xl border border-[#d8ecdd] bg-white p-3 shadow-sm">
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
               <div className="flex flex-wrap items-end gap-3">
-                <label className="text-xs font-semibold text-[#5c4d72]">Submitted from
-                  <Input type="date" className="mt-1 w-[168px] bg-white" value={dateFrom} onChange={(event) => { const value = event.target.value; setDateFrom(value); void refresh(chip, value, dateTo); }} />
+                <label className="text-xs font-semibold text-[#5c4d72]">From
+                  <Input type="date" className="mt-1 w-[150px] bg-white" value={dateFrom} onChange={(event) => { const value = event.target.value; setDateFrom(value); void refresh(chip, value, dateTo); }} />
                 </label>
                 <label className="text-xs font-semibold text-[#5c4d72]">To
-                  <Input type="date" className="mt-1 w-[168px] bg-white" value={dateTo} onChange={(event) => { const value = event.target.value; setDateTo(value); void refresh(chip, dateFrom, value); }} />
+                  <Input type="date" className="mt-1 w-[150px] bg-white" value={dateTo} onChange={(event) => { const value = event.target.value; setDateTo(value); void refresh(chip, dateFrom, value); }} />
                 </label>
-                <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear dates</Button>
+                <label className="text-xs font-semibold text-[#5c4d72]">Loan type
+                  <select className="mt-1 h-9 w-[160px] rounded-md border border-input bg-white px-2 text-sm" value={loanFilter} onChange={(event) => setLoanFilter(event.target.value)}>
+                    <option value="">All loan types</option>
+                    {loanTypes.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-[#5c4d72]">Status
+                  <select className="mt-1 h-9 w-[160px] rounded-md border border-input bg-white px-2 text-sm" value={chip} onChange={(event) => { setChip(event.target.value); void refresh(event.target.value, dateFrom, dateTo); }}>
+                    <option value="all">All status</option>
+                    {(bankDesk ? OPS_CHIPS : CHIPS).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </label>
+                <label className="text-xs font-semibold text-[#5c4d72]">Search
+                  <span className="relative mt-1 block">
+                    <Search className="pointer-events-none absolute left-2 top-2.5 size-3.5 text-[#8aa090]" />
+                    <Input className="w-[220px] bg-white pl-7" value={query} placeholder="Case ID, name, mobile" onChange={(event) => setQuery(event.target.value)} />
+                  </span>
+                </label>
+                <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setQuery(""); setLoanFilter(""); setChip("all"); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear</Button>
               </div>
               {partnerView ? (
               <div className="text-sm xl:text-right">
@@ -498,18 +581,18 @@ function CasesPage() {
                 </div>
               ) : null}
             </div>
-            <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-              <button className={statusButton(chip === "all")} onClick={() => { setChip("all"); void refresh("all", dateFrom, dateTo); }}>All{dateFrom && dateTo ? ` (${counts.all ?? 0})` : ""}</button>
-              {(bankDesk ? OPS_CHIPS : CHIPS).map((item) => (
-                <button
-                  key={item.id}
-                  className={statusButton(chip === item.id)}
-                  onClick={() => { setChip(item.id); void refresh(item.id, dateFrom, dateTo); }}
-                >
-                  {item.label}
-                  {dateFrom && dateTo ? ` (${counts[item.id] ?? 0})` : ""}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {MAIN_TABS.map(([id, label]) => (
+                <button key={id} className={`rounded-full px-3 py-1.5 text-xs font-semibold ${chip === id ? "bg-[#087A35] text-white" : "border border-[#d8ecdd] bg-white text-[#087A35]"}`} onClick={() => { setChip(id); void refresh(id, dateFrom, dateTo); }}>
+                  {label}{id === "all" && dateFrom && dateTo ? ` (${counts.all ?? 0})` : ""}
                 </button>
               ))}
+              <select className="h-8 rounded-full border border-[#d8ecdd] bg-white px-3 text-xs font-semibold text-[#087A35]" value={MAIN_TABS.some(([id]) => id === chip) ? "" : chip} onChange={(event) => { if (!event.target.value) return; setChip(event.target.value); void refresh(event.target.value, dateFrom, dateTo); }}>
+                <option value="">More</option>
+                {(bankDesk ? OPS_CHIPS : CHIPS).filter((item) => !MAIN_TABS.some(([id]) => id === item.id)).map((item) => (
+                  <option key={item.id} value={item.id}>{item.label}{dateFrom && dateTo ? ` (${counts[item.id] ?? 0})` : ""}</option>
+                ))}
+              </select>
             </div>
             {dumpPreview ? (
               <DumpReview
@@ -557,42 +640,47 @@ function CasesPage() {
 
           {dateFrom && dateTo && chip && (loading || items.length > 0) ? (
           <div className="overflow-x-auto rounded-2xl border border-[#d8ecdd] bg-white shadow-[0_8px_24px_rgba(57,10,93,0.04)]">
-            <table className="min-w-[1180px] w-full text-left text-sm">
+            <table className="min-w-[1080px] w-full text-left text-sm">
               <thead className="bg-[#390A5D] text-white">
                 <tr>
-                  {(bankDesk
-                    ? ["Status", "Deal number", "Product", "Bank", "Partner", "Client", "Phone", "Loan amount", "Sanctioned", "Submitted", "Submitted by"]
-                    : partnerView
-                      ? ["Status", "Deal number", "Product", "Bank", "RM", "Connector", "Client", "Loan amount", "Sanctioned", "Submitted", "Submitted by"]
-                      : ["Status", "Deal number", "Product", "Bank", "RM", "Connector", "Client", "Loan amount", "Sanctioned", "Submitted", "Submitted by", "Net"]
-                  ).map((head) => (
-                    <th key={head} className="whitespace-nowrap px-3 py-3 text-[11px] font-semibold uppercase tracking-wide">{head}</th>
+                  {["#", "Case ID", "Customer", "Loan type", "Loan amount", "Progress", "Status", "Last updated", "Actions"].map((head) => (
+                    <th key={head} className="whitespace-nowrap px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wide">{head}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={bankDesk || partnerView ? 11 : 12} className="px-3 py-10 text-center"><Loader2 className="mx-auto size-5 animate-spin text-[#10662A]" /></td></tr>
-                ) : items.map((row) => (
-                  <tr key={row.id} className="cursor-pointer border-t border-[#eef6f0] hover:bg-[#f7fdf8]" onClick={() => setActive(row)}>
-                    <td className="px-3 py-3"><span className="inline-flex whitespace-nowrap rounded-full border border-[#d8ecdd] bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#0D4F20]">{shownStatus(row, bankDesk)}</span></td>
-                    <td className="whitespace-nowrap px-3 py-3 font-semibold text-[#10662A]">{row.deal_no}</td>
-                    <td className="whitespace-nowrap px-3 py-3">{row.loan_type}</td>
-                    <td className="px-3 py-3">{row.bank_name || "—"}</td>
-                    {bankDesk ? null : <td className="whitespace-nowrap px-3 py-3">{row.bank_rm || "—"}</td>}
-                    <td className="px-3 py-3">
-                      <div className="whitespace-nowrap font-medium text-[#390A5D]">{row.partner_name || "—"}</div>
-                      <div className="text-[11px] text-[#5c4d72]">{row.partner_code}</div>
+                  <tr><td colSpan={9} className="px-3 py-10 text-center"><Loader2 className="mx-auto size-5 animate-spin text-[#087A35]" /></td></tr>
+                ) : items.filter((row) => {
+                  const q = query.trim().toLowerCase();
+                  const loanOk = !loanFilter || row.loan_type === loanFilter;
+                  const textOk = !q || [row.deal_no, row.client_name, row.client_phone].some((value) => (value || "").toLowerCase().includes(q));
+                  return loanOk && textOk;
+                }).map((row, index) => {
+                  const Icon = loanIcon(row.loan_type || "");
+                  return (
+                  <tr key={row.id} className="border-t border-[#eef6f0] hover:bg-[#f7fdf8]">
+                    <td className="px-3 py-2 text-[#5c4d72]">{index + 1}</td>
+                    <td className="whitespace-nowrap px-3 py-2 font-semibold text-[#087A35]">{row.deal_no}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-[#390A5D]">{row.client_name || "—"}</div>
+                      <div className="text-[11px] text-[#5c4d72]">{row.client_phone || "—"}</div>
                     </td>
-                    <td className="whitespace-nowrap px-3 py-3">{row.client_name || "—"}</td>
-                    {bankDesk ? <td className="whitespace-nowrap px-3 py-3">{row.client_phone || "—"}</td> : null}
-                    <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">₹{inr(row.loan_amount)}</td>
-                    <td className="whitespace-nowrap px-3 py-3 text-right tabular-nums">₹{inr(row.sanctioned_amount)}</td>
-                    <td className="whitespace-nowrap px-3 py-3">{row.submitted_on || row.expected_sanction_on || "—"}</td>
-                    <td className="whitespace-nowrap px-3 py-3">{row.submitted_by || "—"}</td>
-                    {bankDesk || partnerView ? null : <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums text-[#10662A]">₹{inr(row.net_revenue)}</td>}
+                    <td className="whitespace-nowrap px-3 py-2"><span className="inline-flex items-center gap-1.5"><Icon className="size-3.5 text-[#087A35]" />{row.loan_type || "—"}</span></td>
+                    <td className="whitespace-nowrap px-3 py-2 font-semibold tabular-nums">₹{inr(row.loan_amount)}</td>
+                    <td className="px-3 py-2"><CaseProgress stage={row.flag === "cancelled" ? "cancelled" : row.stage} /></td>
+                    <td className="px-3 py-2"><span className="inline-flex whitespace-nowrap rounded-full bg-[#E8F7EC] px-2.5 py-1 text-[11px] font-semibold text-[#087A35]">{shownStatus(row, bankDesk)}</span></td>
+                    <td className="whitespace-nowrap px-3 py-2 text-xs text-[#5c4d72]">{row.submitted_on || "—"}</td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1">
+                        <button type="button" title="View case" className="grid size-7 place-items-center rounded-full text-[#087A35] hover:bg-[#E8F7EC]" onClick={() => setActive(row)}><Eye className="size-3.5" /></button>
+                        <button type="button" title="Edit case" className="grid size-7 place-items-center rounded-full text-[#087A35] hover:bg-[#E8F7EC]" onClick={() => setActive(row)}><Pencil className="size-3.5" /></button>
+                        <button type="button" title="More" className="grid size-7 place-items-center rounded-full text-[#087A35] hover:bg-[#E8F7EC]" onClick={() => setActive(row)}><MoreHorizontal className="size-3.5" /></button>
+                      </div>
+                    </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>
