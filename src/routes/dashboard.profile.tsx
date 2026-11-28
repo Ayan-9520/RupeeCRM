@@ -244,21 +244,11 @@ function PartnerProfilePage() {
   const setTheme = (key: string, value: string | boolean) =>
     setForm({ ...form, theme: { ...theme, [key]: value } });
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-5">
-      <section className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_12px_32px_rgba(16,102,42,0.06)]">
-        <div className="h-1.5 bg-[#10662A]" />
-        <div className="p-6">
-          <h1 className="font-display text-2xl font-bold text-[#390A5D]">{affiliate ? "Affiliate profile" : "Partner profile"}</h1>
-          <p className="mt-1 text-sm text-[#5c4d72]">
-            {affiliate
-              ? "Customers see your name, phone, and the products you refer. A firm brochure is for DSA partners."
-              : "This is the page a customer opens before they call you."}
-          </p>
-          <p className="mt-3 font-mono text-sm text-[#10662A]">pro.rupeedial.com/{previewSlug}</p>
-        </div>
-      </section>
+  const field = "mt-0.5 w-full rounded-lg border border-[#d8ecdd] bg-[#F4FBF6] px-2.5 py-1.5 text-sm outline-none focus:border-[#10662A] focus:bg-white";
+  const label = "block text-xs font-semibold text-[#390A5D]";
 
+  return (
+    <div className="mx-auto max-w-5xl">
       {!form.can_publish && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           Publishing needs Growth or Pro.{" "}
@@ -268,64 +258,49 @@ function PartnerProfilePage() {
         </div>
       )}
 
-      <form onSubmit={(e) => void onSave(e)} className="space-y-4">
-        <section className="space-y-4 rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
-        <h2 className="font-semibold text-[#390A5D]">{affiliate ? "Your name" : "Firm"}</h2>
-        <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">{affiliate ? "Name" : "Firm name"}</span>
-          <input
-            required
-            value={form.firm_name}
-            onChange={(e) => {
-              const firm_name = e.target.value;
-              const slug = firm_name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40);
-              setForm({ ...form, firm_name, slug });
-            }}
-            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
-          />
+      <form onSubmit={(e) => void onSave(e)} className="overflow-hidden rounded-3xl border border-[#d8ecdd] bg-white shadow-[0_12px_32px_rgba(16,102,42,0.06)]">
+        <div className="h-1.5 bg-[#10662A]" />
+        <div className="flex flex-wrap items-center gap-4 px-5 py-4">
+          <ProfilePhotoField logoUrl={form.logo_url} onChange={(logoUrl) => setForm({ ...form, logo_url: logoUrl })} />
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-xl font-bold text-[#390A5D]">{form.firm_name || (affiliate ? "Affiliate" : "Partner")}</h1>
+            <p className="text-sm text-[#5c4d72]">{themeText("designation") || (affiliate ? "Affiliate" : "Loan advisor")} · {form.city || "City"}</p>
+            <p className="mt-1 truncate font-mono text-xs text-[#10662A]">{previewHref}</p>
+          </div>
+          <button type="submit" disabled={saving} className="inline-flex h-9 items-center gap-2 rounded-full bg-[#10662A] px-4 text-sm font-semibold text-white disabled:opacity-50">
+            {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
+            Save
+          </button>
+        </div>
+        <section className="grid gap-2 border-t border-[#d8ecdd] px-5 py-3 sm:grid-cols-2">
+        <label className={label}>
+          {affiliate ? "Name" : "Firm name"}
+          <input required value={form.firm_name} onChange={(e) => { const firm_name = e.target.value; setForm({ ...form, firm_name, slug: firm_name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40) }); }} className={field} />
         </label>
-        <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Public link</span>
-          <input
-            readOnly
-            value={previewHref}
-            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 font-mono text-sm text-[#10662A]"
-          />
+        <label className={label}>
+          Tagline
+          <input value={form.tagline || ""} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className={field} />
         </label>
-        <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Tagline</span>
-          <input
-            value={form.tagline || ""}
-            onChange={(e) => setForm({ ...form, tagline: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
-          />
+        <label className={`${label} sm:col-span-2`}>
+          Public link
+          <input readOnly value={previewHref} className={`${field} font-mono text-[#10662A]`} />
         </label>
-        </section>
-        <section className="space-y-4 rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
-        <h2 className="font-semibold text-[#390A5D]">{affiliate ? "What you refer" : "What customers read"}</h2>
-        <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">{affiliate ? "Note" : "Story"}</span>
-          <textarea
-            rows={5}
-            value={form.bio || ""}
-            onChange={(e) => setForm({ ...form, bio: e.target.value })}
-            className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
-            placeholder="How you help customers, in your own words"
-          />
+        <label className={`${label} sm:col-span-2`}>
+          {affiliate ? "Note" : "Story"}
+          <textarea rows={2} value={form.bio || ""} onChange={(e) => setForm({ ...form, bio: e.target.value })} className={field} placeholder="How you help customers" />
         </label>
         {affiliate ? null : <div className="grid sm:grid-cols-2 gap-3">
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Mission</span>
-            <textarea rows={3} value={themeText("mission")} onChange={(e) => setTheme("mission", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
+            <textarea rows={2} value={themeText("mission")} onChange={(e) => setTheme("mission", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
           </label>
           <label className="block text-sm">
             <span className="font-semibold text-[#390A5D]">Vision</span>
-            <textarea rows={3} value={themeText("vision")} onChange={(e) => setTheme("vision", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
+            <textarea rows={2} value={themeText("vision")} onChange={(e) => setTheme("vision", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
           </label>
         </div>}
         </section>
-        <section className="space-y-4 rounded-3xl border border-[#d8ecdd] bg-white p-5 shadow-[0_8px_24px_rgba(16,102,42,0.05)]">
-        <h2 className="font-semibold text-[#390A5D]">Contact</h2>
+        <section className="grid gap-2 border-t border-[#d8ecdd] px-5 py-3 sm:grid-cols-2">
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Office address</span>
           <input value={themeText("address")} onChange={(e) => setTheme("address", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
@@ -361,15 +336,15 @@ function PartnerProfilePage() {
         </div>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Achievements</span>
-          <textarea rows={3} value={themeText("achievements")} onChange={(e) => setTheme("achievements", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Title | 2025"} />
+          <textarea rows={2} value={themeText("achievements")} onChange={(e) => setTheme("achievements", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Title | 2025"} />
         </label>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Certificates</span>
-          <textarea rows={3} value={themeText("certificates")} onChange={(e) => setTheme("certificates", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Certificate | Institute"} />
+          <textarea rows={2} value={themeText("certificates")} onChange={(e) => setTheme("certificates", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Certificate | Institute"} />
         </label>
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Customer notes</span>
-          <textarea rows={3} value={themeText("reviews")} onChange={(e) => setTheme("reviews", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Name | 5 | What they said"} />
+          <textarea rows={2} value={themeText("reviews")} onChange={(e) => setTheme("reviews", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" placeholder={"One per line: Name | 5 | What they said"} />
         </label>
         </>}
         <div className="grid sm:grid-cols-2 gap-3">
@@ -430,7 +405,7 @@ function PartnerProfilePage() {
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">Extra links</span>
           <textarea
-            rows={3}
+            rows={2}
             value={themeText("links")}
             onChange={(e) => setTheme("links", e.target.value)}
             className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white"
@@ -497,11 +472,7 @@ function PartnerProfilePage() {
             />
           </label>
         </div>
-        <ProfilePhotoField
-          logoUrl={form.logo_url}
-          onChange={(logoUrl) => setForm({ ...form, logo_url: logoUrl })}
-        />
-        <label className="block text-sm">
+        <label className={`${label} sm:col-span-2`}>
           <span className="font-semibold text-[#390A5D]">{affiliate ? "Products you refer" : "Products you handle"}</span>
           <input
             value={productsText}
@@ -511,7 +482,7 @@ function PartnerProfilePage() {
           />
         </label>
 
-        <div className="flex flex-wrap gap-4 pt-2">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 sm:col-span-2">
           <label className="inline-flex items-center gap-2 text-sm font-medium text-[#390A5D]">
             <input
               type="checkbox"
@@ -556,15 +527,7 @@ function PartnerProfilePage() {
           </label>
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-2">
-          <button
-            type="submit"
-            disabled={saving}
-            className="inline-flex h-10 items-center gap-2 rounded-full bg-[#10662A] px-5 text-sm font-semibold text-white disabled:opacity-50"
-          >
-            {saving ? <Loader2 className="size-4 animate-spin" /> : <Save className="size-4" />}
-            Save profile
-          </button>
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
           {form.slug && (
             <a
               href={import.meta.env.DEV ? `http://127.0.0.1:5173/p/${previewSlug}` : previewHref}
