@@ -85,10 +85,12 @@ function ProfilePhotoField({
   onChange: (logoUrl: string | null) => void;
 }) {
   const icons = ["avatar01", "avatar02", "avatar03", "avatar04", "avatar05", "avatar06", "avatar07", "avatar08", "avatar09"];
+  const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState("");
   const apply = (logo: string | null, message: string) => {
     onChange(logo ? `${logo}${logo.includes("?") ? "&" : "?"}v=${Date.now()}` : null);
     toast.success(message);
+    setOpen(false);
   };
   const upload = (file: File) => {
     setBusy("upload");
@@ -117,49 +119,54 @@ function ProfilePhotoField({
       .finally(() => setBusy(""));
   };
   return (
-    <div className="rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] p-4">
-      <p className="font-semibold text-[#390A5D]">Profile photo</p>
-      <p className="mt-1 text-xs text-[#5c4d72]">Upload your own photo, or pick one of these icons. Remove clears it from the expert card.</p>
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        {logoUrl ? (
-          <img src={logoUrl} alt="" className="size-16 rounded-2xl object-cover ring-2 ring-[#10662A]" />
-        ) : (
-          <span className="grid size-16 place-items-center rounded-2xl bg-white text-xs font-semibold text-[#5c4d72] ring-1 ring-[#d8ecdd]">No photo</span>
-        )}
-        <label className="inline-flex h-10 cursor-pointer items-center rounded-full bg-[#10662A] px-4 text-sm font-semibold text-white">
-          {busy === "upload" ? "Uploading" : "Upload photo"}
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            disabled={Boolean(busy)}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (file) upload(file);
-            }}
-          />
-        </label>
-        {logoUrl ? (
-          <button type="button" disabled={Boolean(busy)} onClick={remove} className="inline-flex h-10 items-center rounded-full border border-[#d8ecdd] bg-white px-4 text-sm font-semibold text-[#390A5D] disabled:opacity-50">
-            {busy === "remove" ? "Removing" : "Remove"}
-          </button>
-        ) : null}
+    <div>
+      <div className="flex flex-col items-start gap-2">
+        <button type="button" onClick={() => setOpen(true)} className="grid size-20 place-items-center overflow-hidden rounded-full bg-[#E8F7EC] text-xs font-semibold text-[#10662A] ring-4 ring-white shadow-[0_0_0_3px_#10662A]" aria-label="Update profile picture">
+          {logoUrl ? <img src={logoUrl} alt="" className="h-full w-full object-cover" /> : "Photo"}
+        </button>
+        <button type="button" onClick={() => setOpen(true)} className="text-xs font-semibold text-[#10662A]">Change photo</button>
       </div>
-      <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-7">
-        {icons.map((name) => (
-          <button
-            key={name}
-            type="button"
-            disabled={Boolean(busy)}
-            onClick={() => pick(name)}
-            className="overflow-hidden rounded-xl bg-white ring-1 ring-[#d8ecdd] transition hover:ring-2 hover:ring-[#10662A] disabled:opacity-50"
-            title="Use this icon"
-          >
-            <img src={`/profile-avatars/${name}.jpg`} alt="" className="aspect-square w-full object-cover" />
-          </button>
-        ))}
-      </div>
+      {open ? (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-[#0D4F20]/45 p-4">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_24px_60px_rgba(13,79,32,0.28)]">
+            <div className="flex items-center justify-between bg-[#0D4F20] px-5 py-4 text-white">
+              <h2 className="font-display text-lg font-bold">Update profile picture</h2>
+              <button type="button" onClick={() => setOpen(false)} className="grid size-8 place-items-center rounded-full text-white hover:bg-white/10" aria-label="Close">✕</button>
+            </div>
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+              <label className="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-[#10662A] bg-[#F4FBF6] px-4 py-6 text-center">
+                <span className="text-sm font-semibold text-[#10662A]">{busy === "upload" ? "Uploading" : "Choose a photo"}</span>
+                <span className="mt-1 text-xs text-[#5c4d72]">JPG or PNG, square looks best</span>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="mt-3 text-sm"
+                  disabled={Boolean(busy)}
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) upload(file);
+                  }}
+                />
+              </label>
+              <p className="mb-2 mt-4 text-xs font-semibold text-[#390A5D]">Or pick an icon</p>
+              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+                {icons.map((name) => (
+                  <button key={name} type="button" disabled={Boolean(busy)} onClick={() => pick(name)} className="overflow-hidden rounded-xl bg-white ring-1 ring-[#d8ecdd] hover:ring-2 hover:ring-[#10662A] disabled:opacity-50">
+                    <img src={`/profile-avatars/${name}.jpg`} alt="" className="aspect-square w-full object-cover" />
+                  </button>
+                ))}
+              </div>
+              <div className="mt-5 flex justify-end gap-2">
+                {logoUrl ? (
+                  <button type="button" disabled={Boolean(busy)} onClick={remove} className="mr-auto h-10 rounded-full border border-[#d8ecdd] px-5 text-sm font-semibold text-[#390A5D] disabled:opacity-60">{busy === "remove" ? "Removing" : "Remove"}</button>
+                ) : null}
+                <button type="button" onClick={() => setOpen(false)} className="h-10 rounded-full border border-[#10662A] bg-white px-5 text-sm font-semibold text-[#10662A]">Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
