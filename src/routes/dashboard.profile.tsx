@@ -3,7 +3,6 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExternalLink, Loader2, Save } from "lucide-react";
 import {
-  CRM_API_URL,
   getPartnerProfile,
   request,
   savePartnerProfile,
@@ -85,13 +84,8 @@ function ProfilePhotoField({
   logoUrl: string | null | undefined;
   onChange: (logoUrl: string | null) => void;
 }) {
-  const [icons, setIcons] = useState<string[]>([]);
+  const icons = ["avatar01", "avatar02", "avatar03", "avatar04", "avatar05", "avatar06", "avatar07", "avatar08", "avatar09"];
   const [busy, setBusy] = useState("");
-  useEffect(() => {
-    void request<{ items: string[] }>("/api/public/partner-avatars")
-      .then((data) => setIcons(data.items || []))
-      .catch(() => setIcons([]));
-  }, []);
   const apply = (logo: string | null, message: string) => {
     onChange(logo ? `${logo}${logo.includes("?") ? "&" : "?"}v=${Date.now()}` : null);
     toast.success(message);
@@ -162,7 +156,7 @@ function ProfilePhotoField({
             className="overflow-hidden rounded-xl bg-white ring-1 ring-[#d8ecdd] transition hover:ring-2 hover:ring-[#10662A] disabled:opacity-50"
             title="Use this icon"
           >
-            <img src={`${CRM_API_URL}/api/public/partner-avatars/${name}`} alt="" className="aspect-square w-full object-cover" />
+            <img src={`/profile-avatars/${name}.jpg`} alt="" className="aspect-square w-full object-cover" />
           </button>
         ))}
       </div>

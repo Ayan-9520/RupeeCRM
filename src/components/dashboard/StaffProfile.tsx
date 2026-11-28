@@ -178,28 +178,41 @@ export function StaffProfile() {
     };
   }, []);
 
-  const uploadPhoto = async () => {
-    if (!photoFile) return;
-    const bitmap = await createImageBitmap(photoFile);
-    const scale = Math.min(1, 320 / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    const photo = canvas.toDataURL("image/jpeg", 0.82);
-    const next = { ...form, photo };
+  const savePhoto = async (source: ImageBitmap | null) => {
+    const photo = source
+      ? (() => {
+          const scale = Math.min(1, 320 / Math.max(source.width, source.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(source.width * scale));
+          canvas.height = Math.max(1, Math.round(source.height * scale));
+          canvas.getContext("2d")?.drawImage(source, 0, 0, canvas.width, canvas.height);
+          return canvas.toDataURL("image/jpeg", 0.82);
+        })()
+      : "";
     setSaving(true);
     try {
-      const saved = await saveHrProfile(next);
+      const saved = await saveHrProfile({ ...form, photo });
       setForm({ ...BLANK, ...saved });
       setPhotoOpen(false);
       setPhotoFile(null);
-      toast.success("Photo updated");
+      toast.success(photo ? "Photo updated" : "Photo removed");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not upload the photo");
+      toast.error(error instanceof Error ? error.message : "Could not update the photo");
     } finally {
       setSaving(false);
     }
+  };
+  const uploadPhoto = async () => {
+    if (!photoFile) return;
+    await savePhoto(await createImageBitmap(photoFile));
+  };
+  const pickIcon = async (name: string) => {
+    const response = await fetch(`/profile-avatars/${name}.jpg`);
+    if (!response.ok) {
+      toast.error("Icon was not found");
+      return;
+    }
+    await savePhoto(await createImageBitmap(await response.blob()));
   };
 
   const save = async () => {
@@ -433,18 +446,29 @@ export function StaffProfile() {
 
       {photoOpen ? (
         <div className="fixed inset-0 z-50 grid place-items-center bg-[#0D4F20]/45 p-4">
-          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-[0_24px_60px_rgba(13,79,32,0.28)]">
+          <div className="w-full max-w-lg overflow-hidden rounded-3xl bg-white shadow-[0_24px_60px_rgba(13,79,32,0.28)]">
             <div className="flex items-center justify-between bg-[#0D4F20] px-5 py-4 text-white">
               <h2 className="font-display text-lg font-bold">Update profile picture</h2>
               <button type="button" onClick={() => setPhotoOpen(false)} className="grid size-8 place-items-center rounded-full text-white hover:bg-white/10" aria-label="Close">✕</button>
             </div>
-            <div className="p-5">
-              <label className="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-[#10662A] bg-[#F4FBF6] px-4 py-8 text-center">
+            <div className="max-h-[70vh] overflow-y-auto p-5">
+              <label className="flex cursor-pointer flex-col items-center rounded-2xl border border-dashed border-[#10662A] bg-[#F4FBF6] px-4 py-6 text-center">
                 <span className="text-sm font-semibold text-[#10662A]">Choose a photo</span>
                 <span className="mt-1 text-xs text-[#5c4d72]">{photoFile ? photoFile.name : "JPG or PNG, square looks best"}</span>
                 <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] || null)} className="mt-3 text-sm text-[#14281c]" />
               </label>
+              <p className="mb-2 mt-4 text-xs font-semibold text-[#390A5D]">Or pick an icon</p>
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+                {["caller01", "caller02", "caller03", "caller04", "caller05", "caller06", "caller07", "caller08", "caller09", "caller10", "caller11", "caller12"].map((name) => (
+                  <button key={name} type="button" disabled={saving} onClick={() => void pickIcon(name)} className="overflow-hidden rounded-xl bg-white ring-1 ring-[#d8ecdd] hover:ring-2 hover:ring-[#10662A] disabled:opacity-50">
+                    <img src={`/profile-avatars/${name}.jpg`} alt="" className="aspect-square w-full object-cover" />
+                  </button>
+                ))}
+              </div>
               <div className="mt-5 flex justify-end gap-2">
+                {form.photo ? (
+                  <button type="button" disabled={saving} onClick={() => void savePhoto(null)} className="mr-auto h-10 rounded-full border border-[#d8ecdd] px-5 text-sm font-semibold text-[#390A5D] disabled:opacity-60">Remove</button>
+                ) : null}
                 <button type="button" onClick={() => setPhotoOpen(false)} className="h-10 rounded-full border border-[#10662A] bg-white px-5 text-sm font-semibold text-[#10662A]">Close</button>
                 <button type="button" onClick={() => void uploadPhoto()} disabled={!photoFile || saving} className="h-10 rounded-full bg-[#10662A] px-5 text-sm font-semibold text-white disabled:opacity-60">
                   {saving ? "Uploading…" : "Upload"}
