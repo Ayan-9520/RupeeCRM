@@ -17,6 +17,10 @@ from app.entitlements import has_module
 from app.models import PartnerProfile, User, VisitingCard
 from app.services.document_files import sniff_mime, storage_root
 
+AVATAR_DIR = Path(__file__).resolve().parents[1] / "scripts" / "demo_photos"
+PHOTO_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+ADMIN_ROLES = {"admin", "ceo", "super_admin"}
+
 router = APIRouter(prefix="/api/partner", tags=["partner-profile"])
 
 PROFILE_ORIGIN = "https://pro.rupeedial.com"
@@ -325,61 +329,106 @@ def upsert_card(
     )
 
 
-def _photo_dir() -> Path:
+def _photo_folder() -> Path:
     folder = storage_root() / "partner-photos"
     folder.mkdir(parents=True, exist_ok=True)
     return folder
 
 
-def _safe_slug(slug: str) -> str:
-    safe = re.sub(r"[^a-z0-9]", "", (slug or "").lower())
-    if not safe:
-        raise HTTPException(status_code=400, detail="This profile has no public link yet")
-    return safe[:40]
+def _safe_stem(raw: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (raw or "").lower())[:40]
 
 
-def save_partner_photo(db: Session, row: PartnerProfile, data: bytes, mime: str) -> str:
-    checked = sniff_mime(data, mime)
-    if not checked.startswith("image/"):
-        raise HTTPException(status_code=400, detail="Choose a JPG, PNG, or WebP photo")
-    slug = _safe_slug(row.slug)
-    ext = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}[checked]
-    for old in _photo_dir().glob(f"{slug}.*"):
+def _store_photo(slug: str, data: bytes, ext: str) -> str:
+    folder = _photo_folder()
+    stem = _safe_stem(slug)
+    for old in folder.glob(f"{stem}.*"):
         old.unlink(missing_ok=True)
-    (_photo_dir() / f"{slug}{ext}").write_bytes(data)
-    base = settings.crm_public_url.rstrip("/")
-    row.logo_url = f"{base}/api/public/partner-photo/{slug}"
+    (folder / f"{stem}{ext}").write_bytes(data)
+    return f"{settings.crm_public_url.rstrip('/')}/api/public/partner-photo/{stem}"
+
+
+def _apply_photo(db: Session, row: PartnerProfile, url: str | None) -> str | None:
+    row.logo_url = url
+    card = db.query(VisitingCard).filter(VisitingCard.user_id == row.owner_user_id).first()
+    if card:
+        card.photo_url = url
     db.commit()
-    return row.logo_url
+    return url
+
+
+def _owned_profile(db: Session, user: User) -> PartnerProfile:
+    if user.seat_owner_id and user.seat_owner_id != user.id:
+        raise HTTPException(status_code=403, detail="Only the account owner can change the profile photo")
+    row = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == user.id).first()
+    if not row:
+        raise HTTPException(status_code=400, detail="Save the profile once before adding a photo")
+    return row
+
+
+class PresetIn(BaseModel):
+    name: str = ""
+
+
+@router.get("/profile/photo-options")
+def photo_options(_user: User = Depends(get_current_user)) -> dict:
+    names = sorted(path.stem for path in AVATAR_DIR.glob("*.png") if path.is_file())
+    return {"items": names}
 
 
 @router.post("/profile/photo")
-async def upload_my_photo(
+async def upload_profile_photo(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    owner = _get_owner(db, user)
-    row = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == owner.id).first()
-    if row is None:
-        raise HTTPException(status_code=400, detail="Save the public profile before adding a photo")
+    row = _owned_profile(db, user)
     data = await file.read()
-    url = save_partner_photo(db, row, data, file.content_type or "")
-    return {"logo_url": url}
+    mime = sniff_mime(data, file.content_type or "")
+    url = _store_photo(row.slug, data, PHOTO_EXT[mime])
+    return {"logo_url": _apply_photo(db, row, url)}
+
+
+@router.post("/profile/photo/preset")
+def choose_profile_preset(
+    body: PresetIn,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    row = _owned_profile(db, user)
+    src = AVATAR_DIR / f"{_safe_stem(body.name)}.png"
+    if not src.is_file():
+        raise HTTPException(status_code=404, detail="That icon is not available")
+    url = _store_photo(row.slug, src.read_bytes(), ".png")
+    return {"logo_url": _apply_photo(db, row, url)}
+
+
+@router.delete("/profile/photo")
+def remove_profile_photo(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    row = _owned_profile(db, user)
+    stem = _safe_stem(row.slug)
+    for old in _photo_folder().glob(f"{stem}.*"):
+        old.unlink(missing_ok=True)
+    _apply_photo(db, row, None)
+    return {"logo_url": None}
 
 
 @router.post("/profile/photo/{slug}")
-async def upload_photo_for_slug(
+async def upload_profile_photo_for(
     slug: str,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    if user.role not in {"admin", "ceo", "super_admin"}:
-        raise HTTPException(status_code=403, detail="Only admin can set another expert photo")
-    row = db.query(PartnerProfile).filter(PartnerProfile.slug == _safe_slug(slug)).first()
-    if row is None:
-        raise HTTPException(status_code=404, detail="Expert profile not found")
+    if user.role not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="Only an admin can set another expert photo")
+    row = db.query(PartnerProfile).filter(PartnerProfile.slug == _safe_stem(slug)).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Expert not found")
     data = await file.read()
-    url = save_partner_photo(db, row, data, file.content_type or "")
-    return {"logo_url": url}
+    mime = sniff_mime(data, file.content_type or "")
+    url = _store_photo(row.slug, data, PHOTO_EXT[mime])
+    return {"logo_url": _apply_photo(db, row, url)}

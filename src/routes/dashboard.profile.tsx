@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ExternalLink, Loader2, Save } from "lucide-react";
 import {
+  CRM_API_URL,
   getPartnerProfile,
   request,
   savePartnerProfile,
@@ -73,6 +74,98 @@ function ExpertPhotoDesk() {
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+function ProfilePhotoField({
+  logoUrl,
+  onChange,
+}: {
+  logoUrl: string | null | undefined;
+  onChange: (logoUrl: string | null) => void;
+}) {
+  const [icons, setIcons] = useState<string[]>([]);
+  const [busy, setBusy] = useState("");
+  useEffect(() => {
+    void request<{ items: string[] }>("/api/public/partner-avatars")
+      .then((data) => setIcons(data.items || []))
+      .catch(() => setIcons([]));
+  }, []);
+  const apply = (logo: string | null, message: string) => {
+    onChange(logo ? `${logo}${logo.includes("?") ? "&" : "?"}v=${Date.now()}` : null);
+    toast.success(message);
+  };
+  const upload = (file: File) => {
+    setBusy("upload");
+    const body = new FormData();
+    body.set("file", file);
+    void request<{ logo_url: string | null }>("/api/partner/profile/photo", { method: "POST", body })
+      .then((saved) => apply(saved.logo_url, "Photo saved. It shows on your expert card."))
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Photo was not saved"))
+      .finally(() => setBusy(""));
+  };
+  const pick = (name: string) => {
+    setBusy(name);
+    void request<{ logo_url: string | null }>("/api/partner/profile/photo/preset", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    })
+      .then((saved) => apply(saved.logo_url, "Icon saved. It shows on your expert card."))
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Icon was not saved"))
+      .finally(() => setBusy(""));
+  };
+  const remove = () => {
+    setBusy("remove");
+    void request<{ logo_url: string | null }>("/api/partner/profile/photo", { method: "DELETE" })
+      .then(() => apply(null, "Photo removed."))
+      .catch((error) => toast.error(error instanceof Error ? error.message : "Photo was not removed"))
+      .finally(() => setBusy(""));
+  };
+  return (
+    <div className="rounded-2xl border border-[#d8ecdd] bg-[#F4FBF6] p-4">
+      <p className="font-semibold text-[#390A5D]">Profile photo</p>
+      <p className="mt-1 text-xs text-[#5c4d72]">Upload your own photo, or pick one of these icons. Remove clears it from the expert card.</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        {logoUrl ? (
+          <img src={logoUrl} alt="" className="size-16 rounded-2xl object-cover ring-2 ring-[#10662A]" />
+        ) : (
+          <span className="grid size-16 place-items-center rounded-2xl bg-white text-xs font-semibold text-[#5c4d72] ring-1 ring-[#d8ecdd]">No photo</span>
+        )}
+        <label className="inline-flex h-10 cursor-pointer items-center rounded-full bg-[#10662A] px-4 text-sm font-semibold text-white">
+          {busy === "upload" ? "Uploading" : "Upload photo"}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            className="hidden"
+            disabled={Boolean(busy)}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = "";
+              if (file) upload(file);
+            }}
+          />
+        </label>
+        {logoUrl ? (
+          <button type="button" disabled={Boolean(busy)} onClick={remove} className="inline-flex h-10 items-center rounded-full border border-[#d8ecdd] bg-white px-4 text-sm font-semibold text-[#390A5D] disabled:opacity-50">
+            {busy === "remove" ? "Removing" : "Remove"}
+          </button>
+        ) : null}
+      </div>
+      <div className="mt-4 grid grid-cols-4 gap-2 sm:grid-cols-7">
+        {icons.map((name) => (
+          <button
+            key={name}
+            type="button"
+            disabled={Boolean(busy)}
+            onClick={() => pick(name)}
+            className="overflow-hidden rounded-xl bg-white ring-1 ring-[#d8ecdd] transition hover:ring-2 hover:ring-[#10662A] disabled:opacity-50"
+            title="Use this icon"
+          >
+            <img src={`${CRM_API_URL}/api/public/partner-avatars/${name}`} alt="" className="aspect-square w-full object-cover" />
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -403,28 +496,10 @@ function PartnerProfilePage() {
             />
           </label>
         </div>
-        <label className="block text-sm">
-          <span className="font-semibold text-[#390A5D]">Profile photo</span>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="mt-1 block w-full text-sm"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = "";
-              if (!file || !form) return;
-              const body = new FormData();
-              body.set("file", file);
-              void request<{ logo_url: string }>("/api/partner/profile/photo", { method: "POST", body })
-                .then((saved) => {
-                  setForm({ ...form, logo_url: `${saved.logo_url}?v=${Date.now()}` });
-                  toast.success("Photo saved. It shows on your expert card.");
-                })
-                .catch((error) => toast.error(error instanceof Error ? error.message : "Photo was not saved"));
-            }}
-          />
-          {form.logo_url ? <img src={form.logo_url} alt="" className="mt-2 size-16 rounded-xl object-cover" /> : null}
-        </label>
+        <ProfilePhotoField
+          logoUrl={form.logo_url}
+          onChange={(logoUrl) => setForm({ ...form, logo_url: logoUrl })}
+        />
         <label className="block text-sm">
           <span className="font-semibold text-[#390A5D]">{affiliate ? "Products you refer" : "Products you handle"}</span>
           <input

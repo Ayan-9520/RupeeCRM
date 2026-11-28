@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import re
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from fastapi.responses import Response
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -13,6 +15,9 @@ from app.db.session import get_db
 from app.models import PartnerProfile, User, VisitingCard
 from app.services.document_files import storage_root
 from app.services.partners import backfill_approved_profiles
+
+AVATAR_DIR = Path(__file__).resolve().parents[1] / "scripts" / "demo_photos"
+PHOTO_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
 
 router = APIRouter(prefix="/api/public", tags=["public-directory"])
 
@@ -172,6 +177,35 @@ def list_directory(
     return DirectoryListOut(items=items[:limit], total=len(items))
 
 
+def _safe_stem(raw: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (raw or "").lower())[:40]
+
+
+@router.get("/partner-avatars")
+def list_partner_avatars() -> dict:
+    names = sorted(path.stem for path in AVATAR_DIR.glob("*.png") if path.is_file())
+    return {"items": names}
+
+
+@router.get("/partner-avatars/{name}")
+def partner_avatar(name: str) -> FileResponse:
+    path = AVATAR_DIR / f"{_safe_stem(name)}.png"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Avatar not found")
+    return FileResponse(path, media_type="image/png")
+
+
+@router.get("/partner-photo/{slug}")
+def partner_photo(slug: str) -> FileResponse:
+    folder = storage_root() / "partner-photos"
+    stem = _safe_stem(slug)
+    for ext, mime in PHOTO_TYPES.items():
+        path = folder / f"{stem}{ext}"
+        if path.is_file():
+            return FileResponse(path, media_type=mime)
+    raise HTTPException(status_code=404, detail="Photo not found")
+
+
 @router.get("/partners/{slug}", response_model=PublicProfileOut)
 def get_public_profile(slug: str, db: Session = Depends(get_db)) -> PublicProfileOut:
     row = (
@@ -221,22 +255,3 @@ def get_public_profile(slug: str, db: Session = Depends(get_db)) -> PublicProfil
         public_url=f"{PROFILE_ORIGIN}/{row.slug}",
         subdomain_hint=f"pro.rupeedial.com/{row.slug}",
     )
-
-
-@router.get("/partner-photo/{slug}")
-def partner_photo(slug: str, db: Session = Depends(get_db)) -> Response:
-    safe = re.sub(r"[^a-z0-9]", "", (slug or "").lower())[:40]
-    row = (
-        db.query(PartnerProfile)
-        .filter(PartnerProfile.slug == safe, PartnerProfile.published.is_(True), PartnerProfile.suspended.is_(False))
-        .first()
-    )
-    if row is None:
-        raise HTTPException(status_code=404, detail="Photo not found")
-    folder = storage_root() / "partner-photos"
-    types = {".jpg": "image/jpeg", ".png": "image/png", ".webp": "image/webp"}
-    for ext, mime in types.items():
-        path = folder / f"{safe}{ext}"
-        if path.is_file():
-            return Response(content=path.read_bytes(), media_type=mime, headers={"Cache-Control": "public, max-age=300"})
-    raise HTTPException(status_code=404, detail="Photo not found")

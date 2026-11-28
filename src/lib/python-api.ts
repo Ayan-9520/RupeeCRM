@@ -1,4 +1,6 @@
 const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") || "http://127.0.0.1:8000";
+
+export const CRM_API_URL = API_URL;
 const TOKEN_KEY = "rd_crm_token";
 const USER_KEY = "rd_crm_user";
 
