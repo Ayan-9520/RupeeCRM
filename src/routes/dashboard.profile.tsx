@@ -332,16 +332,16 @@ function PartnerProfilePage() {
             Save
           </button>
         </div>
-        <section className="grid gap-2 border-t border-[#d8ecdd] px-5 py-3 sm:grid-cols-2">
-        <label className={label}>
+        <section className="grid gap-2 border-t border-[#d8ecdd] px-5 py-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label className={`${label} lg:col-span-2`}>
           {affiliate ? "Name" : "Firm name"}
           <input required value={form.firm_name} onChange={(e) => { const firm_name = e.target.value; setForm({ ...form, firm_name, slug: firm_name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 40) }); }} className={field} />
         </label>
-        <label className={label}>
+        <label className={`${label} lg:col-span-2`}>
           Tagline
           <input value={form.tagline || ""} onChange={(e) => setForm({ ...form, tagline: e.target.value })} className={field} />
         </label>
-        <label className={`${label} sm:col-span-2`}>
+        <label className={`${label} sm:col-span-2 lg:col-span-4`}>
           Public link
           <input readOnly value={previewHref} className={`${field} font-mono text-[#10662A]`} />
         </label>
@@ -349,16 +349,16 @@ function PartnerProfilePage() {
           {affiliate ? "Note" : "Story"}
           <textarea rows={2} value={form.bio || ""} onChange={(e) => setForm({ ...form, bio: e.target.value })} className={field} placeholder="How you help customers" />
         </label>
-        {affiliate ? null : <div className="grid sm:grid-cols-2 gap-3">
-          <label className="block text-sm">
-            <span className="font-semibold text-[#390A5D]">Mission</span>
-            <textarea rows={2} value={themeText("mission")} onChange={(e) => setTheme("mission", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
+        {affiliate ? null : <>
+          <label className={label}>
+            Mission
+            <textarea rows={2} value={themeText("mission")} onChange={(e) => setTheme("mission", e.target.value)} className={field} />
           </label>
-          <label className="block text-sm">
-            <span className="font-semibold text-[#390A5D]">Vision</span>
-            <textarea rows={2} value={themeText("vision")} onChange={(e) => setTheme("vision", e.target.value)} className="mt-1 w-full rounded-xl border border-[#d8ecdd] bg-[#F4FBF6] px-3 py-2 text-sm outline-none focus:border-[#10662A] focus:bg-white" />
+          <label className={label}>
+            Vision
+            <textarea rows={2} value={themeText("vision")} onChange={(e) => setTheme("vision", e.target.value)} className={field} />
           </label>
-        </div>}
+        </>}
         </section>
         <section className="grid gap-2 border-t border-[#d8ecdd] px-5 py-3 sm:grid-cols-2">
         <label className="block text-sm">
