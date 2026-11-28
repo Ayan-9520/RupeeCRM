@@ -16,7 +16,7 @@ from app.models import PartnerProfile, User, VisitingCard
 from app.services.document_files import storage_root
 from app.services.partners import backfill_approved_profiles
 
-AVATAR_DIR = Path(__file__).resolve().parents[1] / "scripts" / "demo_photos"
+AVATAR_DIR = Path(__file__).resolve().parents[1] / "scripts" / "preset_avatars"
 PHOTO_TYPES = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
 
 router = APIRouter(prefix="/api/public", tags=["public-directory"])
@@ -183,16 +183,18 @@ def _safe_stem(raw: str) -> str:
 
 @router.get("/partner-avatars")
 def list_partner_avatars() -> dict:
-    names = sorted(path.stem for path in AVATAR_DIR.glob("*.png") if path.is_file())
+    names = sorted(path.stem for path in AVATAR_DIR.glob("avatar-*") if path.suffix.lower() in {".png", ".jpg", ".jpeg"} and path.is_file())
     return {"items": names}
 
 
 @router.get("/partner-avatars/{name}")
 def partner_avatar(name: str) -> FileResponse:
-    path = AVATAR_DIR / f"{_safe_stem(name)}.png"
-    if not path.is_file():
-        raise HTTPException(status_code=404, detail="Avatar not found")
-    return FileResponse(path, media_type="image/png")
+    stem = _safe_stem(name)
+    for ext, mime in (("png", "image/png"), ("jpg", "image/jpeg"), ("jpeg", "image/jpeg")):
+        path = AVATAR_DIR / f"{stem}.{ext}"
+        if path.is_file():
+            return FileResponse(path, media_type=mime)
+    raise HTTPException(status_code=404, detail="Avatar not found")
 
 
 @router.get("/partner-photo/{slug}")

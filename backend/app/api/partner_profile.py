@@ -17,7 +17,7 @@ from app.entitlements import has_module
 from app.models import PartnerProfile, User, VisitingCard
 from app.services.document_files import sniff_mime, storage_root
 
-AVATAR_DIR = Path(__file__).resolve().parents[1] / "scripts" / "demo_photos"
+AVATAR_DIR = Path(__file__).resolve().parents[1] / "scripts" / "preset_avatars"
 PHOTO_EXT = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
 ADMIN_ROLES = {"admin", "ceo", "super_admin"}
 
@@ -372,7 +372,7 @@ class PresetIn(BaseModel):
 
 @router.get("/profile/photo-options")
 def photo_options(_user: User = Depends(get_current_user)) -> dict:
-    names = sorted(path.stem for path in AVATAR_DIR.glob("*.png") if path.is_file())
+    names = sorted(path.stem for path in AVATAR_DIR.glob("avatar-*") if path.suffix.lower() in {".png", ".jpg", ".jpeg"} and path.is_file())
     return {"items": names}
 
 
@@ -396,10 +396,11 @@ def choose_profile_preset(
     user: User = Depends(get_current_user),
 ) -> dict:
     row = _owned_profile(db, user)
-    src = AVATAR_DIR / f"{_safe_stem(body.name)}.png"
-    if not src.is_file():
+    stem = _safe_stem(body.name)
+    src = next((AVATAR_DIR / f"{stem}{ext}" for ext in (".png", ".jpg", ".jpeg") if (AVATAR_DIR / f"{stem}{ext}").is_file()), None)
+    if src is None:
         raise HTTPException(status_code=404, detail="That icon is not available")
-    url = _store_photo(row.slug, src.read_bytes(), ".png")
+    url = _store_photo(row.slug, src.read_bytes(), ".jpg" if src.suffix.lower() != ".png" else ".png")
     return {"logo_url": _apply_photo(db, row, url)}
 
 
