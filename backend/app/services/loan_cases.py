@@ -19,6 +19,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, object_session
 
 from app.models import Lead, LeadPurchase, LoanCase, PayoutRequest, User
+from app.services import business_scope
 from app.services.audit import write_audit
 from app.services.invoice_flow import STAGE_LABELS
 
@@ -352,9 +353,96 @@ def _on_day(row: LoanCase) -> str:
     return created.astimezone(IST).date().isoformat()
 
 
-def list_cases(db: Session, user: User, chip: str = "all", date_from: str = "", date_to: str = "") -> dict:
+def sees_all_cases(user: User) -> bool:
+    if user.role in {"admin", "ceo", "super_admin"}:
+        return True
+    if user.role == "coordinator" and user.department == "OPS" and not user.finance_level:
+        return True
+    return user.role == "coordinator" and user.finance_level in {"manager", "business_head", "accounts"}
+
+
+def business_pool(db: Session, user: User) -> tuple[list[LoanCase], set[UUID], bool]:
+    """Every case this user may count: what they could already see plus their hierarchy's cases."""
+    team = business_scope.team_ids(db, user)
+    everyone = sees_all_cases(user)
+    rows = {row.id: row for row in _visible(db, user).all()}
+    if not everyone:
+        people = list(team | {user.id})
+        extra = db.query(LoanCase).filter(
+            (LoanCase.partner_user_id.in_(people))
+            | (LoanCase.partner_user_id.is_(None) & LoanCase.owner_user_id.in_(people))
+        )
+        for row in extra.all():
+            rows.setdefault(row.id, row)
+    ordered = sorted(rows.values(), key=lambda row: row.created_at or datetime.min.replace(tzinfo=timezone.utc), reverse=True)
+    return ordered, team, everyone
+
+
+def business_team(db: Session, user: User, date_from: str = "", date_to: str = "") -> dict:
+    everything, team, everyone = business_pool(db, user)
+    if date_from:
+        everything = [row for row in everything if _on_day(row) >= date_from]
+    if date_to:
+        everything = [row for row in everything if _on_day(row) <= date_to]
+    by_person: dict[UUID, list[LoanCase]] = {}
+    for row in everything:
+        owner = business_scope.credited_to(row)
+        if owner and owner != user.id and (owner in team or everyone):
+            by_person.setdefault(owner, []).append(row)
+    ids = (team | set(by_person)) - {user.id}
+    people = {person.id: person for person in db.query(User).filter(User.id.in_(list(ids))).all()} if ids else {}
+    bosses_ids = {pid for p in people.values() for pid in (p.reports_to_user_id, p.rm1_user_id) if pid}
+    bosses = {b.id: b for b in db.query(User).filter(User.id.in_(list(bosses_ids))).all()} if bosses_ids else {}
+    members = []
+    for pid, person in people.items():
+        boss_id = person.reports_to_user_id or person.rm1_user_id
+        boss = bosses.get(boss_id) if boss_id else None
+        members.append(
+            {
+                "id": str(pid),
+                "name": person.full_name or person.email,
+                "role": person.role,
+                "reports_to": (boss.full_name or boss.email) if boss else "",
+                "direct": boss_id == user.id,
+                **business_scope.metrics(by_person.get(pid, []), figures, person.role in {"dsa", "affiliate"}),
+            }
+        )
+    members.sort(key=lambda item: (-item["disbursed_amount"], item["name"]))
+    return {"has_team": bool(team) or everyone, "organisation": everyone, "members": members}
+
+
+def list_cases(
+    db: Session,
+    user: User,
+    chip: str = "all",
+    date_from: str = "",
+    date_to: str = "",
+    scope: str = "",
+    member: UUID | None = None,
+    loan_type: str = "",
+) -> dict:
     import_disbursed(db, None)
-    pool = list(_visible(db, user).all())
+    business = None
+    if scope or member:
+        everything, team, everyone = business_pool(db, user)
+        if date_from:
+            everything = [row for row in everything if _on_day(row) >= date_from]
+        if date_to:
+            everything = [row for row in everything if _on_day(row) <= date_to]
+        if loan_type:
+            everything = [row for row in everything if (row.loan_type or "") == loan_type]
+        pool = business_scope.pick(everything, user.id, team, everyone, scope or "combined", member)
+        partner = user.role in {"dsa", "affiliate"}
+        mine, theirs = business_scope.split(everything, user.id, team, everyone)
+        business = {
+            "scope": scope or "combined",
+            "has_team": bool(team) or everyone,
+            "self": business_scope.metrics(mine, figures, partner),
+            "team": business_scope.metrics(theirs, figures, partner),
+            "combined": business_scope.metrics(mine + theirs, figures, partner),
+        }
+    else:
+        pool = list(_visible(db, user).all())
     if date_from:
         pool = [row for row in pool if _on_day(row) >= date_from]
     if date_to:
@@ -369,6 +457,7 @@ def list_cases(db: Session, user: User, chip: str = "all", date_from: str = "", 
     counts = {key: sum(1 for row in pool if matches_filter(row, key)) for key in CHIP_IDS}
     counts["all"] = len(pool)
     return {
+        "business": business,
         "revenue": revenue,
         "disbursed_revenue": revenue,
         "confirmed_count": len(confirmed),

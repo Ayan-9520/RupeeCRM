@@ -25,7 +25,11 @@ import {
   uploadCasePaper,
   type CaseEvent,
   type LoanCaseFile,
+  getBusinessTeam,
+  type BusinessSummary,
+  type TeamMember,
 } from "@/lib/python-api";
+import { BusinessScopeSwitch, useBusinessScope } from "@/components/dashboard/BusinessScopeSwitch";
 
 export const Route = createFileRoute("/dashboard/cases")({
   head: () => ({ meta: [{ title: "Case Files — RupeeOne" }] }),
@@ -205,6 +209,70 @@ const MAIN_TABS = [
   ["collected", "Collected"],
 ] as const;
 
+function CombinedSplit({ business }: { business: BusinessSummary }) {
+  const total = business.combined.disbursed_amount || 0;
+  const teamShare = total ? Math.round((business.team.disbursed_amount / total) * 100) : 0;
+  const rows = [
+    ["Self Business", business.self],
+    ["Team Business", business.team],
+    ["Combined", business.combined],
+  ] as const;
+  return (
+    <section className="rounded-2xl border border-[#d8ecdd] bg-gradient-to-r from-[#f3fbf6] to-white p-3 shadow-sm">
+      <div className="grid gap-2 md:grid-cols-4">
+        {rows.map(([label, m]) => (
+          <div key={label} className="rounded-xl border border-[#e3f1e7] bg-white px-3 py-2">
+            <p className="text-[11px] font-semibold text-[#5c4d72]">{label}</p>
+            <p className="font-display text-lg font-bold text-[#390A5D]">₹{inr(m.disbursed_amount)}</p>
+            <p className="text-[11px] text-[#5c4d72]">{m.cases} cases · {m.disbursed} disbursed · ₹{inr(m.revenue)} revenue</p>
+          </div>
+        ))}
+        <div className="rounded-xl border border-[#e3f1e7] bg-white px-3 py-2">
+          <p className="text-[11px] font-semibold text-[#5c4d72]">Team contribution</p>
+          <p className="font-display text-lg font-bold text-[#087A35]">{teamShare}%</p>
+          <div className="mt-1 flex h-2 overflow-hidden rounded-full bg-[#eef6f0]">
+            <div className="bg-[#390A5D]" style={{ width: `${100 - teamShare}%` }} title="Self" />
+            <div className="bg-[#087A35]" style={{ width: `${teamShare}%` }} title="Team" />
+          </div>
+          <p className="mt-1 text-[10px] text-[#5c4d72]">Purple self · green team, by disbursed amount</p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function TeamTable({ members, onPick }: { members: TeamMember[]; onPick: (id: string) => void }) {
+  if (!members.length) return <p className="rounded-2xl border border-[#d8ecdd] bg-white p-4 text-sm text-[#5c4d72]">No business from your team in this date range.</p>;
+  return (
+    <section className="overflow-x-auto rounded-2xl border border-[#d8ecdd] bg-white shadow-sm">
+      <table className="w-full min-w-[860px] text-sm">
+        <thead className="bg-[#f3fbf6] text-left text-[11px] uppercase tracking-wide text-[#5c4d72]">
+          <tr>
+            {["Member", "Role", "Reports to", "Cases", "Disbursed", "Disbursed amt", "Collected", "Revenue", "Conversion"].map((head) => (
+              <th key={head} className="px-3 py-2 font-semibold">{head}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {members.map((m) => (
+            <tr key={m.id} className="cursor-pointer border-t border-[#eef6f0] hover:bg-[#f8fcf9]" onClick={() => onPick(m.id)}>
+              <td className="px-3 py-2 font-semibold text-[#087A35]">{m.name}</td>
+              <td className="px-3 py-2 capitalize text-[#390A5D]">{m.role.replaceAll("_", " ")}</td>
+              <td className="px-3 py-2 text-[#5c4d72]">{m.reports_to || "—"}{m.direct ? " · direct" : ""}</td>
+              <td className="px-3 py-2">{m.cases}</td>
+              <td className="px-3 py-2">{m.disbursed}</td>
+              <td className="px-3 py-2">₹{inr(m.disbursed_amount)}</td>
+              <td className="px-3 py-2">₹{inr(m.collected_amount)}</td>
+              <td className="px-3 py-2">₹{inr(m.revenue)}</td>
+              <td className="px-3 py-2">{m.conversion}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+  );
+}
+
 function loanIcon(name: string) {
   const low = name.toLowerCase();
   if (low.includes("car") || low.includes("auto")) return Car;
@@ -277,11 +345,15 @@ function CasesPage() {
   const [dumpQueue, setDumpQueue] = useState<{ id: string; filename: string; status: string; created_by?: string }[]>([]);
   const [query, setQuery] = useState("");
   const [loanFilter, setLoanFilter] = useState("");
+  const [scope, setScope] = useBusinessScope();
+  const [member, setMember] = useState("");
+  const [business, setBusiness] = useState<BusinessSummary | null>(null);
+  const [team, setTeam] = useState<TeamMember[]>([]);
   const loadDumpQueue = () => {
     void listDumpHistory().then((data) => setDumpQueue(data.items.filter((item) => item.status === "pending_approval" || item.status === "approved"))).catch(() => setDumpQueue([]));
   };
 
-  const refresh = async (nextChip = chip, from = dateFrom, to = dateTo) => {
+  const refresh = async (nextChip = chip, from = dateFrom, to = dateTo, nextScope = scope, nextMember = member) => {
     if (!from || !to || !nextChip) {
       setItems([]);
       setRevenue(0);
@@ -294,7 +366,10 @@ function CasesPage() {
     setConfirmed(0);
     setLoading(true);
     try {
-      const data = await listCaseFiles(nextChip, from, to);
+      const data = await listCaseFiles(nextChip, from, to, { scope: nextScope, member: nextMember || undefined });
+      setBusiness(data.business ?? null);
+      if (data.business && !data.business.has_team && nextScope === "team") setScope("combined");
+      void getBusinessTeam(from, to).then((res) => setTeam(res.members)).catch(() => setTeam([]));
       setItems(data.items);
       setRevenue(data.revenue);
       setConfirmed(data.confirmed_count);
@@ -397,6 +472,13 @@ function CasesPage() {
           ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {desk === "files" ? (
+            <BusinessScopeSwitch
+              value={scope}
+              hasTeam={business?.has_team ?? false}
+              onChange={(next) => { setScope(next); setMember(""); void refresh(chip, dateFrom, dateTo, next, ""); }}
+            />
+          ) : null}
           {bankDesk || role === "dsa" || role === "affiliate" ? null : (
           <div className="inline-flex rounded-full border border-[#d8ecdd] bg-white p-1">
             <button className={`rounded-full px-4 py-1.5 text-sm font-semibold ${desk === "files" ? "bg-[#087A35] text-white" : "text-[#390A5D]"}`} onClick={() => { setDesk("files"); setActive(null); }}>Case List</button>
@@ -490,7 +572,7 @@ function CasesPage() {
         <>
           {dateFrom && dateTo ? (
             <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
-              {[
+              {([
                 ["All Cases", String(counts.all ?? 0), "green", FolderOpen],
                 ["Disbursed", String(counts.disbursed ?? 0), "green", Check],
                 ["Disbursed Confirmed", String(counts.disbursed_confirmed ?? confirmed), "green", Check],
@@ -498,7 +580,7 @@ function CasesPage() {
                 ["Pending", String((counts.draft ?? 0) + (counts.submitted ?? 0) + (counts.logged_in ?? 0) + (counts.sanctioned ?? 0)), "purple", Hourglass],
                 ["Not Counted", String(counts.not_counted ?? 0), "purple", Hourglass],
                 [partnerView ? "Total Earning" : "Total Revenue", `₹${inr(partnerView ? items.reduce((sum, row) => sum + Number(row.payable_amount || 0), 0) : revenue)}`, "gold", IndianRupee],
-              ].map(([label, value, tone, Icon]) => (
+              ] as [string, string, string, typeof FolderOpen][]).map(([label, value, tone, Icon]) => (
                 <div key={String(label)} className={`rounded-2xl border px-3 py-2.5 shadow-sm ${tone === "gold" ? "border-[#f3e6c8] bg-[#fff8ea]" : tone === "purple" ? "border-[#eadff3] bg-[#f7f0fb]" : "border-[#d8ecdd] bg-[#f3fbf6]"}`}>
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-[11px] font-semibold text-[#5c4d72]">{label}</p>
@@ -508,6 +590,10 @@ function CasesPage() {
                 </div>
               ))}
             </div>
+          ) : null}
+          {business && business.has_team && scope === "combined" && !member ? <CombinedSplit business={business} /> : null}
+          {business && business.has_team && scope === "team" && !member ? (
+            <TeamTable members={team} onPick={(id) => { setMember(id); void refresh(chip, dateFrom, dateTo, scope, id); }} />
           ) : null}
           <section className="rounded-2xl border border-[#d8ecdd] bg-white p-3 shadow-sm">
             <div className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
@@ -524,13 +610,21 @@ function CasesPage() {
                     {loanTypes.map((item) => <option key={item} value={item}>{item}</option>)}
                   </select>
                 </label>
+                {team.length ? (
+                  <label className="text-xs font-semibold text-[#5c4d72]">Team member
+                    <select className="mt-1 h-9 w-[170px] rounded-md border border-input bg-white px-2 text-sm" value={member} onChange={(event) => { setMember(event.target.value); void refresh(chip, dateFrom, dateTo, scope, event.target.value); }}>
+                      <option value="">Everyone in view</option>
+                      {team.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    </select>
+                  </label>
+                ) : null}
                 <label className="text-xs font-semibold text-[#5c4d72]">Status
                   <select className="mt-1 h-9 w-[160px] rounded-md border border-input bg-white px-2 text-sm" value={chip} onChange={(event) => { setChip(event.target.value); void refresh(event.target.value, dateFrom, dateTo); }}>
                     <option value="all">All status</option>
                     {(bankDesk ? OPS_CHIPS : CHIPS).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                   </select>
                 </label>
-                <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setQuery(""); setLoanFilter(""); setChip("all"); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear</Button>
+                <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setQuery(""); setLoanFilter(""); setChip("all"); setMember(""); setBusiness(null); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear</Button>
               </div>
               {admin ? (
                 <div className="flex flex-wrap gap-2">

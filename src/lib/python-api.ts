@@ -1553,7 +1553,39 @@ export async function getCaseTimeline(id: string): Promise<{ items: CaseEvent[] 
   return request(`/api/cases/${id}/timeline`);
 }
 
-export async function listCaseFiles(chip = "all", dateFrom = "", dateTo = ""): Promise<{
+export type BusinessScope = "self" | "team" | "combined";
+
+export type BusinessMetrics = {
+  cases: number;
+  submitted: number;
+  logged_in: number;
+  sanctioned: number;
+  disbursed: number;
+  disbursed_amount: number;
+  collected: number;
+  collected_amount: number;
+  pending: number;
+  revenue: number;
+  conversion: number;
+};
+
+export type BusinessSummary = {
+  scope: BusinessScope;
+  has_team: boolean;
+  self: BusinessMetrics;
+  team: BusinessMetrics;
+  combined: BusinessMetrics;
+};
+
+export type TeamMember = BusinessMetrics & { id: string; name: string; role: string; reports_to: string; direct: boolean };
+
+export async function listCaseFiles(
+  chip = "all",
+  dateFrom = "",
+  dateTo = "",
+  opts: { scope?: BusinessScope; member?: string; loanType?: string } = {},
+): Promise<{
+  business?: BusinessSummary | null;
   revenue: number;
   disbursed_revenue: number;
   confirmed_count: number;
@@ -1561,7 +1593,15 @@ export async function listCaseFiles(chip = "all", dateFrom = "", dateTo = ""): P
   items: LoanCaseFile[];
 }> {
   const query = new URLSearchParams({ chip, date_from: dateFrom, date_to: dateTo });
+  if (opts.scope) query.set("scope", opts.scope);
+  if (opts.member) query.set("member", opts.member);
+  if (opts.loanType) query.set("loan_type", opts.loanType);
   return request(`/api/cases?${query.toString()}`);
+}
+
+export async function getBusinessTeam(dateFrom = "", dateTo = ""): Promise<{ has_team: boolean; organisation: boolean; members: TeamMember[] }> {
+  const query = new URLSearchParams({ date_from: dateFrom, date_to: dateTo });
+  return request(`/api/cases/business-team?${query.toString()}`);
 }
 
 export async function createCaseFile(body: Partial<LoanCaseFile>): Promise<LoanCaseFile> {

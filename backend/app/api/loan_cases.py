@@ -85,10 +85,30 @@ def read_cases(
     chip: str = Query(default="all"),
     date_from: str = Query(default=""),
     date_to: str = Query(default=""),
+    scope: str = Query(default=""),
+    member: UUID | None = Query(default=None),
+    loan_type: str = Query(default=""),
     db: Session = Depends(get_db),
-    user: User = Depends(require_reader),
+    user: User = Depends(get_current_user),
 ) -> dict:
-    return service.list_cases(db, user, chip, date_from, date_to)
+    if not scope and member is None:
+        require_reader(user)
+    if scope and scope not in service.business_scope.SCOPES:
+        raise HTTPException(status_code=400, detail="Unknown business scope")
+    try:
+        return service.list_cases(db, user, chip, date_from, date_to, scope, member, loan_type)
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+
+@router.get("/business-team")
+def read_business_team(
+    date_from: str = Query(default=""),
+    date_to: str = Query(default=""),
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    return service.business_team(db, user, date_from, date_to)
 
 
 @router.post("")
