@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import { Briefcase, Car, Check, Eye, FolderOpen, Hourglass, IndianRupee, Loader2, MoreHorizontal, Pencil, Plus, Search, Shield, Wallet } from "lucide-react";
+import { Briefcase, Car, Check, FolderOpen, Hourglass, IndianRupee, Loader2, Pencil, Plus, Search, Shield, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
@@ -201,6 +201,7 @@ const MAIN_TABS = [
   ["logged_in", "Logged In"],
   ["sanctioned", "Sanctioned"],
   ["disbursed", "Disbursed"],
+  ["disbursed_confirmed", "Disbursed Confirmed"],
   ["collected", "Collected"],
 ] as const;
 
@@ -488,14 +489,15 @@ function CasesPage() {
       ) : (
         <>
           {dateFrom && dateTo ? (
-            <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-7">
               {[
                 ["All Cases", String(counts.all ?? 0), "green", FolderOpen],
                 ["Disbursed", String(counts.disbursed ?? 0), "green", Check],
+                ["Disbursed Confirmed", String(counts.disbursed_confirmed ?? confirmed), "green", Check],
                 ["Collected", String(counts.collected ?? 0), "gold", IndianRupee],
                 ["Pending", String((counts.draft ?? 0) + (counts.submitted ?? 0) + (counts.logged_in ?? 0) + (counts.sanctioned ?? 0)), "purple", Hourglass],
                 ["Not Counted", String(counts.not_counted ?? 0), "purple", Hourglass],
-                [partnerView ? "Open files" : "Total Revenue", partnerView ? String(counts.all ?? 0) : `₹${inr(revenue)}`, "gold", IndianRupee],
+                [partnerView ? "Total Earning" : "Total Revenue", `₹${inr(partnerView ? items.reduce((sum, row) => sum + Number(row.payable_amount || 0), 0) : revenue)}`, "gold", IndianRupee],
               ].map(([label, value, tone, Icon]) => (
                 <div key={String(label)} className={`rounded-2xl border px-3 py-2.5 shadow-sm ${tone === "gold" ? "border-[#f3e6c8] bg-[#fff8ea]" : tone === "purple" ? "border-[#eadff3] bg-[#f7f0fb]" : "border-[#d8ecdd] bg-[#f3fbf6]"}`}>
                   <div className="flex items-center justify-between gap-2">
@@ -528,25 +530,8 @@ function CasesPage() {
                     {(bankDesk ? OPS_CHIPS : CHIPS).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
                   </select>
                 </label>
-                <label className="text-xs font-semibold text-[#5c4d72]">Search
-                  <span className="relative mt-1 block">
-                    <Search className="pointer-events-none absolute left-2 top-2.5 size-3.5 text-[#8aa090]" />
-                    <Input className="w-[220px] bg-white pl-7" value={query} placeholder="Case ID, name, mobile" onChange={(event) => setQuery(event.target.value)} />
-                  </span>
-                </label>
                 <Button variant="outline" onClick={() => { setDateFrom(""); setDateTo(""); setQuery(""); setLoanFilter(""); setChip("all"); setItems([]); setRevenue(0); setConfirmed(0); setCounts({}); }}>Clear</Button>
               </div>
-              {partnerView ? (
-              <div className="text-sm xl:text-right">
-                <div className="font-display text-lg font-bold text-[#10662A]">{dateFrom && dateTo ? counts.all ?? 0 : 0} cases</div>
-                <div className="text-[#5c4d72]">Open a file to see your invoice</div>
-              </div>
-              ) : bankDesk ? null : (
-              <div className="text-sm xl:text-right">
-                <div className="font-display text-lg font-bold text-[#10662A]">₹{inr(dateFrom && dateTo && chip ? revenue : 0)} revenue</div>
-                <div className="text-[#5c4d72]">{dateFrom && dateTo && chip ? confirmed : 0} disbursed confirmed in these dates</div>
-              </div>
-              )}
               {admin ? (
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" onClick={() => void createCaseFile({ loan_type: "LAP", client_name: "New applicant" }).then((row) => { setActive(row); void refresh("draft", dateFrom, dateTo); })}>New draft</Button>
@@ -593,6 +578,10 @@ function CasesPage() {
                   <option key={item.id} value={item.id}>{item.label}{dateFrom && dateTo ? ` (${counts[item.id] ?? 0})` : ""}</option>
                 ))}
               </select>
+              <span className="relative ml-auto block">
+                <Search className="pointer-events-none absolute left-2 top-2.5 size-3.5 text-[#8aa090]" />
+                <Input className="h-8 w-[220px] rounded-full bg-white pl-7 text-xs" value={query} placeholder="Search case ID, name, mobile" onChange={(event) => setQuery(event.target.value)} />
+              </span>
             </div>
             {dumpPreview ? (
               <DumpReview
@@ -673,9 +662,7 @@ function CasesPage() {
                     <td className="whitespace-nowrap px-3 py-2 text-xs text-[#5c4d72]">{row.submitted_on || "—"}</td>
                     <td className="px-3 py-2">
                       <div className="flex items-center gap-1">
-                        <button type="button" title="View case" className="grid size-7 place-items-center rounded-full text-[#087A35] hover:bg-[#E8F7EC]" onClick={() => setActive(row)}><Eye className="size-3.5" /></button>
                         <button type="button" title="Edit case" className="grid size-7 place-items-center rounded-full text-[#087A35] hover:bg-[#E8F7EC]" onClick={() => setActive(row)}><Pencil className="size-3.5" /></button>
-                        <button type="button" title="More" className="grid size-7 place-items-center rounded-full text-[#087A35] hover:bg-[#E8F7EC]" onClick={() => setActive(row)}><MoreHorizontal className="size-3.5" /></button>
                       </div>
                     </td>
                   </tr>
