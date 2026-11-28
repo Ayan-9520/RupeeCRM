@@ -130,26 +130,34 @@ def _seed(db) -> None:
 def _photos(db) -> None:
     folder = storage_root() / "partner-photos"
     folder.mkdir(parents=True, exist_ok=True)
-    source = Path(__file__).resolve().parent / "demo_photos"
+    icons = sorted((Path(__file__).resolve().parent / "preset_avatars").glob("caller*.jpg"))
     base = settings.crm_public_url.rstrip("/")
     attached = 0
-    for _contact, firm, *_rest in ROWS:
+    for index, (_contact, firm, *_rest) in enumerate(ROWS):
         slug = _slugify(firm)
         email = f"demo.directory.{slug}@{EMAIL_DOMAIN}"
         user = db.query(User).filter(User.email == email).first()
-        if user is None:
+        if user is None or not icons:
             continue
         profile = db.query(PartnerProfile).filter(PartnerProfile.owner_user_id == user.id).first()
-        picture = source / f"{slug}.png"
-        if profile is None or not picture.is_file() or not (profile.theme or {}).get(MARK):
+        if profile is None or not (profile.theme or {}).get(MARK):
             continue
+        picture = icons[index % len(icons)]
         for old in folder.glob(f"{profile.slug}.*"):
             old.unlink(missing_ok=True)
-        (folder / f"{profile.slug}.png").write_bytes(picture.read_bytes())
+        (folder / f"{profile.slug}.jpg").write_bytes(picture.read_bytes())
         profile.logo_url = f"{base}/api/public/partner-photo/{profile.slug}"
         attached += 1
     db.commit()
     print(f"attached {attached} demo photos")
+
+
+def refresh_demo_photos() -> None:
+    db = SessionLocal()
+    try:
+        _photos(db)
+    finally:
+        db.close()
 
 
 def main() -> None:

@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -42,7 +44,18 @@ from app.api import (
 )
 from app.core.config import settings
 
-app = FastAPI(title="RupeeDial CRM API", version="1.0.0")
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    try:
+        from app.scripts.seed_demo_directory import refresh_demo_photos
+
+        refresh_demo_photos()
+    except Exception:
+        pass
+    yield
+
+
+app = FastAPI(title="RupeeDial CRM API", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

@@ -204,7 +204,7 @@ def partner_photo(slug: str) -> FileResponse:
     for ext, mime in PHOTO_TYPES.items():
         path = folder / f"{stem}{ext}"
         if path.is_file():
-            return FileResponse(path, media_type=mime)
+            return FileResponse(path, media_type=mime, headers={"Cache-Control": "no-cache"})
     raise HTTPException(status_code=404, detail="Photo not found")
 
 
